@@ -23,7 +23,7 @@ class AuthController extends Controller
             'name' => $request->validated('name'),
             'email' => $request->validated('email'),
             'password' => Hash::make($request->validated('password')),
-            'role' => $isFirstAdmin ? 'super_admin' : 'user',
+            'role' => $isFirstAdmin ? 'super_admin' : 'app_user',
         ]);
 
         $token = $user->createToken(
