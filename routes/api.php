@@ -73,6 +73,7 @@ Route::prefix('v1')
             Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
             Route::get('/auth/me', [AuthController::class, 'me'])->name('auth.me');
             Route::put('/auth/profile', [AuthController::class, 'updateProfile'])->name('auth.profile.update');
+            Route::put('/auth/password', [AuthController::class, 'changePassword'])->name('auth.password.update');
 
             // Basic user list (any authenticated user)
             Route::get('/users', [UserController::class, 'index'])->name('users.index');

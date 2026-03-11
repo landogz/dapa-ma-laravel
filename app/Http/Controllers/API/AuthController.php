@@ -17,25 +17,26 @@ class AuthController extends Controller
 {
     public function register(RegisterRequest $request): JsonResponse
     {
-        if (User::query()->where('role', 'super_admin')->exists()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Admin registration is disabled. Ask a super administrator to create your account.',
-            ], 403);
-        }
+        $isFirstAdmin = ! User::query()->where('role', 'super_admin')->exists();
 
         $user = User::query()->create([
             'name' => $request->validated('name'),
             'email' => $request->validated('email'),
             'password' => Hash::make($request->validated('password')),
-            'role' => 'super_admin',
+            'role' => $isFirstAdmin ? 'super_admin' : 'user',
         ]);
 
-        $token = $user->createToken('admin-setup-token', ['*'], now()->addDays(30))->plainTextToken;
+        $token = $user->createToken(
+            $isFirstAdmin ? 'admin-setup-token' : 'api-token',
+            ['*'],
+            now()->addDays(30)
+        )->plainTextToken;
 
         return response()->json([
             'status' => true,
-            'message' => 'Administrator account created successfully.',
+            'message' => $isFirstAdmin
+                ? 'Administrator account created successfully.'
+                : 'Account created successfully.',
             'data' => [
                 'token' => $token,
                 'user' => [
@@ -43,6 +44,7 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'profile_image_url' => $this->userProfileImageUrl($user),
                 ],
             ],
         ], 201);
@@ -135,6 +137,31 @@ class AuthController extends Controller
                 'role'               => $user->role,
                 'profile_image_url'  => $this->userProfileImageUrl($user->fresh()),
             ],
+        ]);
+    }
+
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => ['required', 'string'],
+            'password'         => ['required', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+        if (! Hash::check($request->input('current_password'), $user->password)) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Current password is incorrect.',
+            ], 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->input('password')),
+        ]);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Password updated successfully.',
         ]);
     }
 
