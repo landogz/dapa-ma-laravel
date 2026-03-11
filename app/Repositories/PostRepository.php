@@ -17,14 +17,21 @@ class PostRepository
             ->paginate($perPage);
     }
 
-    public function paginatePublished(int $perPage = 20): LengthAwarePaginator
+    public function paginatePublished(int $perPage = 20, ?string $categorySlug = null): LengthAwarePaginator
     {
-        return Post::query()
+        $query = Post::query()
             ->with(['category', 'author'])
             ->where('status', 'published')
             ->where('publish_date', '<=', Carbon::now())
-            ->latest('publish_date')
-            ->paginate($perPage);
+            ->latest('publish_date');
+
+        if ($categorySlug !== null && $categorySlug !== '') {
+            $query->whereHas('category', function ($q) use ($categorySlug) {
+                $q->where('slug', $categorySlug);
+            });
+        }
+
+        return $query->paginate($perPage);
     }
 
     public function selectionList(): Collection

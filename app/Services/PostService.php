@@ -28,9 +28,9 @@ class PostService
         return $this->postRepository->paginateAdmin($perPage);
     }
 
-    public function listPublished(int $perPage = 20): LengthAwarePaginator
+    public function listPublished(int $perPage = 20, ?string $categorySlug = null): LengthAwarePaginator
     {
-        return $this->postRepository->paginatePublished($perPage);
+        return $this->postRepository->paginatePublished($perPage, $categorySlug);
     }
 
     public function listForSelection(): Collection

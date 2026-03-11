@@ -17,8 +17,10 @@ class PostController extends Controller
     public function index(Request $request): JsonResponse
     {
         $perPage = (int) $request->integer('per_page', 20);
+        $category = $request->get('category');
+        $categorySlug = is_string($category) && $category !== '' ? $category : null;
 
-        $posts = $this->postService->listPublished($perPage);
+        $posts = $this->postService->listPublished($perPage, $categorySlug);
 
         return response()->json([
             'status'  => true,
