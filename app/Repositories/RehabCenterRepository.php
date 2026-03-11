@@ -10,6 +10,7 @@ class RehabCenterRepository
     public function paginate(int $perPage = 20, ?string $region = null, ?string $search = null): LengthAwarePaginator
     {
         return RehabCenter::query()
+            ->where('is_active', true)
             ->when($region, fn ($q) => $q->where('region', $region))
             ->when($search, fn ($q) => $q->where(function ($q) use ($search): void {
                 $q->where('name', 'like', "%{$search}%")

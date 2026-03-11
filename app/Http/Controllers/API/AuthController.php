@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
@@ -65,10 +66,11 @@ class AuthController extends Controller
             'data'    => [
                 'token' => $token,
                 'user'  => [
-                    'id'    => $user->id,
-                    'name'  => $user->name,
-                    'email' => $user->email,
-                    'role'  => $user->role,
+                    'id'                 => $user->id,
+                    'name'               => $user->name,
+                    'email'              => $user->email,
+                    'role'               => $user->role,
+                    'profile_image_url'  => $this->userProfileImageUrl($user),
                 ],
             ],
         ]);
@@ -91,12 +93,60 @@ class AuthController extends Controller
         return response()->json([
             'status' => true,
             'data'   => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'email' => $user->email,
-                'role'  => $user->role,
+                'id'                 => $user->id,
+                'name'               => $user->name,
+                'email'              => $user->email,
+                'role'               => $user->role,
+                'profile_image_url'  => $this->userProfileImageUrl($user),
             ],
         ]);
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $request->validate([
+            'name'         => ['sometimes', 'string', 'max:255'],
+            'profile_photo' => ['sometimes', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+        ]);
+
+        $payload = [];
+        if ($request->has('name')) {
+            $payload['name'] = $request->input('name');
+        }
+        if ($request->hasFile('profile_photo')) {
+            if ($user->profile_image_url) {
+                Storage::disk('public')->delete($user->profile_image_url);
+            }
+            $path = $request->file('profile_photo')->store('profiles', 'public');
+            $payload['profile_image_url'] = $path;
+        }
+        if ($payload !== []) {
+            $user->update($payload);
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Profile updated.',
+            'data'    => [
+                'id'                 => $user->id,
+                'name'               => $user->name,
+                'email'              => $user->email,
+                'role'               => $user->role,
+                'profile_image_url'  => $this->userProfileImageUrl($user->fresh()),
+            ],
+        ]);
+    }
+
+    private function userProfileImageUrl(User $user): ?string
+    {
+        if (! $user->profile_image_url) {
+            return null;
+        }
+        if (str_starts_with($user->profile_image_url, 'http')) {
+            return $user->profile_image_url;
+        }
+        return Storage::disk('public')->url($user->profile_image_url);
     }
 
     public function forgotPassword(Request $request): JsonResponse

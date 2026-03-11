@@ -71,7 +71,8 @@ Route::prefix('v1')
         Route::middleware('auth:sanctum')->group(function (): void {
 
             Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
-            Route::get('/auth/me',      [AuthController::class, 'me'])->name('auth.me');
+            Route::get('/auth/me', [AuthController::class, 'me'])->name('auth.me');
+            Route::put('/auth/profile', [AuthController::class, 'updateProfile'])->name('auth.profile.update');
 
             // Basic user list (any authenticated user)
             Route::get('/users', [UserController::class, 'index'])->name('users.index');

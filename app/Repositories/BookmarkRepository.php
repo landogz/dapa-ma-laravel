@@ -12,9 +12,10 @@ class BookmarkRepository
     public function listForUser(User $user): Collection
     {
         return Post::query()
+            ->with(['category', 'author'])
             ->whereHas('bookmarks', fn ($q) => $q->where('user_id', $user->id))
             ->where('status', 'published')
-            ->latest()
+            ->latest('publish_date')
             ->get();
     }
 
