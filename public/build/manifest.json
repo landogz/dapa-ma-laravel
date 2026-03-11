@@ -1,0 +1,26 @@
+{
+  "node_modules/datatables.net-bs5/js/dataTables.bootstrap5.mjs": {
+    "file": "assets/dataTables.bootstrap5-De9M3cU5.js",
+    "name": "dataTables.bootstrap5",
+    "src": "node_modules/datatables.net-bs5/js/dataTables.bootstrap5.mjs",
+    "isDynamicEntry": true
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-Csay2SD2.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "name": "app",
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-DybexKCT.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "node_modules/datatables.net-bs5/js/dataTables.bootstrap5.mjs"
+    ]
+  }
+}
