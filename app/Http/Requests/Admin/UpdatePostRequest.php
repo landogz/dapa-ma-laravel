@@ -13,12 +13,18 @@ class UpdatePostRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'title'       => ['sometimes', 'string', 'max:255'],
             'body'        => ['sometimes', 'string'],
             'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
             'media_file'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
             'youtube_url' => ['nullable', 'url', 'max:2048'],
         ];
+
+        if ($this->user()?->role === 'super_admin') {
+            $rules['status'] = ['sometimes', 'string', 'in:draft,pending_review,scheduled,published,archived'];
+        }
+
+        return $rules;
     }
 }

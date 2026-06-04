@@ -49,21 +49,27 @@ class PostAdminController extends Controller
     public function store(StorePostRequest $request): JsonResponse
     {
         $post = $this->postService->createDraft($request->validated(), $request->user());
+        $isSuperAdmin = $request->user()?->role === 'super_admin';
 
         return response()->json([
             'status'  => true,
-            'message' => 'Draft created successfully.',
+            'message' => $isSuperAdmin
+                ? 'Post published successfully.'
+                : 'Draft created successfully.',
             'data'    => $post,
         ], 201);
     }
 
     public function update(UpdatePostRequest $request, Post $post): JsonResponse
     {
-        $post = $this->postService->updateDraft($post, $request->validated());
+        $post = $this->postService->updateDraft($post, $request->validated(), $request->user());
+        $isSuperAdmin = $request->user()?->role === 'super_admin';
 
         return response()->json([
             'status'  => true,
-            'message' => 'Post updated.',
+            'message' => $isSuperAdmin && $post->status === 'published'
+                ? 'Post updated and published.'
+                : 'Post updated.',
             'data'    => $post,
         ]);
     }

@@ -46,6 +46,7 @@ class PostService
     public function createDraft(array $data, User $author): Post
     {
         $mediaUrl = $this->storeMediaFile($data['media_file'] ?? null);
+        $publishMeta = $this->resolveSuperAdminPublishMeta($author);
 
         return $this->postRepository->create([
             'title'       => $data['title'],
@@ -53,14 +54,19 @@ class PostService
             'category_id' => $data['category_id'],
             'media_url'   => $mediaUrl,
             'youtube_url' => $data['youtube_url'] ?? null,
-            'status'      => 'draft',
+            'status'      => $publishMeta['status'],
+            'publish_date' => $publishMeta['publish_date'],
             'author_id'   => $author->id,
         ]);
     }
 
-    public function updateDraft(Post $post, array $data): Post
+    public function updateDraft(Post $post, array $data, ?User $actor = null): Post
     {
-        $this->assertStatus($post, ['draft', 'pending_review']);
+        $allowedStatuses = $actor?->role === 'super_admin'
+            ? ['draft', 'pending_review', 'published', 'scheduled', 'archived']
+            : ['draft', 'pending_review'];
+
+        $this->assertStatus($post, $allowedStatuses);
 
         $payload = array_filter($data, fn ($value) => $value !== null);
 
@@ -70,6 +76,12 @@ class PostService
         }
 
         unset($payload['media_file']);
+
+        if ($actor?->role !== 'super_admin') {
+            unset($payload['status']);
+        } else {
+            $payload = $this->applySuperAdminPublishDefaults($payload, $post);
+        }
 
         return $this->postRepository->update($post, $payload);
     }
@@ -145,6 +157,44 @@ class PostService
     public function publishScheduled(): int
     {
         return $this->postRepository->publishDue();
+    }
+
+    private function resolveSuperAdminPublishMeta(User $author, ?string $requestedStatus = null): array
+    {
+        if ($author->role !== 'super_admin') {
+            return [
+                'status'       => 'draft',
+                'publish_date' => null,
+            ];
+        }
+
+        if (in_array($requestedStatus, ['archived', 'scheduled'], true)) {
+            return [
+                'status'       => $requestedStatus,
+                'publish_date' => $requestedStatus === 'scheduled' ? null : Carbon::now(),
+            ];
+        }
+
+        return [
+            'status'       => 'published',
+            'publish_date' => Carbon::now(),
+        ];
+    }
+
+    private function applySuperAdminPublishDefaults(array $payload, Post $post): array
+    {
+        $requestedStatus = $payload['status'] ?? $post->status;
+
+        if (in_array($requestedStatus, ['archived', 'scheduled'], true)) {
+            $payload['status'] = $requestedStatus;
+
+            return $payload;
+        }
+
+        $payload['status'] = 'published';
+        $payload['publish_date'] = $post->publish_date ?? Carbon::now();
+
+        return $payload;
     }
 
     private function assertStatus(Post $post, array $allowedStatuses): void

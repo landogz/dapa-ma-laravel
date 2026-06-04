@@ -4,6 +4,7 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
 import { buildSwalForm, buildSwalOptions } from './shared/swal-forms';
+import { showSuccessToast, showErrorToast } from './shared/toast';
 
 let postsTable;
 let currentUserRole = null;
@@ -94,17 +95,22 @@ export async function promptCreateDraft() {
     }
 
     const result = await openPostEditorSwal({
-        title: 'Create Draft Post',
+        title: currentUserRole === 'super_admin' ? 'Create Post' : 'Create Draft Post',
         post: null,
         categoryOptions,
-        confirmButtonText: 'Create Draft',
+        confirmButtonText: currentUserRole === 'super_admin' ? 'Create & Publish' : 'Create Draft',
+        showStatus: false,
     });
 
-    if (!result.isConfirmed) {
+    if (!result.isConfirmed || !result.value) {
         return;
     }
 
-    createDraftPost(result.value);
+    showSuccessToast(
+        result.value.message,
+        currentUserRole === 'super_admin' ? 'Post published' : 'Draft created',
+    );
+    loadPosts();
 }
 
 export async function promptEditPost(postId) {
@@ -128,40 +134,55 @@ export async function promptEditPost(postId) {
     }
 
     const result = await openPostEditorSwal({
-        title: 'Edit Draft Post',
+        title: 'Edit Post',
         post,
         categoryOptions,
         confirmButtonText: 'Save Changes',
+        showStatus: currentUserRole === 'super_admin',
+        postId,
     });
 
-    if (!result.isConfirmed) {
+    if (!result.isConfirmed || !result.value) {
         return;
     }
 
-    updatePost(postId, result.value);
+    showSuccessToast(result.value.message, 'Post updated');
+    loadPosts();
+}
+
+async function submitPostPayload(payload, { postId = null } = {}) {
+    const url = postId ? `/admin/posts/${postId}` : '/admin/posts';
+
+    return axios.post(
+        url,
+        buildMultipartPayload(payload, postId ? { method: 'PUT' } : {}),
+    );
 }
 
 export function createDraftPost(formData) {
-    return axios.post('/admin/posts', buildMultipartPayload(formData))
+    return submitPostPayload(formData)
         .then(({ data }) => {
-            Swal.fire({ icon: 'success', title: 'Draft created', text: data.message });
+            showSuccessToast(
+                data.message,
+                currentUserRole === 'super_admin' ? 'Post published' : 'Draft created',
+            );
             loadPosts();
             return data;
         })
         .catch(({ response }) => {
-            Swal.fire({ icon: 'error', title: 'Error', text: response?.data?.message ?? 'Failed to create post.' });
+            showErrorToast(formatApiValidationMessage(response), 'Error');
         });
 }
 
 export function updatePost(postId, formData) {
-    return axios.post(`/admin/posts/${postId}`, buildMultipartPayload(formData, { method: 'PUT' }))
+    return submitPostPayload(formData, { postId })
         .then(({ data }) => {
-            Swal.fire({ icon: 'success', title: 'Post updated', text: data.message });
+            showSuccessToast(data.message, 'Post updated');
             loadPosts();
             return data;
         })
         .catch(({ response }) => {
-            Swal.fire({ icon: 'error', title: 'Error', text: response?.data?.message ?? 'Failed to update post.' });
+            showErrorToast(formatApiValidationMessage(response), 'Error');
         });
 }
 
@@ -538,43 +559,70 @@ function formatDateTime(value) {
     });
 }
 
-function buildPostForm(post = null, categoryOptions = []) {
+function buildPostForm(post = null, categoryOptions = [], { showStatus = false, isSuperAdmin = false } = {}) {
+    const fields = [
+        { id: 'post-title', label: 'Title *', placeholder: 'Enter post title', value: post?.title ?? '' },
+        { id: 'post-body', label: 'Body / rich text content *', type: 'textarea', placeholder: 'Write the main content', value: post?.body ?? '' },
+        {
+            id: 'post-category-id',
+            label: 'Category *',
+            type: 'select',
+            value: post?.category_id ?? '',
+            options: categoryOptions,
+        },
+    ];
+
+    if (showStatus) {
+        fields.push({
+            id: 'post-status',
+            label: 'Status *',
+            type: 'select',
+            value: post?.status ?? 'draft',
+            options: [
+                { value: 'draft', label: 'Draft' },
+                { value: 'pending_review', label: 'Pending review' },
+                { value: 'scheduled', label: 'Scheduled' },
+                { value: 'published', label: 'Published' },
+                { value: 'archived', label: 'Archived' },
+            ],
+        });
+    }
+
+    fields.push(
+        {
+            id: 'post-media-file',
+            label: 'Featured Image',
+            type: 'file',
+            accept: 'image/*',
+            hint: post?.media_url
+                ? 'Choose a new image only if you want to replace the current upload.'
+                : 'Upload a JPG, PNG, WEBP, or GIF image up to 5MB.',
+        },
+        { id: 'post-youtube-url', label: 'YouTube URL', placeholder: 'Paste YouTube link', value: post?.youtube_url ?? '' },
+    );
+
     return buildSwalForm({
         description: post
-            ? 'Update the draft content before the next workflow step.'
-            : 'Create a new content draft for review and scheduling.',
-        fields: [
-            { id: 'post-title', label: 'Title *', placeholder: 'Enter post title', value: post?.title ?? '' },
-            { id: 'post-body', label: 'Body / rich text content *', type: 'textarea', placeholder: 'Write the main content', value: post?.body ?? '' },
-            {
-                id: 'post-category-id',
-                label: 'Category *',
-                type: 'select',
-                value: post?.category_id ?? '',
-                options: categoryOptions,
-            },
-            {
-                id: 'post-media-file',
-                label: 'Featured Image',
-                type: 'file',
-                accept: 'image/*',
-                hint: post?.media_url
-                    ? 'Choose a new image only if you want to replace the current upload.'
-                    : 'Upload a JPG, PNG, WEBP, or GIF image up to 5MB.',
-            },
-            { id: 'post-youtube-url', label: 'YouTube URL', placeholder: 'Paste YouTube link', value: post?.youtube_url ?? '' },
-        ],
+            ? (isSuperAdmin
+                ? 'Updates from super admin are published automatically unless status is scheduled or archived.'
+                : 'Update the content and workflow details for this post.')
+            : (isSuperAdmin
+                ? 'Super admin posts are published immediately after creation.'
+                : 'Create a new content draft for review and scheduling.'),
+        fields,
     });
 }
 
-async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonText }) {
+async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonText, showStatus = false, postId = null }) {
     let editorInstance = null;
+    const isSuperAdmin = currentUserRole === 'super_admin';
 
     return Swal.fire(buildSwalOptions({
         title,
-        html: buildPostForm(post, categoryOptions),
+        html: buildPostForm(post, categoryOptions, { showStatus, isSuperAdmin }),
         showCancelButton: true,
         confirmButtonText,
+        focusConfirm: false,
         didOpen: async () => {
             const textarea = document.getElementById('post-body');
 
@@ -603,7 +651,7 @@ async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonT
                 editorInstance = null;
             }
         },
-        preConfirm: () => {
+        preConfirm: async () => {
             const categoryValue = document.getElementById('post-category-id')?.value ?? '';
             const mediaFile = document.getElementById('post-media-file')?.files?.[0] ?? null;
             const titleValue = document.getElementById('post-title')?.value.trim();
@@ -618,19 +666,61 @@ async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonT
                 youtube_url: youtubeValue,
             };
 
+            const statusValue = document.getElementById('post-status')?.value;
+            if (statusValue) {
+                payload.status = statusValue;
+            }
+
             if (!payload.title || !payload.body || !categoryValue || Number.isNaN(payload.category_id) || payload.category_id < 1) {
                 Swal.showValidationMessage('Title, body, and category are required.');
-
                 return false;
             }
 
-            return payload;
+            if (payload.youtube_url && !isValidHttpUrl(payload.youtube_url)) {
+                Swal.showValidationMessage('The YouTube URL field must be a valid URL.');
+                return false;
+            }
+
+            try {
+                const { data } = await submitPostPayload(payload, { postId });
+                return data;
+            } catch (error) {
+                Swal.showValidationMessage(formatApiValidationMessage(error.response));
+                return false;
+            }
         },
     }));
 }
 
+function isValidHttpUrl(value) {
+    try {
+        const url = new URL(value);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
+function formatApiValidationMessage(response) {
+    const errors = response?.data?.errors;
+
+    if (errors && typeof errors === 'object') {
+        const messages = Object.values(errors).flat().filter(Boolean);
+        if (messages.length > 0) {
+            return messages.join(' ');
+        }
+    }
+
+    return response?.data?.message ?? 'Unable to save. Please check the form and try again.';
+}
+
 function syncPostsPageActions() {
     document.querySelector('[data-admin-action="create-post"]')?.classList.toggle('hidden', !canCreateDraft());
+
+    const createButton = document.querySelector('[data-admin-action="create-post"]');
+    if (createButton) {
+        createButton.textContent = currentUserRole === 'super_admin' ? 'Create Post' : 'Create Draft';
+    }
 
     const insightsLink = document.querySelector('a[href="/admin/analytics"]');
     insightsLink?.classList.toggle('hidden', !['super_admin', 'analytics_viewer'].includes(currentUserRole));
@@ -679,6 +769,10 @@ function buildMultipartPayload(formData, { method = 'POST' } = {}) {
 
     if (formData.media_file) {
         payload.append('media_file', formData.media_file);
+    }
+
+    if (formData.status) {
+        payload.append('status', formData.status);
     }
 
     if (method !== 'POST') {
@@ -733,7 +827,7 @@ function getAvailableActions(post) {
         });
     }
 
-    if (currentUserRole === 'publisher' && post.status === 'scheduled') {
+    if ((currentUserRole === 'publisher' || currentUserRole === 'super_admin') && post.status === 'scheduled') {
         actions.push({
             handler: 'publishNow',
             label: 'Publish now',
@@ -764,28 +858,29 @@ function getAvailableActions(post) {
 }
 
 function canCreateDraft() {
-    return currentUserRole === 'editor';
+    return currentUserRole === 'editor' || currentUserRole === 'super_admin';
 }
 
 function canEditPost(post) {
-    return (
-        (currentUserRole === 'editor' && post.status === 'draft')
-        || currentUserRole === 'super_admin'
-    );
+    if (currentUserRole === 'super_admin') {
+        return ['draft', 'pending_review', 'published', 'scheduled', 'archived'].includes(post.status);
+    }
+
+    return currentUserRole === 'editor' && post.status === 'draft';
 }
 
 function canSubmitPost(post) {
-    return currentUserRole === 'editor'
+    return (currentUserRole === 'editor' || currentUserRole === 'super_admin')
         && post.status === 'draft';
 }
 
 function canRejectPost(post) {
-    return currentUserRole === 'publisher'
+    return (currentUserRole === 'publisher' || currentUserRole === 'super_admin')
         && post.status === 'pending_review';
 }
 
 function canSchedulePost(post) {
-    return currentUserRole === 'publisher'
+    return (currentUserRole === 'publisher' || currentUserRole === 'super_admin')
         && post.status === 'pending_review';
 }
 

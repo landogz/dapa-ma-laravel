@@ -107,8 +107,8 @@ Route::prefix('v1')
                     Route::get('/posts/{post}',       [PostAdminController::class, 'show'])->name('posts.show');
                 });
 
-                // Editor — draft creation, editing, and submission
-                Route::middleware('role:editor')->group(function (): void {
+                // Editor + Super Admin — draft creation, editing, and submission
+                Route::middleware('role:editor,super_admin')->group(function (): void {
                     Route::post('/posts',             [PostAdminController::class, 'store'])->name('posts.store');
                     Route::put('/posts/{post}',       [PostAdminController::class, 'update'])->name('posts.update');
                     Route::put('/posts/{post}/submit', [PostAdminController::class, 'submit'])->name('posts.submit');
