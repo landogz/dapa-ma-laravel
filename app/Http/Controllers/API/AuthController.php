@@ -24,6 +24,7 @@ class AuthController extends Controller
             'email' => $request->validated('email'),
             'password' => Hash::make($request->validated('password')),
             'role' => $isFirstAdmin ? 'super_admin' : 'app_user',
+            'last_login_at' => now(),
         ]);
 
         $token = $user->createToken(
@@ -60,6 +61,8 @@ class AuthController extends Controller
         }
 
         $user  = $request->user();
+        $user->forceFill(['last_login_at' => now()])->save();
+
         $token = $user->createToken('api-token', ['*'], now()->addDays(30))->plainTextToken;
 
         return response()->json([

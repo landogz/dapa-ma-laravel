@@ -348,6 +348,7 @@ async function initializeUsersTable(tableElement) {
                 { title: 'Name', className: 'dt-col-primary' },
                 { title: 'Email', className: 'dt-col-wide' },
                 { title: 'Role', className: 'dt-col-nowrap' },
+                { title: 'Last Login', className: 'dt-col-nowrap' },
                 { title: 'Actions', orderable: false, className: 'dt-col-actions' },
             ],
     }));
@@ -392,6 +393,7 @@ function buildUserRowData(user) {
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Email:</span> ${escapeHtml(user.email)}</p>
+                    <p><span>Last login:</span> ${escapeHtml(formatLastLogin(user.last_login_at))}</p>
                 </div>
             </div>`,
             renderUserActions(user),
@@ -403,8 +405,33 @@ function buildUserRowData(user) {
         escapeHtml(user.name),
         escapeHtml(user.email),
         badge(user.role),
+        escapeHtml(formatLastLogin(user.last_login_at)),
         renderUserActions(user),
     ];
+}
+
+function formatLastLogin(value) {
+    if (!value) {
+        return 'Never';
+    }
+
+    const normalized = typeof value === 'string' && value.includes(' ')
+        ? value.replace(' ', 'T')
+        : value;
+
+    const date = new Date(normalized);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(value);
+    }
+
+    return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 }
 
 function escapeHtml(value) {
