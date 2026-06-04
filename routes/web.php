@@ -1,17 +1,8 @@
 <?php
 
 use App\Models\User;
+use App\Support\AdminPage;
 use Illuminate\Support\Facades\Route;
-
-function renderAdminPage(string $view, string $activePage, string $headerTitle)
-{
-    return view($view, [
-        'pageTitle' => "DAPE-MA Admin | {$headerTitle}",
-        'bodyPage' => 'admin-' . $activePage,
-        'activePage' => $activePage,
-        'headerTitle' => $headerTitle,
-    ]);
-}
 
 Route::get('/', function () {
     return redirect('/admin/login');
@@ -35,26 +26,14 @@ Route::get('/admin/register', function () {
     return view('admin-register');
 });
 
-Route::get('/admin/dashboard', function () {
-    return renderAdminPage('admin.dashboard.index', 'dashboard', 'Dashboard');
-});
+Route::get('/admin/dashboard', fn () => AdminPage::render('admin.dashboard.index', 'dashboard', 'Dashboard'));
 
-Route::get('/admin/posts', function () {
-    return renderAdminPage('admin.posts.index', 'posts', 'Posts');
-});
+Route::get('/admin/posts', fn () => AdminPage::render('admin.posts.index', 'posts', 'Posts'));
 
-Route::get('/admin/rehab-centers', function () {
-    return renderAdminPage('admin.rehab-centers.index', 'rehab-centers', 'Rehab Centers');
-});
+Route::get('/admin/rehab-centers', fn () => AdminPage::render('admin.rehab-centers.index', 'rehab-centers', 'Rehab Centers'));
 
-Route::get('/admin/notifications', function () {
-    return renderAdminPage('admin.notifications.index', 'notifications', 'Notifications');
-});
+Route::get('/admin/notifications', fn () => AdminPage::render('admin.notifications.index', 'notifications', 'Notifications'));
 
-Route::get('/admin/analytics', function () {
-    return renderAdminPage('admin.analytics.index', 'analytics', 'Analytics');
-});
+Route::get('/admin/analytics', fn () => AdminPage::render('admin.analytics.index', 'analytics', 'Analytics'));
 
-Route::get('/admin/users', function () {
-    return renderAdminPage('admin.users.index', 'users', 'Users');
-});
+Route::get('/admin/users', fn () => AdminPage::render('admin.users.index', 'users', 'Users'));
