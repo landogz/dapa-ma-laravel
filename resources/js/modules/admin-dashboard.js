@@ -3,7 +3,7 @@ import { initAnalyticsModule } from './analytics';
 import { logout } from './auth';
 import { initNotificationsModule } from './notifications';
 import { initPostsModule } from './posts';
-import { initRehabCentersModule } from './rehab-centers';
+import { initRehabCentersModule } from './rehab-centers/index';
 import { initUsersModule } from './users';
 
 const ADMIN_ROLE_SECTIONS = {

@@ -18,6 +18,8 @@ class StoreRehabCenterRequest extends FormRequest
             'region'   => ['required', 'string', 'max:255'],
             'province' => ['required', 'string', 'max:255'],
             'address'  => ['required', 'string', 'max:512'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
             'contact'  => ['nullable', 'string', 'max:100'],
             'website'  => ['nullable', 'url', 'max:512'],
             'is_active' => ['required', 'boolean'],

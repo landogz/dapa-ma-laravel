@@ -6,7 +6,7 @@
     "isDynamicEntry": true
   },
   "resources/css/app.css": {
-    "file": "assets/app-Csay2SD2.css",
+    "file": "assets/app-7PuX5Ra5.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -15,12 +15,15 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-DybexKCT.js",
+    "file": "assets/app-BIgKCAsT.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "dynamicImports": [
       "node_modules/datatables.net-bs5/js/dataTables.bootstrap5.mjs"
+    ],
+    "css": [
+      "assets/app-DNVN2dqC.css"
     ]
   }
 }

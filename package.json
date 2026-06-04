@@ -19,6 +19,7 @@
         "datatables.net": "^2.3.7",
         "datatables.net-bs5": "^2.3.7",
         "datatables.net-dt": "^2.3.7",
+        "maplibre-gl": "^5.24.0",
         "sweetalert2": "^11.26.22"
     }
 }

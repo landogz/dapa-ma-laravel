@@ -1,12 +1,22 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from './shared/datatables';
-import { buildSwalForm, buildSwalOptions } from './shared/swal-forms';
+import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
+import { buildSwalOptions } from '../shared/swal-forms';
+import { showErrorToast, showSuccessToast } from '../shared/toast';
+import {
+    buildRehabMapPickerHtml,
+    destroyRehabCentersOverviewMap,
+    destroyRehabMapPicker,
+    getRehabMapPickerCoords,
+    initRehabCentersOverviewMap,
+    initRehabMapPicker,
+} from './rehab-map';
 
 let rehabTable;
 let rehabDataTableClass;
 let rehabTableMode;
 let hasBoundViewportListener = false;
+let latestCenters = [];
 
 export function initRehabCentersModule() {
     const tableEl = document.getElementById('rehab-centers-table');
@@ -22,16 +32,19 @@ export function initRehabCentersModule() {
 
 export function loadRehabCenters(search = '') {
     if (!rehabTable) return;
-    axios.get('/admin/rehab-centers', { params: { search } })
+
+    axios.get('/admin/rehab-centers', { params: { search, per_page: 200 } })
         .then(({ data }) => {
+            latestCenters = data.data?.data ?? [];
             rehabTable.clear();
-            (data.data?.data ?? []).forEach((c) => {
-                rehabTable.row.add(buildRowData(c));
+            latestCenters.forEach((center) => {
+                rehabTable.row.add(buildRowData(center));
             });
             rehabTable.draw();
+            initRehabCentersOverviewMap('rehab-centers-overview-map', latestCenters);
         })
         .catch(() => {
-            Swal.fire({ icon: 'error', title: 'Rehab Centers', text: 'Failed to load listings.' });
+            showErrorToast('Failed to load rehab center listings.');
         });
 }
 
@@ -42,6 +55,8 @@ export function createRehabCenter() {
 export function editRehabCenter(id) {
     axios.get(`/admin/rehab-centers/${id}`).then(({ data }) => {
         showRehabForm(data.data);
+    }).catch(() => {
+        showErrorToast('Failed to load rehab center details.');
     });
 }
 
@@ -57,53 +72,136 @@ export function removeRehabCenter(id) {
         if (!isConfirmed) return;
         axios.delete(`/admin/rehab-centers/${id}`)
             .then(({ data }) => {
-                Swal.fire({ icon: 'success', title: 'Deleted', text: data.message });
+                showSuccessToast(data.message, 'Deleted');
                 loadRehabCenters();
             })
             .catch(({ response }) => {
-                Swal.fire({ icon: 'error', title: 'Error', text: response?.data?.message ?? 'Delete failed.' });
+                showErrorToast(response?.data?.message ?? 'Delete failed.');
             });
     });
 }
 
+function applyGeocodedFields(meta = {}) {
+    if (meta.address) {
+        const addressInput = document.getElementById('rc-address');
+        if (addressInput) {
+            addressInput.value = meta.address;
+        }
+    }
+
+    if (meta.region) {
+        const regionInput = document.getElementById('rc-region');
+        if (regionInput) {
+            regionInput.value = meta.region;
+        }
+    }
+
+    if (meta.province) {
+        const provinceInput = document.getElementById('rc-province');
+        if (provinceInput) {
+            provinceInput.value = meta.province;
+        }
+    }
+}
+
+function buildRehabCenterFormHtml(existing) {
+    const statusValue = existing?.is_active === false ? '0' : '1';
+
+    return `
+        <div class="admin-swal-form rehab-center-form">
+            <p class="admin-swal-description">Search and pin the location on the map. Address details are filled automatically from the pin.</p>
+            <div class="rehab-center-form-grid">
+                <div class="rehab-center-form-fields">
+                    <div class="admin-swal-fields">
+                        <div class="admin-swal-field">
+                            <label class="admin-swal-label" for="rc-name">Name *</label>
+                            <input id="rc-name" class="admin-swal-input" type="text" placeholder="Enter facility name" value="${escapeHtml(existing?.name ?? '')}">
+                        </div>
+                        <div class="admin-swal-field">
+                            <label class="admin-swal-label" for="rc-address">Address *</label>
+                            <textarea id="rc-address" class="admin-swal-textarea rehab-center-address-field" placeholder="Filled from map pin or edit manually">${escapeHtml(existing?.address ?? '')}</textarea>
+                        </div>
+                        <div class="admin-swal-field">
+                            <label class="admin-swal-label" for="rc-contact">Contact</label>
+                            <input id="rc-contact" class="admin-swal-input" type="text" placeholder="Enter contact details" value="${escapeHtml(existing?.contact ?? '')}">
+                        </div>
+                        <div class="admin-swal-field">
+                            <label class="admin-swal-label" for="rc-website">Website URL</label>
+                            <input id="rc-website" class="admin-swal-input" type="url" placeholder="Paste website URL" value="${escapeHtml(existing?.website ?? '')}">
+                        </div>
+                        <div class="admin-swal-field">
+                            <label class="admin-swal-label" for="rc-status">Status *</label>
+                            <select id="rc-status" class="admin-swal-select">
+                                <option value="1"${statusValue === '1' ? ' selected' : ''}>Active</option>
+                                <option value="0"${statusValue === '0' ? ' selected' : ''}>Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    <input type="hidden" id="rc-region" value="${escapeHtml(existing?.region ?? '')}">
+                    <input type="hidden" id="rc-province" value="${escapeHtml(existing?.province ?? '')}">
+                </div>
+                <div class="rehab-center-form-map">
+                    ${buildRehabMapPickerHtml()}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function showRehabForm(existing) {
     const isEdit = Boolean(existing);
+
     Swal.fire(buildSwalOptions({
         title: isEdit ? 'Edit Rehab Center' : 'Add Rehab Center',
-        html: buildSwalForm({
-            description: 'Manage directory information for the selected rehabilitation center.',
-            fields: [
-                { id: 'rc-name', label: 'Name *', placeholder: 'Enter facility name', value: existing?.name ?? '' },
-                { id: 'rc-region', label: 'Region *', placeholder: 'Enter region', value: existing?.region ?? '' },
-                { id: 'rc-province', label: 'Province *', placeholder: 'Enter province', value: existing?.province ?? '' },
-                { id: 'rc-address', label: 'Address *', placeholder: 'Enter address', value: existing?.address ?? '' },
-                { id: 'rc-contact', label: 'Contact', placeholder: 'Enter contact details', value: existing?.contact ?? '' },
-                { id: 'rc-website', label: 'Website URL', placeholder: 'Paste website URL', value: existing?.website ?? '' },
-                {
-                    id: 'rc-status',
-                    label: 'Status *',
-                    type: 'select',
-                    value: existing?.is_active === false ? '0' : '1',
-                    options: [
-                        { value: '1', label: 'Active' },
-                        { value: '0', label: 'Inactive' },
-                    ],
-                },
-            ],
-        }),
+        customClass: {
+            popup: 'admin-swal-popup admin-swal-popup-map',
+            htmlContainer: 'admin-swal-html',
+        },
+        html: buildRehabCenterFormHtml(existing),
         showCancelButton: true,
         confirmButtonText: isEdit ? 'Save Changes' : 'Create',
+        didOpen: () => {
+            const picker = initRehabMapPicker({
+                lat: existing?.latitude ?? null,
+                lng: existing?.longitude ?? null,
+                onLocationChange: (location) => applyGeocodedFields(location),
+            });
+            requestAnimationFrame(() => {
+                picker?.map?.resize();
+            });
+        },
+        willClose: () => {
+            destroyRehabMapPicker();
+        },
         preConfirm: () => {
-            const name     = document.getElementById('rc-name')?.value.trim();
-            const region   = document.getElementById('rc-region')?.value.trim();
+            const name = document.getElementById('rc-name')?.value.trim();
+            const region = document.getElementById('rc-region')?.value.trim();
             const province = document.getElementById('rc-province')?.value.trim();
-            const address  = document.getElementById('rc-address')?.value.trim();
-            if (!name || !region || !province || !address) {
-                Swal.showValidationMessage('Name, Region, Province and Address are required.');
+            const address = document.getElementById('rc-address')?.value.trim();
+            const coords = getRehabMapPickerCoords();
+
+            if (!name || !address) {
+                Swal.showValidationMessage('Name and Address are required.');
                 return false;
             }
+
+            if (!coords) {
+                Swal.showValidationMessage('Pin the exact location on the map before saving.');
+                return false;
+            }
+
+            if (!region || !province) {
+                Swal.showValidationMessage('Search and pin a location on the map to set region and province.');
+                return false;
+            }
+
             return {
-                name, region, province, address,
+                name,
+                region,
+                province,
+                address,
+                latitude: coords.latitude,
+                longitude: coords.longitude,
                 contact: document.getElementById('rc-contact')?.value.trim() || null,
                 website: document.getElementById('rc-website')?.value.trim() || null,
                 is_active: document.getElementById('rc-status')?.value === '1',
@@ -111,22 +209,23 @@ function showRehabForm(existing) {
         },
     })).then(({ isConfirmed, value }) => {
         if (!isConfirmed) return;
+
         const request = isEdit
             ? axios.put(`/admin/rehab-centers/${existing.id}`, value)
             : axios.post('/admin/rehab-centers', value);
 
         request.then(({ data }) => {
-            Swal.fire({ icon: 'success', title: isEdit ? 'Updated' : 'Created', text: data.message });
+            showSuccessToast(data.message, isEdit ? 'Updated' : 'Created');
             loadRehabCenters();
         }).catch(({ response }) => {
-            Swal.fire({ icon: 'error', title: 'Error', text: response?.data?.message ?? 'Operation failed.' });
+            showErrorToast(response?.data?.message ?? 'Operation failed.');
         });
     });
 }
 
 window.RehabCenters = {
     create: createRehabCenter,
-    edit:   editRehabCenter,
+    edit: editRehabCenter,
     remove: removeRehabCenter,
 };
 
@@ -182,6 +281,11 @@ function bindViewportListener(tableEl) {
     }
 
     hasBoundViewportListener = true;
+
+    window.addEventListener('beforeunload', () => {
+        destroyRehabCentersOverviewMap();
+        destroyRehabMapPicker();
+    });
 }
 
 function getTableMode() {
@@ -199,9 +303,8 @@ function buildColumns(mode) {
     return [
         { title: 'ID', className: 'dt-col-id' },
         { title: 'Name', className: 'dt-col-primary dt-col-name' },
-        { title: 'Region', className: 'dt-col-nowrap' },
-        { title: 'Province', className: 'dt-col-nowrap' },
         { title: 'Address', className: 'dt-col-wide' },
+        { title: 'Location', className: 'dt-col-nowrap' },
         { title: 'Status', className: 'dt-col-nowrap' },
         { title: 'Contact', className: 'dt-col-nowrap' },
         { title: 'Website', className: 'dt-col-nowrap' },
@@ -220,6 +323,10 @@ function buildRowData(center) {
         <button onclick="window.RehabCenters.remove(${center.id})" class="admin-table-action admin-table-action-danger"><i class="fas fa-trash"></i><span>Delete</span></button>
     </div>`;
 
+    const locationLabel = hasCoordinates(center)
+        ? `${Number(center.latitude).toFixed(4)}, ${Number(center.longitude).toFixed(4)}`
+        : 'Not pinned';
+
     if (rehabTableMode === 'mobile') {
         return [
             `<div class="admin-table-mobile-card">
@@ -231,9 +338,8 @@ function buildRowData(center) {
                     ${statusBadge(center.is_active)}
                 </div>
                 <div class="admin-table-mobile-details">
-                    <p><span>Region:</span> ${escapeHtml(center.region)}</p>
-                    <p><span>Province:</span> ${escapeHtml(center.province)}</p>
                     <p><span>Address:</span> ${escapeHtml(center.address)}</p>
+                    <p><span>Coordinates:</span> ${escapeHtml(locationLabel)}</p>
                     <p><span>Contact:</span> ${contactValue(center.contact)}</p>
                     <p><span>Website:</span> ${websiteValue(center.website, 'Visit website')}</p>
                 </div>
@@ -245,14 +351,19 @@ function buildRowData(center) {
     return [
         center.id,
         escapeHtml(center.name),
-        escapeHtml(center.region),
-        escapeHtml(center.province),
         escapeHtml(center.address),
+        hasCoordinates(center)
+            ? `<span class="rehab-coords-chip" title="Latitude and longitude">${escapeHtml(locationLabel)}</span>`
+            : emptyBadge('Not pinned'),
         statusBadge(center.is_active),
         contactValue(center.contact),
         websiteValue(center.website, 'Visit'),
         desktopActionsMarkup,
     ];
+}
+
+function hasCoordinates(center) {
+    return Number.isFinite(Number(center.latitude)) && Number.isFinite(Number(center.longitude));
 }
 
 function escapeHtml(value) {

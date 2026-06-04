@@ -12,6 +12,8 @@ class RehabCenter extends Model
         'region',
         'province',
         'address',
+        'latitude',
+        'longitude',
         'contact',
         'website',
         'is_active',
@@ -19,6 +21,8 @@ class RehabCenter extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     public function reviews(): HasMany

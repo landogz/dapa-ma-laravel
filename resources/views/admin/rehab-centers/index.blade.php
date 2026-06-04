@@ -19,6 +19,16 @@
             </div>
         </div>
 
+        <div class="rehab-centers-map-panel mt-6">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-800 sm:text-base">Facility map</h3>
+                    <p class="text-xs text-slate-500 sm:text-sm">Pinned locations for all rehab centers in the directory.</p>
+                </div>
+            </div>
+            <div id="rehab-centers-overview-map" class="rehab-centers-overview-map" role="application" aria-label="Rehab centers overview map"></div>
+        </div>
+
         <div class="admin-table-shell mt-6">
             <table id="rehab-centers-table" class="min-w-full text-left text-sm text-slate-700"></table>
         </div>

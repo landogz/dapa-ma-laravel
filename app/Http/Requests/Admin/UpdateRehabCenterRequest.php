@@ -18,6 +18,8 @@ class UpdateRehabCenterRequest extends FormRequest
             'region'   => ['sometimes', 'string', 'max:255'],
             'province' => ['sometimes', 'string', 'max:255'],
             'address'  => ['sometimes', 'string', 'max:512'],
+            'latitude' => ['sometimes', 'numeric', 'between:-90,90'],
+            'longitude' => ['sometimes', 'numeric', 'between:-180,180'],
             'contact'  => ['nullable', 'string', 'max:100'],
             'website'  => ['nullable', 'url', 'max:512'],
             'is_active' => ['sometimes', 'boolean'],
