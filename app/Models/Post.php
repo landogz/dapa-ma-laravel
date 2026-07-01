@@ -35,6 +35,16 @@ class Post extends Model
         return $this->hasMany(Bookmark::class);
     }
 
+    public function likes(): HasMany
+    {
+        return $this->hasMany(PostLike::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(PostComment::class);
+    }
+
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class, 'target_id')

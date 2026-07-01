@@ -9,6 +9,7 @@ use App\Http\Controllers\API\Admin\RehabCenterAdminController;
 use App\Http\Controllers\API\Admin\UserAdminController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BookmarkController;
+use App\Http\Controllers\API\PostEngagementController;
 use App\Http\Controllers\API\PostController;
 use App\Http\Controllers\API\RehabCenterController;
 use App\Http\Controllers\API\ReviewController;
@@ -54,6 +55,7 @@ Route::prefix('v1')
         Route::prefix('posts')->name('posts.')->group(function (): void {
             Route::get('/',    [PostController::class, 'index'])->name('index');
             Route::get('/{id}', [PostController::class, 'show'])->name('show');
+            Route::get('/{id}/comments', [PostEngagementController::class, 'comments'])->name('comments.index');
         });
 
         // ── Public search ────────────────────────────────────────────────
@@ -82,6 +84,10 @@ Route::prefix('v1')
             // ── Bookmarks ────────────────────────────────────────────────
             Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks.index');
             Route::post('/bookmarks', [BookmarkController::class, 'store'])->name('bookmarks.store');
+
+            // ── Post engagement (likes & comments) ───────────────────────
+            Route::post('/posts/{id}/like', [PostEngagementController::class, 'toggleLike'])->name('posts.like');
+            Route::post('/posts/{id}/comments', [PostEngagementController::class, 'storeComment'])->name('posts.comments.store');
 
             // ── Reviews ─────────────────────────────────────────────────
             Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');

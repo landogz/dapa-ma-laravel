@@ -21,6 +21,7 @@ class PostRepository
     {
         $query = Post::query()
             ->with(['category', 'author'])
+            ->withCount(['likes', 'comments'])
             ->where('status', 'published')
             ->where('publish_date', '<=', Carbon::now())
             ->latest('publish_date');
@@ -46,7 +47,9 @@ class PostRepository
 
     public function findOrFail(int $id): Post
     {
-        return Post::with(['category', 'author'])->findOrFail($id);
+        return Post::with(['category', 'author'])
+            ->withCount(['likes', 'comments'])
+            ->findOrFail($id);
     }
 
     public function create(array $data): Post

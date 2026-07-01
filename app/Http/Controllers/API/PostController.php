@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Services\PostEngagementService;
 use App\Services\PostService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ class PostController extends Controller
 {
     public function __construct(
         private readonly PostService $postService,
+        private readonly PostEngagementService $postEngagementService,
     ) {
     }
 
@@ -21,6 +23,8 @@ class PostController extends Controller
         $categorySlug = is_string($category) && $category !== '' ? $category : null;
 
         $posts = $this->postService->listPublished($perPage, $categorySlug);
+        $user = $this->postEngagementService->resolveUserFromBearer($request->bearerToken());
+        $posts = $this->postEngagementService->attachLikedState($posts, $user);
 
         return response()->json([
             'status'  => true,
@@ -29,7 +33,7 @@ class PostController extends Controller
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
         $post = $this->postService->find($id);
 
@@ -39,6 +43,9 @@ class PostController extends Controller
                 'message' => 'Post not found.',
             ], 404);
         }
+
+        $user = $this->postEngagementService->resolveUserFromBearer($request->bearerToken());
+        $post = $this->postEngagementService->attachLikedStateToPost($post, $user);
 
         return response()->json([
             'status' => true,
