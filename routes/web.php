@@ -8,6 +8,8 @@ Route::get('/', function () {
     return redirect('/admin/login');
 });
 
+Route::view('/chat', 'chat.botpress');
+
 Route::get('/admin', function () {
     return redirect('/admin/dashboard');
 });
