@@ -336,9 +336,13 @@
     z-index: 1;
 }
 
-.admin-action-tooltip-wrap:hover,
-.admin-action-tooltip-wrap:focus-within {
+.admin-action-tooltip-wrap:hover {
     z-index: 60;
+}
+
+.admin-action-tooltip-wrap--suppressed .admin-action-tooltip {
+    opacity: 0 !important;
+    visibility: hidden !important;
 }
 
 .admin-action-tooltip {
@@ -394,8 +398,7 @@
     border-color: transparent transparent transparent #fff;
 }
 
-.admin-action-tooltip-wrap:hover .admin-action-tooltip,
-.admin-action-tooltip-wrap:focus-within .admin-action-tooltip {
+.admin-action-tooltip-wrap:hover:not(.admin-action-tooltip-wrap--suppressed) .admin-action-tooltip {
     opacity: 1;
     visibility: visible;
 }

@@ -13,6 +13,7 @@ const postsById = new Map();
 let categoryOptionsCache = null;
 let postsTableMode = null;
 let postsViewportBound = false;
+let postsTooltipsBound = false;
 
 export function initPostsModule() {
     const tableEl = document.getElementById('posts-table');
@@ -20,6 +21,7 @@ export function initPostsModule() {
 
     currentUserRole = getStoredUser()?.role ?? null;
     syncPostsPageActions();
+    bindPostActionTooltips(tableEl);
 
     if (postsTable && postsTableMode === getPostsTableMode()) {
         loadPosts();
@@ -410,6 +412,33 @@ function renderPostActions(post, isMobile = false) {
             <span class="admin-action-tooltip" role="tooltip">${label}</span>
         </span>`;
     }).join('')}</div>`;
+}
+
+function bindPostActionTooltips(tableEl) {
+    if (postsTooltipsBound) {
+        return;
+    }
+
+    tableEl.addEventListener('mousedown', (event) => {
+        const wrap = event.target.closest('.admin-action-tooltip-wrap');
+        if (!wrap) {
+            return;
+        }
+
+        wrap.classList.add('admin-action-tooltip-wrap--suppressed');
+        wrap.querySelector('.admin-table-action')?.blur();
+    });
+
+    tableEl.addEventListener('mouseout', (event) => {
+        const wrap = event.target.closest('.admin-action-tooltip-wrap');
+        if (!wrap || wrap.contains(event.relatedTarget)) {
+            return;
+        }
+
+        wrap.classList.remove('admin-action-tooltip-wrap--suppressed');
+    });
+
+    postsTooltipsBound = true;
 }
 
 function bindPostsContextMenu() {
