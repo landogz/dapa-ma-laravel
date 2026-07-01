@@ -27,7 +27,7 @@
         </div>
         <p class="mt-3 text-xs text-slate-400" data-analytics-updated-at></p>
 
-        <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
             <div class="admin-stat-card admin-dashboard-summary analytics-metric-card text-left">
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0 flex-1">
@@ -84,6 +84,32 @@
                     </span>
                 </div>
             </div>
+            <div class="admin-stat-card admin-dashboard-summary analytics-metric-card text-left">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs uppercase tracking-[0.16em] text-amber-500">Ratings</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">Total Reviews</p>
+                        <p class="mt-2 text-2xl font-bold text-slate-900" data-analytics-summary="ratings-total">--</p>
+                        <p class="admin-trend" data-analytics-trend="ratings-total">–</p>
+                    </div>
+                    <span class="admin-icon-badge">
+                        <i class="fas fa-star"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="admin-stat-card admin-dashboard-summary analytics-metric-card text-left">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs uppercase tracking-[0.16em] text-amber-500">Average</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">Post Rating</p>
+                        <p class="mt-2 text-2xl font-bold text-slate-900" data-analytics-summary="ratings-average">--</p>
+                        <p class="mt-2 text-xs text-slate-500">Across all rated posts</p>
+                    </div>
+                    <span class="admin-icon-badge">
+                        <i class="fas fa-chart-line"></i>
+                    </span>
+                </div>
+            </div>
         </div>
 
         <div class="mt-6 grid gap-4 lg:gap-6 xl:grid-cols-[0.9fr_1.1fr]">
@@ -105,6 +131,10 @@
                         >
                     </div>
                     <div id="analytics-top-posts" class="mt-4"></div>
+                </div>
+                <div class="rounded-3xl border border-slate-200 p-4 sm:p-5">
+                    <p class="text-sm font-semibold text-slate-900">Top rated posts</p>
+                    <div id="analytics-top-rated-posts" class="mt-4"></div>
                 </div>
             </div>
 

@@ -13,6 +13,8 @@ class PostRepository
     {
         return Post::query()
             ->with(['category', 'author'])
+            ->withCount(['reviews'])
+            ->withAvg('reviews', 'rating')
             ->latest()
             ->paginate($perPage);
     }

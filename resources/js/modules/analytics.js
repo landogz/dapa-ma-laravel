@@ -1,5 +1,6 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { getPostRatingMetrics, renderRatingBadge, renderStars } from './shared/ratings';
 import { showErrorToast, showSuccessToast } from './shared/toast';
 
 const METRIC_COLORS = {
@@ -43,6 +44,8 @@ export function loadAnalytics() {
         .then(({ data }) => {
             const eventTypes = data.data?.by_event_type ?? [];
             const topPosts = data.data?.top_posts ?? [];
+            const topRatedPosts = data.data?.top_rated_posts ?? [];
+            const ratings = data.data?.ratings ?? null;
             const dailyCounts = data.data?.daily_counts ?? [];
             const dailyByEventType = data.data?.daily_by_event_type ?? [];
             const periodComparison = data.data?.period_comparison ?? null;
@@ -53,9 +56,11 @@ export function loadAnalytics() {
             cachedDailyCounts = Array.isArray(dailyCounts) ? dailyCounts : [];
 
             renderAnalyticsSummary(periodComparison, generatedAt, eventTypes);
+            renderRatingsSummary(ratings, periodComparison?.label ?? 'previous period');
             renderMetricSparklines(dailyByEventType, dailyCounts);
             renderEventTypeSummary(eventTypes);
             renderTopPosts(topPosts);
+            renderTopRatedPosts(topRatedPosts);
             renderDailyCounts(dailyCounts);
             initializeOverviewActivity(dailyCounts);
             renderOverviewDistribution(eventTypes);
@@ -128,6 +133,27 @@ function renderAnalyticsSummary(periodComparison, generatedAt, eventTypes = []) 
     if (updatedEl && generatedAt) {
         updatedEl.textContent = `Last updated ${formatRelativeTime(generatedAt)}`;
     }
+}
+
+function renderRatingsSummary(ratings, periodLabel = 'previous period') {
+    const total = Number(ratings?.total_reviews ?? 0);
+    const average = Number(ratings?.average_rating ?? 0);
+    const previousTotal = Number(ratings?.previous_total ?? 0);
+
+    const totalEl = document.querySelector('[data-analytics-summary="ratings-total"]');
+    const averageEl = document.querySelector('[data-analytics-summary="ratings-average"]');
+
+    if (totalEl) {
+        totalEl.textContent = total.toLocaleString();
+    }
+
+    if (averageEl) {
+        averageEl.innerHTML = average > 0
+            ? `<span class="text-amber-500">${renderStars(Math.round(average))}</span> <span class="text-slate-900">${average.toFixed(1)}</span>`
+            : '—';
+    }
+
+    updatePeriodTrend('ratings-total', total, previousTotal, periodLabel);
 }
 
 function renderMetricSparklines(dailyByEventType, filledDays) {
@@ -353,15 +379,22 @@ function renderTopPostsList(posts) {
     const rows = posts.map((post, index) => {
         const title = escapeHtml(post.post?.title ?? 'Untitled post');
         const postId = post.post?.id ?? post.post_id;
+        const { average, count } = getPostRatingMetrics(post.post ?? {});
         const titleMarkup = postId
             ? `<a href="/admin/posts?post=${encodeURIComponent(postId)}" class="admin-table-link-chip block truncate text-left" title="${title}">${title}</a>`
             : `<span class="block truncate text-left">${title}</span>`;
+        const ratingMarkup = count > 0
+            ? `<span class="shrink-0 text-[11px] font-medium text-amber-600" title="${average.toFixed(1)} · ${count}">${renderStars(Math.round(average))} ${average.toFixed(1)}</span>`
+            : '<span class="shrink-0 text-[11px] text-slate-400">—</span>';
 
         return `
             <div class="flex items-center gap-3 border-b border-slate-100 py-2 last:border-0" data-analytics-post-row>
                 <span class="w-5 text-xs font-bold text-slate-400">${index + 1}</span>
                 <div class="min-w-0 flex-1">${titleMarkup}</div>
-                <span class="shrink-0 text-xs font-semibold text-[#055498]">${formatViewCount(post.views)}</span>
+                <div class="flex shrink-0 flex-col items-end gap-0.5">
+                    <span class="text-xs font-semibold text-[#055498]">${formatViewCount(post.views)} views</span>
+                    ${ratingMarkup}
+                </div>
             </div>
         `;
     }).join('');
@@ -375,6 +408,36 @@ function renderTopPostsList(posts) {
             </a>
         </div>
     `;
+}
+
+function renderTopRatedPosts(posts) {
+    const container = document.getElementById('analytics-top-rated-posts');
+
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(posts) || posts.length === 0) {
+        container.innerHTML = '<p class="text-sm text-slate-400">No rated posts yet. Ratings will appear here once users review content.</p>';
+
+        return;
+    }
+
+    container.innerHTML = posts.map((post, index) => {
+        const title = escapeHtml(post.title ?? 'Untitled post');
+        const postId = post.id;
+        const titleMarkup = postId
+            ? `<a href="/admin/posts?post=${encodeURIComponent(postId)}" class="admin-table-link-chip block truncate text-left" title="${title}">${title}</a>`
+            : `<span class="block truncate text-left">${title}</span>`;
+
+        return `
+            <div class="flex items-center gap-3 border-b border-slate-100 py-2 last:border-0">
+                <span class="w-5 text-xs font-bold text-slate-400">${index + 1}</span>
+                <div class="min-w-0 flex-1">${titleMarkup}</div>
+                <div class="shrink-0">${renderRatingBadge(post, { compact: true })}</div>
+            </div>
+        `;
+    }).join('');
 }
 
 function bindTopPostsSearch() {
@@ -745,18 +808,22 @@ function renderOverviewTopPosts(posts) {
         return;
     }
 
-    container.innerHTML = posts.slice(0, 5).map((post, index) => `
+    container.innerHTML = posts.slice(0, 5).map((post, index) => {
+        const { average, count } = getPostRatingMetrics(post.post ?? {});
+
+        return `
         <div class="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
             <div class="flex items-center gap-4">
                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#055498]/10 text-sm font-bold text-[#055498]">${index + 1}</span>
                 <div>
                     <p class="text-sm font-semibold text-slate-900">${post.post?.title ?? 'Untitled Post'}</p>
-                    <p class="text-xs text-slate-500">Viewed content</p>
+                    <p class="text-xs text-slate-500">Viewed content${count > 0 ? ` · ${average.toFixed(1)} ★` : ''}</p>
                 </div>
             </div>
             <span class="text-sm font-semibold text-[#055498]">${formatViewCount(post.views)}</span>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function initializeOverviewActivity(days) {

@@ -4,6 +4,7 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
 import { buildSwalForm, buildSwalOptions } from './shared/swal-forms';
+import { renderRatingBadge } from './shared/ratings';
 import { showSuccessToast, showErrorToast } from './shared/toast';
 
 let postsTable;
@@ -483,6 +484,7 @@ async function initializePostsTable(tableEl) {
                 { title: 'Status', className: 'dt-col-nowrap' },
                 { title: 'Author', className: 'dt-col-nowrap' },
                 { title: 'Publish Date', className: 'dt-col-nowrap' },
+                { title: 'Rating', className: 'dt-col-nowrap' },
                 { title: 'Actions', orderable: false, className: 'dt-col-actions' },
             ],
     }));
@@ -529,6 +531,7 @@ function buildPostRowData(post) {
                     <p><span>Category:</span> ${escapeHtml(post.category?.name ?? 'Uncategorized')}</p>
                     <p><span>Author:</span> ${escapeHtml(post.author?.name ?? 'N/A')}</p>
                     <p><span>Publish Date:</span> ${escapeHtml(formatDateTime(post.publish_date) || 'Not scheduled')}</p>
+                    <p><span>Rating:</span> ${renderRatingBadge(post, { compact: true })}</p>
                 </div>
             </div>`,
             renderPostActions(post, true),
@@ -542,6 +545,7 @@ function buildPostRowData(post) {
         statusBadge(post.status),
         escapeHtml(post.author?.name ?? '—'),
         escapeHtml(formatDateTime(post.publish_date) || '—'),
+        renderRatingBadge(post),
         actionButtons(post),
     ];
 }

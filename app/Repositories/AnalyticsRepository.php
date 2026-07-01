@@ -3,6 +3,8 @@
 namespace App\Repositories;
 
 use App\Models\AnalyticsEvent;
+use App\Models\Post;
+use App\Models\Review;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +33,49 @@ class AnalyticsRepository
             ->groupBy('post_id')
             ->orderByDesc('views')
             ->limit($limit)
-            ->with('post:id,title')
+            ->with(['post' => function ($query) {
+                $query->select('id', 'title')
+                    ->withCount('reviews')
+                    ->withAvg('reviews', 'rating');
+            }])
+            ->get();
+    }
+
+    public function ratingSummary(int $days = 30): array
+    {
+        $baseQuery = Review::query()
+            ->where('target_type', Post::class)
+            ->where('created_at', '>=', now()->subDays($days));
+
+        $total = (clone $baseQuery)->count();
+        $average = (float) (clone $baseQuery)->avg('rating');
+
+        $previousStart = now()->subDays($days * 2);
+        $previousEnd = now()->subDays($days);
+        $previousQuery = Review::query()
+            ->where('target_type', Post::class)
+            ->where('created_at', '>=', $previousStart)
+            ->where('created_at', '<', $previousEnd);
+
+        $previousTotal = $previousQuery->count();
+
+        return [
+            'total_reviews'  => $total,
+            'average_rating' => round($average, 1),
+            'previous_total' => $previousTotal,
+        ];
+    }
+
+    public function topRatedPosts(int $limit = 10): Collection
+    {
+        return Post::query()
+            ->select(['id', 'title'])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
+            ->whereHas('reviews')
+            ->orderByDesc('reviews_avg_rating')
+            ->orderByDesc('reviews_count')
+            ->limit($limit)
             ->get();
     }
 

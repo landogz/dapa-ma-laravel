@@ -17,6 +17,8 @@ class AnalyticsService
         return [
             'by_event_type'        => $this->analyticsRepository->countByEventType($days),
             'top_posts'            => $this->analyticsRepository->topPosts(10, $days),
+            'top_rated_posts'      => $this->analyticsRepository->topRatedPosts(10),
+            'ratings'              => $this->analyticsRepository->ratingSummary($days),
             'daily_counts'         => $this->analyticsRepository->dailyEventCountsFilled($days),
             'daily_by_event_type'  => $this->analyticsRepository->dailyCountsByEventType($days),
             'period_comparison'    => $this->analyticsRepository->periodComparison($days),
