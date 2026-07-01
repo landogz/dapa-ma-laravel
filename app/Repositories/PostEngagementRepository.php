@@ -65,4 +65,25 @@ class PostEngagementRepository
             'body'    => $body,
         ])->load('user:id,name');
     }
+
+    public function findCommentForPost(int $commentId, int $postId): PostComment
+    {
+        return PostComment::query()
+            ->with('user:id,name')
+            ->where('id', $commentId)
+            ->where('post_id', $postId)
+            ->firstOrFail();
+    }
+
+    public function updateComment(PostComment $comment, string $body): PostComment
+    {
+        $comment->update(['body' => $body]);
+
+        return $comment->fresh(['user:id,name']);
+    }
+
+    public function deleteComment(PostComment $comment): void
+    {
+        $comment->delete();
+    }
 }

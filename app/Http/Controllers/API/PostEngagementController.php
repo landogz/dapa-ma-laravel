@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Post\StorePostCommentRequest;
+use App\Http\Requests\Post\UpdatePostCommentRequest;
 use App\Services\PostEngagementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,5 +52,41 @@ class PostEngagementController extends Controller
             'message' => 'Comment posted successfully.',
             'data'    => $comment,
         ], 201);
+    }
+
+    public function updateComment(
+        UpdatePostCommentRequest $request,
+        int $id,
+        int $commentId,
+    ): JsonResponse {
+        $comment = $this->postEngagementService->updateComment(
+            $request->user(),
+            $id,
+            $commentId,
+            $request->validated('body'),
+        );
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Comment updated successfully.',
+            'data'    => $comment,
+        ]);
+    }
+
+    public function destroyComment(Request $request, int $id, int $commentId): JsonResponse
+    {
+        $commentsCount = $this->postEngagementService->deleteComment(
+            $request->user(),
+            $id,
+            $commentId,
+        );
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Comment deleted successfully.',
+            'data'    => [
+                'comments_count' => $commentsCount,
+            ],
+        ]);
     }
 }

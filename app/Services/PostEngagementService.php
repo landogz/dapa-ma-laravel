@@ -118,4 +118,40 @@ class PostEngagementService
 
         return $this->postEngagementRepository->createComment($user, $post, $body);
     }
+
+    public function updateComment(User $user, int $postId, int $commentId, string $body): PostComment
+    {
+        $post = $this->postRepository->findOrFail($postId);
+
+        if ($post->status !== 'published') {
+            abort(404, 'Post not found.');
+        }
+
+        $comment = $this->postEngagementRepository->findCommentForPost($commentId, $postId);
+
+        if ($comment->user_id !== $user->id) {
+            abort(403, 'You can only edit your own comments.');
+        }
+
+        return $this->postEngagementRepository->updateComment($comment, $body);
+    }
+
+    public function deleteComment(User $user, int $postId, int $commentId): int
+    {
+        $post = $this->postRepository->findOrFail($postId);
+
+        if ($post->status !== 'published') {
+            abort(404, 'Post not found.');
+        }
+
+        $comment = $this->postEngagementRepository->findCommentForPost($commentId, $postId);
+
+        if ($comment->user_id !== $user->id) {
+            abort(403, 'You can only delete your own comments.');
+        }
+
+        $this->postEngagementRepository->deleteComment($comment);
+
+        return $post->comments()->count();
+    }
 }
