@@ -379,20 +379,19 @@ function renderTopPostsList(posts) {
     const rows = posts.map((post, index) => {
         const title = escapeHtml(post.post?.title ?? 'Untitled post');
         const postId = post.post?.id ?? post.post_id;
-        const { average, count } = getPostRatingMetrics(post.post ?? {});
         const titleMarkup = postId
             ? `<a href="/admin/posts?post=${encodeURIComponent(postId)}" class="admin-table-link-chip block truncate text-left" title="${title}">${title}</a>`
             : `<span class="block truncate text-left">${title}</span>`;
-        const ratingMarkup = count > 0
-            ? `<span class="shrink-0 text-[11px] font-medium text-amber-600" title="${average.toFixed(1)} · ${count}">${renderStars(Math.round(average))} ${average.toFixed(1)}</span>`
-            : '<span class="shrink-0 text-[11px] text-slate-400">—</span>';
+        const ratingMarkup = getPostRatingMetrics(post.post ?? {}).count > 0
+            ? `<span class="shrink-0">${renderRatingBadge(post.post ?? {}, { compact: true })}</span>`
+            : '<span class="shrink-0 text-[11px] text-slate-400">No ratings</span>';
 
         return `
             <div class="flex items-center gap-3 border-b border-slate-100 py-2 last:border-0" data-analytics-post-row>
-                <span class="w-5 text-xs font-bold text-slate-400">${index + 1}</span>
+                <span class="w-5 shrink-0 text-xs font-bold text-slate-400">${index + 1}</span>
                 <div class="min-w-0 flex-1">${titleMarkup}</div>
-                <div class="flex shrink-0 flex-col items-end gap-0.5">
-                    <span class="text-xs font-semibold text-[#055498]">${formatViewCount(post.views)} views</span>
+                <div class="flex shrink-0 flex-col items-end gap-1 text-right">
+                    <span class="text-xs font-semibold text-[#055498]">${formatViewCount(post.views)}</span>
                     ${ratingMarkup}
                 </div>
             </div>
