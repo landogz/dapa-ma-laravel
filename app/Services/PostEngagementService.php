@@ -16,6 +16,7 @@ class PostEngagementService
     public function __construct(
         private readonly PostEngagementRepository $postEngagementRepository,
         private readonly PostRepository $postRepository,
+        private readonly ProfileService $profileService,
     ) {
     }
 
@@ -105,18 +106,49 @@ class PostEngagementService
             abort(404, 'Post not found.');
         }
 
-        return $this->postEngagementRepository->listComments($post, $perPage);
+        $paginator = $this->postEngagementRepository->listComments($post, $perPage);
+        $replyComments = $this->postEngagementRepository->listReplyCommentsForPost($post);
+
+        $paginator->getCollection()->transform(function (PostComment $root) use ($replyComments) {
+            $this->enrichCommentUser($root);
+            $root->setAttribute(
+                'replies',
+                $this->buildReplyTree($replyComments, $root->id),
+            );
+
+            return $root;
+        });
+
+        return $paginator;
     }
 
-    public function createComment(User $user, int $postId, string $body): PostComment
-    {
+    public function createComment(
+        User $user,
+        int $postId,
+        string $body,
+        ?int $parentId = null,
+    ): PostComment {
         $post = $this->postRepository->findOrFail($postId);
 
         if ($post->status !== 'published') {
             abort(422, 'Only published posts can be commented on.');
         }
 
-        return $this->postEngagementRepository->createComment($user, $post, $body);
+        if ($parentId !== null) {
+            $this->postEngagementRepository->findCommentForPost($parentId, $postId);
+        }
+
+        $comment = $this->postEngagementRepository->createComment(
+            $user,
+            $post,
+            $body,
+            $parentId,
+        );
+
+        $this->enrichCommentUser($comment);
+        $comment->setAttribute('replies', []);
+
+        return $comment;
     }
 
     public function updateComment(User $user, int $postId, int $commentId, string $body): PostComment
@@ -133,7 +165,10 @@ class PostEngagementService
             abort(403, 'You can only edit your own comments.');
         }
 
-        return $this->postEngagementRepository->updateComment($comment, $body);
+        $updated = $this->postEngagementRepository->updateComment($comment, $body);
+        $this->enrichCommentUser($updated);
+
+        return $updated;
     }
 
     public function deleteComment(User $user, int $postId, int $commentId): int
@@ -153,5 +188,37 @@ class PostEngagementService
         $this->postEngagementRepository->deleteComment($comment);
 
         return $post->comments()->count();
+    }
+
+    /**
+     * @return array<int, PostComment>
+     */
+    private function buildReplyTree(Collection $comments, int $parentId): array
+    {
+        return $comments
+            ->where('parent_id', $parentId)
+            ->map(function (PostComment $comment) use ($comments) {
+                $this->enrichCommentUser($comment);
+                $comment->setAttribute(
+                    'replies',
+                    $this->buildReplyTree($comments, $comment->id),
+                );
+
+                return $comment;
+            })
+            ->values()
+            ->all();
+    }
+
+    private function enrichCommentUser(PostComment $comment): void
+    {
+        if (! $comment->relationLoaded('user') || ! $comment->user) {
+            return;
+        }
+
+        $comment->user->setAttribute(
+            'profile_image_url',
+            $this->profileService->profileImageUrl($comment->user),
+        );
     }
 }

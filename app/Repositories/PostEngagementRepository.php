@@ -51,25 +51,41 @@ class PostEngagementRepository
     public function listComments(Post $post, int $perPage = 20): LengthAwarePaginator
     {
         return PostComment::query()
-            ->with('user:id,name')
+            ->with('user:id,name,profile_image_url')
             ->where('post_id', $post->id)
+            ->whereNull('parent_id')
             ->latest()
             ->paginate($perPage);
     }
 
-    public function createComment(User $user, Post $post, string $body): PostComment
+    public function listReplyCommentsForPost(Post $post): Collection
     {
+        return PostComment::query()
+            ->with('user:id,name,profile_image_url')
+            ->where('post_id', $post->id)
+            ->whereNotNull('parent_id')
+            ->orderBy('created_at')
+            ->get();
+    }
+
+    public function createComment(
+        User $user,
+        Post $post,
+        string $body,
+        ?int $parentId = null,
+    ): PostComment {
         return PostComment::create([
-            'user_id' => $user->id,
-            'post_id' => $post->id,
-            'body'    => $body,
-        ])->load('user:id,name');
+            'user_id'   => $user->id,
+            'post_id'   => $post->id,
+            'parent_id' => $parentId,
+            'body'      => $body,
+        ])->load('user:id,name,profile_image_url');
     }
 
     public function findCommentForPost(int $commentId, int $postId): PostComment
     {
         return PostComment::query()
-            ->with('user:id,name')
+            ->with('user:id,name,profile_image_url')
             ->where('id', $commentId)
             ->where('post_id', $postId)
             ->firstOrFail();
@@ -79,7 +95,7 @@ class PostEngagementRepository
     {
         $comment->update(['body' => $body]);
 
-        return $comment->fresh(['user:id,name']);
+        return $comment->fresh(['user:id,name,profile_image_url']);
     }
 
     public function deleteComment(PostComment $comment): void

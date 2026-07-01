@@ -45,6 +45,7 @@ class PostEngagementController extends Controller
             $request->user(),
             $id,
             $request->validated('body'),
+            $request->validated('parent_id'),
         );
 
         return response()->json([
