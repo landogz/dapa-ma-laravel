@@ -53,9 +53,13 @@ Route::prefix('v1')
 
         // ── Public content ────────────────────────────────────────────────
         Route::prefix('posts')->name('posts.')->group(function (): void {
-            Route::get('/',    [PostController::class, 'index'])->name('index');
-            Route::get('/{id}', [PostController::class, 'show'])->name('show');
-            Route::get('/{id}/comments', [PostEngagementController::class, 'comments'])->name('comments.index');
+            Route::get('/', [PostController::class, 'index'])->name('index');
+            Route::get('/{id}/comments', [PostEngagementController::class, 'comments'])
+                ->whereNumber('id')
+                ->name('comments.index');
+            Route::get('/{id}', [PostController::class, 'show'])
+                ->whereNumber('id')
+                ->name('show');
         });
 
         // ── Public search ────────────────────────────────────────────────
@@ -86,8 +90,12 @@ Route::prefix('v1')
             Route::post('/bookmarks', [BookmarkController::class, 'store'])->name('bookmarks.store');
 
             // ── Post engagement (likes & comments) ───────────────────────
-            Route::post('/posts/{id}/like', [PostEngagementController::class, 'toggleLike'])->name('posts.like');
-            Route::post('/posts/{id}/comments', [PostEngagementController::class, 'storeComment'])->name('posts.comments.store');
+            Route::post('/posts/{id}/like', [PostEngagementController::class, 'toggleLike'])
+                ->whereNumber('id')
+                ->name('posts.like');
+            Route::post('/posts/{id}/comments', [PostEngagementController::class, 'storeComment'])
+                ->whereNumber('id')
+                ->name('posts.comments.store');
 
             // ── Reviews ─────────────────────────────────────────────────
             Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');
