@@ -10,12 +10,24 @@ class UserService
 {
     public function __construct(
         private readonly UserRepository $userRepository,
+        private readonly ProfileService $profileService,
     ) {
     }
 
     public function listPaginated(int $perPage = 15): LengthAwarePaginator
     {
-        return $this->userRepository->paginate($perPage);
+        $paginator = $this->userRepository->paginate($perPage);
+
+        $paginator->getCollection()->transform(function (User $user): User {
+            $user->setAttribute(
+                'profile_image_url',
+                $this->profileService->profileImageUrl($user),
+            );
+
+            return $user;
+        });
+
+        return $paginator;
     }
 
     public function createAdminUser(array $data): User

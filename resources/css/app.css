@@ -411,6 +411,40 @@
     width: 100%;
 }
 
+.admin-user-avatar {
+    display: inline-flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 9999px;
+    border: 2px solid rgba(5, 84, 152, 0.12);
+    background: #123a60;
+    box-shadow: 0 4px 12px rgba(18, 58, 96, 0.12);
+}
+
+.admin-user-avatar-img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+}
+
+.admin-user-avatar-fallback {
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.dt-container .dt-col-avatar {
+    width: 4rem;
+    min-width: 4rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
 .admin-table-link-chip {
     display: inline-flex;
     align-items: center;

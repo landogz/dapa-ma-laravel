@@ -318,6 +318,41 @@ function formatRole(role) {
         .join(' ');
 }
 
+function getUserInitials(name) {
+    const parts = String(name ?? '').trim().split(/\s+/).filter(Boolean);
+
+    if (parts.length === 0) {
+        return '?';
+    }
+
+    if (parts.length === 1) {
+        return parts[0].charAt(0).toUpperCase();
+    }
+
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+}
+
+function renderUserAvatar(user) {
+    const name = escapeHtml(user.name ?? 'User');
+    const initials = escapeHtml(getUserInitials(user.name));
+    const imageUrl = user.profile_image_url;
+
+    if (imageUrl) {
+        return `
+            <span class="admin-user-avatar" title="${name}">
+                <img
+                    src="${escapeHtml(imageUrl)}"
+                    alt="${name}"
+                    class="admin-user-avatar-img"
+                    loading="lazy"
+                >
+            </span>
+        `;
+    }
+
+    return `<span class="admin-user-avatar admin-user-avatar-fallback" title="${name}" aria-label="${name}">${initials}</span>`;
+}
+
 function getUsersTableMode() {
     return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
 }
@@ -345,6 +380,7 @@ async function initializeUsersTable(tableElement) {
             ]
             : [
                 { title: 'ID', className: 'dt-col-id' },
+                { title: 'Photo', className: 'dt-col-avatar', orderable: false },
                 { title: 'Name', className: 'dt-col-primary' },
                 { title: 'Email', className: 'dt-col-wide' },
                 { title: 'Role', className: 'dt-col-nowrap' },
@@ -385,9 +421,12 @@ function buildUserRowData(user) {
         return [
             `<div class="admin-table-mobile-card">
                 <div class="admin-table-mobile-title-row">
-                    <div>
-                        <p class="admin-table-mobile-kicker">User #${user.id}</p>
-                        <p class="admin-table-mobile-title">${escapeHtml(user.name)}</p>
+                    <div class="flex items-center gap-3 min-w-0">
+                        ${renderUserAvatar(user)}
+                        <div class="min-w-0">
+                            <p class="admin-table-mobile-kicker">User #${user.id}</p>
+                            <p class="admin-table-mobile-title">${escapeHtml(user.name)}</p>
+                        </div>
                     </div>
                     ${badge(user.role)}
                 </div>
@@ -402,6 +441,7 @@ function buildUserRowData(user) {
 
     return [
         user.id,
+        renderUserAvatar(user),
         escapeHtml(user.name),
         escapeHtml(user.email),
         badge(user.role),
