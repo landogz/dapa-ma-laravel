@@ -23,12 +23,15 @@ export function initPostsModule() {
     if (postsTable && postsTableMode === getPostsTableMode()) {
         loadPosts();
         bindPostsContextMenu();
+        openPostFromQueryParam();
+
         return;
     }
 
     initializePostsTable(tableEl).then(() => {
         loadPosts();
         bindPostsContextMenu();
+        openPostFromQueryParam();
     });
 
     bindPostsViewportListener(tableEl);
@@ -56,6 +59,7 @@ export function loadPosts() {
                 });
 
                 postsTable.draw();
+                openPostFromQueryParam();
             } catch (renderError) {
                 // eslint-disable-next-line no-console
                 console.error('Error rendering posts table', renderError);
@@ -148,6 +152,23 @@ export async function promptEditPost(postId) {
 
     showSuccessToast(result.value.message, 'Post updated');
     loadPosts();
+}
+
+let pendingPostQueryHandled = false;
+
+function openPostFromQueryParam() {
+    if (pendingPostQueryHandled) {
+        return;
+    }
+
+    const postId = new URLSearchParams(window.location.search).get('post');
+
+    if (!postId || !postsById.has(String(postId))) {
+        return;
+    }
+
+    pendingPostQueryHandled = true;
+    promptEditPost(postId);
 }
 
 async function submitPostPayload(payload, { postId = null } = {}) {

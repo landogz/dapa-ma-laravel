@@ -14,6 +14,7 @@ class AnalyticsEventController extends Controller
         $data = $request->validate([
             'event_type' => ['required', 'string', 'max:100'],
             'post_id'    => ['nullable', 'integer', 'exists:posts,id'],
+            'platform'   => ['nullable', 'string', 'in:android,ios,web'],
         ]);
 
         AnalyticsEvent::query()->create([
@@ -21,6 +22,7 @@ class AnalyticsEventController extends Controller
             'post_id'    => $data['post_id'] ?? null,
             'user_id'    => optional($request->user())->id,
             'session_id' => $request->header('X-Session-Id') ?: $request->session()->getId(),
+            'platform'   => $data['platform'] ?? null,
         ]);
 
         return response()->json([

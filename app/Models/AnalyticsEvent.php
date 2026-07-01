@@ -12,6 +12,7 @@ class AnalyticsEvent extends Model
         'post_id',
         'user_id',
         'session_id',
+        'platform',
     ];
 
     public function post(): BelongsTo

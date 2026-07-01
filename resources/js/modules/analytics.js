@@ -1,7 +1,24 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { showErrorToast, showSuccessToast } from './shared/toast';
+
+const METRIC_COLORS = {
+    views: '#055498',
+    bookmarks: '#10B981',
+    searches: '#7C3AED',
+    shares: '#F97316',
+};
+
+const DEVICE_COLORS = {
+    android: '#16A34A',
+    ios: '#055498',
+    web: '#F97316',
+    other: '#64748B',
+};
 
 let cachedDailyCounts = [];
+let cachedTopPosts = [];
+let topPostsSearchBound = false;
 
 export function initAnalyticsModule() {
     initializeAnalyticsRange();
@@ -27,12 +44,16 @@ export function loadAnalytics() {
             const eventTypes = data.data?.by_event_type ?? [];
             const topPosts = data.data?.top_posts ?? [];
             const dailyCounts = data.data?.daily_counts ?? [];
+            const dailyByEventType = data.data?.daily_by_event_type ?? [];
+            const periodComparison = data.data?.period_comparison ?? null;
             const recentEvents = data.data?.recent_events ?? [];
             const devices = data.data?.devices ?? null;
+            const generatedAt = data.data?.generated_at ?? null;
 
             cachedDailyCounts = Array.isArray(dailyCounts) ? dailyCounts : [];
 
-            renderAnalyticsSummary(eventTypes);
+            renderAnalyticsSummary(periodComparison, generatedAt, eventTypes);
+            renderMetricSparklines(dailyByEventType, dailyCounts);
             renderEventTypeSummary(eventTypes);
             renderTopPosts(topPosts);
             renderDailyCounts(dailyCounts);
@@ -42,8 +63,11 @@ export function loadAnalytics() {
             renderOverviewRecentActivity(recentEvents);
             renderDeviceBreakdown(devices);
         })
-        .catch(() => {
-            Swal.fire({ icon: 'error', title: 'Analytics', text: 'Failed to load analytics data.' });
+        .catch((error) => {
+            showErrorToast(
+                error.response?.data?.message ?? 'Failed to load analytics data.',
+                'Analytics',
+            );
         });
 }
 
@@ -76,20 +100,10 @@ function summarizeEventTypes(events) {
     return summary;
 }
 
-function renderAnalyticsSummary(events) {
-    const summary = summarizeEventTypes(events);
-    const storageKey = 'dape-analytics-summary';
-    let previous = {};
-
-    try {
-        const raw = window.localStorage.getItem(storageKey);
-
-        if (raw) {
-            previous = JSON.parse(raw);
-        }
-    } catch {
-        previous = {};
-    }
+function renderAnalyticsSummary(periodComparison, generatedAt, eventTypes = []) {
+    const current = periodComparison?.current ?? summarizeEventTypes(eventTypes);
+    const previous = periodComparison?.previous ?? {};
+    const periodLabel = periodComparison?.label ?? 'previous period';
 
     const setValue = (key, value) => {
         const el = document.querySelector(`[data-analytics-summary="${key}"]`);
@@ -99,21 +113,103 @@ function renderAnalyticsSummary(events) {
         }
     };
 
-    setValue('views', summary.views);
-    setValue('bookmarks', summary.bookmarks);
-    setValue('searches', summary.searches);
-    setValue('shares', summary.shares);
+    setValue('views', current.views ?? 0);
+    setValue('bookmarks', current.bookmarks ?? 0);
+    setValue('searches', current.searches ?? 0);
+    setValue('shares', current.shares ?? 0);
 
-    updateAnalyticsTrend('views', summary.views, previous.views);
-    updateAnalyticsTrend('bookmarks', summary.bookmarks, previous.bookmarks);
-    updateAnalyticsTrend('searches', summary.searches, previous.searches);
-    updateAnalyticsTrend('shares', summary.shares, previous.shares);
+    updatePeriodTrend('views', current.views ?? 0, previous.views ?? 0, periodLabel);
+    updatePeriodTrend('bookmarks', current.bookmarks ?? 0, previous.bookmarks ?? 0, periodLabel);
+    updatePeriodTrend('searches', current.searches ?? 0, previous.searches ?? 0, periodLabel);
+    updatePeriodTrend('shares', current.shares ?? 0, previous.shares ?? 0, periodLabel);
 
-    try {
-        window.localStorage.setItem(storageKey, JSON.stringify(summary));
-    } catch {
-        // ignore storage issues
+    const updatedEl = document.querySelector('[data-analytics-updated-at]');
+
+    if (updatedEl && generatedAt) {
+        updatedEl.textContent = `Last updated ${formatRelativeTime(generatedAt)}`;
     }
+}
+
+function renderMetricSparklines(dailyByEventType, filledDays) {
+    const sparklines = buildMetricSparklineSeries(dailyByEventType, filledDays);
+
+    Object.entries(sparklines).forEach(([metric, values]) => {
+        const container = document.querySelector(`[data-analytics-sparkline="${metric}"]`);
+
+        if (!container) {
+            return;
+        }
+
+        container.innerHTML = buildSparklineSvg(values, METRIC_COLORS[metric] ?? '#055498');
+    });
+}
+
+function buildMetricSparklineSeries(dailyByEventType, filledDays) {
+    const metrics = ['views', 'bookmarks', 'searches', 'shares'];
+    const series = Object.fromEntries(metrics.map((metric) => [metric, []]));
+
+    filledDays.forEach((day) => {
+        const date = String(day.date);
+        const dayRows = dailyByEventType.filter((row) => String(row.date) === date);
+
+        metrics.forEach((metric) => {
+            let total = 0;
+
+            dayRows.forEach((row) => {
+                if (categorizeEventType(row.event_type) === metric) {
+                    total += Number(row.total) || 0;
+                }
+            });
+
+            series[metric].push(total);
+        });
+    });
+
+    return series;
+}
+
+function buildSparklineSvg(values, color) {
+    if (!values.length) {
+        return '';
+    }
+
+    const width = 200;
+    const height = 64;
+    const max = Math.max(...values, 1);
+    const points = values.map((value, index) => {
+        const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * width;
+        const y = height - ((Number(value) / max) * (height - 8)) - 4;
+
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+
+    return `
+        <svg viewBox="0 0 ${width} ${height}" class="analytics-sparkline" aria-hidden="true">
+            <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+        </svg>
+    `;
+}
+
+function categorizeEventType(eventType) {
+    const type = String(eventType || '').toLowerCase();
+
+    if (type.includes('view')) {
+        return 'views';
+    }
+
+    if (type.includes('bookmark')) {
+        return 'bookmarks';
+    }
+
+    if (type.includes('search')) {
+        return 'searches';
+    }
+
+    if (type.includes('share')) {
+        return 'shares';
+    }
+
+    return '';
 }
 
 export function exportAnalyticsCsvWithRange() {
@@ -138,20 +234,33 @@ export function exportAnalyticsCsvWithRange() {
             cancelButton: 'admin-swal-button',
             validationMessage: 'admin-swal-validation',
         },
-    }).then((result) => {
+    }).then(async (result) => {
         if (!result.isConfirmed) {
             return;
         }
 
         const range = result.value || '30';
-        const url = new URL(`${window.axios.defaults.baseURL}/admin/analytics/export`, window.location.origin);
 
-        url.searchParams.set('range', range);
+        try {
+            const response = await axios.get('/admin/analytics/export', {
+                params: { range },
+                responseType: 'blob',
+            });
 
-        const anchor = document.createElement('a');
-        anchor.href = url.toString();
-        anchor.download = `dape-ma-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
-        anchor.click();
+            const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = downloadUrl;
+            anchor.download = `dape-ma-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+            anchor.click();
+            window.URL.revokeObjectURL(downloadUrl);
+            showSuccessToast('Analytics CSV downloaded.', 'Export ready');
+        } catch (error) {
+            showErrorToast(
+                error.response?.data?.message ?? 'Failed to export analytics data.',
+                'Export failed',
+            );
+        }
     });
 }
 
@@ -168,10 +277,10 @@ function renderEventTypeSummary(events) {
     const summary = summarizeEventTypes(events);
 
     const types = [
-        { key: 'views', label: 'Views', color: '#055498' },
-        { key: 'bookmarks', label: 'Bookmarks', color: '#10B981' },
-        { key: 'searches', label: 'Searches', color: '#0EA5E9' },
-        { key: 'shares', label: 'Shares', color: '#F97316' },
+        { key: 'views', label: 'Views', color: METRIC_COLORS.views },
+        { key: 'bookmarks', label: 'Bookmarks', color: METRIC_COLORS.bookmarks },
+        { key: 'searches', label: 'Searches', color: METRIC_COLORS.searches },
+        { key: 'shares', label: 'Shares', color: METRIC_COLORS.shares },
     ];
 
     const rows = types.map((type) => {
@@ -202,96 +311,205 @@ function renderEventTypeSummary(events) {
 }
 
 function renderTopPosts(posts) {
-    const container = document.getElementById('analytics-top-posts');
-    if (!container) return;
+    cachedTopPosts = Array.isArray(posts) ? posts : [];
+    bindTopPostsSearch();
 
-    if (!posts.length) {
+    const query = document.getElementById('analytics-top-posts-search')?.value?.trim().toLowerCase() ?? '';
+    const filtered = query
+        ? cachedTopPosts.filter((post) => String(post.post?.title ?? '').toLowerCase().includes(query))
+        : cachedTopPosts;
+
+    renderTopPostsList(filtered);
+}
+
+function renderTopPostsList(posts) {
+    const container = document.getElementById('analytics-top-posts');
+    const searchInput = document.getElementById('analytics-top-posts-search');
+
+    if (!container) {
+        return;
+    }
+
+    if (!cachedTopPosts.length) {
+        if (searchInput) {
+            searchInput.classList.add('hidden');
+        }
+
         container.innerHTML = '<p class="text-sm text-slate-400">No viewed content yet. Top posts will appear here as users read more articles.</p>';
 
         return;
     }
 
-    container.innerHTML = posts.map((p, i) => `
-        <div class="flex items-center gap-3 py-2 border-b border-slate-100 last:border-0">
-            <span class="text-xs font-bold text-slate-400 w-5">${i + 1}</span>
-            <span class="flex-1 text-xs text-slate-700 truncate">${p.post?.title ?? '—'}</span>
-            <span class="text-xs font-semibold text-[#055498]">${Number(p.views).toLocaleString()} views</span>
+    if (searchInput) {
+        searchInput.classList.remove('hidden');
+    }
+
+    if (!posts.length) {
+        container.innerHTML = '<p class="text-sm text-slate-400">No posts match your search.</p>';
+
+        return;
+    }
+
+    const rows = posts.map((post, index) => {
+        const title = escapeHtml(post.post?.title ?? 'Untitled post');
+        const postId = post.post?.id ?? post.post_id;
+        const titleMarkup = postId
+            ? `<a href="/admin/posts?post=${encodeURIComponent(postId)}" class="admin-table-link-chip block truncate text-left" title="${title}">${title}</a>`
+            : `<span class="block truncate text-left">${title}</span>`;
+
+        return `
+            <div class="flex items-center gap-3 border-b border-slate-100 py-2 last:border-0" data-analytics-post-row>
+                <span class="w-5 text-xs font-bold text-slate-400">${index + 1}</span>
+                <div class="min-w-0 flex-1">${titleMarkup}</div>
+                <span class="shrink-0 text-xs font-semibold text-[#055498]">${formatViewCount(post.views)}</span>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div>${rows}</div>
+        <div class="mt-3 flex justify-end">
+            <a href="/admin/posts" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#055498] hover:text-[#123a60]">
+                View all posts
+                <i class="fas fa-arrow-right text-[10px]" aria-hidden="true"></i>
+            </a>
         </div>
-    `).join('');
+    `;
+}
+
+function bindTopPostsSearch() {
+    if (topPostsSearchBound) {
+        return;
+    }
+
+    const searchInput = document.getElementById('analytics-top-posts-search');
+
+    if (!searchInput) {
+        return;
+    }
+
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim().toLowerCase();
+        const filtered = query
+            ? cachedTopPosts.filter((post) => String(post.post?.title ?? '').toLowerCase().includes(query))
+            : cachedTopPosts;
+
+        renderTopPostsList(filtered);
+    });
+
+    topPostsSearchBound = true;
 }
 
 function renderDailyCounts(days) {
     const container = document.getElementById('analytics-daily-chart');
     if (!container) return;
 
+    container.innerHTML = buildActivityChartHtml(days, {
+        emptyTitle: 'Daily trend will appear here',
+        emptyMessage: 'Once more analytics events are collected, this chart will show how activity changes over time.',
+        singleTitle: 'Not enough data to show a trend',
+        singleMessage: 'At least two days of activity are required before a meaningful daily trend can be displayed.',
+    });
+}
+
+function buildActivityChartHtml(days, messages) {
     if (!days.length) {
-        container.innerHTML = `
-            <div class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center">
-                <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-                    <i class="fas fa-chart-line"></i>
-                </span>
-                <p class="text-sm font-medium text-slate-800">Daily trend will appear here</p>
-                <p class="text-xs text-slate-500">Once more analytics events are collected, this chart will show how activity changes over time.</p>
-            </div>
-        `;
-
-        return;
+        return buildAnalyticsEmptyState(messages.emptyTitle, messages.emptyMessage, 'fa-chart-line');
     }
 
-    if (days.length < 2) {
-        container.innerHTML = `
-            <div class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center">
-                <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-                    <i class="fas fa-chart-column"></i>
-                </span>
-                <p class="text-sm font-medium text-slate-800">Not enough data to show a trend</p>
-                <p class="text-xs text-slate-500">At least two days of activity are required before a meaningful daily trend can be displayed.</p>
-            </div>
-        `;
+    const hasActivity = days.some((day) => Number(day.total) > 0);
 
-        return;
+    if (!hasActivity) {
+        return buildAnalyticsEmptyState(messages.emptyTitle, messages.emptyMessage, 'fa-chart-line');
     }
 
-    const max = Math.max(...days.map((d) => Number(d.total)), 1);
-    const visibleDays = days.slice(-30);
+    const max = Math.max(...days.map((day) => Number(day.total)), 1);
+    const showAllLabels = days.length <= 14;
 
     const topLabel = max;
     const midLabel = Math.round(max / 2);
 
-    const labelPositions = new Set();
-    const len = visibleDays.length;
-
-    if (len <= 5) {
-        for (let i = 0; i < len; i += 1) {
-            labelPositions.add(i);
-        }
-    } else {
-        const steps = 4;
-
-        for (let i = 0; i <= steps; i += 1) {
-            labelPositions.add(Math.round((i * (len - 1)) / steps));
-        }
-    }
-
-    container.innerHTML = `
-        <div class="flex gap-4">
-            <div class="flex flex-col justify-between text-[11px] text-slate-400 h-40">
-                <span>${topLabel}</span>
-                <span>${midLabel}</span>
-                <span>0</span>
+    return `
+        <div class="analytics-chart-shell flex gap-3 sm:gap-4">
+            <div class="analytics-chart-y-axis flex shrink-0 gap-2">
+                <span class="analytics-chart-y-label">Events</span>
+                <div class="flex h-44 flex-col justify-between text-[11px] text-slate-400">
+                    <span>${topLabel.toLocaleString()}</span>
+                    <span>${midLabel.toLocaleString()}</span>
+                    <span>0</span>
+                </div>
             </div>
-            <div class="flex-1">
-                <div class="dashboard-activity-bars" style="--bars:${visibleDays.length}">
-                    ${visibleDays.map((day, index) => `
-                        <div class="dashboard-activity-bar">
-                            <div class="dashboard-activity-bar-fill" style="height:${Math.max(8, Math.round((Number(day.total) / max) * 160))}px"></div>
-                            <span class="text-[11px] text-slate-400">${labelPositions.has(index) ? String(day.date).slice(5) : ''}</span>
-                        </div>
-                    `).join('')}
+            <div class="analytics-chart-scroll-wrap min-w-0 flex-1">
+                <div class="analytics-chart-scroll overflow-x-auto pb-2">
+                    <div class="dashboard-activity-bars analytics-activity-bars" style="--bars:${days.length}">
+                    ${days.map((day, index) => {
+                        const total = Number(day.total) || 0;
+                        const height = total === 0 ? 4 : Math.max(8, Math.round((total / max) * 176));
+                        const label = showAllLabels || index % 2 === 0 || index === days.length - 1
+                            ? formatChartDateLabel(day.date)
+                            : '';
+                        const shortDate = formatChartDateLabel(day.date);
+                        const fullDate = formatChartDateLabel(day.date, true);
+                        const countLabel = `${total.toLocaleString()} event${total === 1 ? '' : 's'}`;
+                        const tooltipLabel = `${shortDate} · ${countLabel}`;
+                        const ariaLabel = `${fullDate}: ${countLabel}`;
+
+                        return `
+                            <div
+                                class="dashboard-activity-bar analytics-activity-bar analytics-chart-column"
+                                data-chart-bar
+                                data-chart-date="${escapeHtml(shortDate)}"
+                                data-chart-count="${escapeHtml(countLabel)}"
+                                title="${escapeHtml(tooltipLabel)}"
+                                tabindex="0"
+                                role="button"
+                                aria-label="${escapeHtml(ariaLabel)}"
+                            >
+                                <div class="analytics-chart-hitbox">
+                                    <div class="analytics-column-tooltip" role="tooltip">${escapeHtml(tooltipLabel)}</div>
+                                    <div
+                                        class="dashboard-activity-bar-fill analytics-bar-brand analytics-chart-bar${total === 0 ? ' analytics-bar-zero' : ''}"
+                                        style="height:${height}px"
+                                    ></div>
+                                </div>
+                                <span class="analytics-bar-label">${label}</span>
+                            </div>
+                        `;
+                    }).join('')}
+                    </div>
                 </div>
             </div>
         </div>
     `;
+}
+
+function buildAnalyticsEmptyState(title, message, iconClass) {
+    return `
+        <div class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center">
+            <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                <i class="fas ${iconClass}"></i>
+            </span>
+            <p class="text-sm font-medium text-slate-800">${title}</p>
+            <p class="text-xs text-slate-500">${message}</p>
+        </div>
+    `;
+}
+
+function formatChartDateLabel(dateValue, full = false) {
+    const date = new Date(`${String(dateValue).slice(0, 10)}T00:00:00`);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(dateValue).slice(5);
+    }
+
+    if (full) {
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${month}-${day}`;
 }
 
 function renderOverviewActivity(days) {
@@ -301,52 +519,12 @@ function renderOverviewActivity(days) {
         return;
     }
 
-    if (days.length === 0) {
-        container.innerHTML = '<p class="text-sm text-slate-400">No activity data available.</p>';
-
-        return;
-    }
-
-    const max = Math.max(...days.map((day) => Number(day.total)), 1);
-    const visibleDays = days.slice(-30);
-    const topLabel = max;
-    const midLabel = Math.round(max / 2);
-
-    const labelPositions = new Set();
-    const len = visibleDays.length;
-
-    if (len <= 5) {
-        for (let i = 0; i < len; i += 1) {
-            labelPositions.add(i);
-        }
-    } else {
-        // roughly 5 labels spread across the range
-        const steps = 4;
-
-        for (let i = 0; i <= steps; i += 1) {
-            labelPositions.add(Math.round((i * (len - 1)) / steps));
-        }
-    }
-
-    container.innerHTML = `
-        <div class="flex gap-4">
-            <div class="flex flex-col justify-between text-[11px] text-slate-400 h-40">
-                <span>${topLabel}</span>
-                <span>${midLabel}</span>
-                <span>0</span>
-            </div>
-            <div class="flex-1">
-                <div class="dashboard-activity-bars" style="--bars:${visibleDays.length}">
-                    ${visibleDays.map((day, index) => `
-                        <div class="dashboard-activity-bar">
-                            <div class="dashboard-activity-bar-fill" style="height:${Math.max(8, Math.round((Number(day.total) / max) * 160))}px"></div>
-                            <span class="text-[11px] text-slate-400">${labelPositions.has(index) ? String(day.date).slice(5) : ''}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        </div>
-    `;
+    container.innerHTML = buildActivityChartHtml(days.slice(-30), {
+        emptyTitle: 'No activity data available',
+        emptyMessage: 'Activity will appear here once analytics events are recorded.',
+        singleTitle: 'No activity data available',
+        singleMessage: 'Activity will appear here once analytics events are recorded.',
+    });
 }
 
 function renderOverviewDistribution(events) {
@@ -576,7 +754,7 @@ function renderOverviewTopPosts(posts) {
                     <p class="text-xs text-slate-500">Viewed content</p>
                 </div>
             </div>
-            <span class="text-sm font-semibold text-[#055498]">${Number(post.views).toLocaleString()} views</span>
+            <span class="text-sm font-semibold text-[#055498]">${formatViewCount(post.views)}</span>
         </div>
     `).join('');
 }
@@ -660,60 +838,111 @@ function initializeAnalyticsRange() {
     });
 }
 
-function updateAnalyticsTrend(key, current, previousValue) {
+function updatePeriodTrend(key, current, previousValue, periodLabel) {
     const elements = document.querySelectorAll(`[data-analytics-trend="${key}"]`);
 
     if (!elements.length) {
         return;
     }
 
-    const prev = typeof previousValue === 'number' ? previousValue : current;
-    const delta = Number(current) - Number(prev);
+    const previous = Number(previousValue) || 0;
+    const currentValue = Number(current) || 0;
+    const delta = currentValue - previous;
 
     elements.forEach((element) => {
         element.classList.remove('admin-trend-up', 'admin-trend-down', 'admin-trend-neutral');
 
         if (delta > 0) {
             element.classList.add('admin-trend', 'admin-trend-up');
-            element.textContent = `↑ ${delta} since last check`;
+            element.textContent = `+${delta.toLocaleString()} vs ${periodLabel}`;
         } else if (delta < 0) {
             element.classList.add('admin-trend', 'admin-trend-down');
-            element.textContent = `↓ ${Math.abs(delta)} since last check`;
+            element.textContent = `−${Math.abs(delta).toLocaleString()} vs ${periodLabel}`;
+        } else if (currentValue === 0 && previous === 0) {
+            element.classList.add('admin-trend', 'admin-trend-neutral');
+            element.textContent = 'No events in this range';
         } else {
             element.classList.add('admin-trend', 'admin-trend-neutral');
-            element.textContent = 'No change since last check';
+            element.textContent = `Same as ${periodLabel}`;
         }
     });
 }
 
 function renderDeviceBreakdown(devices) {
-    const androidEl = document.querySelector('[data-analytics-device="android"]');
-    const iosEl = document.querySelector('[data-analytics-device="ios"]');
+    const chartContainer = document.getElementById('analytics-device-chart');
+    const legendContainer = document.getElementById('analytics-device-legend');
     const emptyEl = document.querySelector('[data-analytics-device-empty]');
 
-    if (!androidEl || !iosEl || !emptyEl) {
+    if (!chartContainer || !legendContainer) {
         return;
     }
 
     if (!devices || !Number(devices.total)) {
-        androidEl.textContent = '--';
-        iosEl.textContent = '--';
-        emptyEl.classList.remove('hidden');
+        chartContainer.innerHTML = '';
+        legendContainer.innerHTML = '';
+        emptyEl?.classList.remove('hidden');
 
         return;
     }
 
-    const total = Number(devices.total) || 0;
-    const android = Number(devices.android) || 0;
-    const ios = Number(devices.ios) || 0;
+    emptyEl?.classList.add('hidden');
 
-    const androidPercent = total ? Math.round((android / total) * 100) : 0;
-    const iosPercent = total ? Math.round((ios / total) * 100) : 0;
+    const segments = [
+        { key: 'android', label: 'Android', value: Number(devices.android) || 0 },
+        { key: 'ios', label: 'iOS', value: Number(devices.ios) || 0 },
+        { key: 'web', label: 'Web', value: Number(devices.web) || 0 },
+        { key: 'other', label: 'Other', value: Number(devices.other) || 0 },
+    ].filter((segment) => segment.value > 0);
 
-    androidEl.textContent = `${android.toLocaleString()} (${androidPercent} %)`;
-    iosEl.textContent = `${ios.toLocaleString()} (${iosPercent} %)`;
+    const total = segments.reduce((sum, segment) => sum + segment.value, 0);
+    let start = 0;
 
-    emptyEl.classList.add('hidden');
+    const gradientSegments = segments.map((segment) => {
+        const percent = total ? (segment.value / total) * 100 : 0;
+        const color = DEVICE_COLORS[segment.key];
+        const slice = `${color} ${start}% ${start + percent}%`;
+        start += percent;
+
+        return { ...segment, percent, color, slice };
+    });
+
+    chartContainer.innerHTML = `
+        <div class="analytics-device-chart-inner">
+            <div class="dashboard-donut-chart analytics-device-donut" style="background: conic-gradient(${gradientSegments.map((segment) => segment.slice).join(', ')});"></div>
+            <div class="analytics-device-donut-center">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">Events</p>
+                <p class="text-lg font-bold leading-tight text-slate-900">${total.toLocaleString()}</p>
+                <p class="mt-0.5 text-[10px] font-medium text-slate-400">by platform</p>
+            </div>
+        </div>
+    `;
+
+    legendContainer.innerHTML = `
+        <p class="text-[11px] text-slate-500">Share of tracked events with a known platform in the selected range.</p>
+        ${gradientSegments.map((segment) => `
+        <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <span class="flex items-center gap-2">
+                <span class="inline-flex h-2.5 w-2.5 rounded-full" style="background:${segment.color}"></span>
+                ${segment.label}
+            </span>
+            <span class="font-semibold text-slate-800">${segment.value.toLocaleString()} (${Math.round(segment.percent)}%)</span>
+        </div>
+    `).join('')}`;
+}
+
+function formatViewCount(value) {
+    const count = Number(value) || 0;
+
+    return `${count.toLocaleString()} view${count === 1 ? '' : 's'}`;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }
 
 window.Analytics = { load: loadAnalytics, exportCsv: exportAnalyticsCsvWithRange };

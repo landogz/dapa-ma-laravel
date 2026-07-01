@@ -3,6 +3,7 @@ import { initAnalyticsModule } from './analytics';
 import { logout } from './auth';
 import { initNotificationsModule } from './notifications';
 import { initPostsModule } from './posts';
+import { initProfileModule } from './profile';
 import { initRehabCentersModule } from './rehab-centers/index';
 import { initUsersModule } from './users';
 
@@ -106,6 +107,12 @@ function bindShell(appRoot) {
         });
     });
 
+    window.addEventListener('admin-profile-updated', (event) => {
+        if (event.detail) {
+            renderProfile(event.detail);
+        }
+    });
+
     window.addEventListener('resize', () => {
         if (isDesktopViewport()) {
             setSidebarOpen(false);
@@ -137,18 +144,47 @@ function renderProfile(profile) {
     const nameElements = document.querySelectorAll('[data-admin-name]');
     const roleElements = document.querySelectorAll('[data-admin-role]');
     const initialElements = document.querySelectorAll('[data-admin-initials]');
+    const avatarImages = document.querySelectorAll('[data-admin-avatar-img]');
+    const displayName = buildDisplayName(profile);
 
     nameElements.forEach((element) => {
-        element.textContent = profile.name;
+        element.textContent = displayName;
     });
 
     roleElements.forEach((element) => {
         element.textContent = formatRole(profile.role);
     });
 
-    initialElements.forEach((element) => {
-        element.textContent = buildInitials(profile.name);
+    if (profile.profile_image_url && avatarImages.length > 0) {
+        avatarImages.forEach((image) => {
+            image.src = profile.profile_image_url;
+            image.classList.remove('hidden');
+        });
+
+        initialElements.forEach((element) => {
+            element.classList.add('hidden');
+        });
+
+        return;
+    }
+
+    avatarImages.forEach((image) => {
+        image.removeAttribute('src');
+        image.classList.add('hidden');
     });
+
+    initialElements.forEach((element) => {
+        element.textContent = buildInitials(displayName);
+        element.classList.remove('hidden');
+    });
+}
+
+function buildDisplayName(profile) {
+    const firstName = profile.first_name ?? '';
+    const lastName = profile.last_name ?? '';
+    const combined = `${firstName} ${lastName}`.trim();
+
+    return combined || profile.name || '';
 }
 
 function revealNavigation(allowedSections) {
@@ -266,6 +302,9 @@ function initializePageContent(pageName, allowedSections) {
             break;
         case 'admin-users':
             initUsersModule();
+            break;
+        case 'admin-profile':
+            initProfileModule();
             break;
         default:
             break;

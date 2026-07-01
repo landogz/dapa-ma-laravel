@@ -3,11 +3,14 @@
 namespace App\Repositories;
 
 use App\Models\AnalyticsEvent;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class AnalyticsRepository
 {
+    private const VIEW_EVENT_TYPES = ['post_view', 'view'];
+
     public function countByEventType(int $days = 30): Collection
     {
         return AnalyticsEvent::query()
@@ -23,7 +26,7 @@ class AnalyticsRepository
         return AnalyticsEvent::query()
             ->select('post_id', DB::raw('count(*) as views'))
             ->whereNotNull('post_id')
-            ->where('event_type', 'post_view')
+            ->whereIn('event_type', self::VIEW_EVENT_TYPES)
             ->where('created_at', '>=', now()->subDays($days))
             ->groupBy('post_id')
             ->orderByDesc('views')
@@ -45,13 +48,58 @@ class AnalyticsRepository
             ->get();
     }
 
-    public function recentEvents(int $limit = 10): Collection
+    public function dailyEventCountsFilled(int $days = 30): array
+    {
+        $raw = $this->dailyEventCounts($days)->keyBy(fn ($row) => (string) $row->date);
+        $series = [];
+
+        for ($offset = $days - 1; $offset >= 0; $offset -= 1) {
+            $date = now()->subDays($offset)->toDateString();
+            $series[] = [
+                'date'  => $date,
+                'total' => (int) ($raw[$date]->total ?? 0),
+            ];
+        }
+
+        return $series;
+    }
+
+    public function dailyCountsByEventType(int $days = 30): Collection
+    {
+        return AnalyticsEvent::query()
+            ->select(
+                DB::raw('DATE(created_at) as date'),
+                'event_type',
+                DB::raw('count(*) as total')
+            )
+            ->where('created_at', '>=', now()->subDays($days))
+            ->groupBy('date', 'event_type')
+            ->orderBy('date')
+            ->get();
+    }
+
+    public function periodComparison(int $days = 30): array
+    {
+        $now = now();
+        $currentStart = $now->copy()->subDays($days);
+        $previousStart = $now->copy()->subDays($days * 2);
+        $previousEnd = $currentStart->copy();
+
+        return [
+            'current'  => $this->metricSummaryBetween($currentStart, $now),
+            'previous' => $this->metricSummaryBetween($previousStart, $previousEnd),
+            'label'    => $days === 1 ? 'yesterday' : "previous {$days} days",
+        ];
+    }
+
+    public function recentEvents(int $limit = 10, int $days = 30): Collection
     {
         return AnalyticsEvent::query()
             ->with(['post:id,title', 'user:id,name'])
+            ->where('created_at', '>=', now()->subDays($days))
             ->orderByDesc('created_at')
             ->limit($limit)
-            ->get(['id', 'event_type', 'post_id', 'user_id', 'session_id', 'created_at']);
+            ->get(['id', 'event_type', 'post_id', 'user_id', 'session_id', 'platform', 'created_at']);
     }
 
     public function allForExport(int $days = 30): Collection
@@ -68,18 +116,61 @@ class AnalyticsRepository
         $baseQuery = AnalyticsEvent::query()
             ->where('created_at', '>=', now()->subDays($days));
 
-        $android = (clone $baseQuery)
-            ->where('event_type', 'like', '%android%')
-            ->count();
-
-        $ios = (clone $baseQuery)
-            ->where('event_type', 'like', '%ios%')
+        $android = (clone $baseQuery)->where('platform', 'android')->count();
+        $ios = (clone $baseQuery)->where('platform', 'ios')->count();
+        $web = (clone $baseQuery)->where('platform', 'web')->count();
+        $other = (clone $baseQuery)
+            ->where(function ($query) {
+                $query->whereNull('platform')
+                    ->orWhereNotIn('platform', ['android', 'ios', 'web']);
+            })
             ->count();
 
         return [
             'android' => $android,
             'ios'     => $ios,
-            'total'   => $android + $ios,
+            'web'     => $web,
+            'other'   => $other,
+            'total'   => $android + $ios + $web + $other,
         ];
+    }
+
+    private function metricSummaryBetween(Carbon $from, Carbon $to): array
+    {
+        $events = AnalyticsEvent::query()
+            ->select('event_type', DB::raw('count(*) as total'))
+            ->where('created_at', '>=', $from)
+            ->where('created_at', '<', $to)
+            ->groupBy('event_type')
+            ->get();
+
+        return $this->summarizeMetrics($events);
+    }
+
+    private function summarizeMetrics(Collection $events): array
+    {
+        $summary = [
+            'views'     => 0,
+            'bookmarks' => 0,
+            'searches'  => 0,
+            'shares'    => 0,
+        ];
+
+        foreach ($events as $event) {
+            $type = strtolower((string) $event->event_type);
+            $total = (int) $event->total;
+
+            if (str_contains($type, 'view')) {
+                $summary['views'] += $total;
+            } elseif (str_contains($type, 'bookmark')) {
+                $summary['bookmarks'] += $total;
+            } elseif (str_contains($type, 'search')) {
+                $summary['searches'] += $total;
+            } elseif (str_contains($type, 'share')) {
+                $summary['shares'] += $total;
+            }
+        }
+
+        return $summary;
     }
 }

@@ -111,6 +111,28 @@
                             </a>
                         </div>
                     @endunless
+
+                    @if (!empty($demoAccounts))
+                        <div class="admin-login-demo-accounts mt-6">
+                            <p class="admin-login-demo-title">Quick sign-in (demo)</p>
+                            <p class="admin-login-demo-hint">Tap an account to auto-fill and sign in.</p>
+                            <div class="admin-login-demo-grid">
+                                @foreach ($demoAccounts as $account)
+                                    <button
+                                        type="button"
+                                        class="admin-login-demo-account"
+                                        data-demo-login
+                                        data-demo-email="{{ $account['email'] }}"
+                                        data-demo-password="{{ $account['password'] }}"
+                                        data-demo-label="{{ $account['label'] }}"
+                                    >
+                                        <span class="admin-login-demo-account-label">{{ $account['label'] }}</span>
+                                        <span class="admin-login-demo-account-email">{{ $account['email'] }}</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
                 </section>
             </div>
         </div>

@@ -62,8 +62,12 @@
                 </a>
             </nav>
 
-            <div class="mt-auto border-t border-white/20 pt-4">
-                <button id="logout-button" type="button" class="admin-secondary-button w-full border-slate-500 bg-transparent text-white hover:bg-white/10">
+            <div class="mt-auto space-y-2 border-t border-white/20 pt-4">
+                <a href="/admin/profile" class="admin-sidebar-footer-link {{ ($activePage ?? '') === 'profile' ? 'admin-sidebar-footer-link-active' : '' }}">
+                    <i class="fas fa-user-pen text-[#FBD116]"></i>
+                    <span>Edit Profile</span>
+                </a>
+                <button id="logout-button" type="button" class="admin-sidebar-footer-button">
                     Sign Out
                 </button>
             </div>
@@ -88,13 +92,16 @@
                                 <span class="admin-notification-dot hidden" data-admin-notifications-dot></span>
                             </span>
                         </button>
-                        <div class="hidden items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 lg:flex">
-                            <span data-admin-initials class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#123a60] text-xs font-bold text-white">DM</span>
+                        <a href="/admin/profile" class="hidden items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 transition hover:border-[#055498]/30 hover:bg-[#055498]/5 lg:flex">
+                            <span data-admin-avatar class="relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#123a60]">
+                                <img data-admin-avatar-img class="hidden h-full w-full object-cover" alt="Profile photo">
+                                <span data-admin-initials class="text-xs font-bold text-white">DM</span>
+                            </span>
                             <div class="text-left">
                                 <p data-admin-name class="text-sm font-semibold text-slate-800">Loading...</p>
                                 <p data-admin-role class="text-xs text-slate-500">Loading role...</p>
                             </div>
-                        </div>
+                        </a>
                         <div id="admin-notifications-panel" class="admin-notifications-panel hidden"></div>
                     </div>
                 </div>

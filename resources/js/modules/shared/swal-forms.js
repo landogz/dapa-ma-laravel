@@ -1,3 +1,5 @@
+import { bindPasswordToggles } from './password-toggle';
+
 function escapeHtml(value = '') {
     return String(value)
         .replaceAll('&', '&amp;')
@@ -58,6 +60,21 @@ function renderField(field) {
         `;
     }
 
+    if (field.type === 'password') {
+        return `
+            <div class="admin-swal-field">
+                ${label}
+                <div class="admin-swal-password-wrap">
+                    <input id="${field.id}" class="admin-swal-input admin-swal-input-password" type="password"${placeholder}${value}${min} autocomplete="new-password">
+                    <button type="button" class="admin-swal-password-toggle" data-password-toggle="${field.id}" aria-label="Show password">
+                        <i class="fa-solid fa-eye-slash"></i>
+                    </button>
+                </div>
+                ${hint}
+            </div>
+        `;
+    }
+
     return `
         <div class="admin-swal-field">
             ${label}
@@ -79,9 +96,18 @@ export function buildSwalForm({ description = '', fields = [] }) {
 }
 
 export function buildSwalOptions(options, { danger = false } = {}) {
+    const userDidOpen = options.didOpen;
+
     return {
         ...options,
         buttonsStyling: false,
+        didOpen: (popup) => {
+            bindPasswordToggles(popup);
+
+            if (typeof userDidOpen === 'function') {
+                userDidOpen(popup);
+            }
+        },
         customClass: {
             popup: 'admin-swal-popup',
             title: 'admin-swal-title',

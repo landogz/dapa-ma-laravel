@@ -13,8 +13,11 @@ Route::get('/admin', function () {
 });
 
 Route::get('/admin/login', function () {
+    $showDemoAccounts = config('dape.show_demo_login') || app()->environment('local');
+
     return view('admin-login', [
         'hasSuperAdmin' => User::query()->where('role', 'super_admin')->exists(),
+        'demoAccounts' => $showDemoAccounts ? config('dape.demo_login_accounts', []) : [],
     ]);
 });
 
@@ -37,3 +40,5 @@ Route::get('/admin/notifications', fn () => AdminPage::render('admin.notificatio
 Route::get('/admin/analytics', fn () => AdminPage::render('admin.analytics.index', 'analytics', 'Analytics'));
 
 Route::get('/admin/users', fn () => AdminPage::render('admin.users.index', 'users', 'Users'));
+
+Route::get('/admin/profile', fn () => AdminPage::render('admin.profile.index', 'profile', 'Edit Profile'));

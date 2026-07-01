@@ -15,9 +15,9 @@
             <div class="admin-page-actions admin-page-actions-centered">
                 <div class="flex items-center gap-2 text-xs text-slate-500">
                     <span>Range:</span>
-                    <div class="inline-flex overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">
-                        <button type="button" class="px-3 py-1 text-slate-600 is-active" data-analytics-range="7">7 days</button>
-                        <button type="button" class="px-3 py-1 text-slate-500" data-analytics-range="30">30 days</button>
+                    <div class="admin-range-toggle inline-flex overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">
+                        <button type="button" class="admin-range-toggle-button is-active" data-analytics-range="7">7 days</button>
+                        <button type="button" class="admin-range-toggle-button" data-analytics-range="30">30 days</button>
                     </div>
                 </div>
                 <button type="button" class="admin-primary-button bg-amber-500 hover:bg-amber-600" data-admin-action="export-analytics">
@@ -25,54 +25,59 @@
                 </button>
             </div>
         </div>
+        <p class="mt-3 text-xs text-slate-400" data-analytics-updated-at></p>
 
         <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div class="admin-stat-card admin-dashboard-summary text-left">
-                <div class="flex items-center justify-between gap-4">
-                    <div>
+            <div class="admin-stat-card admin-dashboard-summary analytics-metric-card text-left">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
                         <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">Views</p>
                         <p class="mt-3 text-base font-semibold text-slate-900">Total Views</p>
                         <p class="mt-2 text-2xl font-bold text-slate-900" data-analytics-summary="views">--</p>
                         <p class="admin-trend" data-analytics-trend="views">–</p>
+                        <div data-analytics-sparkline="views" class="analytics-metric-sparkline mt-3" aria-hidden="true"></div>
                     </div>
                     <span class="admin-icon-badge">
                         <i class="fas fa-eye"></i>
                     </span>
                 </div>
             </div>
-            <div class="admin-stat-card admin-dashboard-summary text-left">
-                <div class="flex items-center justify-between gap-4">
-                    <div>
+            <div class="admin-stat-card admin-dashboard-summary analytics-metric-card text-left">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
                         <p class="text-xs uppercase tracking-[0.16em] text-emerald-600">Bookmarks</p>
                         <p class="mt-3 text-base font-semibold text-slate-900">Saved Content</p>
                         <p class="mt-2 text-2xl font-bold text-slate-900" data-analytics-summary="bookmarks">--</p>
                         <p class="admin-trend" data-analytics-trend="bookmarks">–</p>
+                        <div data-analytics-sparkline="bookmarks" class="analytics-metric-sparkline mt-3" aria-hidden="true"></div>
                     </div>
                     <span class="admin-icon-badge">
                         <i class="fas fa-bookmark"></i>
                     </span>
                 </div>
             </div>
-            <div class="admin-stat-card admin-dashboard-summary text-left">
-                <div class="flex items-center justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-sky-600">Searches</p>
+            <div class="admin-stat-card admin-dashboard-summary analytics-metric-card text-left">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs uppercase tracking-[0.16em] text-violet-600">Searches</p>
                         <p class="mt-3 text-base font-semibold text-slate-900">Total Searches</p>
                         <p class="mt-2 text-2xl font-bold text-slate-900" data-analytics-summary="searches">--</p>
                         <p class="admin-trend" data-analytics-trend="searches">–</p>
+                        <div data-analytics-sparkline="searches" class="analytics-metric-sparkline mt-3" aria-hidden="true"></div>
                     </div>
                     <span class="admin-icon-badge">
                         <i class="fas fa-magnifying-glass"></i>
                     </span>
                 </div>
             </div>
-            <div class="admin-stat-card admin-dashboard-summary text-left">
-                <div class="flex items-center justify-between gap-4">
-                    <div>
+            <div class="admin-stat-card admin-dashboard-summary analytics-metric-card text-left">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
                         <p class="text-xs uppercase tracking-[0.16em] text-amber-600">Shares</p>
                         <p class="mt-3 text-base font-semibold text-slate-900">Total Shares</p>
                         <p class="mt-2 text-2xl font-bold text-slate-900" data-analytics-summary="shares">--</p>
                         <p class="admin-trend" data-analytics-trend="shares">–</p>
+                        <div data-analytics-sparkline="shares" class="analytics-metric-sparkline mt-3" aria-hidden="true"></div>
                     </div>
                     <span class="admin-icon-badge">
                         <i class="fas fa-share-nodes"></i>
@@ -88,7 +93,17 @@
                     <div id="analytics-event-summary" class="mt-4 space-y-3"></div>
                 </div>
                 <div class="rounded-3xl border border-slate-200 p-4 sm:p-5">
-                    <p class="text-sm font-semibold text-slate-900">Top viewed posts</p>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p class="text-sm font-semibold text-slate-900">Top viewed posts</p>
+                        <input
+                            id="analytics-top-posts-search"
+                            type="search"
+                            class="admin-auth-input hidden max-w-full py-2 text-xs sm:max-w-xs"
+                            placeholder="Search posts..."
+                            data-analytics-posts-search
+                            autocomplete="off"
+                        >
+                    </div>
                     <div id="analytics-top-posts" class="mt-4"></div>
                 </div>
             </div>
@@ -100,23 +115,9 @@
                 </div>
                 <div class="rounded-3xl border border-slate-200 p-4 sm:p-5">
                     <p class="text-sm font-semibold text-slate-900">Device breakdown</p>
-                    <div class="mt-4 space-y-2 text-xs text-slate-600">
-                        <div class="flex items-center justify-between">
-                            <span class="flex items-center gap-2">
-                                <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                                Android
-                            </span>
-                            <span data-analytics-device="android">--</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="flex items-center gap-2">
-                                <span class="inline-flex h-2.5 w-2.5 rounded-full bg-sky-500"></span>
-                                iOS
-                            </span>
-                            <span data-analytics-device="ios">--</span>
-                        </div>
-                    </div>
-                    <p class="mt-3 text-[11px] text-slate-400" data-analytics-device-empty>
+                    <div id="analytics-device-chart" class="analytics-device-chart-wrap mt-4"></div>
+                    <div id="analytics-device-legend" class="mt-4 space-y-2 text-xs text-slate-600"></div>
+                    <p class="mt-3 text-[11px] text-slate-400 hidden" data-analytics-device-empty>
                         Device usage data will appear here once analytics events include platform information.
                     </p>
                 </div>

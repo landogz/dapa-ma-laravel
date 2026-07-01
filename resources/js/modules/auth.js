@@ -1,5 +1,7 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { showErrorToast, showSuccessToast } from './shared/toast';
+import { bindPasswordToggles } from './shared/password-toggle';
 
 const TOKEN_KEY = 'dape_ma_admin_token';
 const USER_KEY = 'dape_ma_admin_user';
@@ -36,6 +38,16 @@ export function persistAuth(payload) {
     axios.defaults.headers.common.Authorization = `Bearer ${payload.token}`;
 }
 
+export function mergeStoredUser(updates) {
+    const current = getStoredUser() ?? {};
+    const next = { ...current, ...updates };
+
+    sessionStorage.setItem(USER_KEY, JSON.stringify(next));
+    window.dispatchEvent(new CustomEvent('admin-profile-updated', { detail: next }));
+
+    return next;
+}
+
 export function clearAuth() {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
@@ -62,6 +74,7 @@ export function bindLoginForm() {
     }
 
     bindPasswordToggles(form);
+    bindDemoLoginAccounts(form);
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -73,17 +86,15 @@ export function bindLoginForm() {
         setBusy(submitButton, true, 'Signing in...');
 
         try {
-            const response = await axios.post('/auth/login', {
+            await submitLogin({
                 email: formData.get('email'),
                 password: formData.get('password'),
             });
 
-            persistAuth(response.data.data);
-
             await Swal.fire({
                 icon: 'success',
                 title: 'Welcome back',
-                text: response.data.message,
+                text: 'Login successful.',
                 confirmButtonColor: '#055498',
             });
 
@@ -100,6 +111,52 @@ export function bindLoginForm() {
         } finally {
             setBusy(submitButton, false, 'Sign In');
         }
+    });
+}
+
+async function submitLogin({ email, password }) {
+    const response = await axios.post('/auth/login', { email, password });
+    persistAuth(response.data.data);
+    return response.data;
+}
+
+function bindDemoLoginAccounts(form) {
+    document.querySelectorAll('[data-demo-login]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const email = button.getAttribute('data-demo-email') ?? '';
+            const password = button.getAttribute('data-demo-password') ?? '';
+            const label = button.getAttribute('data-demo-label') ?? 'Account';
+            const emailInput = form.querySelector('[name="email"]');
+            const passwordInput = form.querySelector('[name="password"]');
+            const submitButton = form.querySelector('[type="submit"]');
+
+            if (emailInput) {
+                emailInput.value = email;
+            }
+
+            if (passwordInput) {
+                passwordInput.value = password;
+            }
+
+            clearFieldErrors(form);
+            setBusy(submitButton, true, 'Signing in...');
+            button.disabled = true;
+
+            try {
+                await submitLogin({ email, password });
+                showSuccessToast(`Signed in as ${label}`, 'Welcome');
+                window.location.href = '/admin';
+            } catch (error) {
+                applyFieldErrors(form, error.response?.data?.errors ?? {});
+                showErrorToast(
+                    buildErrorPrompt(error.response?.data?.errors, error.response?.data?.message, 'Unable to sign in with this demo account.'),
+                    'Login failed',
+                );
+            } finally {
+                setBusy(submitButton, false, 'Sign In');
+                button.disabled = false;
+            }
+        });
     });
 }
 
@@ -175,26 +232,6 @@ function setBusy(button, isBusy, label) {
     button.setAttribute('aria-busy', isBusy ? 'true' : 'false');
     button.classList.toggle('opacity-80', isBusy);
     button.classList.toggle('cursor-not-allowed', isBusy);
-}
-
-function bindPasswordToggles(scope) {
-    scope.querySelectorAll('[data-password-toggle]').forEach((toggleButton) => {
-        toggleButton.addEventListener('click', () => {
-            const targetId = toggleButton.getAttribute('data-password-toggle');
-            const input = document.getElementById(targetId);
-            const icon = toggleButton.querySelector('i');
-
-            if (!input || !icon) {
-                return;
-            }
-
-            const shouldShow = input.type === 'password';
-
-            input.type = shouldShow ? 'text' : 'password';
-            icon.classList.toggle('fa-eye', shouldShow);
-            icon.classList.toggle('fa-eye-slash', !shouldShow);
-        });
-    });
 }
 
 function clearFieldErrors(form) {

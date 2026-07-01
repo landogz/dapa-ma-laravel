@@ -103,9 +103,9 @@
                     </div>
                     <div class="flex items-center gap-2 text-xs text-slate-500">
                         <span>Range:</span>
-                        <div class="inline-flex overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">
-                            <button type="button" class="px-3 py-1 text-slate-600 is-active" data-activity-range="7">7 days</button>
-                            <button type="button" class="px-3 py-1 text-slate-500" data-activity-range="30">30 days</button>
+                        <div class="admin-range-toggle inline-flex overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">
+                            <button type="button" class="admin-range-toggle-button is-active" data-activity-range="7">7 days</button>
+                            <button type="button" class="admin-range-toggle-button" data-activity-range="30">30 days</button>
                         </div>
                     </div>
                 </div>

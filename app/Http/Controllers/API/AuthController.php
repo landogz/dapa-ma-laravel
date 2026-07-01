@@ -3,24 +3,35 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Services\ProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        private readonly ProfileService $profileService,
+    ) {
+    }
+
     public function register(RegisterRequest $request): JsonResponse
     {
         $isFirstAdmin = ! User::query()->where('role', 'super_admin')->exists();
+        $fullName = trim($request->validated('name'));
+        $nameParts = preg_split('/\s+/', $fullName, 2);
 
         $user = User::query()->create([
-            'name' => $request->validated('name'),
+            'name' => $fullName,
+            'first_name' => $nameParts[0] ?? $fullName,
+            'last_name' => $nameParts[1] ?? '',
             'email' => $request->validated('email'),
             'password' => Hash::make($request->validated('password')),
             'role' => $isFirstAdmin ? 'super_admin' : 'app_user',
@@ -40,13 +51,7 @@ class AuthController extends Controller
                 : 'Account created successfully.',
             'data' => [
                 'token' => $token,
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'profile_image_url' => $this->userProfileImageUrl($user),
-                ],
+                'user' => $this->profileService->formatUser($user),
             ],
         ], 201);
     }
@@ -70,13 +75,7 @@ class AuthController extends Controller
             'message' => 'Login successful.',
             'data'    => [
                 'token' => $token,
-                'user'  => [
-                    'id'                 => $user->id,
-                    'name'               => $user->name,
-                    'email'              => $user->email,
-                    'role'               => $user->role,
-                    'profile_image_url'  => $this->userProfileImageUrl($user),
-                ],
+                'user'  => $this->profileService->formatUser($user),
             ],
         ]);
     }
@@ -93,68 +92,43 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user();
-
         return response()->json([
             'status' => true,
-            'data'   => [
-                'id'                 => $user->id,
-                'name'               => $user->name,
-                'email'              => $user->email,
-                'role'               => $user->role,
-                'profile_image_url'  => $this->userProfileImageUrl($user),
-            ],
+            'data'   => $this->profileService->formatUser($request->user()),
         ]);
     }
 
-    public function updateProfile(Request $request): JsonResponse
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
-        $user = $request->user();
-        $request->validate([
-            'name'         => ['sometimes', 'string', 'max:255'],
-            'profile_photo' => ['sometimes', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
-        ]);
-
-        $payload = [];
-        if ($request->has('name')) {
-            $payload['name'] = $request->input('name');
-        }
-        if ($request->hasFile('profile_photo')) {
-            if ($user->profile_image_url) {
-                Storage::disk('public')->delete($user->profile_image_url);
-            }
-            $path = $request->file('profile_photo')->store('profiles', 'public');
-            $payload['profile_image_url'] = $path;
-        }
-        if ($payload !== []) {
-            $user->update($payload);
-        }
+        $user = $this->profileService->update(
+            $request->user(),
+            array_merge(
+                $request->validated(),
+                [
+                    'profile_photo' => $request->file('profile_photo'),
+                    'remove_profile_photo' => $request->boolean('remove_profile_photo'),
+                ],
+            ),
+        );
 
         return response()->json([
             'status'  => true,
             'message' => 'Profile updated.',
-            'data'    => [
-                'id'                 => $user->id,
-                'name'               => $user->name,
-                'email'              => $user->email,
-                'role'               => $user->role,
-                'profile_image_url'  => $this->userProfileImageUrl($user->fresh()),
-            ],
+            'data'    => $this->profileService->formatUser($user),
         ]);
     }
 
-    public function changePassword(Request $request): JsonResponse
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
-        $request->validate([
-            'current_password' => ['required', 'string'],
-            'password'         => ['required', 'string', 'min:6', 'confirmed'],
-        ]);
-
         $user = $request->user();
+
         if (! Hash::check($request->input('current_password'), $user->password)) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Current password is incorrect.',
+                'errors' => [
+                    'current_password' => ['Current password is incorrect.'],
+                ],
             ], 422);
         }
 
@@ -166,17 +140,6 @@ class AuthController extends Controller
             'status'  => true,
             'message' => 'Password updated successfully.',
         ]);
-    }
-
-    private function userProfileImageUrl(User $user): ?string
-    {
-        if (! $user->profile_image_url) {
-            return null;
-        }
-        if (str_starts_with($user->profile_image_url, 'http')) {
-            return $user->profile_image_url;
-        }
-        return Storage::disk('public')->url($user->profile_image_url);
     }
 
     public function forgotPassword(Request $request): JsonResponse
