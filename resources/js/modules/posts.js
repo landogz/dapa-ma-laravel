@@ -391,9 +391,25 @@ function renderPostActions(post, isMobile = false) {
         return '<span class="admin-empty-badge">No actions</span>';
     }
 
-    return `<div class="admin-table-actions${isMobile ? ' admin-table-actions-mobile' : ''}">${actions.map((action) => `
-        <button onclick="window.Posts.${action.handler}(${post.id})" class="admin-table-action ${isMobile ? '' : 'admin-table-action-icon'} ${action.className ?? ''}" title="${action.label}" aria-label="${action.label}"><i class="${action.icon}"></i><span class="${isMobile ? '' : 'sr-only'}">${action.label}</span></button>
-    `).join('')}</div>`;
+    return `<div class="admin-table-actions${isMobile ? ' admin-table-actions-mobile' : ''}">${actions.map((action) => {
+        const label = escapeHtml(action.tooltip ?? action.label);
+        const iconClass = action.iconClass ? ` ${action.iconClass}` : '';
+        const button = `
+        <button type="button" onclick="window.Posts.${action.handler}(${post.id})" class="admin-table-action ${isMobile ? '' : 'admin-table-action-icon'} ${action.className ?? ''}" aria-label="${label}">
+            <i class="${action.icon}${iconClass}"></i>
+            <span class="${isMobile ? '' : 'sr-only'}">${label}</span>
+        </button>`;
+
+        if (isMobile) {
+            return button;
+        }
+
+        return `
+        <span class="admin-action-tooltip-wrap">
+            ${button}
+            <span class="admin-action-tooltip" role="tooltip">${label}</span>
+        </span>`;
+    }).join('')}</div>`;
 }
 
 function bindPostsContextMenu() {
@@ -744,10 +760,18 @@ function syncPostsPageActions() {
 
     const createButton = document.querySelector('[data-admin-action="create-post"]');
     if (createButton) {
-        createButton.textContent = currentUserRole === 'super_admin' ? 'Create Post' : 'Create Draft';
+        const label = currentUserRole === 'super_admin' ? 'Create Post' : 'Create Draft';
+        createButton.textContent = label;
+        createButton.setAttribute(
+            'title',
+            currentUserRole === 'super_admin'
+                ? 'Create and publish a new post'
+                : 'Create a new draft post',
+        );
     }
 
     const insightsLink = document.querySelector('a[href="/admin/analytics"]');
+    insightsLink?.setAttribute('title', 'Open analytics dashboard');
     insightsLink?.classList.toggle('hidden', !['super_admin', 'analytics_viewer'].includes(currentUserRole));
 }
 
@@ -814,6 +838,7 @@ function getAvailableActions(post) {
         actions.push({
             handler: 'editPost',
             label: 'Edit',
+            tooltip: 'Edit post',
             icon: 'fas fa-pen-to-square',
             className: 'admin-table-action-primary',
         });
@@ -823,6 +848,7 @@ function getAvailableActions(post) {
         actions.push({
             handler: 'submitForReview',
             label: 'Submit',
+            tooltip: 'Submit for review',
             icon: 'fas fa-paper-plane',
             className: 'admin-table-action-primary',
         });
@@ -832,6 +858,7 @@ function getAvailableActions(post) {
         actions.push({
             handler: 'rejectPost',
             label: 'Reject',
+            tooltip: 'Reject and return to draft',
             icon: 'fas fa-rotate-left',
             iconClass: 'text-[#123a60]',
             className: 'admin-table-action-warning',
@@ -842,11 +869,13 @@ function getAvailableActions(post) {
         actions.push({
             handler: 'schedulePost',
             label: 'Approve & Schedule',
+            tooltip: 'Approve and schedule publish date',
             icon: 'fas fa-calendar-check',
         });
         actions.push({
             handler: 'publishNow',
             label: 'Publish now',
+            tooltip: 'Publish immediately',
             icon: 'fas fa-circle-check',
             className: 'admin-table-action-primary',
         });
@@ -856,6 +885,7 @@ function getAvailableActions(post) {
         actions.push({
             handler: 'publishNow',
             label: 'Publish now',
+            tooltip: 'Publish immediately',
             icon: 'fas fa-circle-check',
             className: 'admin-table-action-primary',
         });
@@ -865,6 +895,7 @@ function getAvailableActions(post) {
         actions.push({
             handler: 'archivePost',
             label: 'Archive',
+            tooltip: 'Archive post',
             icon: 'fas fa-box-archive',
         });
     }
@@ -873,6 +904,7 @@ function getAvailableActions(post) {
         actions.push({
             handler: 'deletePost',
             label: 'Delete',
+            tooltip: 'Delete permanently',
             icon: 'fas fa-trash',
             iconClass: 'text-[#CE2028]',
             className: 'admin-table-action-danger',

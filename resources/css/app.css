@@ -330,6 +330,67 @@
     font-size: 0.875rem;
 }
 
+.admin-action-tooltip-wrap {
+    position: relative;
+    display: inline-flex;
+}
+
+.admin-action-tooltip {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 0.45rem);
+    z-index: 50;
+    transform: translateX(-50%);
+    border-radius: 0.65rem;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    padding: 0.35rem 0.65rem;
+    text-align: center;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #0f172a;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.12s ease, visibility 0.12s ease;
+    white-space: nowrap;
+}
+
+.admin-action-tooltip::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px 6px 0 6px;
+    border-style: solid;
+    border-color: #e2e8f0 transparent transparent transparent;
+}
+
+.admin-action-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: -1px;
+    border-width: 5px 5px 0 5px;
+    border-style: solid;
+    border-color: #fff transparent transparent transparent;
+}
+
+.admin-action-tooltip-wrap:hover .admin-action-tooltip,
+.admin-action-tooltip-wrap:focus-within .admin-action-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.admin-action-tooltip-wrap .admin-table-action:focus-visible {
+    box-shadow: 0 0 0 3px rgba(5, 84, 152, 0.25);
+}
+
 .admin-table-actions-mobile {
     width: 100%;
 }

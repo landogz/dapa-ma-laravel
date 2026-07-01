@@ -13,10 +13,19 @@
                 </div>
             </div>
             <div class="admin-page-actions admin-page-actions-centered">
-                <button type="button" class="admin-primary-button lg:w-auto" data-admin-action="create-post">
+                <button
+                    type="button"
+                    class="admin-primary-button lg:w-auto"
+                    data-admin-action="create-post"
+                    title="Create a new draft post"
+                >
                     Create Draft
                 </button>
-                <a href="/admin/analytics" class="admin-secondary-button lg:w-auto">
+                <a
+                    href="/admin/analytics"
+                    class="admin-secondary-button lg:w-auto"
+                    title="Open analytics dashboard"
+                >
                     Review Insights
                 </a>
             </div>
