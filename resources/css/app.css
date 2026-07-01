@@ -293,7 +293,7 @@
 
 .admin-table-shell {
     width: 100%;
-    overflow: hidden;
+    overflow: visible;
     padding: 0.85rem;
     border: 1px solid #e5e7eb;
     border-radius: 1rem;
@@ -333,14 +333,22 @@
 .admin-action-tooltip-wrap {
     position: relative;
     display: inline-flex;
+    z-index: 1;
+}
+
+.admin-action-tooltip-wrap:hover,
+.admin-action-tooltip-wrap:focus-within {
+    z-index: 60;
 }
 
 .admin-action-tooltip {
     position: absolute;
-    left: 50%;
-    bottom: calc(100% + 0.45rem);
-    z-index: 50;
-    transform: translateX(-50%);
+    top: 50%;
+    right: calc(100% + 0.5rem);
+    left: auto;
+    bottom: auto;
+    z-index: 60;
+    transform: translateY(-50%);
     border-radius: 0.65rem;
     border: 1px solid #e2e8f0;
     background: #fff;
@@ -361,24 +369,29 @@
 .admin-action-tooltip::before {
     content: '';
     position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 6px 6px 0 6px;
+    top: 50%;
+    left: 100%;
+    right: auto;
+    bottom: auto;
+    transform: translateY(-50%);
+    border-width: 6px 0 6px 6px;
     border-style: solid;
-    border-color: #e2e8f0 transparent transparent transparent;
+    border-color: transparent transparent transparent #e2e8f0;
 }
 
 .admin-action-tooltip::after {
     content: '';
     position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: -1px;
-    border-width: 5px 5px 0 5px;
+    top: 50%;
+    left: 100%;
+    right: auto;
+    bottom: auto;
+    transform: translateY(-50%);
+    margin-top: 0;
+    margin-left: -1px;
+    border-width: 5px 0 5px 5px;
     border-style: solid;
-    border-color: #fff transparent transparent transparent;
+    border-color: transparent transparent transparent #fff;
 }
 
 .admin-action-tooltip-wrap:hover .admin-action-tooltip,
@@ -787,6 +800,8 @@
 .dt-container .dt-col-actions {
     min-width: 6rem;
     white-space: nowrap;
+    overflow: visible;
+    position: relative;
 }
 
 .dt-container .dt-table tbody td,
@@ -799,8 +814,15 @@
     background: #ffffff;
 }
 
+.dt-container .dt-table tbody td.dt-col-actions,
+.dt-container table.dataTable tbody td.dt-col-actions {
+    overflow: visible;
+}
+
 .dt-container .dt-col-actions .admin-table-actions {
     justify-content: flex-end;
+    overflow: visible;
+    position: relative;
 }
 
 .dt-container .dt-table tbody tr:nth-child(even),
