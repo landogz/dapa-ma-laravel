@@ -10,6 +10,10 @@ Route::get('/', function () {
 
 Route::view('/chat', 'chat.botpress');
 
+Route::get('/posts/{id}', function (int $id) {
+    return view('posts.show', ['postId' => $id]);
+})->whereNumber('id');
+
 Route::get('/admin', function () {
     return redirect('/admin/dashboard');
 });

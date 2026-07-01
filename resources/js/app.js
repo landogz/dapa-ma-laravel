@@ -9,6 +9,7 @@ import {
     requireAuthentication,
 } from './modules/auth';
 import { initAdminPage } from './modules/admin-dashboard';
+import { initPublicPostShow } from './modules/public/post-show';
 
 axios.defaults.baseURL = '/api/v1';
 axios.defaults.headers.common.Accept = 'application/json';
@@ -21,8 +22,9 @@ axios.interceptors.response.use(
         const status = error.response?.status;
         const requestUrl = error.config?.url ?? '';
         const isAuthFormRequest = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register');
+        const isPublicPage = document.body.dataset.page === 'public-post-show';
 
-        if (status === 401 && !isAuthFormRequest) {
+        if (status === 401 && !isAuthFormRequest && !isPublicPage) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Session expired',
@@ -59,6 +61,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (page === 'admin-register') {
         redirectIfAuthenticated();
         bindRegisterForm();
+        return;
+    }
+
+    if (page === 'public-post-show') {
+        initPublicPostShow();
         return;
     }
 

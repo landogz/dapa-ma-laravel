@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Services\PostEngagementService;
 use App\Services\PostService;
+use App\Services\ReviewService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,6 +14,7 @@ class PostController extends Controller
     public function __construct(
         private readonly PostService $postService,
         private readonly PostEngagementService $postEngagementService,
+        private readonly ReviewService $reviewService,
     ) {
     }
 
@@ -25,6 +27,7 @@ class PostController extends Controller
         $posts = $this->postService->listPublished($perPage, $categorySlug);
         $user = $this->postEngagementService->resolveUserFromBearer($request->bearerToken());
         $posts = $this->postEngagementService->attachLikedState($posts, $user);
+        $posts = $this->reviewService->attachReviewState($posts, $user);
 
         return response()->json([
             'status'  => true,
@@ -46,6 +49,7 @@ class PostController extends Controller
 
         $user = $this->postEngagementService->resolveUserFromBearer($request->bearerToken());
         $post = $this->postEngagementService->attachLikedStateToPost($post, $user);
+        $post = $this->reviewService->attachReviewStateToPost($post, $user);
 
         return response()->json([
             'status' => true,

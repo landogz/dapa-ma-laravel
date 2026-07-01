@@ -57,6 +57,9 @@ Route::prefix('v1')
             Route::get('/{id}/comments', [PostEngagementController::class, 'comments'])
                 ->whereNumber('id')
                 ->name('comments.index');
+            Route::get('/{id}/reviews', [ReviewController::class, 'indexForPost'])
+                ->whereNumber('id')
+                ->name('reviews.index');
             Route::get('/{id}', [PostController::class, 'show'])
                 ->whereNumber('id')
                 ->name('show');
