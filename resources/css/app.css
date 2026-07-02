@@ -2141,3 +2141,21 @@
     background: #055498;
     color: #fff;
 }
+
+.diary-entry-preview ul {
+    margin: 0.5rem 0 0.5rem 1.25rem;
+    list-style: disc;
+}
+
+.diary-entry-preview p {
+    margin: 0 0 0.75rem;
+}
+
+.diary-entry-preview b,
+.diary-entry-preview strong {
+    font-weight: 700;
+}
+
+.diary-entry-preview u {
+    text-decoration: underline;
+}

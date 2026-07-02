@@ -1,5 +1,5 @@
 import Swal from 'sweetalert2';
-import { initAnalyticsModule } from './analytics';
+import { initDiaryModule } from './diary';
 import { logout } from './auth';
 import { initNotificationsModule } from './notifications';
 import { initPostsModule } from './posts';
@@ -8,7 +8,7 @@ import { initRehabCentersModule } from './rehab-centers/index';
 import { initUsersModule } from './users';
 
 const ADMIN_ROLE_SECTIONS = {
-    super_admin: ['posts', 'rehab-centers', 'notifications', 'analytics', 'users'],
+    super_admin: ['posts', 'rehab-centers', 'notifications', 'analytics', 'users', 'diary'],
     editor: ['posts', 'rehab-centers'],
     publisher: ['posts', 'rehab-centers', 'notifications'],
     analytics_viewer: ['rehab-centers', 'analytics'],
@@ -20,6 +20,7 @@ const PAGE_SECTION_REQUIREMENTS = {
     'admin-notifications': 'notifications',
     'admin-analytics': 'analytics',
     'admin-users': 'users',
+    'admin-diary': 'diary',
 };
 
 const SECTION_PATHS = {
@@ -28,6 +29,7 @@ const SECTION_PATHS = {
     notifications: '/admin/notifications',
     analytics: '/admin/analytics',
     users: '/admin/users',
+    diary: '/admin/diary',
 };
 
 let inboxFilter = 'unread';
@@ -303,6 +305,9 @@ function initializePageContent(pageName, allowedSections) {
         case 'admin-users':
             initUsersModule();
             break;
+        case 'admin-diary':
+            initDiaryModule();
+            break;
         case 'admin-profile':
             initProfileModule();
             break;
@@ -370,6 +375,12 @@ async function loadOverviewCounts(allowedSections) {
             key: 'users',
             allowed: allowedSections.includes('users'),
             request: () => window.axios.get('/admin/users', { params: { per_page: 1 } }),
+            count: (response) => response.data.data?.total,
+        },
+        {
+            key: 'diary',
+            allowed: allowedSections.includes('diary'),
+            request: () => window.axios.get('/admin/diary-entries', { params: { per_page: 1 } }),
             count: (response) => response.data.data?.total,
         },
     ];

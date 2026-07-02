@@ -60,6 +60,10 @@
                     <i class="fas fa-users w-5 text-[#FBD116]"></i>
                     <span>Users</span>
                 </a>
+                <a href="/admin/diary" class="admin-nav-link {{ ($activePage ?? '') === 'diary' ? 'admin-nav-link-active' : '' }}" data-nav-section="diary">
+                    <i class="fas fa-book-open w-5 text-[#FBD116]"></i>
+                    <span>My Diary</span>
+                </a>
             </nav>
 
             <div class="mt-auto space-y-2 border-t border-white/20 pt-4">

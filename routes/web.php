@@ -47,4 +47,6 @@ Route::get('/admin/analytics', fn () => AdminPage::render('admin.analytics.index
 
 Route::get('/admin/users', fn () => AdminPage::render('admin.users.index', 'users', 'Users'));
 
+Route::get('/admin/diary', fn () => AdminPage::render('admin.diary.index', 'diary', 'My Diary'));
+
 Route::get('/admin/profile', fn () => AdminPage::render('admin.profile.index', 'profile', 'Edit Profile'));

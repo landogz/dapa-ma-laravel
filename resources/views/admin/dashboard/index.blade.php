@@ -31,7 +31,7 @@
             </div>
         </div>
 
-        <div id="function-cards" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div id="function-cards" class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <a href="/admin/posts" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="posts">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -84,6 +84,20 @@
                     </div>
                     <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/50 text-[#123a60]">
                         <i class="fas fa-users"></i>
+                    </span>
+                </div>
+            </a>
+
+            <a href="/admin/diary" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="diary">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.16em] text-[#7C3AED]">Mobile Journal</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">My Diary</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="diary">--</p>
+                        <p class="admin-trend" data-overview-trend="diary">–</p>
+                    </div>
+                    <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/50 text-[#7C3AED]">
+                        <i class="fas fa-book-open"></i>
                     </span>
                 </div>
             </a>

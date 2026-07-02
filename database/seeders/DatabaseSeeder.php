@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             NotificationSeeder::class,
             ReviewSeeder::class,
             AnalyticsEventSeeder::class,
+            DailyVerseSeeder::class,
         ]);
     }
 }

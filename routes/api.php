@@ -3,12 +3,16 @@
 use App\Http\Controllers\API\Admin\AdminNotificationController;
 use App\Http\Controllers\API\Admin\AnalyticsAdminController;
 use App\Http\Controllers\API\Admin\CategoryAdminController;
+use App\Http\Controllers\API\Admin\DiaryAdminController;
 use App\Http\Controllers\API\Admin\NotificationAdminController;
 use App\Http\Controllers\API\Admin\PostAdminController;
 use App\Http\Controllers\API\Admin\RehabCenterAdminController;
 use App\Http\Controllers\API\Admin\UserAdminController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\BibleController;
 use App\Http\Controllers\API\BookmarkController;
+use App\Http\Controllers\API\DailyVerseController;
+use App\Http\Controllers\API\DiaryController;
 use App\Http\Controllers\API\PostEngagementController;
 use App\Http\Controllers\API\PostController;
 use App\Http\Controllers\API\RehabCenterController;
@@ -76,6 +80,16 @@ Route::prefix('v1')
         Route::get('/rehab-centers', [RehabCenterController::class, 'index'])
             ->name('rehab-centers.index');
 
+        // ── Public daily Bible verse ─────────────────────────────────────
+        Route::get('/daily-verse/today', [DailyVerseController::class, 'today'])
+            ->name('daily-verse.today');
+
+        // ── Public Bible reader ──────────────────────────────────────────
+        Route::prefix('bible')->name('bible.')->group(function (): void {
+            Route::get('/books', [BibleController::class, 'books'])->name('books');
+            Route::get('/passage', [BibleController::class, 'passage'])->name('passage');
+        });
+
         // ── Authenticated ─────────────────────────────────────────────────
         Route::middleware('auth:sanctum')->group(function (): void {
 
@@ -91,6 +105,10 @@ Route::prefix('v1')
             // ── Bookmarks ────────────────────────────────────────────────
             Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks.index');
             Route::post('/bookmarks', [BookmarkController::class, 'store'])->name('bookmarks.store');
+
+            // ── My Diary ─────────────────────────────────────────────────
+            Route::get('/diary-entries/today', [DiaryController::class, 'today'])->name('diary-entries.today');
+            Route::apiResource('diary-entries', DiaryController::class)->except(['create', 'edit']);
 
             // ── Post engagement (likes & comments) ───────────────────────
             Route::post('/posts/{id}/like', [PostEngagementController::class, 'toggleLike'])
@@ -121,6 +139,9 @@ Route::prefix('v1')
                     Route::put('/users/{user}',              [UserAdminController::class, 'update'])->name('users.update');
                     Route::put('/users/{user}/role',         [UserAdminController::class, 'updateRole'])->name('users.role');
                     Route::delete('/users/{user}',           [UserAdminController::class, 'destroy'])->name('users.destroy');
+                    Route::get('/diary-entries',             [DiaryAdminController::class, 'index'])->name('diary-entries.index');
+                    Route::get('/diary-entries/{id}',       [DiaryAdminController::class, 'show'])->whereNumber('id')->name('diary-entries.show');
+                    Route::delete('/diary-entries/{id}',    [DiaryAdminController::class, 'destroy'])->whereNumber('id')->name('diary-entries.destroy');
                     Route::put('/posts/{post}/archive',      [PostAdminController::class, 'archive'])->name('posts.archive');
                     Route::delete('/posts/{post}',           [PostAdminController::class, 'destroy'])->name('posts.destroy');
                 });
