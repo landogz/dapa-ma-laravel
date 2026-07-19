@@ -1,4 +1,5 @@
 import Swal from 'sweetalert2';
+import { initAnalyticsModule } from './analytics';
 import { initDiaryModule } from './diary';
 import { logout } from './auth';
 import { initNotificationsModule } from './notifications';
