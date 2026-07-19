@@ -988,6 +988,17 @@
     overflow-y: auto !important;
 }
 
+.admin-swal-popup-sm {
+    width: min(100%, 28rem) !important;
+    max-height: min(85vh, 32rem);
+    padding: 1.25rem !important;
+}
+
+.admin-swal-popup-md {
+    width: min(100%, 36rem) !important;
+    max-height: min(90vh, 40rem);
+}
+
 .admin-swal-popup .swal2-html-container,
 .admin-swal-html {
     margin: 0.85rem 0 0 !important;

@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
 import { buildSwalForm, buildSwalOptions } from './shared/swal-forms';
+import { showErrorToast, showSuccessToast } from './shared/toast';
 
 let usersTable;
 let usersTableMode = null;
@@ -80,7 +81,7 @@ function bindDeleteButtons() {
                 text: 'This will permanently remove the selected user account.',
                 showCancelButton: true,
                 confirmButtonText: 'Delete User',
-            }, { danger: true }));
+            }, { danger: true, size: 'sm' }));
 
             if (!result.isConfirmed) {
                 return;
@@ -88,22 +89,13 @@ function bindDeleteButtons() {
 
             try {
                 const response = await axios.delete(`/admin/users/${userId}`);
-
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'User deleted',
-                    text: response.data.message,
-                    confirmButtonColor: '#055498',
-                });
-
+                showSuccessToast(response.data.message ?? 'User deleted successfully.', 'User deleted');
                 loadUsers();
             } catch (error) {
-                await Swal.fire({
-                    icon: 'error',
-                    title: 'Unable to delete user',
-                    text: error.response?.data?.message ?? 'Please try again.',
-                    confirmButtonColor: '#CE2028',
-                });
+                showErrorToast(
+                    error.response?.data?.message ?? 'Please try again.',
+                    'Unable to delete user',
+                );
             }
         });
     });
@@ -188,7 +180,7 @@ function bindEditButtons() {
                         password_confirmation: password ? passwordConfirmation : undefined,
                     };
                 },
-            }));
+            }, { size: 'md' }));
 
             if (!result.isConfirmed) {
                 return;
@@ -204,21 +196,13 @@ function bindEditButtons() {
 
                 const response = await axios.put(`/admin/users/${userId}`, payload);
 
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'User updated',
-                    text: response.data.message,
-                    confirmButtonColor: '#055498',
-                });
-
+                showSuccessToast(response.data.message ?? 'User updated successfully.', 'User updated');
                 loadUsers();
             } catch (error) {
-                await Swal.fire({
-                    icon: 'error',
-                    title: 'Unable to update user',
-                    text: error.response?.data?.message ?? 'Please try again.',
-                    confirmButtonColor: '#CE2028',
-                });
+                showErrorToast(
+                    error.response?.data?.message ?? 'Please try again.',
+                    'Unable to update user',
+                );
             }
         });
     });
@@ -276,7 +260,7 @@ function bindRoleButtons() {
                 showCancelButton: true,
                 confirmButtonText: 'Save Role',
                 preConfirm: () => document.getElementById('user-role')?.value,
-            }));
+            }, { size: 'sm' }));
 
             if (!result.isConfirmed) {
                 return;
@@ -287,21 +271,13 @@ function bindRoleButtons() {
                     role: result.value,
                 });
 
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Role updated',
-                    text: response.data.message,
-                    confirmButtonColor: '#055498',
-                });
-
+                showSuccessToast(response.data.message ?? 'Role updated successfully.', 'Role updated');
                 loadUsers();
             } catch (error) {
-                await Swal.fire({
-                    icon: 'error',
-                    title: 'Unable to update role',
-                    text: error.response?.data?.message ?? 'Please try again.',
-                    confirmButtonColor: '#CE2028',
-                });
+                showErrorToast(
+                    error.response?.data?.message ?? 'Please try again.',
+                    'Unable to update role',
+                );
             }
         });
     });
@@ -553,7 +529,7 @@ async function createUserPrompt() {
                 password_confirmation: passwordConfirmation,
             };
         },
-    }));
+    }, { size: 'md' }));
 
     if (!result.isConfirmed) {
         return;
@@ -562,21 +538,13 @@ async function createUserPrompt() {
     try {
         const response = await axios.post('/admin/users', result.value);
 
-        await Swal.fire({
-            icon: 'success',
-            title: 'User created',
-            text: response.data.message,
-            confirmButtonColor: '#055498',
-        });
-
+        showSuccessToast(response.data.message ?? 'User created successfully.', 'User created');
         loadUsers();
     } catch (error) {
-        await Swal.fire({
-            icon: 'error',
-            title: 'Unable to create user',
-            text: error.response?.data?.message ?? 'Please try again.',
-            confirmButtonColor: '#CE2028',
-        });
+        showErrorToast(
+            error.response?.data?.message ?? 'Please try again.',
+            'Unable to create user',
+        );
     }
 }
 

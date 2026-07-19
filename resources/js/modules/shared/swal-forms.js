@@ -95,8 +95,13 @@ export function buildSwalForm({ description = '', fields = [] }) {
     `;
 }
 
-export function buildSwalOptions(options, { danger = false } = {}) {
+export function buildSwalOptions(options, { danger = false, size = 'lg' } = {}) {
     const userDidOpen = options.didOpen;
+    const popupSizeClass = {
+        sm: 'admin-swal-popup admin-swal-popup-sm',
+        md: 'admin-swal-popup admin-swal-popup-md',
+        lg: 'admin-swal-popup',
+    }[size] ?? 'admin-swal-popup';
 
     return {
         ...options,
@@ -109,7 +114,7 @@ export function buildSwalOptions(options, { danger = false } = {}) {
             }
         },
         customClass: {
-            popup: 'admin-swal-popup',
+            popup: popupSizeClass,
             title: 'admin-swal-title',
             htmlContainer: 'admin-swal-html',
             actions: 'admin-swal-actions',
