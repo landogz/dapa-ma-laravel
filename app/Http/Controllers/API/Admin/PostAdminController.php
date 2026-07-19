@@ -41,8 +41,9 @@ class PostAdminController extends Controller
     public function show(Post $post): JsonResponse
     {
         return response()->json([
-            'status' => true,
-            'data'   => $post->load(['category', 'author']),
+            'status'  => true,
+            'message' => 'Post loaded successfully.',
+            'data'    => $this->postService->findAdminDetail($post->id),
         ]);
     }
 

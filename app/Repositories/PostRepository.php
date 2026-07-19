@@ -13,10 +13,31 @@ class PostRepository
     {
         return Post::query()
             ->with(['category', 'author'])
-            ->withCount(['reviews'])
+            ->withCount(['likes', 'comments', 'reviews'])
             ->withAvg('reviews', 'rating')
             ->latest()
             ->paginate($perPage);
+    }
+
+    public function findAdminDetail(int $id): Post
+    {
+        return Post::query()
+            ->with([
+                'category',
+                'author',
+                'likes' => fn ($query) => $query
+                    ->with('user:id,name,email')
+                    ->latest(),
+                'comments' => fn ($query) => $query
+                    ->with('user:id,name,email')
+                    ->orderBy('created_at'),
+                'reviews' => fn ($query) => $query
+                    ->with('user:id,name,email')
+                    ->latest(),
+            ])
+            ->withCount(['likes', 'comments', 'reviews'])
+            ->withAvg('reviews', 'rating')
+            ->findOrFail($id);
     }
 
     public function paginatePublished(int $perPage = 20, ?string $categorySlug = null): LengthAwarePaginator

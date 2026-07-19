@@ -43,6 +43,11 @@ class PostService
         return $this->postRepository->findOrFail($id);
     }
 
+    public function findAdminDetail(int $id): Post
+    {
+        return $this->postRepository->findAdminDetail($id);
+    }
+
     public function createDraft(array $data, User $author): Post
     {
         $mediaUrl = $this->storeMediaFile($data['media_file'] ?? null);

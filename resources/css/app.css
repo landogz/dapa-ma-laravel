@@ -2159,3 +2159,337 @@
 .diary-entry-preview u {
     text-decoration: underline;
 }
+
+.post-view-popup {
+    border-radius: 1.25rem !important;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(18, 58, 96, 0.22) !important;
+}
+
+.post-view-popup .swal2-title {
+    display: none;
+}
+
+.post-view-html {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    text-align: left;
+}
+
+.post-view {
+    display: flex;
+    flex-direction: column;
+    max-height: min(78vh, 44rem);
+}
+
+.post-view-hero {
+    background: linear-gradient(135deg, #055498 0%, #123a60 100%);
+    color: #fff;
+    padding: 1.25rem 1.35rem 1.1rem;
+}
+
+.post-view-hero-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.post-view-hero .admin-status-badge {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.post-view-id {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.post-view-title {
+    margin: 0;
+    font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+    font-weight: 700;
+    line-height: 1.3;
+    color: #fff;
+}
+
+.post-view-subtitle {
+    margin: 0.45rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.35rem;
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.post-view-dot {
+    opacity: 0.7;
+}
+
+.post-view-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.post-view-metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.post-view-metric i {
+    font-size: 0.7rem;
+    opacity: 0.9;
+}
+
+.post-view-metric strong {
+    font-weight: 700;
+    color: #fff;
+}
+
+.post-view-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1.1rem 1.25rem 0.25rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.post-view-media {
+    width: 100%;
+    max-height: 14rem;
+    object-fit: cover;
+    border-radius: 0.85rem;
+    background: #e2e8f0;
+}
+
+.post-view-youtube {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: fit-content;
+    border-radius: 0.65rem;
+    background: #fff5f5;
+    color: #CE2028;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.post-view-youtube:hover {
+    background: #fee2e2;
+}
+
+.post-view-body {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: #1e293b;
+}
+
+.post-view-body p:last-child {
+    margin-bottom: 0;
+}
+
+.post-view-empty {
+    margin: 0;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.post-view-engagement {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 0.85rem;
+}
+
+.post-view-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.85rem;
+}
+
+.post-view-tab {
+    border: 1px solid #dbe3ee;
+    background: #f8fafc;
+    color: #475569;
+    border-radius: 9999px;
+    padding: 0.35rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.post-view-tab:hover {
+    border-color: #055498;
+    color: #055498;
+}
+
+.post-view-tab.is-active {
+    background: #055498;
+    border-color: #055498;
+    color: #fff;
+}
+
+.post-view-tab-panel[hidden] {
+    display: none;
+}
+
+.post-view-people,
+.post-view-thread {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.post-view-people > li,
+.post-view-thread > li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.65rem;
+    align-items: start;
+    padding: 0.65rem 0.7rem;
+    border-radius: 0.8rem;
+    background: #f8fafc;
+}
+
+.post-view-thread > li {
+    grid-template-columns: 1fr;
+}
+
+.post-view-people strong,
+.post-view-comment-meta strong {
+    display: block;
+    font-size: 0.8125rem;
+    color: #0f172a;
+}
+
+.post-view-people span,
+.post-view-people em,
+.post-view-comment-meta em {
+    display: block;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-style: normal;
+}
+
+.post-view-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #055498 0%, #123a60 100%);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.post-view-comment-head {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.post-view-comment-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.65rem;
+    min-width: 0;
+}
+
+.post-view-thread p {
+    margin: 0.35rem 0 0 2.65rem;
+    font-size: 0.8125rem;
+    color: #334155;
+    white-space: pre-wrap;
+}
+
+.post-view-stars {
+    color: #d97706;
+    letter-spacing: 0.04em;
+    font-size: 0.8rem;
+}
+
+.post-view-comment-reply {
+    margin-left: 1.5rem;
+    border-left: 2px solid #dbeafe;
+    padding-left: 0.65rem;
+}
+
+.post-view-more {
+    margin: 0.5rem 0 0;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.post-view-actions {
+    margin: 0 !important;
+    padding: 0.9rem 1.25rem 1.15rem !important;
+    border-top: 1px solid #eef2f7;
+    gap: 0.55rem !important;
+}
+
+.post-view-btn-close,
+.post-view-btn-edit {
+    border-radius: 0.7rem !important;
+    font-weight: 600 !important;
+    padding: 0.55rem 1.1rem !important;
+}
+
+button.admin-table-mobile-title {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    color: #055498;
+}
+
+button.admin-table-mobile-title:hover,
+.admin-table-link-chip[data-post-view]:hover {
+    color: #123a60;
+    text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+    .post-view-hero,
+    .post-view-content,
+    .post-view-actions {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    .post-view-people > li {
+        grid-template-columns: auto 1fr;
+    }
+
+    .post-view-people em {
+        grid-column: 2;
+    }
+
+    .post-view-thread p {
+        margin-left: 0;
+    }
+}

@@ -4,7 +4,7 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
 import { buildSwalForm, buildSwalOptions } from './shared/swal-forms';
-import { renderRatingBadge } from './shared/ratings';
+import { renderRatingBadge, renderStars } from './shared/ratings';
 import { showSuccessToast, showErrorToast } from './shared/toast';
 
 let postsTable;
@@ -120,17 +120,274 @@ export async function promptCreateDraft() {
     loadPosts();
 }
 
+export async function viewPost(postId) {
+    try {
+        const { data } = await axios.get(`/admin/posts/${postId}`);
+        const post = data?.data;
+
+        if (!post) {
+            showErrorToast('Unable to load the selected post.', 'Post');
+            return;
+        }
+
+        postsById.set(String(post.id), post);
+        openPostViewModal(post);
+    } catch (error) {
+        showErrorToast(
+            error?.response?.data?.message ?? 'Unable to load the selected post.',
+            'Post',
+        );
+    }
+}
+
+function openPostViewModal(post) {
+    const likes = Array.isArray(post.likes) ? post.likes : [];
+    const comments = Array.isArray(post.comments) ? post.comments : [];
+    const reviews = Array.isArray(post.reviews) ? post.reviews : [];
+    const likesCount = Number(post.likes_count ?? likes.length ?? 0);
+    const commentsCount = Number(post.comments_count ?? comments.length ?? 0);
+    const reviewsCount = Number(post.reviews_count ?? reviews.length ?? 0);
+    const averageRating = Number(post.reviews_avg_rating ?? post.average_rating ?? 0);
+    const hasEngagement = likesCount > 0 || commentsCount > 0 || reviewsCount > 0;
+    const canEdit = canEditPost(post);
+
+    Swal.fire({
+        title: '',
+        width: '42rem',
+        padding: '0',
+        html: `
+            <div class="post-view">
+                <div class="post-view-hero">
+                    <div class="post-view-hero-top">
+                        ${statusBadge(post.status)}
+                        <span class="post-view-id">#${escapeHtml(String(post.id))}</span>
+                    </div>
+                    <h2 class="post-view-title">${escapeHtml(post.title ?? 'Post')}</h2>
+                    <p class="post-view-subtitle">
+                        <span>${escapeHtml(post.category?.name ?? 'Uncategorized')}</span>
+                        <span class="post-view-dot" aria-hidden="true">·</span>
+                        <span>${escapeHtml(post.author?.name ?? 'Unknown author')}</span>
+                        <span class="post-view-dot" aria-hidden="true">·</span>
+                        <span>${escapeHtml(formatDateTime(post.publish_date) || 'Not scheduled')}</span>
+                    </p>
+                    <div class="post-view-metrics" role="list">
+                        <div class="post-view-metric" role="listitem">
+                            <i class="fas fa-heart" aria-hidden="true"></i>
+                            <span><strong>${likesCount}</strong> ${likesCount === 1 ? 'like' : 'likes'}</span>
+                        </div>
+                        <div class="post-view-metric" role="listitem">
+                            <i class="fas fa-comment" aria-hidden="true"></i>
+                            <span><strong>${commentsCount}</strong> ${commentsCount === 1 ? 'comment' : 'comments'}</span>
+                        </div>
+                        <div class="post-view-metric" role="listitem">
+                            <i class="fas fa-star" aria-hidden="true"></i>
+                            <span><strong>${reviewsCount > 0 ? averageRating.toFixed(1) : '—'}</strong> · ${reviewsCount} ${reviewsCount === 1 ? 'rating' : 'ratings'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="post-view-content">
+                    ${post.media_url ? `<img src="${escapeHtml(post.media_url)}" alt="" class="post-view-media">` : ''}
+                    ${post.youtube_url ? `
+                        <a class="post-view-youtube" href="${escapeHtml(post.youtube_url)}" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-play" aria-hidden="true"></i>
+                            Watch on YouTube
+                        </a>
+                    ` : ''}
+                    <div class="post-view-body diary-entry-preview">
+                        ${post.body || '<p class="post-view-empty">No content yet.</p>'}
+                    </div>
+                    ${hasEngagement ? renderPostEngagementPanel({ likes, comments, reviews, likesCount, commentsCount, reviewsCount }) : ''}
+                </div>
+            </div>
+        `,
+        showCancelButton: canEdit,
+        confirmButtonText: 'Close',
+        cancelButtonText: 'Edit post',
+        confirmButtonColor: '#055498',
+        cancelButtonColor: '#123a60',
+        reverseButtons: true,
+        customClass: {
+            popup: 'post-view-popup',
+            htmlContainer: 'post-view-html',
+            actions: 'post-view-actions',
+            confirmButton: 'post-view-btn-close',
+            cancelButton: 'post-view-btn-edit',
+        },
+        didOpen: () => {
+            bindPostEngagementTabs();
+        },
+    }).then(({ isDismissed, dismiss }) => {
+        if (isDismissed && dismiss === Swal.DismissReason.cancel && canEdit) {
+            promptEditPost(post.id);
+        }
+    });
+}
+
+function renderPostEngagementPanel({ likes, comments, reviews, likesCount, commentsCount, reviewsCount }) {
+    const tabs = [];
+
+    if (likesCount > 0) {
+        tabs.push({ id: 'likes', label: `Likes (${likesCount})`, html: renderPostLikesSection(likes) });
+    }
+
+    if (commentsCount > 0) {
+        tabs.push({ id: 'comments', label: `Comments (${commentsCount})`, html: renderPostCommentsSection(comments) });
+    }
+
+    if (reviewsCount > 0) {
+        tabs.push({ id: 'ratings', label: `Ratings (${reviewsCount})`, html: renderPostRatingsSection(reviews) });
+    }
+
+    if (tabs.length === 0) {
+        return '';
+    }
+
+    return `
+        <section class="post-view-engagement">
+            <div class="post-view-tabs" role="tablist" aria-label="Post engagement">
+                ${tabs.map((tab, index) => `
+                    <button
+                        type="button"
+                        class="post-view-tab${index === 0 ? ' is-active' : ''}"
+                        role="tab"
+                        aria-selected="${index === 0 ? 'true' : 'false'}"
+                        data-post-tab="${tab.id}"
+                    >${tab.label}</button>
+                `).join('')}
+            </div>
+            ${tabs.map((tab, index) => `
+                <div
+                    class="post-view-tab-panel${index === 0 ? ' is-active' : ''}"
+                    role="tabpanel"
+                    data-post-tab-panel="${tab.id}"
+                    ${index === 0 ? '' : 'hidden'}
+                >${tab.html}</div>
+            `).join('')}
+        </section>
+    `;
+}
+
+function bindPostEngagementTabs() {
+    const root = document.querySelector('.post-view-engagement');
+
+    if (!root) {
+        return;
+    }
+
+    root.querySelectorAll('[data-post-tab]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const tabId = button.getAttribute('data-post-tab');
+
+            root.querySelectorAll('[data-post-tab]').forEach((tab) => {
+                const active = tab === button;
+                tab.classList.toggle('is-active', active);
+                tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+
+            root.querySelectorAll('[data-post-tab-panel]').forEach((panel) => {
+                const active = panel.getAttribute('data-post-tab-panel') === tabId;
+                panel.classList.toggle('is-active', active);
+                panel.toggleAttribute('hidden', !active);
+            });
+        });
+    });
+}
+
+function renderPostLikesSection(likes) {
+    const items = likes.slice(0, 20).map((like) => `
+        <li>
+            <div class="post-view-avatar" aria-hidden="true">${escapeHtml(initials(like.user?.name))}</div>
+            <div>
+                <strong>${escapeHtml(like.user?.name ?? 'Unknown user')}</strong>
+                <span>${escapeHtml(like.user?.email ?? '')}</span>
+            </div>
+            <em>${escapeHtml(formatDateTime(like.created_at) || '')}</em>
+        </li>
+    `).join('');
+
+    const more = likes.length > 20
+        ? `<p class="post-view-more">Showing 20 of ${likes.length}</p>`
+        : '';
+
+    return `
+        <ul class="post-view-people">${items}</ul>
+        ${more}
+    `;
+}
+
+function renderPostCommentsSection(comments) {
+    const byParent = new Map();
+    comments.forEach((comment) => {
+        const parentKey = comment.parent_id ? String(comment.parent_id) : 'root';
+        if (!byParent.has(parentKey)) {
+            byParent.set(parentKey, []);
+        }
+        byParent.get(parentKey).push(comment);
+    });
+
+    const renderTree = (parentId = 'root', depth = 0) => {
+        const nodes = byParent.get(String(parentId)) ?? [];
+
+        return nodes.map((comment) => {
+            const children = renderTree(comment.id, depth + 1);
+
+            return `
+            <li class="${depth > 0 ? 'post-view-comment-reply' : ''}">
+                <div class="post-view-comment-head">
+                    <div class="post-view-avatar" aria-hidden="true">${escapeHtml(initials(comment.user?.name))}</div>
+                    <div class="post-view-comment-meta">
+                        <strong>${escapeHtml(comment.user?.name ?? 'Unknown user')}</strong>
+                        <em>${escapeHtml(formatDateTime(comment.created_at) || '')}</em>
+                    </div>
+                </div>
+                <p>${escapeHtml(comment.body ?? '')}</p>
+                ${children ? `<ul class="post-view-thread">${children}</ul>` : ''}
+            </li>
+        `;
+        }).join('');
+    };
+
+    return `<ul class="post-view-thread">${renderTree()}</ul>`;
+}
+
+function renderPostRatingsSection(reviews) {
+    const items = reviews.map((review) => `
+        <li>
+            <div class="post-view-comment-head">
+                <div class="post-view-avatar" aria-hidden="true">${escapeHtml(initials(review.user?.name))}</div>
+                <div class="post-view-comment-meta">
+                    <strong>${escapeHtml(review.user?.name ?? 'Unknown user')}</strong>
+                    <span class="post-view-stars" aria-label="${Number(review.rating) || 0} stars">${renderStars(review.rating)}</span>
+                    <em>${escapeHtml(formatDateTime(review.created_at) || '')}</em>
+                </div>
+            </div>
+            ${review.comment ? `<p>${escapeHtml(review.comment)}</p>` : ''}
+        </li>
+    `).join('');
+
+    return `<ul class="post-view-thread">${items}</ul>`;
+}
+
+function initials(name) {
+    const parts = String(name ?? '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2);
+
+    if (parts.length === 0) {
+        return '?';
+    }
+
+    return parts.map((part) => part.charAt(0).toUpperCase()).join('');
+}
+
 export async function promptEditPost(postId) {
     const post = postsById.get(String(postId));
 
     if (!post) {
-        await Swal.fire({
-            icon: 'error',
-            title: 'Post',
-            text: 'Unable to load the selected draft.',
-            confirmButtonColor: '#CE2028',
-        });
-
+        showErrorToast('Unable to load the selected draft.', 'Post');
         return;
     }
 
@@ -166,12 +423,12 @@ function openPostFromQueryParam() {
 
     const postId = new URLSearchParams(window.location.search).get('post');
 
-    if (!postId || !postsById.has(String(postId))) {
+    if (!postId) {
         return;
     }
 
     pendingPostQueryHandled = true;
-    promptEditPost(postId);
+    viewPost(postId);
 }
 
 async function submitPostPayload(payload, { postId = null } = {}) {
@@ -419,6 +676,19 @@ function bindPostActionTooltips(tableEl) {
         return;
     }
 
+    tableEl.addEventListener('click', (event) => {
+        const viewTrigger = event.target.closest('[data-post-view]');
+        if (!viewTrigger) {
+            return;
+        }
+
+        event.preventDefault();
+        const postId = viewTrigger.getAttribute('data-post-view');
+        if (postId) {
+            viewPost(postId);
+        }
+    });
+
     tableEl.addEventListener('mousedown', (event) => {
         const wrap = event.target.closest('.admin-action-tooltip-wrap');
         if (!wrap) {
@@ -562,13 +832,21 @@ function bindPostsViewportListener(tableEl) {
 }
 
 function buildPostRowData(post) {
+    const titleLink = `
+        <button type="button" class="admin-table-link-chip text-left" data-post-view="${post.id}" title="View post details">
+            ${escapeHtml(post.title)}
+        </button>
+    `;
+
     if (postsTableMode === 'mobile') {
         return [
             `<div class="admin-table-mobile-card">
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">Post #${post.id}</p>
-                        <p class="admin-table-mobile-title">${escapeHtml(post.title)}</p>
+                        <button type="button" class="admin-table-mobile-title text-left" data-post-view="${post.id}" title="View post details">
+                            ${escapeHtml(post.title)}
+                        </button>
                     </div>
                     ${statusBadge(post.status)}
                 </div>
@@ -576,6 +854,7 @@ function buildPostRowData(post) {
                     <p><span>Category:</span> ${escapeHtml(post.category?.name ?? 'Uncategorized')}</p>
                     <p><span>Author:</span> ${escapeHtml(post.author?.name ?? 'N/A')}</p>
                     <p><span>Publish Date:</span> ${escapeHtml(formatDateTime(post.publish_date) || 'Not scheduled')}</p>
+                    <p><span>Engagement:</span> ${Number(post.likes_count ?? 0)} likes · ${Number(post.comments_count ?? 0)} comments</p>
                     <p><span>Rating:</span> ${renderRatingBadge(post, { compact: true })}</p>
                 </div>
             </div>`,
@@ -585,7 +864,7 @@ function buildPostRowData(post) {
 
     return [
         post.id,
-        escapeHtml(post.title),
+        titleLink,
         escapeHtml(post.category?.name ?? '—'),
         statusBadge(post.status),
         escapeHtml(post.author?.name ?? '—'),
@@ -861,7 +1140,15 @@ function buildMultipartPayload(formData, { method = 'POST' } = {}) {
 }
 
 function getAvailableActions(post) {
-    const actions = [];
+    const actions = [
+        {
+            handler: 'viewPost',
+            label: 'View',
+            tooltip: 'View post details',
+            icon: 'fas fa-eye',
+            className: 'admin-table-action-primary',
+        },
+    ];
 
     if (canEditPost(post)) {
         actions.push({
@@ -981,6 +1268,7 @@ function canDeletePost(_post) {
 
 window.Posts = {
     createDraftPrompt: promptCreateDraft,
+    viewPost,
     editPost: promptEditPost,
     submitForReview: submitPostForReview,
     schedulePost,
