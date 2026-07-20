@@ -835,7 +835,8 @@
 }
 
 .dt-container .dt-col-actions {
-    min-width: 6rem;
+    min-width: 9.5rem;
+    width: 9.5rem;
     white-space: nowrap;
     overflow: visible;
     position: relative;

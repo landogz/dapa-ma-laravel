@@ -43,7 +43,7 @@ export function initPostsModule() {
 export function loadPosts() {
     if (!postsTable) return;
 
-    axios.get('/admin/posts')
+    axios.get('/admin/posts', { params: { per_page: 200 } })
         .then((response) => {
             try {
                 const payload = response?.data ?? {};
@@ -650,11 +650,11 @@ function renderPostActions(post, isMobile = false) {
         return '<span class="admin-empty-badge">No actions</span>';
     }
 
-    return `<div class="admin-table-actions${isMobile ? ' admin-table-actions-mobile' : ''}">${actions.map((action) => {
+    return `<div class="admin-table-actions${isMobile ? ' admin-table-actions-mobile' : ''}" data-post-id="${post.id}">${actions.map((action) => {
         const label = escapeHtml(action.tooltip ?? action.label);
         const iconClass = action.iconClass ? ` ${action.iconClass}` : '';
         const button = `
-        <button type="button" onclick="window.Posts.${action.handler}(${post.id})" class="admin-table-action ${isMobile ? '' : 'admin-table-action-icon'} ${action.className ?? ''}" aria-label="${label}">
+        <button type="button" data-post-action="${action.handler}" data-post-id="${post.id}" class="admin-table-action ${isMobile ? '' : 'admin-table-action-icon'} ${action.className ?? ''}" aria-label="${label}">
             <i class="${action.icon}${iconClass}"></i>
             <span class="${isMobile ? '' : 'sr-only'}">${label}</span>
         </button>`;
@@ -677,6 +677,19 @@ function bindPostActionTooltips(tableEl) {
     }
 
     tableEl.addEventListener('click', (event) => {
+        const actionTrigger = event.target.closest('[data-post-action]');
+        if (actionTrigger) {
+            event.preventDefault();
+            const action = actionTrigger.getAttribute('data-post-action');
+            const postId = actionTrigger.getAttribute('data-post-id');
+
+            if (action && postId && typeof window.Posts?.[action] === 'function') {
+                window.Posts[action](postId);
+            }
+
+            return;
+        }
+
         const viewTrigger = event.target.closest('[data-post-view]');
         if (!viewTrigger) {
             return;
@@ -787,10 +800,18 @@ async function initializePostsTable(tableEl) {
         pageLength: nextMode === 'mobile' ? 5 : 10,
         scrollX: nextMode !== 'mobile',
         scrollCollapse: nextMode !== 'mobile',
+        deferRender: false,
+        drawCallback: () => {
+            refreshVisiblePostActions();
+
+            if (postsTable && typeof postsTable.columns?.adjust === 'function') {
+                postsTable.columns.adjust();
+            }
+        },
         columns: nextMode === 'mobile'
             ? [
                 { title: 'Post', className: 'dt-col-mobile-summary' },
-                { title: 'Actions', orderable: false, className: 'dt-col-actions' },
+                { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
             ]
             : [
                 { title: 'ID', className: 'dt-col-id' },
@@ -800,9 +821,51 @@ async function initializePostsTable(tableEl) {
                 { title: 'Author', className: 'dt-col-nowrap' },
                 { title: 'Publish Date', className: 'dt-col-nowrap' },
                 { title: 'Rating', className: 'dt-col-nowrap' },
-                { title: 'Actions', orderable: false, className: 'dt-col-actions' },
+                { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
             ],
     }));
+}
+
+function refreshVisiblePostActions() {
+    if (!postsTable) {
+        return;
+    }
+
+    const actionsColIndex = postsTableMode === 'mobile' ? 1 : 7;
+
+    postsTable.rows({ page: 'current' }).every(function refreshRowActions() {
+        const rowNode = this.node();
+        const rowData = this.data();
+
+        if (!rowNode || !rowData) {
+            return;
+        }
+
+        const postId = postsTableMode === 'mobile'
+            ? (rowNode.querySelector('[data-post-view], [data-post-id]')?.getAttribute('data-post-view')
+                ?? rowNode.querySelector('[data-post-id]')?.getAttribute('data-post-id'))
+            : rowData[0];
+
+        const post = postsById.get(String(postId));
+
+        if (!post) {
+            return;
+        }
+
+        const actionsHtml = renderPostActions(post, postsTableMode === 'mobile');
+        const cellNode = rowNode.querySelector('td.dt-col-actions')
+            ?? rowNode.children[actionsColIndex]
+            ?? null;
+
+        if (cellNode && cellNode.innerHTML !== actionsHtml) {
+            cellNode.innerHTML = actionsHtml;
+        }
+
+        // Keep DataTables cache in sync so later pages/redraws keep the buttons.
+        if (Array.isArray(rowData) && rowData[actionsColIndex] !== actionsHtml) {
+            rowData[actionsColIndex] = actionsHtml;
+        }
+    });
 }
 
 function bindPostsViewportListener(tableEl) {

@@ -10,6 +10,8 @@ export function getAdminDataTableOptions({
     responsive = false,
     scrollX = true,
     scrollCollapse = true,
+    deferRender = false,
+    drawCallback,
 }) {
     return {
         searching: true,
@@ -21,7 +23,7 @@ export function getAdminDataTableOptions({
         scrollX,
         scrollCollapse,
         processing: true,
-        deferRender: true,
+        deferRender,
         stripeClasses: [],
         layout: {
             topStart: 'pageLength',
@@ -44,6 +46,7 @@ export function getAdminDataTableOptions({
         },
         columns,
         columnDefs,
+        drawCallback,
     };
 }
 
