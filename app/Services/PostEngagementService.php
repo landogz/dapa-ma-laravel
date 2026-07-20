@@ -17,6 +17,7 @@ class PostEngagementService
         private readonly PostEngagementRepository $postEngagementRepository,
         private readonly PostRepository $postRepository,
         private readonly ProfileService $profileService,
+        private readonly UserNotificationService $userNotificationService,
     ) {
     }
 
@@ -95,7 +96,14 @@ class PostEngagementService
             abort(422, 'Only published posts can be liked.');
         }
 
-        return $this->postEngagementRepository->toggleLike($user, $post);
+        $result = $this->postEngagementRepository->toggleLike($user, $post);
+
+        if (($result['liked'] ?? false) === true) {
+            $post->loadMissing('author');
+            $this->userNotificationService->notifyPostLiked($post, $user);
+        }
+
+        return $result;
     }
 
     public function listComments(int $postId, int $perPage = 20): LengthAwarePaginator
@@ -134,8 +142,9 @@ class PostEngagementService
             abort(422, 'Only published posts can be commented on.');
         }
 
+        $parent = null;
         if ($parentId !== null) {
-            $this->postEngagementRepository->findCommentForPost($parentId, $postId);
+            $parent = $this->postEngagementRepository->findCommentForPost($parentId, $postId);
         }
 
         $comment = $this->postEngagementRepository->createComment(
@@ -144,6 +153,15 @@ class PostEngagementService
             $body,
             $parentId,
         );
+
+        $post->loadMissing('author');
+
+        if ($parent !== null) {
+            $parent->loadMissing('user');
+            $this->userNotificationService->notifyCommentReply($comment, $parent, $post, $user);
+        } else {
+            $this->userNotificationService->notifyPostComment($comment, $post, $user);
+        }
 
         $this->enrichCommentUser($comment);
         $comment->setAttribute('replies', []);

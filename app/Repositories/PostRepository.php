@@ -97,6 +97,14 @@ class PostRepository
             ->count();
     }
 
+    public function getDueScheduledPosts(): Collection
+    {
+        return Post::query()
+            ->where('status', 'scheduled')
+            ->where('publish_date', '<=', Carbon::now())
+            ->get();
+    }
+
     public function publishDue(): int
     {
         return Post::query()

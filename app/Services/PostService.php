@@ -16,11 +16,16 @@ class PostService
 {
     private PostRepository $postRepository;
     private AdminNotificationService $adminNotificationService;
+    private UserNotificationService $userNotificationService;
 
-    public function __construct(PostRepository $postRepository, AdminNotificationService $adminNotificationService)
-    {
+    public function __construct(
+        PostRepository $postRepository,
+        AdminNotificationService $adminNotificationService,
+        UserNotificationService $userNotificationService,
+    ) {
         $this->postRepository = $postRepository;
         $this->adminNotificationService = $adminNotificationService;
+        $this->userNotificationService = $userNotificationService;
     }
 
     public function listAdmin(int $perPage = 20): LengthAwarePaginator
@@ -53,7 +58,7 @@ class PostService
         $mediaUrl = $this->storeMediaFile($data['media_file'] ?? null);
         $publishMeta = $this->resolveSuperAdminPublishMeta($author);
 
-        return $this->postRepository->create([
+        $post = $this->postRepository->create([
             'title'       => $data['title'],
             'body'        => $data['body'],
             'category_id' => $data['category_id'],
@@ -63,6 +68,12 @@ class PostService
             'publish_date' => $publishMeta['publish_date'],
             'author_id'   => $author->id,
         ]);
+
+        if ($post->status === 'published') {
+            $this->userNotificationService->notifyNewPost($post);
+        }
+
+        return $post;
     }
 
     public function updateDraft(Post $post, array $data, ?User $actor = null): Post
@@ -72,6 +83,7 @@ class PostService
             : ['draft', 'pending_review'];
 
         $this->assertStatus($post, $allowedStatuses);
+        $wasPublished = $post->status === 'published';
 
         $payload = array_filter($data, fn ($value) => $value !== null);
 
@@ -88,7 +100,13 @@ class PostService
             $payload = $this->applySuperAdminPublishDefaults($payload, $post);
         }
 
-        return $this->postRepository->update($post, $payload);
+        $post = $this->postRepository->update($post, $payload);
+
+        if (! $wasPublished && $post->status === 'published') {
+            $this->userNotificationService->notifyNewPost($post);
+        }
+
+        return $post;
     }
 
     public function submitForReview(Post $post, User $editor): Post
@@ -143,6 +161,7 @@ class PostService
 
         // Reuse the scheduled notification so the author is informed that the post is live.
         $this->adminNotificationService->notifyPostScheduled($post, $publisher);
+        $this->userNotificationService->notifyNewPost($post);
 
         return $post;
     }
@@ -161,7 +180,14 @@ class PostService
 
     public function publishScheduled(): int
     {
-        return $this->postRepository->publishDue();
+        $duePosts = $this->postRepository->getDueScheduledPosts();
+        $count = $this->postRepository->publishDue();
+
+        foreach ($duePosts as $post) {
+            $this->userNotificationService->notifyNewPost($post);
+        }
+
+        return $count;
     }
 
     private function resolveSuperAdminPublishMeta(User $author, ?string $requestedStatus = null): array

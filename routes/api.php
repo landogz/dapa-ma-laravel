@@ -19,6 +19,7 @@ use App\Http\Controllers\API\RehabCenterController;
 use App\Http\Controllers\API\ReviewController;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\API\UserNotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -128,6 +129,16 @@ Route::prefix('v1')
 
             // ── Reviews ─────────────────────────────────────────────────
             Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+
+            // ── User notification inbox (mobile + any authenticated user) ─
+            Route::prefix('notifications')->name('notifications.')->group(function (): void {
+                Route::get('/', [UserNotificationController::class, 'index'])->name('index');
+                Route::get('/summary', [UserNotificationController::class, 'summary'])->name('summary');
+                Route::post('/read-all', [UserNotificationController::class, 'markAllAsRead'])->name('read-all');
+                Route::post('/{userNotification}/read', [UserNotificationController::class, 'markAsRead'])
+                    ->whereNumber('userNotification')
+                    ->name('read');
+            });
 
             // ── Admin ─────────────────────────────────────────────────────
             Route::prefix('admin')->name('admin.')->group(function (): void {
