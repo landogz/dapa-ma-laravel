@@ -43,8 +43,8 @@ export function loadIecMaterials(search = '') {
             });
             iecMaterialsTable.draw();
         })
-        .catch(() => {
-            showErrorToast('Failed to load IEC materials.');
+        .catch(({ response }) => {
+            showErrorToast(response?.data?.message ?? 'Failed to load IEC materials.');
         });
 }
 
@@ -182,60 +182,83 @@ function showIecMaterialForm(existing) {
 }
 
 async function initializeIecMaterialsTable(tableEl) {
-    const isMobile = window.matchMedia('(max-width: 767px)').matches;
-    iecMaterialsTableMode = isMobile ? 'mobile' : 'desktop';
+    const nextMode = getTableMode();
+
+    if (!iecMaterialsDataTableClass) {
+        return;
+    }
+
+    if (iecMaterialsTable && iecMaterialsTableMode === nextMode) {
+        return;
+    }
 
     if (iecMaterialsTable) {
         iecMaterialsTable.destroy();
-        iecMaterialsTable = null;
         tableEl.innerHTML = '';
     }
 
-    const columns = isMobile
-        ? [
-            {
-                title: 'IEC Materials',
-                data: null,
-                orderable: false,
-                render: (_, __, row) => row.mobileHtml,
-            },
-        ]
-        : [
-            { title: 'Title', data: 'title' },
-            { title: 'Topic', data: 'topic' },
-            { title: 'Type', data: 'mediaType' },
-            { title: 'Status', data: 'status' },
-            { title: 'Sort', data: 'sortOrder' },
-            {
-                title: 'Actions',
-                data: 'actions',
-                orderable: false,
-                className: 'admin-table-actions-nowrap',
-            },
-        ];
-
-    iecMaterialsTable = createAdminDataTable(
-        tableEl,
-        iecMaterialsDataTableClass,
-        getAdminDataTableOptions({
-            columns,
-            order: isMobile ? [] : [[4, 'asc']],
-        }),
-    );
+    iecMaterialsTableMode = nextMode;
+    iecMaterialsTable = await createAdminDataTable(tableEl, getAdminDataTableOptions({
+        searchLabel: 'Search IEC materials:',
+        searchPlaceholder: 'Search IEC materials',
+        infoLabel: 'Showing _START_ to _END_ of _TOTAL_ materials',
+        columns: buildColumns(nextMode),
+        pageLength: nextMode === 'mobile' ? 5 : 10,
+        scrollX: nextMode !== 'mobile',
+        scrollCollapse: nextMode !== 'mobile',
+    }));
 }
 
 function bindViewportListener(tableEl) {
-    if (hasBoundViewportListener) return;
-    hasBoundViewportListener = true;
-    window.matchMedia('(max-width: 767px)').addEventListener('change', async () => {
+    if (hasBoundViewportListener) {
+        return;
+    }
+
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = async () => {
+        const nextMode = getTableMode();
+        if (nextMode === iecMaterialsTableMode) {
+            return;
+        }
         await initializeIecMaterialsTable(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
         loadIecMaterials();
-    });
+    };
+
+    if (typeof mobileQuery.addEventListener === 'function') {
+        mobileQuery.addEventListener('change', handleViewportChange);
+    } else {
+        mobileQuery.addListener(handleViewportChange);
+    }
+
+    hasBoundViewportListener = true;
+}
+
+function getTableMode() {
+    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+}
+
+function buildColumns(mode) {
+    if (mode === 'mobile') {
+        return [
+            { title: 'IEC Material', className: 'dt-col-mobile-summary' },
+            { title: 'Actions', orderable: false, className: 'dt-col-actions' },
+        ];
+    }
+
+    return [
+        { title: 'ID', className: 'dt-col-id' },
+        { title: 'Title', className: 'dt-col-primary dt-col-name' },
+        { title: 'Topic', className: 'dt-col-nowrap' },
+        { title: 'Type', className: 'dt-col-nowrap' },
+        { title: 'Sort', className: 'dt-col-nowrap' },
+        { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Actions', orderable: false, className: 'dt-col-actions' },
+    ];
 }
 
 function buildRowData(item) {
-    const actions = buildAdminActionButtons([
+    const actions = [
         {
             tooltip: 'Edit material',
             icon: 'fas fa-pen-to-square',
@@ -248,28 +271,42 @@ function buildRowData(item) {
             className: 'admin-table-action-danger',
             attrs: `onclick="window.IecMaterials.remove(${item.id})"`,
         },
-    ]);
+    ];
 
-    const statusBadge = item.is_active
-        ? '<span class="admin-badge admin-badge-success">Active</span>'
-        : '<span class="admin-badge">Inactive</span>';
+    const desktopActionsMarkup = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
+    const mobileActionsMarkup = buildAdminActionButtons([
+        { ...actions[0], label: 'Edit' },
+        { ...actions[1], label: 'Delete' },
+    ], { isMobile: true, nowrap: true });
 
-    return {
-        title: escapeHtml(item.title ?? ''),
-        topic: escapeHtml(item.topic ?? '—'),
-        mediaType: escapeHtml((item.media_type ?? '').toUpperCase()),
-        status: statusBadge,
-        sortOrder: item.sort_order ?? 0,
-        actions,
-        mobileHtml: `
-            <div class="admin-mobile-card">
-                <div class="font-semibold text-slate-900">${escapeHtml(item.title ?? '')}</div>
-                <div class="mt-1 text-xs text-slate-500">${escapeHtml(item.topic ?? '—')} · ${(item.media_type ?? '').toUpperCase()}</div>
-                <div class="mt-2">${statusBadge}</div>
-                <div class="mt-3">${actions}</div>
-            </div>
-        `,
-    };
+    if (iecMaterialsTableMode === 'mobile') {
+        return [
+            `<div class="admin-table-mobile-card">
+                <div class="admin-table-mobile-title-row">
+                    <div>
+                        <p class="admin-table-mobile-kicker">IEC #${escapeHtml(String(item.id))}</p>
+                        <p class="admin-table-mobile-title">${escapeHtml(item.title)}</p>
+                    </div>
+                    ${statusBadge(item.is_active)}
+                </div>
+                <div class="admin-table-mobile-details">
+                    <p><span>Topic:</span> ${escapeHtml(item.topic ?? '—')}</p>
+                    <p><span>Type:</span> ${escapeHtml((item.media_type ?? '').toUpperCase())}</p>
+                </div>
+            </div>`,
+            mobileActionsMarkup,
+        ];
+    }
+
+    return [
+        item.id,
+        escapeHtml(item.title ?? ''),
+        escapeHtml(item.topic ?? '—'),
+        escapeHtml((item.media_type ?? '').toUpperCase()),
+        item.sort_order ?? 0,
+        statusBadge(item.is_active),
+        desktopActionsMarkup,
+    ];
 }
 
 function escapeHtml(value) {
@@ -278,7 +315,15 @@ function escapeHtml(value) {
         .replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+        .replaceAll("'", '&#39;');
+}
+
+function statusBadge(isActive) {
+    if (isActive) {
+        return '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>';
+    }
+
+    return '<span class="admin-status-badge rehab-status-badge rehab-status-badge-inactive">Inactive</span>';
 }
 
 window.IecMaterials = {
