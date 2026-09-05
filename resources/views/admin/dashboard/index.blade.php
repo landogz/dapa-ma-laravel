@@ -31,6 +31,10 @@
                         <i class="fas fa-music mr-2"></i>
                         Add Song Contest
                     </button>
+                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-poster-contest" title="Add a poster-making contest">
+                        <i class="fas fa-image mr-2"></i>
+                        Add Poster Contest
+                    </button>
                     <button type="button" class="admin-quick-action admin-quick-action-orange" data-admin-action="send-notification" title="Send a push notification campaign">
                         <i class="fas fa-paper-plane mr-2"></i>
                         Send Notification
@@ -92,6 +96,20 @@
                     </div>
                     <span class="admin-icon-badge">
                         <i class="fas fa-music"></i>
+                    </span>
+                </div>
+            </a>
+
+            <a href="/admin/poster-contest" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="poster-contest">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">Contests</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">Poster Contest</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="poster-contest">--</p>
+                        <p class="admin-trend" data-overview-trend="poster-contest">–</p>
+                    </div>
+                    <span class="admin-icon-badge">
+                        <i class="fas fa-image"></i>
                     </span>
                 </div>
             </a>

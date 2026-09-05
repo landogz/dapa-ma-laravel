@@ -9,6 +9,7 @@ use App\Http\Controllers\API\Admin\PostAdminController;
 use App\Http\Controllers\API\Admin\RehabCenterAdminController;
 use App\Http\Controllers\API\Admin\TrainingAdminController;
 use App\Http\Controllers\API\Admin\SongContestAdminController;
+use App\Http\Controllers\API\Admin\PosterContestAdminController;
 use App\Http\Controllers\API\Admin\UserAdminController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BibleController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\API\RehabCenterController;
 use App\Http\Controllers\API\ReviewController;
 use App\Http\Controllers\API\TrainingController;
 use App\Http\Controllers\API\SongContestController;
+use App\Http\Controllers\API\PosterContestController;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserNotificationController;
@@ -99,6 +101,13 @@ Route::prefix('v1')
             ->whereNumber('songContest')
             ->name('song-contest.show');
 
+        // ── Public poster-making contest ─────────────────────────────────
+        Route::get('/poster-contest', [PosterContestController::class, 'index'])
+            ->name('poster-contest.index');
+        Route::get('/poster-contest/{posterContest}', [PosterContestController::class, 'show'])
+            ->whereNumber('posterContest')
+            ->name('poster-contest.show');
+
         // ── Public daily Bible verse ─────────────────────────────────────
         Route::get('/daily-verse/today', [DailyVerseController::class, 'today'])
             ->name('daily-verse.today');
@@ -136,6 +145,14 @@ Route::prefix('v1')
             Route::get('/song-contest/{songContest}/my-entry', [SongContestController::class, 'myEntry'])
                 ->whereNumber('songContest')
                 ->name('song-contest.my-entry');
+
+            // ── Poster contest submissions ───────────────────────────────
+            Route::post('/poster-contest/{posterContest}/entries', [PosterContestController::class, 'submit'])
+                ->whereNumber('posterContest')
+                ->name('poster-contest.entries.store');
+            Route::get('/poster-contest/{posterContest}/my-entry', [PosterContestController::class, 'myEntry'])
+                ->whereNumber('posterContest')
+                ->name('poster-contest.my-entry');
 
             // ── Post engagement (likes & comments) ───────────────────────
             Route::post('/posts/{id}/like', [PostEngagementController::class, 'toggleLike'])
@@ -242,6 +259,15 @@ Route::prefix('v1')
                         Route::get('/song-contest/{songContest}/entries', [SongContestAdminController::class, 'entries'])->name('song-contest.entries');
                         Route::post('/song-contest/entries/{songContestEntry}/review', [SongContestAdminController::class, 'review'])->name('song-contest.entries.review');
                         Route::post('/song-contest/entries/{songContestEntry}/winner', [SongContestAdminController::class, 'setWinner'])->name('song-contest.entries.winner');
+
+                        Route::get('/poster-contest', [PosterContestAdminController::class, 'index'])->name('poster-contest.index');
+                        Route::post('/poster-contest', [PosterContestAdminController::class, 'store'])->name('poster-contest.store');
+                        Route::get('/poster-contest/{posterContest}', [PosterContestAdminController::class, 'show'])->name('poster-contest.show');
+                        Route::put('/poster-contest/{posterContest}', [PosterContestAdminController::class, 'update'])->name('poster-contest.update');
+                        Route::delete('/poster-contest/{posterContest}', [PosterContestAdminController::class, 'destroy'])->name('poster-contest.destroy');
+                        Route::get('/poster-contest/{posterContest}/entries', [PosterContestAdminController::class, 'entries'])->name('poster-contest.entries');
+                        Route::post('/poster-contest/entries/{posterContestEntry}/review', [PosterContestAdminController::class, 'review'])->name('poster-contest.entries.review');
+                        Route::post('/poster-contest/entries/{posterContestEntry}/winner', [PosterContestAdminController::class, 'setWinner'])->name('poster-contest.entries.winner');
                     });
 
                 // Analytics Viewer + Super Admin

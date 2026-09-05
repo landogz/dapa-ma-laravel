@@ -56,6 +56,10 @@
                     <i class="fas fa-music w-5 text-[#FBD116]"></i>
                     <span>Song Contest</span>
                 </a>
+                <a href="/admin/poster-contest" class="admin-nav-link {{ ($activePage ?? '') === 'poster-contest' ? 'admin-nav-link-active' : '' }}" data-nav-section="poster-contest">
+                    <i class="fas fa-image w-5 text-[#FBD116]"></i>
+                    <span>Poster Contest</span>
+                </a>
                 <a href="/admin/notifications" class="admin-nav-link {{ ($activePage ?? '') === 'notifications' ? 'admin-nav-link-active' : '' }}" data-nav-section="notifications">
                     <i class="fas fa-bell w-5 text-[#FBD116]"></i>
                     <span>Notifications</span>

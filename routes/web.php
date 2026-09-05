@@ -44,6 +44,7 @@ Route::get('/admin/rehab-centers', fn () => AdminPage::render('admin.rehab-cente
 Route::get('/admin/trainings', fn () => AdminPage::render('admin.trainings.index', 'trainings', 'Trainings'));
 
 Route::get('/admin/song-contest', fn () => AdminPage::render('admin.song-contest.index', 'song-contest', 'Song Contest'));
+Route::get('/admin/poster-contest', fn () => AdminPage::render('admin.poster-contest.index', 'poster-contest', 'Poster Contest'));
 
 Route::get('/admin/notifications', fn () => AdminPage::render('admin.notifications.index', 'notifications', 'Notifications'));
 
