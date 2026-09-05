@@ -47,6 +47,8 @@ Route::get('/admin/song-contest', fn () => AdminPage::render('admin.song-contest
 Route::get('/admin/poster-contest', fn () => AdminPage::render('admin.poster-contest.index', 'poster-contest', 'Poster Contest'));
 Route::get('/admin/video-contest', fn () => AdminPage::render('admin.video-contest.index', 'video-contest', 'Video Contest'));
 
+Route::get('/admin/iec-materials', fn () => AdminPage::render('admin.iec-materials.index', 'iec-materials', 'IEC Materials'));
+
 Route::get('/admin/notifications', fn () => AdminPage::render('admin.notifications.index', 'notifications', 'Notifications'));
 
 Route::get('/admin/analytics', fn () => AdminPage::render('admin.analytics.index', 'analytics', 'Analytics'));

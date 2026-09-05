@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             SongContestSeeder::class,
             PosterContestSeeder::class,
             VideoContestSeeder::class,
+            IecMaterialSeeder::class,
             PostSeeder::class,
             BookmarkSeeder::class,
             NotificationSeeder::class,

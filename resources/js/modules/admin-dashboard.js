@@ -11,13 +11,14 @@ import { initTrainingsModule } from './trainings/index';
 import { initSongContestModule } from './song-contest/index';
 import { initPosterContestModule } from './poster-contest/index';
 import { initVideoContestModule } from './video-contest/index';
+import { initIecMaterialsModule } from './iec-materials/index';
 import { initUsersModule } from './users';
 
 const ADMIN_ROLE_SECTIONS = {
-    super_admin: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'notifications', 'analytics', 'users', 'diary'],
-    editor: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest'],
-    publisher: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'notifications'],
-    analytics_viewer: ['rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'analytics'],
+    super_admin: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'iec-materials', 'notifications', 'analytics', 'users', 'diary'],
+    editor: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'iec-materials'],
+    publisher: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'iec-materials', 'notifications'],
+    analytics_viewer: ['rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'iec-materials', 'analytics'],
 };
 
 const PAGE_SECTION_REQUIREMENTS = {
@@ -27,6 +28,7 @@ const PAGE_SECTION_REQUIREMENTS = {
     'admin-song-contest': 'song-contest',
     'admin-poster-contest': 'poster-contest',
     'admin-video-contest': 'video-contest',
+    'admin-iec-materials': 'iec-materials',
     'admin-notifications': 'notifications',
     'admin-analytics': 'analytics',
     'admin-users': 'users',
@@ -40,6 +42,7 @@ const SECTION_PATHS = {
     'song-contest': '/admin/song-contest',
     'poster-contest': '/admin/poster-contest',
     'video-contest': '/admin/video-contest',
+    'iec-materials': '/admin/iec-materials',
     notifications: '/admin/notifications',
     analytics: '/admin/analytics',
     users: '/admin/users',
@@ -324,6 +327,9 @@ function initializePageContent(pageName, allowedSections) {
         case 'admin-video-contest':
             initVideoContestModule();
             break;
+        case 'admin-iec-materials':
+            initIecMaterialsModule();
+            break;
         case 'admin-notifications':
             initNotificationsModule();
             break;
@@ -367,6 +373,10 @@ function bindQuickActions() {
 
     document.querySelector('[data-admin-action="create-video-contest"]')?.addEventListener('click', () => {
         window.VideoContest?.create();
+    });
+
+    document.querySelector('[data-admin-action="create-iec-material"]')?.addEventListener('click', () => {
+        window.IecMaterials?.create();
     });
 
     document.querySelector('[data-admin-action="send-notification"]')?.addEventListener('click', () => {
@@ -431,6 +441,12 @@ async function loadOverviewCounts(allowedSections) {
             key: 'video-contest',
             allowed: allowedSections.includes('video-contest'),
             request: () => window.axios.get('/admin/video-contest', { params: { per_page: 1 } }),
+            count: (response) => response.data.data?.total,
+        },
+        {
+            key: 'iec-materials',
+            allowed: allowedSections.includes('iec-materials'),
+            request: () => window.axios.get('/admin/iec-materials', { params: { per_page: 1 } }),
             count: (response) => response.data.data?.total,
         },
         {

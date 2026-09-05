@@ -11,6 +11,7 @@ use App\Http\Controllers\API\Admin\TrainingAdminController;
 use App\Http\Controllers\API\Admin\SongContestAdminController;
 use App\Http\Controllers\API\Admin\PosterContestAdminController;
 use App\Http\Controllers\API\Admin\VideoContestAdminController;
+use App\Http\Controllers\API\Admin\IecMaterialAdminController;
 use App\Http\Controllers\API\Admin\UserAdminController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BibleController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\API\TrainingController;
 use App\Http\Controllers\API\SongContestController;
 use App\Http\Controllers\API\PosterContestController;
 use App\Http\Controllers\API\VideoContestController;
+use App\Http\Controllers\API\IecMaterialController;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserNotificationController;
@@ -116,6 +118,12 @@ Route::prefix('v1')
         Route::get('/video-contest/{videoContest}', [VideoContestController::class, 'show'])
             ->whereNumber('videoContest')
             ->name('video-contest.show');
+
+        Route::get('/iec-materials', [IecMaterialController::class, 'index'])
+            ->name('iec-materials.index');
+        Route::get('/iec-materials/{iecMaterial}', [IecMaterialController::class, 'show'])
+            ->whereNumber('iecMaterial')
+            ->name('iec-materials.show');
 
         // ── Public daily Bible verse ─────────────────────────────────────
         Route::get('/daily-verse/today', [DailyVerseController::class, 'today'])
@@ -294,6 +302,12 @@ Route::prefix('v1')
                         Route::get('/video-contest/{videoContest}/entries', [VideoContestAdminController::class, 'entries'])->name('video-contest.entries');
                         Route::post('/video-contest/entries/{videoContestEntry}/review', [VideoContestAdminController::class, 'review'])->name('video-contest.entries.review');
                         Route::post('/video-contest/entries/{videoContestEntry}/winner', [VideoContestAdminController::class, 'setWinner'])->name('video-contest.entries.winner');
+
+                        Route::get('/iec-materials', [IecMaterialAdminController::class, 'index'])->name('iec-materials.index');
+                        Route::post('/iec-materials', [IecMaterialAdminController::class, 'store'])->name('iec-materials.store');
+                        Route::get('/iec-materials/{iecMaterial}', [IecMaterialAdminController::class, 'show'])->name('iec-materials.show');
+                        Route::put('/iec-materials/{iecMaterial}', [IecMaterialAdminController::class, 'update'])->name('iec-materials.update');
+                        Route::delete('/iec-materials/{iecMaterial}', [IecMaterialAdminController::class, 'destroy'])->name('iec-materials.destroy');
                     });
 
                 // Analytics Viewer + Super Admin

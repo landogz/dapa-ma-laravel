@@ -39,6 +39,10 @@
                         <i class="fas fa-video mr-2"></i>
                         Add Video Contest
                     </button>
+                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-iec-material" title="Add animated IEC material">
+                        <i class="fas fa-photo-film mr-2"></i>
+                        Add IEC Material
+                    </button>
                     <button type="button" class="admin-quick-action admin-quick-action-orange" data-admin-action="send-notification" title="Send a push notification campaign">
                         <i class="fas fa-paper-plane mr-2"></i>
                         Send Notification
@@ -128,6 +132,20 @@
                     </div>
                     <span class="admin-icon-badge">
                         <i class="fas fa-video"></i>
+                    </span>
+                </div>
+            </a>
+
+            <a href="/admin/iec-materials" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="iec-materials">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">IEC</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">IEC Materials</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="iec-materials">--</p>
+                        <p class="admin-trend" data-overview-trend="iec-materials">–</p>
+                    </div>
+                    <span class="admin-icon-badge">
+                        <i class="fas fa-photo-film"></i>
                     </span>
                 </div>
             </a>
