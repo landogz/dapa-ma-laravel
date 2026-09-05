@@ -41,7 +41,11 @@ class IecMaterialAdminController extends Controller
 
     public function store(StoreIecMaterialRequest $request): JsonResponse
     {
-        $material = $this->iecMaterialService->create($request->validated());
+        $material = $this->iecMaterialService->create([
+            ...$request->validated(),
+            'media_file' => $request->file('media_file'),
+            'thumbnail_file' => $request->file('thumbnail_file'),
+        ]);
 
         return response()->json([
             'status' => true,
@@ -52,7 +56,11 @@ class IecMaterialAdminController extends Controller
 
     public function update(UpdateIecMaterialRequest $request, IecMaterial $iecMaterial): JsonResponse
     {
-        $material = $this->iecMaterialService->update($iecMaterial, $request->validated());
+        $material = $this->iecMaterialService->update($iecMaterial, [
+            ...$request->validated(),
+            'media_file' => $request->file('media_file'),
+            'thumbnail_file' => $request->file('thumbnail_file'),
+        ]);
 
         return response()->json([
             'status' => true,

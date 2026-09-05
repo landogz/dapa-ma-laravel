@@ -91,10 +91,16 @@ function buildFormHtml(existing) {
         const selected = (existing?.media_type ?? 'gif') === type.value ? 'selected' : '';
         return `<option value="${escapeHtml(type.value)}" ${selected}>${escapeHtml(type.label)}</option>`;
     }).join('');
+    const currentMedia = existing?.media_url
+        ? `<p class="mt-1 text-xs text-slate-500">Current: <a class="text-[#055498] underline" href="${escapeHtml(existing.media_url)}" target="_blank" rel="noopener noreferrer">Open media</a></p>`
+        : '';
+    const currentThumb = existing?.thumbnail_url
+        ? `<p class="mt-1 text-xs text-slate-500">Current: <a class="text-[#055498] underline" href="${escapeHtml(existing.thumbnail_url)}" target="_blank" rel="noopener noreferrer">Open thumbnail</a></p>`
+        : '';
 
     return `
         <div class="admin-swal-form">
-            <p class="admin-swal-description">Add animated IEC content for the mobile gallery (GIF, image, YouTube, or Lottie URL).</p>
+            <p class="admin-swal-description">Upload a GIF/image or paste a YouTube/Lottie URL for the mobile IEC gallery.</p>
             <div class="admin-swal-fields">
                 <div class="admin-swal-field">
                     <label class="admin-swal-label" for="iec-title">Title *</label>
@@ -108,13 +114,24 @@ function buildFormHtml(existing) {
                     <label class="admin-swal-label" for="iec-media-type">Media type *</label>
                     <select id="iec-media-type" class="admin-swal-input">${mediaOptions}</select>
                 </div>
+                <div class="admin-swal-field" data-iec-upload-field>
+                    <label class="admin-swal-label" for="iec-media-file">Upload media (GIF / image)</label>
+                    <input id="iec-media-file" class="admin-swal-input" type="file" accept="image/gif,image/jpeg,image/png,image/webp,.gif,.jpg,.jpeg,.png,.webp">
+                    <p class="mt-1 text-xs text-slate-500">Max 10MB. For GIF/Image types you can upload instead of pasting a URL.</p>
+                    ${currentMedia}
+                </div>
                 <div class="admin-swal-field">
-                    <label class="admin-swal-label" for="iec-media-url">Media URL *</label>
-                    <input id="iec-media-url" class="admin-swal-input" type="url" placeholder="https://..." value="${escapeHtml(existing?.media_url ?? '')}">
+                    <label class="admin-swal-label" for="iec-media-url">Media URL</label>
+                    <input id="iec-media-url" class="admin-swal-input" type="url" placeholder="https://... (required for YouTube/Lottie)" value="${escapeHtml(existing?.media_url ?? '')}">
+                </div>
+                <div class="admin-swal-field" data-iec-upload-field>
+                    <label class="admin-swal-label" for="iec-thumb-file">Upload thumbnail (optional)</label>
+                    <input id="iec-thumb-file" class="admin-swal-input" type="file" accept="image/gif,image/jpeg,image/png,image/webp,.gif,.jpg,.jpeg,.png,.webp">
+                    ${currentThumb}
                 </div>
                 <div class="admin-swal-field">
                     <label class="admin-swal-label" for="iec-thumb-url">Thumbnail URL</label>
-                    <input id="iec-thumb-url" class="admin-swal-input" type="url" placeholder="Optional cover/preview" value="${escapeHtml(existing?.thumbnail_url ?? '')}">
+                    <input id="iec-thumb-url" class="admin-swal-input" type="url" placeholder="Optional cover/preview URL" value="${escapeHtml(existing?.thumbnail_url ?? '')}">
                 </div>
                 <div class="admin-swal-field">
                     <label class="admin-swal-label" for="iec-description">Description</label>
@@ -139,14 +156,34 @@ function buildFormHtml(existing) {
 function collectPayload() {
     return {
         title: document.getElementById('iec-title')?.value?.trim() ?? '',
-        topic: document.getElementById('iec-topic')?.value?.trim() || null,
+        topic: document.getElementById('iec-topic')?.value?.trim() || '',
         media_type: document.getElementById('iec-media-type')?.value ?? 'gif',
-        media_url: document.getElementById('iec-media-url')?.value?.trim() ?? '',
-        thumbnail_url: document.getElementById('iec-thumb-url')?.value?.trim() || null,
-        description: document.getElementById('iec-description')?.value?.trim() || null,
+        media_url: document.getElementById('iec-media-url')?.value?.trim() || '',
+        thumbnail_url: document.getElementById('iec-thumb-url')?.value?.trim() || '',
+        description: document.getElementById('iec-description')?.value?.trim() || '',
         sort_order: Number(document.getElementById('iec-sort')?.value || 0),
         is_active: document.getElementById('iec-active')?.value === '1',
+        media_file: document.getElementById('iec-media-file')?.files?.[0] ?? null,
+        thumbnail_file: document.getElementById('iec-thumb-file')?.files?.[0] ?? null,
     };
+}
+
+function buildMultipartPayload(payload, { method = 'POST' } = {}) {
+    const formData = new FormData();
+    formData.append('title', payload.title);
+    formData.append('media_type', payload.media_type);
+    formData.append('sort_order', String(payload.sort_order ?? 0));
+    formData.append('is_active', payload.is_active ? '1' : '0');
+
+    if (payload.topic) formData.append('topic', payload.topic);
+    if (payload.description) formData.append('description', payload.description);
+    if (payload.media_url) formData.append('media_url', payload.media_url);
+    if (payload.thumbnail_url) formData.append('thumbnail_url', payload.thumbnail_url);
+    if (payload.media_file) formData.append('media_file', payload.media_file);
+    if (payload.thumbnail_file) formData.append('thumbnail_file', payload.thumbnail_file);
+    if (method !== 'POST') formData.append('_method', method);
+
+    return formData;
 }
 
 function showIecMaterialForm(existing) {
@@ -158,17 +195,27 @@ function showIecMaterialForm(existing) {
         cancelButtonText: 'Cancel',
         preConfirm: () => {
             const payload = collectPayload();
-            if (!payload.title || !payload.media_url) {
-                Swal.showValidationMessage('Title and media URL are required.');
+            const needsUrl = ['youtube', 'lottie'].includes(payload.media_type);
+            if (!payload.title) {
+                Swal.showValidationMessage('Title is required.');
+                return false;
+            }
+            if (needsUrl && !payload.media_url) {
+                Swal.showValidationMessage('Media URL is required for YouTube/Lottie.');
+                return false;
+            }
+            if (!needsUrl && !payload.media_url && !payload.media_file && !existing?.media_url) {
+                Swal.showValidationMessage('Upload a GIF/image or paste a media URL.');
                 return false;
             }
             return payload;
         },
     }, { size: 'lg' })).then(({ isConfirmed, value }) => {
         if (!isConfirmed || !value) return;
+
         const request = isEdit
-            ? axios.put(`/admin/iec-materials/${existing.id}`, value)
-            : axios.post('/admin/iec-materials', value);
+            ? axios.post(`/admin/iec-materials/${existing.id}`, buildMultipartPayload(value, { method: 'PUT' }))
+            : axios.post('/admin/iec-materials', buildMultipartPayload(value));
 
         request.then(({ data }) => {
             showSuccessToast(data.message, isEdit ? 'Updated' : 'Created');
