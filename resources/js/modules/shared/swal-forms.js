@@ -253,33 +253,37 @@ let adminSwalPatched = false;
 /**
  * Ensure every admin Swal.fire modal gets the branded header/footer shell,
  * including dialogs that do not call buildSwalOptions directly.
+ *
+ * Toast mixins and explicit toast configs must never get the modal chrome.
  */
 export function enableAdminSwalHeaders() {
     if (adminSwalPatched || typeof window === 'undefined') {
         return;
     }
 
-    const originalFire = Swal.fire.bind(Swal);
+    const originalFire = Swal.fire;
 
-    Swal.fire = (options, ...rest) => {
-        if (options == null || typeof options !== 'object' || Array.isArray(options)) {
-            return originalFire(options, ...rest);
+    Swal.fire = function patchedAdminSwalFire(options, ...rest) {
+        // Preserve Swal.mixin subclasses (Toast, etc.) so mixin defaults like toast:true apply.
+        if (this !== Swal) {
+            return originalFire.call(this, options, ...rest);
         }
 
-        if (options.toast) {
-            return originalFire(options, ...rest);
+        if (options == null || typeof options !== 'object' || Array.isArray(options)) {
+            return originalFire.call(Swal, options, ...rest);
         }
 
         const popupClass = String(options.customClass?.popup ?? '');
         if (
-            popupClass.includes('admin-swal-popup')
+            options.toast
+            || popupClass.includes('admin-swal-popup')
             || popupClass.includes('admin-toast')
             || popupClass.includes('post-view-popup')
         ) {
-            return originalFire(options, ...rest);
+            return originalFire.call(Swal, options, ...rest);
         }
 
-        return originalFire(buildSwalOptions(options), ...rest);
+        return originalFire.call(Swal, buildSwalOptions(options), ...rest);
     };
 
     adminSwalPatched = true;

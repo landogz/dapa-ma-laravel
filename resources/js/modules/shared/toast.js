@@ -4,6 +4,7 @@ const Toast = Swal.mixin({
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
+    showCancelButton: false,
     timer: 3500,
     timerProgressBar: true,
     customClass: {
@@ -12,9 +13,23 @@ const Toast = Swal.mixin({
 });
 
 export function showSuccessToast(message, title = 'Success') {
-    Toast.fire({ icon: 'success', title, text: message });
+    return Toast.fire({
+        toast: true,
+        icon: 'success',
+        title,
+        text: message,
+        showConfirmButton: false,
+        showCancelButton: false,
+    });
 }
 
 export function showErrorToast(message, title = 'Error') {
-    Toast.fire({ icon: 'error', title, text: message });
+    return Toast.fire({
+        toast: true,
+        icon: 'error',
+        title,
+        text: message,
+        showConfirmButton: false,
+        showCancelButton: false,
+    });
 }

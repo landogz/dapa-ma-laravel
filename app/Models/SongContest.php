@@ -45,13 +45,14 @@ class SongContest extends Model
             return false;
         }
 
-        $today = now()->startOfDay();
+        // Calendar-day window in PH local time (admin date pickers are local dates).
+        $today = now('Asia/Manila')->toDateString();
 
-        if ($this->submission_starts_at && $today->lt($this->submission_starts_at->startOfDay())) {
+        if ($this->submission_starts_at && $today < $this->submission_starts_at->toDateString()) {
             return false;
         }
 
-        if ($this->submission_ends_at && $today->gt($this->submission_ends_at->startOfDay())) {
+        if ($this->submission_ends_at && $today > $this->submission_ends_at->toDateString()) {
             return false;
         }
 
