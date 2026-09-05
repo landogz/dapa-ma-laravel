@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             TrainingSeeder::class,
             SongContestSeeder::class,
             PosterContestSeeder::class,
+            VideoContestSeeder::class,
             PostSeeder::class,
             BookmarkSeeder::class,
             NotificationSeeder::class,

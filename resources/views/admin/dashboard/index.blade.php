@@ -35,6 +35,10 @@
                         <i class="fas fa-image mr-2"></i>
                         Add Poster Contest
                     </button>
+                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-video-contest" title="Add a video-making contest">
+                        <i class="fas fa-video mr-2"></i>
+                        Add Video Contest
+                    </button>
                     <button type="button" class="admin-quick-action admin-quick-action-orange" data-admin-action="send-notification" title="Send a push notification campaign">
                         <i class="fas fa-paper-plane mr-2"></i>
                         Send Notification
@@ -110,6 +114,20 @@
                     </div>
                     <span class="admin-icon-badge">
                         <i class="fas fa-image"></i>
+                    </span>
+                </div>
+            </a>
+
+            <a href="/admin/video-contest" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="video-contest">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">Contests</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">Video Contest</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="video-contest">--</p>
+                        <p class="admin-trend" data-overview-trend="video-contest">–</p>
+                    </div>
+                    <span class="admin-icon-badge">
+                        <i class="fas fa-video"></i>
                     </span>
                 </div>
             </a>

@@ -10,6 +10,7 @@ use App\Http\Controllers\API\Admin\RehabCenterAdminController;
 use App\Http\Controllers\API\Admin\TrainingAdminController;
 use App\Http\Controllers\API\Admin\SongContestAdminController;
 use App\Http\Controllers\API\Admin\PosterContestAdminController;
+use App\Http\Controllers\API\Admin\VideoContestAdminController;
 use App\Http\Controllers\API\Admin\UserAdminController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BibleController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\API\ReviewController;
 use App\Http\Controllers\API\TrainingController;
 use App\Http\Controllers\API\SongContestController;
 use App\Http\Controllers\API\PosterContestController;
+use App\Http\Controllers\API\VideoContestController;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserNotificationController;
@@ -108,6 +110,13 @@ Route::prefix('v1')
             ->whereNumber('posterContest')
             ->name('poster-contest.show');
 
+        // ── Public video-making contest ──────────────────────────────────
+        Route::get('/video-contest', [VideoContestController::class, 'index'])
+            ->name('video-contest.index');
+        Route::get('/video-contest/{videoContest}', [VideoContestController::class, 'show'])
+            ->whereNumber('videoContest')
+            ->name('video-contest.show');
+
         // ── Public daily Bible verse ─────────────────────────────────────
         Route::get('/daily-verse/today', [DailyVerseController::class, 'today'])
             ->name('daily-verse.today');
@@ -153,6 +162,14 @@ Route::prefix('v1')
             Route::get('/poster-contest/{posterContest}/my-entry', [PosterContestController::class, 'myEntry'])
                 ->whereNumber('posterContest')
                 ->name('poster-contest.my-entry');
+
+            // ── Video contest submissions ────────────────────────────────
+            Route::post('/video-contest/{videoContest}/entries', [VideoContestController::class, 'submit'])
+                ->whereNumber('videoContest')
+                ->name('video-contest.entries.store');
+            Route::get('/video-contest/{videoContest}/my-entry', [VideoContestController::class, 'myEntry'])
+                ->whereNumber('videoContest')
+                ->name('video-contest.my-entry');
 
             // ── Post engagement (likes & comments) ───────────────────────
             Route::post('/posts/{id}/like', [PostEngagementController::class, 'toggleLike'])
@@ -268,6 +285,15 @@ Route::prefix('v1')
                         Route::get('/poster-contest/{posterContest}/entries', [PosterContestAdminController::class, 'entries'])->name('poster-contest.entries');
                         Route::post('/poster-contest/entries/{posterContestEntry}/review', [PosterContestAdminController::class, 'review'])->name('poster-contest.entries.review');
                         Route::post('/poster-contest/entries/{posterContestEntry}/winner', [PosterContestAdminController::class, 'setWinner'])->name('poster-contest.entries.winner');
+
+                        Route::get('/video-contest', [VideoContestAdminController::class, 'index'])->name('video-contest.index');
+                        Route::post('/video-contest', [VideoContestAdminController::class, 'store'])->name('video-contest.store');
+                        Route::get('/video-contest/{videoContest}', [VideoContestAdminController::class, 'show'])->name('video-contest.show');
+                        Route::put('/video-contest/{videoContest}', [VideoContestAdminController::class, 'update'])->name('video-contest.update');
+                        Route::delete('/video-contest/{videoContest}', [VideoContestAdminController::class, 'destroy'])->name('video-contest.destroy');
+                        Route::get('/video-contest/{videoContest}/entries', [VideoContestAdminController::class, 'entries'])->name('video-contest.entries');
+                        Route::post('/video-contest/entries/{videoContestEntry}/review', [VideoContestAdminController::class, 'review'])->name('video-contest.entries.review');
+                        Route::post('/video-contest/entries/{videoContestEntry}/winner', [VideoContestAdminController::class, 'setWinner'])->name('video-contest.entries.winner');
                     });
 
                 // Analytics Viewer + Super Admin

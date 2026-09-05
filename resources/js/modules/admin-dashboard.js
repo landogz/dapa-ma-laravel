@@ -10,13 +10,14 @@ import { enableAdminSwalHeaders } from './shared/swal-forms';
 import { initTrainingsModule } from './trainings/index';
 import { initSongContestModule } from './song-contest/index';
 import { initPosterContestModule } from './poster-contest/index';
+import { initVideoContestModule } from './video-contest/index';
 import { initUsersModule } from './users';
 
 const ADMIN_ROLE_SECTIONS = {
-    super_admin: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'notifications', 'analytics', 'users', 'diary'],
-    editor: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest'],
-    publisher: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'notifications'],
-    analytics_viewer: ['rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'analytics'],
+    super_admin: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'notifications', 'analytics', 'users', 'diary'],
+    editor: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest'],
+    publisher: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'notifications'],
+    analytics_viewer: ['rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'analytics'],
 };
 
 const PAGE_SECTION_REQUIREMENTS = {
@@ -25,6 +26,7 @@ const PAGE_SECTION_REQUIREMENTS = {
     'admin-trainings': 'trainings',
     'admin-song-contest': 'song-contest',
     'admin-poster-contest': 'poster-contest',
+    'admin-video-contest': 'video-contest',
     'admin-notifications': 'notifications',
     'admin-analytics': 'analytics',
     'admin-users': 'users',
@@ -37,6 +39,7 @@ const SECTION_PATHS = {
     trainings: '/admin/trainings',
     'song-contest': '/admin/song-contest',
     'poster-contest': '/admin/poster-contest',
+    'video-contest': '/admin/video-contest',
     notifications: '/admin/notifications',
     analytics: '/admin/analytics',
     users: '/admin/users',
@@ -318,6 +321,9 @@ function initializePageContent(pageName, allowedSections) {
         case 'admin-poster-contest':
             initPosterContestModule();
             break;
+        case 'admin-video-contest':
+            initVideoContestModule();
+            break;
         case 'admin-notifications':
             initNotificationsModule();
             break;
@@ -357,6 +363,10 @@ function bindQuickActions() {
 
     document.querySelector('[data-admin-action="create-poster-contest"]')?.addEventListener('click', () => {
         window.PosterContest?.create();
+    });
+
+    document.querySelector('[data-admin-action="create-video-contest"]')?.addEventListener('click', () => {
+        window.VideoContest?.create();
     });
 
     document.querySelector('[data-admin-action="send-notification"]')?.addEventListener('click', () => {
@@ -415,6 +425,12 @@ async function loadOverviewCounts(allowedSections) {
             key: 'poster-contest',
             allowed: allowedSections.includes('poster-contest'),
             request: () => window.axios.get('/admin/poster-contest', { params: { per_page: 1 } }),
+            count: (response) => response.data.data?.total,
+        },
+        {
+            key: 'video-contest',
+            allowed: allowedSections.includes('video-contest'),
+            request: () => window.axios.get('/admin/video-contest', { params: { per_page: 1 } }),
             count: (response) => response.data.data?.total,
         },
         {

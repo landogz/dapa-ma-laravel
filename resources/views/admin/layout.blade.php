@@ -60,6 +60,10 @@
                     <i class="fas fa-image w-5 text-[#FBD116]"></i>
                     <span>Poster Contest</span>
                 </a>
+                <a href="/admin/video-contest" class="admin-nav-link {{ ($activePage ?? '') === 'video-contest' ? 'admin-nav-link-active' : '' }}" data-nav-section="video-contest">
+                    <i class="fas fa-video w-5 text-[#FBD116]"></i>
+                    <span>Video Contest</span>
+                </a>
                 <a href="/admin/notifications" class="admin-nav-link {{ ($activePage ?? '') === 'notifications' ? 'admin-nav-link-active' : '' }}" data-nav-section="notifications">
                     <i class="fas fa-bell w-5 text-[#FBD116]"></i>
                     <span>Notifications</span>
