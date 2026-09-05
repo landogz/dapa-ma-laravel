@@ -2,6 +2,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
 import { buildSwalOptions } from './shared/swal-forms';
+import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
 import { showErrorToast, showSuccessToast } from './shared/toast';
 
 let diaryTable;
@@ -20,6 +21,7 @@ export function initDiaryModule() {
     }
 
     initializeDiaryTable(tableElement).then(() => {
+        bindAdminActionTooltipSuppression(tableElement);
         loadDiaryEntries();
     });
 }
@@ -91,16 +93,22 @@ function buildDiaryRowData(entry) {
 }
 
 function buildActionButtons(entryId) {
-    return `
-        <div class="admin-table-actions">
-            <button type="button" class="admin-table-action admin-table-action-primary" data-diary-view="${entryId}" title="View entry" aria-label="View entry">
-                <i class="fas fa-eye"></i>
-            </button>
-            <button type="button" class="admin-table-action admin-table-action-danger" data-diary-delete="${entryId}" title="Delete entry" aria-label="Delete entry">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-    `;
+    return buildAdminActionButtons([
+        {
+            tooltip: 'View entry',
+            icon: 'fas fa-eye',
+            className: 'admin-table-action-primary',
+            attrs: `data-diary-view="${entryId}"`,
+            label: 'View',
+        },
+        {
+            tooltip: 'Delete entry',
+            icon: 'fas fa-trash',
+            className: 'admin-table-action-danger',
+            attrs: `data-diary-delete="${entryId}"`,
+            label: 'Delete',
+        },
+    ], { isMobile: false, nowrap: true });
 }
 
 function bindDiaryActions() {

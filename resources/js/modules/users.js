@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
 import { buildSwalForm, buildSwalOptions } from './shared/swal-forms';
+import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
 import { showErrorToast, showSuccessToast } from './shared/toast';
 
 let usersTable;
@@ -29,6 +30,7 @@ export function initUsersModule() {
     }
 
     initializeUsersTable(tableElement).then(() => {
+        bindAdminActionTooltipSuppression(tableElement);
         loadUsers();
     });
 
@@ -211,7 +213,7 @@ function bindEditButtons() {
 function renderUserActions(user) {
     const currentUser = getStoredUser();
     const isCurrentUser = Number(currentUser?.id) === Number(user.id);
-    const buttonBaseClass = usersTableMode === 'mobile' ? 'admin-table-action' : 'admin-table-action admin-table-action-icon';
+    const isMobile = usersTableMode === 'mobile';
 
     if (isCurrentUser) {
         return `
@@ -221,13 +223,28 @@ function renderUserActions(user) {
         `;
     }
 
-    return `
-        <div class="admin-table-actions${usersTableMode === 'mobile' ? ' admin-table-actions-mobile' : ''}">
-            <button type="button" class="${buttonBaseClass} admin-table-action-primary" data-user-edit-button="${user.id}" data-user-name="${user.name}" data-user-email="${user.email}" data-user-role="${user.role}" title="Edit User" aria-label="Edit User"><i class="fas fa-user-pen"></i><span class="${usersTableMode === 'mobile' ? '' : 'sr-only'}">Edit User</span></button>
-            <button type="button" class="${buttonBaseClass}" data-user-role-button="${user.id}" data-user-name="${user.name}" data-user-role="${user.role}" title="Change Role" aria-label="Change Role"><i class="fas fa-user-gear"></i><span class="${usersTableMode === 'mobile' ? '' : 'sr-only'}">Change Role</span></button>
-            <button type="button" class="${buttonBaseClass} admin-table-action-danger" data-user-delete-button="${user.id}" data-user-name="${user.name}" title="Delete User" aria-label="Delete User"><i class="fas fa-trash"></i><span class="${usersTableMode === 'mobile' ? '' : 'sr-only'}">Delete User</span></button>
-        </div>
-    `;
+    return buildAdminActionButtons([
+        {
+            tooltip: 'Edit User',
+            icon: 'fas fa-user-pen',
+            className: 'admin-table-action-primary',
+            attrs: `data-user-edit-button="${user.id}" data-user-name="${escapeHtml(user.name)}" data-user-email="${escapeHtml(user.email)}" data-user-role="${escapeHtml(user.role)}"`,
+            label: 'Edit User',
+        },
+        {
+            tooltip: 'Change Role',
+            icon: 'fas fa-user-gear',
+            attrs: `data-user-role-button="${user.id}" data-user-name="${escapeHtml(user.name)}" data-user-role="${escapeHtml(user.role)}"`,
+            label: 'Change Role',
+        },
+        {
+            tooltip: 'Delete User',
+            icon: 'fas fa-trash',
+            className: 'admin-table-action-danger',
+            attrs: `data-user-delete-button="${user.id}" data-user-name="${escapeHtml(user.name)}"`,
+            label: 'Delete User',
+        },
+    ], { isMobile, nowrap: true });
 }
 
 function bindRoleButtons() {

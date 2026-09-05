@@ -5,6 +5,7 @@ import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
 import { buildSwalForm, buildSwalOptions } from './shared/swal-forms';
 import { renderRatingBadge, renderStars } from './shared/ratings';
+import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
 import { showSuccessToast, showErrorToast } from './shared/toast';
 
 let postsTable;
@@ -13,7 +14,7 @@ const postsById = new Map();
 let categoryOptionsCache = null;
 let postsTableMode = null;
 let postsViewportBound = false;
-let postsTooltipsBound = false;
+let postsActionsBound = false;
 
 export function initPostsModule() {
     const tableEl = document.getElementById('posts-table');
@@ -21,7 +22,7 @@ export function initPostsModule() {
 
     currentUserRole = getStoredUser()?.role ?? null;
     syncPostsPageActions();
-    bindPostActionTooltips(tableEl);
+    bindPostTableActions(tableEl);
 
     if (postsTable && postsTableMode === getPostsTableMode()) {
         loadPosts();
@@ -650,31 +651,24 @@ function renderPostActions(post, isMobile = false) {
         return '<span class="admin-empty-badge">No actions</span>';
     }
 
-    return `<div class="admin-table-actions${isMobile ? ' admin-table-actions-mobile' : ''}" data-post-id="${post.id}">${actions.map((action) => {
-        const label = escapeHtml(action.tooltip ?? action.label);
-        const iconClass = action.iconClass ? ` ${action.iconClass}` : '';
-        const button = `
-        <button type="button" data-post-action="${action.handler}" data-post-id="${post.id}" class="admin-table-action ${isMobile ? '' : 'admin-table-action-icon'} ${action.className ?? ''}" aria-label="${label}">
-            <i class="${action.icon}${iconClass}"></i>
-            <span class="${isMobile ? '' : 'sr-only'}">${label}</span>
-        </button>`;
-
-        if (isMobile) {
-            return button;
-        }
-
-        return `
-        <span class="admin-action-tooltip-wrap">
-            ${button}
-            <span class="admin-action-tooltip" role="tooltip">${label}</span>
-        </span>`;
-    }).join('')}</div>`;
+    return buildAdminActionButtons(
+        actions.map((action) => ({
+            tooltip: action.tooltip ?? action.label,
+            label: action.label,
+            icon: [action.icon, action.iconClass].filter(Boolean).join(' '),
+            className: action.className ?? '',
+            attrs: `data-post-action="${action.handler}" data-post-id="${post.id}"`,
+        })),
+        { isMobile, nowrap: true },
+    );
 }
 
-function bindPostActionTooltips(tableEl) {
-    if (postsTooltipsBound) {
+function bindPostTableActions(tableEl) {
+    if (postsActionsBound) {
         return;
     }
+
+    bindAdminActionTooltipSuppression(tableEl);
 
     tableEl.addEventListener('click', (event) => {
         const actionTrigger = event.target.closest('[data-post-action]');
@@ -702,26 +696,7 @@ function bindPostActionTooltips(tableEl) {
         }
     });
 
-    tableEl.addEventListener('mousedown', (event) => {
-        const wrap = event.target.closest('.admin-action-tooltip-wrap');
-        if (!wrap) {
-            return;
-        }
-
-        wrap.classList.add('admin-action-tooltip-wrap--suppressed');
-        wrap.querySelector('.admin-table-action')?.blur();
-    });
-
-    tableEl.addEventListener('mouseout', (event) => {
-        const wrap = event.target.closest('.admin-action-tooltip-wrap');
-        if (!wrap || wrap.contains(event.relatedTarget)) {
-            return;
-        }
-
-        wrap.classList.remove('admin-action-tooltip-wrap--suppressed');
-    });
-
-    postsTooltipsBound = true;
+    postsActionsBound = true;
 }
 
 function bindPostsContextMenu() {

@@ -8,6 +8,7 @@ use App\Http\Controllers\API\Admin\NotificationAdminController;
 use App\Http\Controllers\API\Admin\PostAdminController;
 use App\Http\Controllers\API\Admin\RehabCenterAdminController;
 use App\Http\Controllers\API\Admin\TrainingAdminController;
+use App\Http\Controllers\API\Admin\SongContestAdminController;
 use App\Http\Controllers\API\Admin\UserAdminController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BibleController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\API\PostController;
 use App\Http\Controllers\API\RehabCenterController;
 use App\Http\Controllers\API\ReviewController;
 use App\Http\Controllers\API\TrainingController;
+use App\Http\Controllers\API\SongContestController;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserNotificationController;
@@ -90,6 +92,13 @@ Route::prefix('v1')
             ->whereNumber('training')
             ->name('trainings.show');
 
+        // ── Public playlist / song writing contest ───────────────────────
+        Route::get('/song-contest', [SongContestController::class, 'index'])
+            ->name('song-contest.index');
+        Route::get('/song-contest/{songContest}', [SongContestController::class, 'show'])
+            ->whereNumber('songContest')
+            ->name('song-contest.show');
+
         // ── Public daily Bible verse ─────────────────────────────────────
         Route::get('/daily-verse/today', [DailyVerseController::class, 'today'])
             ->name('daily-verse.today');
@@ -119,6 +128,14 @@ Route::prefix('v1')
             // ── My Diary ─────────────────────────────────────────────────
             Route::get('/diary-entries/today', [DiaryController::class, 'today'])->name('diary-entries.today');
             Route::apiResource('diary-entries', DiaryController::class)->except(['create', 'edit']);
+
+            // ── Song contest submissions ─────────────────────────────────
+            Route::post('/song-contest/{songContest}/entries', [SongContestController::class, 'submit'])
+                ->whereNumber('songContest')
+                ->name('song-contest.entries.store');
+            Route::get('/song-contest/{songContest}/my-entry', [SongContestController::class, 'myEntry'])
+                ->whereNumber('songContest')
+                ->name('song-contest.my-entry');
 
             // ── Post engagement (likes & comments) ───────────────────────
             Route::post('/posts/{id}/like', [PostEngagementController::class, 'toggleLike'])
@@ -216,6 +233,15 @@ Route::prefix('v1')
                         Route::get('/trainings/{training}',   [TrainingAdminController::class, 'show'])->name('trainings.show');
                         Route::put('/trainings/{training}',   [TrainingAdminController::class, 'update'])->name('trainings.update');
                         Route::delete('/trainings/{training}', [TrainingAdminController::class, 'destroy'])->name('trainings.destroy');
+
+                        Route::get('/song-contest', [SongContestAdminController::class, 'index'])->name('song-contest.index');
+                        Route::post('/song-contest', [SongContestAdminController::class, 'store'])->name('song-contest.store');
+                        Route::get('/song-contest/{songContest}', [SongContestAdminController::class, 'show'])->name('song-contest.show');
+                        Route::put('/song-contest/{songContest}', [SongContestAdminController::class, 'update'])->name('song-contest.update');
+                        Route::delete('/song-contest/{songContest}', [SongContestAdminController::class, 'destroy'])->name('song-contest.destroy');
+                        Route::get('/song-contest/{songContest}/entries', [SongContestAdminController::class, 'entries'])->name('song-contest.entries');
+                        Route::post('/song-contest/entries/{songContestEntry}/review', [SongContestAdminController::class, 'review'])->name('song-contest.entries.review');
+                        Route::post('/song-contest/entries/{songContestEntry}/winner', [SongContestAdminController::class, 'setWinner'])->name('song-contest.entries.winner');
                     });
 
                 // Analytics Viewer + Super Admin

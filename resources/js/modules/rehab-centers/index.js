@@ -2,6 +2,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
 import { buildSwalOptions } from '../shared/swal-forms';
+import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import {
     buildRehabMapPickerHtml,
@@ -26,6 +27,7 @@ export function initRehabCentersModule() {
         rehabDataTableClass = DataTable;
         await initializeRehabTable(tableEl);
         bindViewportListener(tableEl);
+        bindAdminActionTooltipSuppression(tableEl);
         loadRehabCenters();
     });
 }
@@ -61,14 +63,13 @@ export function editRehabCenter(id) {
 }
 
 export function removeRehabCenter(id) {
-    Swal.fire({
+    Swal.fire(buildSwalOptions({
         icon: 'warning',
         title: 'Delete Rehab Center?',
-        text: 'This cannot be undone.',
-        showCancelButton: true,
+        html: '<p class="admin-swal-description">This cannot be undone.</p>',
         confirmButtonText: 'Delete',
-        confirmButtonColor: '#CE2028',
-    }).then(({ isConfirmed }) => {
+        cancelButtonText: 'Cancel',
+    }, { danger: true, size: 'sm' })).then(({ isConfirmed }) => {
         if (!isConfirmed) return;
         axios.delete(`/admin/rehab-centers/${id}`)
             .then(({ data }) => {
@@ -159,6 +160,7 @@ function showRehabForm(existing) {
         },
         html: buildRehabCenterFormHtml(existing),
         showCancelButton: true,
+        cancelButtonText: 'Cancel',
         confirmButtonText: isEdit ? 'Save Changes' : 'Create',
         didOpen: () => {
             const picker = initRehabMapPicker({
@@ -313,15 +315,26 @@ function buildColumns(mode) {
 }
 
 function buildRowData(center) {
-    const desktopActionsMarkup = `<div class="admin-table-actions">
-        <button onclick="window.RehabCenters.edit(${center.id})" class="admin-table-action admin-table-action-primary rehab-table-action-icon" title="Edit rehab center" aria-label="Edit rehab center"><i class="fas fa-pen-to-square"></i><span class="sr-only">Edit</span></button>
-        <button onclick="window.RehabCenters.remove(${center.id})" class="admin-table-action admin-table-action-danger rehab-table-action-icon" title="Delete rehab center" aria-label="Delete rehab center"><i class="fas fa-trash"></i><span class="sr-only">Delete</span></button>
-    </div>`;
+    const actions = [
+        {
+            tooltip: 'Edit rehab center',
+            icon: 'fas fa-pen-to-square',
+            className: 'admin-table-action-primary',
+            attrs: `onclick="window.RehabCenters.edit(${center.id})"`,
+        },
+        {
+            tooltip: 'Delete rehab center',
+            icon: 'fas fa-trash',
+            className: 'admin-table-action-danger',
+            attrs: `onclick="window.RehabCenters.remove(${center.id})"`,
+        },
+    ];
 
-    const mobileActionsMarkup = `<div class="admin-table-actions admin-table-actions-mobile">
-        <button onclick="window.RehabCenters.edit(${center.id})" class="admin-table-action admin-table-action-primary"><i class="fas fa-pen-to-square"></i><span>Edit</span></button>
-        <button onclick="window.RehabCenters.remove(${center.id})" class="admin-table-action admin-table-action-danger"><i class="fas fa-trash"></i><span>Delete</span></button>
-    </div>`;
+    const desktopActionsMarkup = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
+    const mobileActionsMarkup = buildAdminActionButtons([
+        { ...actions[0], label: 'Edit' },
+        { ...actions[1], label: 'Delete' },
+    ], { isMobile: true, nowrap: true });
 
     const locationLabel = hasCoordinates(center)
         ? `${Number(center.latitude).toFixed(4)}, ${Number(center.longitude).toFixed(4)}`

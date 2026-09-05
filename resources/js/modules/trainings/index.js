@@ -2,6 +2,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
 import { buildSwalOptions } from '../shared/swal-forms';
+import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let trainingsTable;
@@ -25,6 +26,7 @@ export function initTrainingsModule() {
         trainingsDataTableClass = DataTable;
         await initializeTrainingsTable(tableEl);
         bindViewportListener(tableEl);
+        bindAdminActionTooltipSuppression(tableEl);
         loadTrainings();
     });
 }
@@ -59,14 +61,13 @@ export function editTraining(id) {
 }
 
 export function removeTraining(id) {
-    Swal.fire({
+    Swal.fire(buildSwalOptions({
         icon: 'warning',
         title: 'Delete Training?',
-        text: 'This cannot be undone.',
-        showCancelButton: true,
+        html: '<p class="admin-swal-description">This cannot be undone.</p>',
         confirmButtonText: 'Delete',
-        confirmButtonColor: '#CE2028',
-    }).then(({ isConfirmed }) => {
+        cancelButtonText: 'Cancel',
+    }, { danger: true, size: 'sm' })).then(({ isConfirmed }) => {
         if (!isConfirmed) return;
         axios.delete(`/admin/trainings/${id}`)
             .then(({ data }) => {
@@ -157,6 +158,7 @@ function showTrainingForm(existing) {
         title: isEdit ? 'Edit Training' : 'Add Training',
         html: buildTrainingFormHtml(existing),
         confirmButtonText: isEdit ? 'Save changes' : 'Create training',
+        cancelButtonText: 'Cancel',
         width: '40rem',
         preConfirm: () => {
             const title = document.getElementById('tr-title')?.value.trim();
@@ -292,15 +294,26 @@ function buildColumns(mode) {
 }
 
 function buildRowData(training) {
-    const desktopActionsMarkup = `<div class="admin-table-actions">
-        <button onclick="window.Trainings.edit(${training.id})" class="admin-table-action admin-table-action-primary" title="Edit training" aria-label="Edit training"><i class="fas fa-pen-to-square"></i><span class="sr-only">Edit</span></button>
-        <button onclick="window.Trainings.remove(${training.id})" class="admin-table-action admin-table-action-danger" title="Delete training" aria-label="Delete training"><i class="fas fa-trash"></i><span class="sr-only">Delete</span></button>
-    </div>`;
+    const actions = [
+        {
+            tooltip: 'Edit training',
+            icon: 'fas fa-pen-to-square',
+            className: 'admin-table-action-primary',
+            attrs: `onclick="window.Trainings.edit(${training.id})"`,
+        },
+        {
+            tooltip: 'Delete training',
+            icon: 'fas fa-trash',
+            className: 'admin-table-action-danger',
+            attrs: `onclick="window.Trainings.remove(${training.id})"`,
+        },
+    ];
 
-    const mobileActionsMarkup = `<div class="admin-table-actions admin-table-actions-mobile">
-        <button onclick="window.Trainings.edit(${training.id})" class="admin-table-action admin-table-action-primary"><i class="fas fa-pen-to-square"></i><span>Edit</span></button>
-        <button onclick="window.Trainings.remove(${training.id})" class="admin-table-action admin-table-action-danger"><i class="fas fa-trash"></i><span>Delete</span></button>
-    </div>`;
+    const desktopActionsMarkup = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
+    const mobileActionsMarkup = buildAdminActionButtons([
+        { ...actions[0], label: 'Edit' },
+        { ...actions[1], label: 'Delete' },
+    ], { isMobile: true, nowrap: true });
 
     const scheduleLabel = formatSchedule(training);
 

@@ -308,6 +308,19 @@
     align-items: center;
 }
 
+.admin-table-actions-nowrap {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+#song-contest-table_wrapper .dt-col-actions,
+#song-contest-table_wrapper th.dt-col-actions,
+#song-contest-table_wrapper td.dt-col-actions {
+    min-width: 8.75rem;
+    width: 8.75rem;
+    white-space: nowrap;
+}
+
 .rehab-table-action-icon {
     min-height: 2.25rem;
     min-width: 2.25rem;
@@ -978,21 +991,22 @@
     width: min(100%, 70rem) !important;
 }
 
-.admin-swal-popup {
+.admin-swal-popup,
+.admin-swal-popup-shell {
     width: min(100%, 70rem) !important;
     border-radius: 1.5rem !important;
-    padding: 1.5rem !important;
+    padding: 0 !important;
     background: #ffffff !important;
     box-shadow: 0 25px 60px rgba(15, 23, 42, 0.18) !important;
     max-height: min(92vh, 920px);
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
 }
 
 .admin-swal-popup-sm {
     width: min(100%, 28rem) !important;
     max-height: min(85vh, 32rem);
-    padding: 1.25rem !important;
 }
 
 .admin-swal-popup-md {
@@ -1000,11 +1014,88 @@
     max-height: min(90vh, 40rem);
 }
 
+/* Guaranteed branded header bar (injected by JS) */
+.admin-modal-header-bar {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    flex-shrink: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0;
+    padding: 1.15rem 1.25rem 1.15rem 1.5rem;
+    background: linear-gradient(135deg, #055498 0%, #123a60 100%);
+    box-shadow: 0 10px 28px rgba(5, 84, 152, 0.22);
+}
+
+.admin-modal-header-bar-copy {
+    min-width: 0;
+    flex: 1;
+}
+
+.admin-modal-header-bar-title {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.admin-modal-header-bar-subtitle {
+    margin: 0.35rem 0 0;
+    color: rgba(255, 255, 255, 0.84);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+.admin-modal-header-bar-close {
+    display: inline-flex;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    font-size: 1.65rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.admin-modal-header-bar-close:hover,
+.admin-modal-header-bar-close:focus {
+    background: rgba(255, 255, 255, 0.28);
+    outline: none;
+}
+
+.admin-swal-header-native-hidden {
+    display: none !important;
+}
+
+.admin-swal-popup .swal2-header,
+.admin-swal-header {
+    position: relative;
+    display: none !important;
+}
+
+.admin-swal-popup .swal2-title,
+.admin-swal-title {
+    display: none !important;
+}
+
 .admin-swal-popup .swal2-html-container,
 .admin-swal-html {
-    margin: 0.85rem 0 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
+    flex: 1 1 auto;
+    margin: 0 !important;
+    padding: 1.15rem 1.5rem 1.25rem !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    text-align: left !important;
 }
 
 .admin-swal-select {
@@ -1031,14 +1122,6 @@
     background: #ffffff;
 }
 
-.admin-swal-title {
-    padding: 0 !important;
-    color: #0f172a !important;
-    font-size: 1.35rem !important;
-    font-weight: 700 !important;
-    text-align: left !important;
-}
-
 .admin-swal-form {
     text-align: left;
 }
@@ -1047,6 +1130,32 @@
     margin: 0 0 1rem;
     color: #64748b;
     font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.admin-swal-rules {
+    margin: 0 0 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid #dbeafe;
+    border-radius: 0.95rem;
+    background: #eff6ff;
+}
+
+.admin-swal-rules-title {
+    margin: 0 0 0.35rem;
+    color: #055498;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.admin-swal-rules-body {
+    margin: 0;
+    color: #334155;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
 }
 
 .admin-swal-fields {
@@ -1131,10 +1240,19 @@
 }
 
 .admin-swal-actions {
-    margin-top: 1.25rem !important;
-    padding: 0 !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+    padding: 1rem 1.5rem 1.25rem !important;
     justify-content: flex-end !important;
     gap: 0.75rem !important;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.admin-swal-footer {
+    margin: 0 !important;
+    padding: 0 1.5rem 1rem !important;
+    border-top: 0 !important;
 }
 
 .admin-swal-button {
@@ -1544,6 +1662,10 @@
 
     .admin-table-actions-mobile .admin-table-action {
         flex: 1 1 100%;
+    }
+
+    .admin-table-actions-mobile.admin-table-actions-nowrap .admin-table-action {
+        flex: 0 0 auto;
     }
 
     .rehab-table-action-icon {

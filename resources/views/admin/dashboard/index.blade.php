@@ -27,6 +27,10 @@
                         <i class="fas fa-chalkboard-user mr-2"></i>
                         Add Training
                     </button>
+                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-song-contest" title="Add a playlist or song contest entry">
+                        <i class="fas fa-music mr-2"></i>
+                        Add Song Contest
+                    </button>
                     <button type="button" class="admin-quick-action admin-quick-action-orange" data-admin-action="send-notification" title="Send a push notification campaign">
                         <i class="fas fa-paper-plane mr-2"></i>
                         Send Notification
@@ -74,6 +78,20 @@
                     </div>
                     <span class="admin-icon-badge">
                         <i class="fas fa-chalkboard-user"></i>
+                    </span>
+                </div>
+            </a>
+
+            <a href="/admin/song-contest" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="song-contest">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">Contests</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">Song Contest</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="song-contest">--</p>
+                        <p class="admin-trend" data-overview-trend="song-contest">–</p>
+                    </div>
+                    <span class="admin-icon-badge">
+                        <i class="fas fa-music"></i>
                     </span>
                 </div>
             </a>

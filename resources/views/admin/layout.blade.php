@@ -52,6 +52,10 @@
                     <i class="fas fa-chalkboard-user w-5 text-[#FBD116]"></i>
                     <span>Trainings</span>
                 </a>
+                <a href="/admin/song-contest" class="admin-nav-link {{ ($activePage ?? '') === 'song-contest' ? 'admin-nav-link-active' : '' }}" data-nav-section="song-contest">
+                    <i class="fas fa-music w-5 text-[#FBD116]"></i>
+                    <span>Song Contest</span>
+                </a>
                 <a href="/admin/notifications" class="admin-nav-link {{ ($activePage ?? '') === 'notifications' ? 'admin-nav-link-active' : '' }}" data-nav-section="notifications">
                     <i class="fas fa-bell w-5 text-[#FBD116]"></i>
                     <span>Notifications</span>

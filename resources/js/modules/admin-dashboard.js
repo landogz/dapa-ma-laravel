@@ -6,20 +6,23 @@ import { initNotificationsModule } from './notifications';
 import { initPostsModule } from './posts';
 import { initProfileModule } from './profile';
 import { initRehabCentersModule } from './rehab-centers/index';
+import { enableAdminSwalHeaders } from './shared/swal-forms';
 import { initTrainingsModule } from './trainings/index';
+import { initSongContestModule } from './song-contest/index';
 import { initUsersModule } from './users';
 
 const ADMIN_ROLE_SECTIONS = {
-    super_admin: ['posts', 'rehab-centers', 'trainings', 'notifications', 'analytics', 'users', 'diary'],
-    editor: ['posts', 'rehab-centers', 'trainings'],
-    publisher: ['posts', 'rehab-centers', 'trainings', 'notifications'],
-    analytics_viewer: ['rehab-centers', 'trainings', 'analytics'],
+    super_admin: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'notifications', 'analytics', 'users', 'diary'],
+    editor: ['posts', 'rehab-centers', 'trainings', 'song-contest'],
+    publisher: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'notifications'],
+    analytics_viewer: ['rehab-centers', 'trainings', 'song-contest', 'analytics'],
 };
 
 const PAGE_SECTION_REQUIREMENTS = {
     'admin-posts': 'posts',
     'admin-rehab-centers': 'rehab-centers',
     'admin-trainings': 'trainings',
+    'admin-song-contest': 'song-contest',
     'admin-notifications': 'notifications',
     'admin-analytics': 'analytics',
     'admin-users': 'users',
@@ -30,6 +33,7 @@ const SECTION_PATHS = {
     posts: '/admin/posts',
     'rehab-centers': '/admin/rehab-centers',
     trainings: '/admin/trainings',
+    'song-contest': '/admin/song-contest',
     notifications: '/admin/notifications',
     analytics: '/admin/analytics',
     users: '/admin/users',
@@ -44,6 +48,8 @@ export async function initAdminPage(pageName) {
     if (!appRoot) {
         return;
     }
+
+    enableAdminSwalHeaders();
 
     bindShell(appRoot);
 
@@ -303,6 +309,9 @@ function initializePageContent(pageName, allowedSections) {
         case 'admin-trainings':
             initTrainingsModule();
             break;
+        case 'admin-song-contest':
+            initSongContestModule();
+            break;
         case 'admin-notifications':
             initNotificationsModule();
             break;
@@ -334,6 +343,10 @@ function bindQuickActions() {
 
     document.querySelector('[data-admin-action="create-training"]')?.addEventListener('click', () => {
         window.Trainings?.create();
+    });
+
+    document.querySelector('[data-admin-action="create-song-contest"]')?.addEventListener('click', () => {
+        window.SongContest?.create();
     });
 
     document.querySelector('[data-admin-action="send-notification"]')?.addEventListener('click', () => {
@@ -380,6 +393,12 @@ async function loadOverviewCounts(allowedSections) {
             key: 'trainings',
             allowed: allowedSections.includes('trainings'),
             request: () => window.axios.get('/admin/trainings', { params: { per_page: 1 } }),
+            count: (response) => response.data.data?.total,
+        },
+        {
+            key: 'song-contest',
+            allowed: allowedSections.includes('song-contest'),
+            request: () => window.axios.get('/admin/song-contest', { params: { per_page: 1 } }),
             count: (response) => response.data.data?.total,
         },
         {
