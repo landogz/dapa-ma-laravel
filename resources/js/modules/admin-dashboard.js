@@ -6,18 +6,20 @@ import { initNotificationsModule } from './notifications';
 import { initPostsModule } from './posts';
 import { initProfileModule } from './profile';
 import { initRehabCentersModule } from './rehab-centers/index';
+import { initTrainingsModule } from './trainings/index';
 import { initUsersModule } from './users';
 
 const ADMIN_ROLE_SECTIONS = {
-    super_admin: ['posts', 'rehab-centers', 'notifications', 'analytics', 'users', 'diary'],
-    editor: ['posts', 'rehab-centers'],
-    publisher: ['posts', 'rehab-centers', 'notifications'],
-    analytics_viewer: ['rehab-centers', 'analytics'],
+    super_admin: ['posts', 'rehab-centers', 'trainings', 'notifications', 'analytics', 'users', 'diary'],
+    editor: ['posts', 'rehab-centers', 'trainings'],
+    publisher: ['posts', 'rehab-centers', 'trainings', 'notifications'],
+    analytics_viewer: ['rehab-centers', 'trainings', 'analytics'],
 };
 
 const PAGE_SECTION_REQUIREMENTS = {
     'admin-posts': 'posts',
     'admin-rehab-centers': 'rehab-centers',
+    'admin-trainings': 'trainings',
     'admin-notifications': 'notifications',
     'admin-analytics': 'analytics',
     'admin-users': 'users',
@@ -27,6 +29,7 @@ const PAGE_SECTION_REQUIREMENTS = {
 const SECTION_PATHS = {
     posts: '/admin/posts',
     'rehab-centers': '/admin/rehab-centers',
+    trainings: '/admin/trainings',
     notifications: '/admin/notifications',
     analytics: '/admin/analytics',
     users: '/admin/users',
@@ -297,6 +300,9 @@ function initializePageContent(pageName, allowedSections) {
         case 'admin-rehab-centers':
             initRehabCentersModule();
             break;
+        case 'admin-trainings':
+            initTrainingsModule();
+            break;
         case 'admin-notifications':
             initNotificationsModule();
             break;
@@ -324,6 +330,10 @@ function bindQuickActions() {
 
     document.querySelector('[data-admin-action="create-rehab-center"]')?.addEventListener('click', () => {
         window.RehabCenters?.create();
+    });
+
+    document.querySelector('[data-admin-action="create-training"]')?.addEventListener('click', () => {
+        window.Trainings?.create();
     });
 
     document.querySelector('[data-admin-action="send-notification"]')?.addEventListener('click', () => {
@@ -364,6 +374,12 @@ async function loadOverviewCounts(allowedSections) {
             key: 'rehab-centers',
             allowed: allowedSections.includes('rehab-centers'),
             request: () => window.axios.get('/admin/rehab-centers', { params: { per_page: 1 } }),
+            count: (response) => response.data.data?.total,
+        },
+        {
+            key: 'trainings',
+            allowed: allowedSections.includes('trainings'),
+            request: () => window.axios.get('/admin/trainings', { params: { per_page: 1 } }),
             count: (response) => response.data.data?.total,
         },
         {

@@ -23,6 +23,10 @@
                         <i class="fas fa-house-medical mr-2"></i>
                         Add Rehab Center
                     </button>
+                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-training" title="Add a new DDB training listing">
+                        <i class="fas fa-chalkboard-user mr-2"></i>
+                        Add Training
+                    </button>
                     <button type="button" class="admin-quick-action admin-quick-action-orange" data-admin-action="send-notification" title="Send a push notification campaign">
                         <i class="fas fa-paper-plane mr-2"></i>
                         Send Notification
@@ -31,7 +35,7 @@
             </div>
         </div>
 
-        <div id="function-cards" class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div id="function-cards" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <a href="/admin/posts" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="posts">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -56,6 +60,20 @@
                     </div>
                     <span class="admin-icon-badge">
                         <i class="fas fa-hospital-user"></i>
+                    </span>
+                </div>
+            </a>
+
+            <a href="/admin/trainings" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="trainings">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">DDB Services</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">Trainings</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="trainings">--</p>
+                        <p class="admin-trend" data-overview-trend="trainings">–</p>
+                    </div>
+                    <span class="admin-icon-badge">
+                        <i class="fas fa-chalkboard-user"></i>
                     </span>
                 </div>
             </a>

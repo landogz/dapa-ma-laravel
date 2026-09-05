@@ -7,6 +7,7 @@ use App\Http\Controllers\API\Admin\DiaryAdminController;
 use App\Http\Controllers\API\Admin\NotificationAdminController;
 use App\Http\Controllers\API\Admin\PostAdminController;
 use App\Http\Controllers\API\Admin\RehabCenterAdminController;
+use App\Http\Controllers\API\Admin\TrainingAdminController;
 use App\Http\Controllers\API\Admin\UserAdminController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BibleController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\API\PostEngagementController;
 use App\Http\Controllers\API\PostController;
 use App\Http\Controllers\API\RehabCenterController;
 use App\Http\Controllers\API\ReviewController;
+use App\Http\Controllers\API\TrainingController;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserNotificationController;
@@ -80,6 +82,13 @@ Route::prefix('v1')
         // ── Public rehab centers directory ───────────────────────────────
         Route::get('/rehab-centers', [RehabCenterController::class, 'index'])
             ->name('rehab-centers.index');
+
+        // ── Public DDB trainings directory ───────────────────────────────
+        Route::get('/trainings', [TrainingController::class, 'index'])
+            ->name('trainings.index');
+        Route::get('/trainings/{training}', [TrainingController::class, 'show'])
+            ->whereNumber('training')
+            ->name('trainings.show');
 
         // ── Public daily Bible verse ─────────────────────────────────────
         Route::get('/daily-verse/today', [DailyVerseController::class, 'today'])
@@ -193,7 +202,7 @@ Route::prefix('v1')
                     Route::post('/inbox/{notification}/read', [AdminNotificationController::class, 'markAsRead'])->name('admin-inbox.read');
                 });
 
-                // Any admin role — rehab centers CRUD
+                // Any admin role — rehab centers + trainings CRUD
                 Route::middleware('role:super_admin,editor,publisher,analytics_viewer')
                     ->group(function (): void {
                         Route::get('/rehab-centers',              [RehabCenterAdminController::class, 'index'])->name('rehab-centers.index');
@@ -201,6 +210,12 @@ Route::prefix('v1')
                         Route::get('/rehab-centers/{rehabCenter}', [RehabCenterAdminController::class, 'show'])->name('rehab-centers.show');
                         Route::put('/rehab-centers/{rehabCenter}', [RehabCenterAdminController::class, 'update'])->name('rehab-centers.update');
                         Route::delete('/rehab-centers/{rehabCenter}', [RehabCenterAdminController::class, 'destroy'])->name('rehab-centers.destroy');
+
+                        Route::get('/trainings',              [TrainingAdminController::class, 'index'])->name('trainings.index');
+                        Route::post('/trainings',             [TrainingAdminController::class, 'store'])->name('trainings.store');
+                        Route::get('/trainings/{training}',   [TrainingAdminController::class, 'show'])->name('trainings.show');
+                        Route::put('/trainings/{training}',   [TrainingAdminController::class, 'update'])->name('trainings.update');
+                        Route::delete('/trainings/{training}', [TrainingAdminController::class, 'destroy'])->name('trainings.destroy');
                     });
 
                 // Analytics Viewer + Super Admin

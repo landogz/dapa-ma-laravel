@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             DefaultAccountsSeeder::class,
             RehabCenterSeeder::class,
+            TrainingSeeder::class,
             PostSeeder::class,
             BookmarkSeeder::class,
             NotificationSeeder::class,

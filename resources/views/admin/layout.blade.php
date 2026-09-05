@@ -48,6 +48,10 @@
                     <i class="fas fa-hospital w-5 text-[#FBD116]"></i>
                     <span>Rehab Centers</span>
                 </a>
+                <a href="/admin/trainings" class="admin-nav-link {{ ($activePage ?? '') === 'trainings' ? 'admin-nav-link-active' : '' }}" data-nav-section="trainings">
+                    <i class="fas fa-chalkboard-user w-5 text-[#FBD116]"></i>
+                    <span>Trainings</span>
+                </a>
                 <a href="/admin/notifications" class="admin-nav-link {{ ($activePage ?? '') === 'notifications' ? 'admin-nav-link-active' : '' }}" data-nav-section="notifications">
                     <i class="fas fa-bell w-5 text-[#FBD116]"></i>
                     <span>Notifications</span>
