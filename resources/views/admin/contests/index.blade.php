@@ -13,13 +13,6 @@
                 </div>
             </div>
             <div class="admin-page-actions admin-page-actions-centered lg:self-center">
-                <label class="sr-only" for="contests-category-filter">Filter by category</label>
-                <select id="contests-category-filter" class="admin-swal-input lg:w-56" aria-label="Filter by category">
-                    <option value="">All categories</option>
-                    <option value="song">Song Contest</option>
-                    <option value="poster">Poster Contest</option>
-                    <option value="video">Video Contest</option>
-                </select>
                 <button type="button" class="admin-primary-button lg:w-auto" data-admin-action="create-contest">
                     Add Contest
                 </button>

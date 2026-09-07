@@ -227,8 +227,8 @@ Route::prefix('v1')
                     Route::post('/inbox/{notification}/read', [AdminNotificationController::class, 'markAsRead'])->name('admin-inbox.read');
                 });
 
-                // Any admin role — rehab centers + trainings CRUD
-                Route::middleware('role:super_admin,editor,publisher,analytics_viewer')
+                // Super Admin + Publisher — rehab centers, trainings, contests, IEC materials
+                Route::middleware('role:super_admin,publisher')
                     ->group(function (): void {
                         Route::get('/rehab-centers',              [RehabCenterAdminController::class, 'index'])->name('rehab-centers.index');
                         Route::post('/rehab-centers',             [RehabCenterAdminController::class, 'store'])->name('rehab-centers.store');

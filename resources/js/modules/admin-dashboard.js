@@ -14,9 +14,9 @@ import { initUsersModule } from './users';
 
 const ADMIN_ROLE_SECTIONS = {
     super_admin: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'notifications', 'analytics', 'users', 'diary'],
-    editor: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials'],
+    editor: ['posts'],
     publisher: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'notifications'],
-    analytics_viewer: ['rehab-centers', 'trainings', 'contests', 'iec-materials', 'analytics'],
+    analytics_viewer: ['analytics'],
 };
 
 const PAGE_SECTION_REQUIREMENTS = {
@@ -215,6 +215,13 @@ function revealNavigation(allowedSections) {
         const canView = sectionName && allowedSections.includes(sectionName);
 
         card.classList.toggle('hidden', !canView);
+    });
+
+    document.querySelectorAll('[data-action-section]').forEach((action) => {
+        const sectionName = action.getAttribute('data-action-section');
+        const canView = sectionName && allowedSections.includes(sectionName);
+
+        action.classList.toggle('hidden', !canView);
     });
 
     document.querySelectorAll('[data-overview-analytics]').forEach((panel) => {

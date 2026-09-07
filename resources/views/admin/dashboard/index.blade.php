@@ -15,27 +15,27 @@
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Quick Actions</p>
                 <div class="flex flex-wrap gap-2">
-                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-post" title="Create a new post draft">
+                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-post" data-action-section="posts" title="Create a new post draft">
                         <i class="fas fa-pen-to-square mr-2"></i>
                         New Post
                     </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-rehab-center" title="Add a new rehab center listing">
+                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-rehab-center" data-action-section="rehab-centers" title="Add a new rehab center listing">
                         <i class="fas fa-house-medical mr-2"></i>
                         Add Rehab Center
                     </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-training" title="Add a new DDB training listing">
+                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-training" data-action-section="trainings" title="Add a new DDB training listing">
                         <i class="fas fa-chalkboard-user mr-2"></i>
                         Add Training
                     </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-contest" title="Add a Song, Poster, or Video contest">
+                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-contest" data-action-section="contests" title="Add a Song, Poster, or Video contest">
                         <i class="fas fa-trophy mr-2"></i>
                         Add Contest
                     </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-iec-material" title="Add animated IEC material">
+                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-iec-material" data-action-section="iec-materials" title="Add animated IEC material">
                         <i class="fas fa-photo-film mr-2"></i>
                         Add IEC Material
                     </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-orange" data-admin-action="send-notification" title="Send a push notification campaign">
+                    <button type="button" class="admin-quick-action admin-quick-action-orange" data-admin-action="send-notification" data-action-section="notifications" title="Send a push notification campaign">
                         <i class="fas fa-paper-plane mr-2"></i>
                         Send Notification
                     </button>

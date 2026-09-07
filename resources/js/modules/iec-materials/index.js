@@ -60,6 +60,161 @@ export function editIecMaterial(id) {
     });
 }
 
+export function previewIecMaterial(id) {
+    axios.get(`/admin/iec-materials/${id}`).then(({ data }) => {
+        showIecMaterialPreview(data.data);
+    }).catch(() => {
+        showErrorToast('Failed to load IEC material preview.');
+    });
+}
+
+function showIecMaterialPreview(item) {
+    if (!item) return;
+
+    Swal.fire(buildSwalOptions({
+        title: escapeHtml(item.title ?? 'IEC material'),
+        html: buildPreviewHtml(item),
+        confirmButtonText: 'Close',
+        showCancelButton: true,
+        cancelButtonText: 'Edit',
+        reverseButtons: true,
+    }, { size: 'lg' })).then(({ isDismissed, dismiss }) => {
+        if (isDismissed && dismiss === Swal.DismissReason.cancel) {
+            showIecMaterialForm(item);
+        }
+    });
+}
+
+function buildPreviewHtml(item) {
+    const topic = escapeHtml(item.topic ?? '—');
+    const type = escapeHtml((item.media_type ?? '').toUpperCase() || '—');
+    const description = item.description
+        ? `<p class="mt-3 text-sm leading-relaxed text-slate-600">${escapeHtml(item.description)}</p>`
+        : '';
+
+    return `
+        <div class="admin-swal-form text-left">
+            <div class="mb-3 flex flex-wrap items-center gap-2">
+                ${statusBadge(item.is_active)}
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">${type}</span>
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">${topic}</span>
+            </div>
+            ${buildMediaPreviewMarkup(item)}
+            ${description}
+        </div>
+    `;
+}
+
+function buildMediaPreviewMarkup(item, { compact = false } = {}) {
+    const mediaType = String(item?.media_type ?? '').toLowerCase();
+    const mediaUrl = item?.media_url ?? '';
+    const thumbUrl = item?.thumbnail_url ?? '';
+    const frameClass = compact
+        ? 'overflow-hidden rounded-xl border border-slate-200 bg-slate-50'
+        : 'overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm';
+    const mediaClass = compact
+        ? 'mx-auto max-h-40 w-full object-contain'
+        : 'mx-auto max-h-[28rem] w-full object-contain';
+
+    if (mediaType === 'youtube' && mediaUrl) {
+        const youtubeId = extractYoutubeId(mediaUrl);
+        if (youtubeId) {
+            return `
+                <div class="${frameClass}">
+                    <div class="relative aspect-video w-full bg-black">
+                        <iframe
+                            class="absolute inset-0 h-full w-full"
+                            src="https://www.youtube.com/embed/${escapeHtml(youtubeId)}"
+                            title="${escapeHtml(item?.title ?? 'YouTube preview')}"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen
+                            loading="lazy"
+                        ></iframe>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    if ((mediaType === 'gif' || mediaType === 'image') && mediaUrl) {
+        return `
+            <div class="${frameClass} p-2 sm:p-3">
+                <img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item?.title ?? 'IEC media')}" class="${mediaClass}">
+            </div>
+        `;
+    }
+
+    if (mediaType === 'lottie' && mediaUrl) {
+        return `
+            <div class="${frameClass} p-4 text-center">
+                ${thumbUrl ? `<img src="${escapeHtml(thumbUrl)}" alt="" class="${mediaClass} mb-3">` : ''}
+                <p class="text-sm text-slate-600">Lottie animation URL</p>
+                <a class="mt-2 inline-flex text-sm font-medium text-[#055498] underline" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noopener noreferrer">Open Lottie file</a>
+            </div>
+        `;
+    }
+
+    if (thumbUrl) {
+        return `
+            <div class="${frameClass} p-2 sm:p-3">
+                <img src="${escapeHtml(thumbUrl)}" alt="${escapeHtml(item?.title ?? 'IEC thumbnail')}" class="${mediaClass}">
+            </div>
+        `;
+    }
+
+    return `
+        <div class="${frameClass} flex min-h-32 items-center justify-center p-6 text-sm text-slate-500">
+            No media preview available
+        </div>
+    `;
+}
+
+function buildTableThumbMarkup(item) {
+    const previewUrl = resolvePreviewImageUrl(item);
+    if (!previewUrl) {
+        return `
+            <button type="button" class="inline-flex h-14 w-20 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400" onclick="window.IecMaterials.preview(${item.id})" aria-label="Preview material">
+                No preview
+            </button>
+        `;
+    }
+
+    return `
+        <button type="button" class="group relative block overflow-hidden rounded-lg border border-slate-200 bg-slate-50 shadow-sm transition hover:border-[#055498] hover:shadow-md" onclick="window.IecMaterials.preview(${item.id})" aria-label="Preview ${escapeHtml(item.title ?? 'material')}">
+            <img src="${escapeHtml(previewUrl)}" alt="" class="h-14 w-20 object-cover transition group-hover:scale-105">
+            <span class="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-900/0 text-white opacity-0 transition group-hover:bg-slate-900/35 group-hover:opacity-100">
+                <i class="fas fa-eye text-sm" aria-hidden="true"></i>
+            </span>
+        </button>
+    `;
+}
+
+function resolvePreviewImageUrl(item) {
+    const mediaType = String(item?.media_type ?? '').toLowerCase();
+    if (item?.thumbnail_url) {
+        return item.thumbnail_url;
+    }
+
+    if ((mediaType === 'gif' || mediaType === 'image') && item?.media_url) {
+        return item.media_url;
+    }
+
+    if (mediaType === 'youtube' && item?.media_url) {
+        const youtubeId = extractYoutubeId(item.media_url);
+        if (youtubeId) {
+            return `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
+        }
+    }
+
+    return null;
+}
+
+function extractYoutubeId(url) {
+    const value = String(url ?? '');
+    const match = value.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|shorts\/|live\/|watch\?.*?v=))([\w-]{11})/);
+    return match ? match[1] : null;
+}
+
 export function removeIecMaterial(id) {
     Swal.fire(buildSwalOptions({
         icon: 'warning',
@@ -97,11 +252,18 @@ function buildFormHtml(existing) {
     const currentThumb = existing?.thumbnail_url
         ? `<p class="mt-1 text-xs text-slate-500">Current: <a class="text-[#055498] underline" href="${escapeHtml(existing.thumbnail_url)}" target="_blank" rel="noopener noreferrer">Open thumbnail</a></p>`
         : '';
+    const existingPreview = existing?.media_url || existing?.thumbnail_url
+        ? `<div class="admin-swal-field" data-iec-existing-preview>
+                <label class="admin-swal-label">Current preview</label>
+                ${buildMediaPreviewMarkup(existing, { compact: true })}
+           </div>`
+        : '';
 
     return `
         <div class="admin-swal-form">
             <p class="admin-swal-description">Upload a GIF/image or paste a YouTube/Lottie URL for the mobile IEC gallery.</p>
             <div class="admin-swal-fields">
+                ${existingPreview}
                 <div class="admin-swal-field">
                     <label class="admin-swal-label" for="iec-title">Title *</label>
                     <input id="iec-title" class="admin-swal-input" type="text" value="${escapeHtml(existing?.title ?? '')}">
@@ -295,6 +457,7 @@ function buildColumns(mode) {
 
     return [
         { title: 'ID', className: 'dt-col-id' },
+        { title: 'Preview', orderable: false, className: 'dt-col-nowrap' },
         { title: 'Title', className: 'dt-col-primary dt-col-name' },
         { title: 'Topic', className: 'dt-col-nowrap' },
         { title: 'Type', className: 'dt-col-nowrap' },
@@ -306,6 +469,12 @@ function buildColumns(mode) {
 
 function buildRowData(item) {
     const actions = [
+        {
+            tooltip: 'Preview material',
+            icon: 'fas fa-eye',
+            className: 'admin-table-action-warning',
+            attrs: `onclick="window.IecMaterials.preview(${item.id})"`,
+        },
         {
             tooltip: 'Edit material',
             icon: 'fas fa-pen-to-square',
@@ -322,17 +491,22 @@ function buildRowData(item) {
 
     const desktopActionsMarkup = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
     const mobileActionsMarkup = buildAdminActionButtons([
-        { ...actions[0], label: 'Edit' },
-        { ...actions[1], label: 'Delete' },
+        { ...actions[0], label: 'Preview' },
+        { ...actions[1], label: 'Edit' },
+        { ...actions[2], label: 'Delete' },
     ], { isMobile: true, nowrap: true });
+    const thumbMarkup = buildTableThumbMarkup(item);
 
     if (iecMaterialsTableMode === 'mobile') {
         return [
             `<div class="admin-table-mobile-card">
                 <div class="admin-table-mobile-title-row">
-                    <div>
-                        <p class="admin-table-mobile-kicker">IEC #${escapeHtml(String(item.id))}</p>
-                        <p class="admin-table-mobile-title">${escapeHtml(item.title)}</p>
+                    <div class="flex min-w-0 items-start gap-3">
+                        ${thumbMarkup}
+                        <div class="min-w-0">
+                            <p class="admin-table-mobile-kicker">IEC #${escapeHtml(String(item.id))}</p>
+                            <p class="admin-table-mobile-title">${escapeHtml(item.title)}</p>
+                        </div>
                     </div>
                     ${statusBadge(item.is_active)}
                 </div>
@@ -347,6 +521,7 @@ function buildRowData(item) {
 
     return [
         item.id,
+        thumbMarkup,
         escapeHtml(item.title ?? ''),
         escapeHtml(item.topic ?? '—'),
         escapeHtml((item.media_type ?? '').toUpperCase()),
@@ -375,6 +550,7 @@ function statusBadge(isActive) {
 
 window.IecMaterials = {
     create: createIecMaterial,
+    preview: previewIecMaterial,
     edit: editIecMaterial,
     remove: removeIecMaterial,
     load: loadIecMaterials,

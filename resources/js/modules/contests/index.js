@@ -10,6 +10,7 @@ let contestsDataTableClass;
 let contestsTableMode;
 let hasBoundViewportListener = false;
 let contestsCategoryFilter = '';
+let contestsStatusFilter = '';
 
 const CATEGORY_OPTIONS = [
     { value: 'song', label: 'Song Contest' },
@@ -28,15 +29,6 @@ export function initContestsModule() {
     const tableEl = document.getElementById('contests-table');
     if (!tableEl) return;
 
-    const categoryFilterEl = document.getElementById('contests-category-filter');
-    if (categoryFilterEl && !categoryFilterEl.dataset.bound) {
-        categoryFilterEl.dataset.bound = '1';
-        categoryFilterEl.addEventListener('change', () => {
-            contestsCategoryFilter = categoryFilterEl.value || '';
-            loadContests();
-        });
-    }
-
     loadAdminDataTableLibrary().then(async (DataTable) => {
         contestsDataTableClass = DataTable;
         await initializeContestsTable(tableEl);
@@ -44,6 +36,78 @@ export function initContestsModule() {
         bindAdminActionTooltipSuppression(tableEl);
         loadContests();
     });
+}
+
+function mountContestToolbarFilters(tableEl) {
+    const container = tableEl.closest('.dt-container');
+    if (!container) {
+        return;
+    }
+
+    const layoutEnd = [...container.querySelectorAll('.dt-layout-end')]
+        .find((el) => el.querySelector('.dt-search'));
+
+    if (!layoutEnd) {
+        return;
+    }
+
+    layoutEnd.querySelector('#contests-toolbar-filters')?.remove();
+    layoutEnd.classList.add('admin-dt-toolbar-filters-host');
+
+    const filters = document.createElement('div');
+    filters.id = 'contests-toolbar-filters';
+    filters.className = 'admin-dt-filters';
+    filters.innerHTML = `
+        <label class="sr-only" for="contests-category-filter">Filter by contest type</label>
+        <select id="contests-category-filter" class="admin-filter-select admin-filter-select-inline" aria-label="Filter by contest type">
+            <option value="">All types</option>
+            ${CATEGORY_OPTIONS.map((option) => `
+                <option value="${option.value}" ${contestsCategoryFilter === option.value ? 'selected' : ''}>
+                    ${option.label}
+                </option>
+            `).join('')}
+        </select>
+        <label class="sr-only" for="contests-status-filter">Filter by status</label>
+        <select id="contests-status-filter" class="admin-filter-select admin-filter-select-inline" aria-label="Filter by status">
+            <option value="">All statuses</option>
+            ${STATUS_OPTIONS.map((option) => `
+                <option value="${option.value}" ${contestsStatusFilter === option.value ? 'selected' : ''}>
+                    ${option.label}
+                </option>
+            `).join('')}
+        </select>
+    `;
+
+    const search = layoutEnd.querySelector('.dt-search');
+    if (search) {
+        layoutEnd.insertBefore(filters, search);
+    } else {
+        layoutEnd.prepend(filters);
+    }
+
+    bindContestFilters();
+}
+
+function bindContestFilters() {
+    const categoryFilterEl = document.getElementById('contests-category-filter');
+    if (categoryFilterEl && !categoryFilterEl.dataset.bound) {
+        categoryFilterEl.dataset.bound = '1';
+        contestsCategoryFilter = categoryFilterEl.value || '';
+        categoryFilterEl.addEventListener('change', () => {
+            contestsCategoryFilter = categoryFilterEl.value || '';
+            loadContests();
+        });
+    }
+
+    const statusFilterEl = document.getElementById('contests-status-filter');
+    if (statusFilterEl && !statusFilterEl.dataset.bound) {
+        statusFilterEl.dataset.bound = '1';
+        contestsStatusFilter = statusFilterEl.value || '';
+        statusFilterEl.addEventListener('change', () => {
+            contestsStatusFilter = statusFilterEl.value || '';
+            loadContests();
+        });
+    }
 }
 
 export function loadContests(search = '') {
@@ -54,6 +118,7 @@ export function loadContests(search = '') {
             search,
             per_page: 200,
             ...(contestsCategoryFilter ? { category: contestsCategoryFilter } : {}),
+            ...(contestsStatusFilter ? { status: contestsStatusFilter } : {}),
         },
     })
         .then(({ data }) => {
@@ -365,6 +430,7 @@ async function initializeContestsTable(tableEl) {
     }
 
     if (contestsTable && contestsTableMode === nextMode) {
+        mountContestToolbarFilters(tableEl);
         return;
     }
 
@@ -383,6 +449,8 @@ async function initializeContestsTable(tableEl) {
         scrollX: nextMode !== 'mobile',
         scrollCollapse: nextMode !== 'mobile',
     }));
+    mountContestToolbarFilters(tableEl);
+    bindAdminActionTooltipSuppression(tableEl);
 }
 
 function bindViewportListener(tableEl) {
