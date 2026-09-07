@@ -54,17 +54,9 @@
                     <i class="fas fa-chalkboard-user w-5 text-[#FBD116]"></i>
                     <span>Trainings</span>
                 </a>
-                <a href="/admin/song-contest" class="admin-nav-link {{ ($activePage ?? '') === 'song-contest' ? 'admin-nav-link-active' : '' }}" data-nav-section="song-contest">
-                    <i class="fas fa-music w-5 text-[#FBD116]"></i>
-                    <span>Song Contest</span>
-                </a>
-                <a href="/admin/poster-contest" class="admin-nav-link {{ ($activePage ?? '') === 'poster-contest' ? 'admin-nav-link-active' : '' }}" data-nav-section="poster-contest">
-                    <i class="fas fa-image w-5 text-[#FBD116]"></i>
-                    <span>Poster Contest</span>
-                </a>
-                <a href="/admin/video-contest" class="admin-nav-link {{ ($activePage ?? '') === 'video-contest' ? 'admin-nav-link-active' : '' }}" data-nav-section="video-contest">
-                    <i class="fas fa-video w-5 text-[#FBD116]"></i>
-                    <span>Video Contest</span>
+                <a href="/admin/contests" class="admin-nav-link {{ ($activePage ?? '') === 'contests' ? 'admin-nav-link-active' : '' }}" data-nav-section="contests">
+                    <i class="fas fa-trophy w-5 text-[#FBD116]"></i>
+                    <span>Contests</span>
                 </a>
                 <a href="/admin/iec-materials" class="admin-nav-link {{ ($activePage ?? '') === 'iec-materials' ? 'admin-nav-link-active' : '' }}" data-nav-section="iec-materials">
                     <i class="fas fa-photo-film w-5 text-[#FBD116]"></i>

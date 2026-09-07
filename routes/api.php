@@ -8,9 +8,7 @@ use App\Http\Controllers\API\Admin\NotificationAdminController;
 use App\Http\Controllers\API\Admin\PostAdminController;
 use App\Http\Controllers\API\Admin\RehabCenterAdminController;
 use App\Http\Controllers\API\Admin\TrainingAdminController;
-use App\Http\Controllers\API\Admin\SongContestAdminController;
-use App\Http\Controllers\API\Admin\PosterContestAdminController;
-use App\Http\Controllers\API\Admin\VideoContestAdminController;
+use App\Http\Controllers\API\Admin\ContestAdminController;
 use App\Http\Controllers\API\Admin\IecMaterialAdminController;
 use App\Http\Controllers\API\Admin\UserAdminController;
 use App\Http\Controllers\API\AuthController;
@@ -23,9 +21,7 @@ use App\Http\Controllers\API\PostController;
 use App\Http\Controllers\API\RehabCenterController;
 use App\Http\Controllers\API\ReviewController;
 use App\Http\Controllers\API\TrainingController;
-use App\Http\Controllers\API\SongContestController;
-use App\Http\Controllers\API\PosterContestController;
-use App\Http\Controllers\API\VideoContestController;
+use App\Http\Controllers\API\ContestController;
 use App\Http\Controllers\API\IecMaterialController;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\API\UserController;
@@ -98,26 +94,12 @@ Route::prefix('v1')
             ->whereNumber('training')
             ->name('trainings.show');
 
-        // ── Public playlist / song writing contest ───────────────────────
-        Route::get('/song-contest', [SongContestController::class, 'index'])
-            ->name('song-contest.index');
-        Route::get('/song-contest/{songContest}', [SongContestController::class, 'show'])
-            ->whereNumber('songContest')
-            ->name('song-contest.show');
-
-        // ── Public poster-making contest ─────────────────────────────────
-        Route::get('/poster-contest', [PosterContestController::class, 'index'])
-            ->name('poster-contest.index');
-        Route::get('/poster-contest/{posterContest}', [PosterContestController::class, 'show'])
-            ->whereNumber('posterContest')
-            ->name('poster-contest.show');
-
-        // ── Public video-making contest ──────────────────────────────────
-        Route::get('/video-contest', [VideoContestController::class, 'index'])
-            ->name('video-contest.index');
-        Route::get('/video-contest/{videoContest}', [VideoContestController::class, 'show'])
-            ->whereNumber('videoContest')
-            ->name('video-contest.show');
+        // ── Public contests (song | poster | video via category) ─────────
+        Route::get('/contests', [ContestController::class, 'index'])
+            ->name('contests.index');
+        Route::get('/contests/{contest}', [ContestController::class, 'show'])
+            ->whereNumber('contest')
+            ->name('contests.show');
 
         Route::get('/iec-materials', [IecMaterialController::class, 'index'])
             ->name('iec-materials.index');
@@ -155,29 +137,13 @@ Route::prefix('v1')
             Route::get('/diary-entries/today', [DiaryController::class, 'today'])->name('diary-entries.today');
             Route::apiResource('diary-entries', DiaryController::class)->except(['create', 'edit']);
 
-            // ── Song contest submissions ─────────────────────────────────
-            Route::post('/song-contest/{songContest}/entries', [SongContestController::class, 'submit'])
-                ->whereNumber('songContest')
-                ->name('song-contest.entries.store');
-            Route::get('/song-contest/{songContest}/my-entry', [SongContestController::class, 'myEntry'])
-                ->whereNumber('songContest')
-                ->name('song-contest.my-entry');
-
-            // ── Poster contest submissions ───────────────────────────────
-            Route::post('/poster-contest/{posterContest}/entries', [PosterContestController::class, 'submit'])
-                ->whereNumber('posterContest')
-                ->name('poster-contest.entries.store');
-            Route::get('/poster-contest/{posterContest}/my-entry', [PosterContestController::class, 'myEntry'])
-                ->whereNumber('posterContest')
-                ->name('poster-contest.my-entry');
-
-            // ── Video contest submissions ────────────────────────────────
-            Route::post('/video-contest/{videoContest}/entries', [VideoContestController::class, 'submit'])
-                ->whereNumber('videoContest')
-                ->name('video-contest.entries.store');
-            Route::get('/video-contest/{videoContest}/my-entry', [VideoContestController::class, 'myEntry'])
-                ->whereNumber('videoContest')
-                ->name('video-contest.my-entry');
+            // ── Contest submissions (song | poster | video) ───────────────
+            Route::post('/contests/{contest}/entries', [ContestController::class, 'submit'])
+                ->whereNumber('contest')
+                ->name('contests.entries.store');
+            Route::get('/contests/{contest}/my-entry', [ContestController::class, 'myEntry'])
+                ->whereNumber('contest')
+                ->name('contests.my-entry');
 
             // ── Post engagement (likes & comments) ───────────────────────
             Route::post('/posts/{id}/like', [PostEngagementController::class, 'toggleLike'])
@@ -276,32 +242,14 @@ Route::prefix('v1')
                         Route::put('/trainings/{training}',   [TrainingAdminController::class, 'update'])->name('trainings.update');
                         Route::delete('/trainings/{training}', [TrainingAdminController::class, 'destroy'])->name('trainings.destroy');
 
-                        Route::get('/song-contest', [SongContestAdminController::class, 'index'])->name('song-contest.index');
-                        Route::post('/song-contest', [SongContestAdminController::class, 'store'])->name('song-contest.store');
-                        Route::get('/song-contest/{songContest}', [SongContestAdminController::class, 'show'])->name('song-contest.show');
-                        Route::put('/song-contest/{songContest}', [SongContestAdminController::class, 'update'])->name('song-contest.update');
-                        Route::delete('/song-contest/{songContest}', [SongContestAdminController::class, 'destroy'])->name('song-contest.destroy');
-                        Route::get('/song-contest/{songContest}/entries', [SongContestAdminController::class, 'entries'])->name('song-contest.entries');
-                        Route::post('/song-contest/entries/{songContestEntry}/review', [SongContestAdminController::class, 'review'])->name('song-contest.entries.review');
-                        Route::post('/song-contest/entries/{songContestEntry}/winner', [SongContestAdminController::class, 'setWinner'])->name('song-contest.entries.winner');
-
-                        Route::get('/poster-contest', [PosterContestAdminController::class, 'index'])->name('poster-contest.index');
-                        Route::post('/poster-contest', [PosterContestAdminController::class, 'store'])->name('poster-contest.store');
-                        Route::get('/poster-contest/{posterContest}', [PosterContestAdminController::class, 'show'])->name('poster-contest.show');
-                        Route::put('/poster-contest/{posterContest}', [PosterContestAdminController::class, 'update'])->name('poster-contest.update');
-                        Route::delete('/poster-contest/{posterContest}', [PosterContestAdminController::class, 'destroy'])->name('poster-contest.destroy');
-                        Route::get('/poster-contest/{posterContest}/entries', [PosterContestAdminController::class, 'entries'])->name('poster-contest.entries');
-                        Route::post('/poster-contest/entries/{posterContestEntry}/review', [PosterContestAdminController::class, 'review'])->name('poster-contest.entries.review');
-                        Route::post('/poster-contest/entries/{posterContestEntry}/winner', [PosterContestAdminController::class, 'setWinner'])->name('poster-contest.entries.winner');
-
-                        Route::get('/video-contest', [VideoContestAdminController::class, 'index'])->name('video-contest.index');
-                        Route::post('/video-contest', [VideoContestAdminController::class, 'store'])->name('video-contest.store');
-                        Route::get('/video-contest/{videoContest}', [VideoContestAdminController::class, 'show'])->name('video-contest.show');
-                        Route::put('/video-contest/{videoContest}', [VideoContestAdminController::class, 'update'])->name('video-contest.update');
-                        Route::delete('/video-contest/{videoContest}', [VideoContestAdminController::class, 'destroy'])->name('video-contest.destroy');
-                        Route::get('/video-contest/{videoContest}/entries', [VideoContestAdminController::class, 'entries'])->name('video-contest.entries');
-                        Route::post('/video-contest/entries/{videoContestEntry}/review', [VideoContestAdminController::class, 'review'])->name('video-contest.entries.review');
-                        Route::post('/video-contest/entries/{videoContestEntry}/winner', [VideoContestAdminController::class, 'setWinner'])->name('video-contest.entries.winner');
+                        Route::get('/contests', [ContestAdminController::class, 'index'])->name('contests.index');
+                        Route::post('/contests', [ContestAdminController::class, 'store'])->name('contests.store');
+                        Route::get('/contests/{contest}', [ContestAdminController::class, 'show'])->name('contests.show');
+                        Route::put('/contests/{contest}', [ContestAdminController::class, 'update'])->name('contests.update');
+                        Route::delete('/contests/{contest}', [ContestAdminController::class, 'destroy'])->name('contests.destroy');
+                        Route::get('/contests/{contest}/entries', [ContestAdminController::class, 'entries'])->name('contests.entries');
+                        Route::post('/contests/entries/{contestEntry}/review', [ContestAdminController::class, 'review'])->name('contests.entries.review');
+                        Route::post('/contests/entries/{contestEntry}/winner', [ContestAdminController::class, 'setWinner'])->name('contests.entries.winner');
 
                         Route::get('/iec-materials', [IecMaterialAdminController::class, 'index'])->name('iec-materials.index');
                         Route::post('/iec-materials', [IecMaterialAdminController::class, 'store'])->name('iec-materials.store');

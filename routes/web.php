@@ -43,9 +43,7 @@ Route::get('/admin/rehab-centers', fn () => AdminPage::render('admin.rehab-cente
 
 Route::get('/admin/trainings', fn () => AdminPage::render('admin.trainings.index', 'trainings', 'Trainings'));
 
-Route::get('/admin/song-contest', fn () => AdminPage::render('admin.song-contest.index', 'song-contest', 'Song Contest'));
-Route::get('/admin/poster-contest', fn () => AdminPage::render('admin.poster-contest.index', 'poster-contest', 'Poster Contest'));
-Route::get('/admin/video-contest', fn () => AdminPage::render('admin.video-contest.index', 'video-contest', 'Video Contest'));
+Route::get('/admin/contests', fn () => AdminPage::render('admin.contests.index', 'contests', 'Contests'));
 
 Route::get('/admin/iec-materials', fn () => AdminPage::render('admin.iec-materials.index', 'iec-materials', 'IEC Materials'));
 

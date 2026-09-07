@@ -8,26 +8,22 @@ import { initProfileModule } from './profile';
 import { initRehabCentersModule } from './rehab-centers/index';
 import { enableAdminSwalHeaders } from './shared/swal-forms';
 import { initTrainingsModule } from './trainings/index';
-import { initSongContestModule } from './song-contest/index';
-import { initPosterContestModule } from './poster-contest/index';
-import { initVideoContestModule } from './video-contest/index';
+import { initContestsModule } from './contests/index';
 import { initIecMaterialsModule } from './iec-materials/index';
 import { initUsersModule } from './users';
 
 const ADMIN_ROLE_SECTIONS = {
-    super_admin: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'iec-materials', 'notifications', 'analytics', 'users', 'diary'],
-    editor: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'iec-materials'],
-    publisher: ['posts', 'rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'iec-materials', 'notifications'],
-    analytics_viewer: ['rehab-centers', 'trainings', 'song-contest', 'poster-contest', 'video-contest', 'iec-materials', 'analytics'],
+    super_admin: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'notifications', 'analytics', 'users', 'diary'],
+    editor: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials'],
+    publisher: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'notifications'],
+    analytics_viewer: ['rehab-centers', 'trainings', 'contests', 'iec-materials', 'analytics'],
 };
 
 const PAGE_SECTION_REQUIREMENTS = {
     'admin-posts': 'posts',
     'admin-rehab-centers': 'rehab-centers',
     'admin-trainings': 'trainings',
-    'admin-song-contest': 'song-contest',
-    'admin-poster-contest': 'poster-contest',
-    'admin-video-contest': 'video-contest',
+    'admin-contests': 'contests',
     'admin-iec-materials': 'iec-materials',
     'admin-notifications': 'notifications',
     'admin-analytics': 'analytics',
@@ -39,9 +35,7 @@ const SECTION_PATHS = {
     posts: '/admin/posts',
     'rehab-centers': '/admin/rehab-centers',
     trainings: '/admin/trainings',
-    'song-contest': '/admin/song-contest',
-    'poster-contest': '/admin/poster-contest',
-    'video-contest': '/admin/video-contest',
+    'contests': '/admin/contests',
     'iec-materials': '/admin/iec-materials',
     notifications: '/admin/notifications',
     analytics: '/admin/analytics',
@@ -318,14 +312,8 @@ function initializePageContent(pageName, allowedSections) {
         case 'admin-trainings':
             initTrainingsModule();
             break;
-        case 'admin-song-contest':
-            initSongContestModule();
-            break;
-        case 'admin-poster-contest':
-            initPosterContestModule();
-            break;
-        case 'admin-video-contest':
-            initVideoContestModule();
+        case 'admin-contests':
+            initContestsModule();
             break;
         case 'admin-iec-materials':
             initIecMaterialsModule();
@@ -363,16 +351,8 @@ function bindQuickActions() {
         window.Trainings?.create();
     });
 
-    document.querySelector('[data-admin-action="create-song-contest"]')?.addEventListener('click', () => {
-        window.SongContest?.create();
-    });
-
-    document.querySelector('[data-admin-action="create-poster-contest"]')?.addEventListener('click', () => {
-        window.PosterContest?.create();
-    });
-
-    document.querySelector('[data-admin-action="create-video-contest"]')?.addEventListener('click', () => {
-        window.VideoContest?.create();
+    document.querySelector('[data-admin-action="create-contest"]')?.addEventListener('click', () => {
+        window.Contests?.create();
     });
 
     document.querySelector('[data-admin-action="create-iec-material"]')?.addEventListener('click', () => {
@@ -426,21 +406,9 @@ async function loadOverviewCounts(allowedSections) {
             count: (response) => response.data.data?.total,
         },
         {
-            key: 'song-contest',
-            allowed: allowedSections.includes('song-contest'),
-            request: () => window.axios.get('/admin/song-contest', { params: { per_page: 1 } }),
-            count: (response) => response.data.data?.total,
-        },
-        {
-            key: 'poster-contest',
-            allowed: allowedSections.includes('poster-contest'),
-            request: () => window.axios.get('/admin/poster-contest', { params: { per_page: 1 } }),
-            count: (response) => response.data.data?.total,
-        },
-        {
-            key: 'video-contest',
-            allowed: allowedSections.includes('video-contest'),
-            request: () => window.axios.get('/admin/video-contest', { params: { per_page: 1 } }),
+            key: 'contests',
+            allowed: allowedSections.includes('contests'),
+            request: () => window.axios.get('/admin/contests', { params: { per_page: 1 } }),
             count: (response) => response.data.data?.total,
         },
         {

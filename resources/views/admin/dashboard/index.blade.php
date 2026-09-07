@@ -27,17 +27,9 @@
                         <i class="fas fa-chalkboard-user mr-2"></i>
                         Add Training
                     </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-song-contest" title="Add a playlist or song contest entry">
-                        <i class="fas fa-music mr-2"></i>
-                        Add Song Contest
-                    </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-poster-contest" title="Add a poster-making contest">
-                        <i class="fas fa-image mr-2"></i>
-                        Add Poster Contest
-                    </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-video-contest" title="Add a video-making contest">
-                        <i class="fas fa-video mr-2"></i>
-                        Add Video Contest
+                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-contest" title="Add a Song, Poster, or Video contest">
+                        <i class="fas fa-trophy mr-2"></i>
+                        Add Contest
                     </button>
                     <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-iec-material" title="Add animated IEC material">
                         <i class="fas fa-photo-film mr-2"></i>
@@ -93,48 +85,20 @@
                     </span>
                 </div>
             </a>
-
-            <a href="/admin/song-contest" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="song-contest">
+            <a href="/admin/contests" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="contests">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">Contests</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">Song Contest</p>
-                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="song-contest">--</p>
-                        <p class="admin-trend" data-overview-trend="song-contest">–</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">Contests</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="contests">--</p>
+                        <p class="admin-trend" data-overview-trend="contests">–</p>
                     </div>
                     <span class="admin-icon-badge">
-                        <i class="fas fa-music"></i>
+                        <i class="fas fa-trophy"></i>
                     </span>
                 </div>
             </a>
 
-            <a href="/admin/poster-contest" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="poster-contest">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">Contests</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">Poster Contest</p>
-                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="poster-contest">--</p>
-                        <p class="admin-trend" data-overview-trend="poster-contest">–</p>
-                    </div>
-                    <span class="admin-icon-badge">
-                        <i class="fas fa-image"></i>
-                    </span>
-                </div>
-            </a>
-
-            <a href="/admin/video-contest" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="video-contest">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">Contests</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">Video Contest</p>
-                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="video-contest">--</p>
-                        <p class="admin-trend" data-overview-trend="video-contest">–</p>
-                    </div>
-                    <span class="admin-icon-badge">
-                        <i class="fas fa-video"></i>
-                    </span>
-                </div>
-            </a>
 
             <a href="/admin/iec-materials" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="iec-materials">
                 <div class="flex items-start justify-between gap-4">
