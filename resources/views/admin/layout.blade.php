@@ -18,24 +18,26 @@
     <div id="admin-app" class="relative min-h-screen">
         <div id="admin-sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-950/50 md:hidden"></div>
 
-        <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full flex-col bg-[#123a60] px-5 py-6 text-white shadow-xl transition-transform duration-300 md:translate-x-0">
-            <div class="flex items-center gap-3">
-                <div class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-[#055498]/25">
-                    <img src="{{ asset('ddb.svg') }}" alt="DDB logo" class="h-10 w-10 object-contain">
+        <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-40 flex h-dvh max-h-dvh w-72 -translate-x-full flex-col overflow-hidden bg-[#123a60] px-5 py-6 text-white shadow-xl transition-transform duration-300 md:translate-x-0">
+            <div class="shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-[#055498]/25">
+                        <img src="{{ asset('ddb.svg') }}" alt="DDB logo" class="h-10 w-10 object-contain">
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#FBD116]">DAPE-MA</p>
+                        <p class="text-sm font-semibold text-white">Admin Control Panel</p>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#FBD116]">DAPE-MA</p>
-                    <p class="text-sm font-semibold text-white">Admin Control Panel</p>
+
+                <div class="mt-8 rounded-2xl border border-[#055498] bg-white/5 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-slate-300">Signed in as</p>
+                    <p data-admin-name class="mt-2 text-base font-semibold text-white">Loading...</p>
+                    <p data-admin-role class="text-sm text-[#FBD116]">Loading role...</p>
                 </div>
             </div>
 
-            <div class="mt-8 rounded-2xl border border-[#055498] bg-white/5 p-4">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-300">Signed in as</p>
-                <p data-admin-name class="mt-2 text-base font-semibold text-white">Loading...</p>
-                <p data-admin-role class="text-sm text-[#FBD116]">Loading role...</p>
-            </div>
-
-            <nav data-admin-nav aria-hidden="true" class="pointer-events-none mt-8 space-y-1 text-sm opacity-0 transition-opacity duration-200">
+            <nav data-admin-nav aria-hidden="true" class="admin-sidebar-nav pointer-events-none mt-6 min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1 text-sm opacity-0 transition-opacity duration-200">
                 <a href="/admin/dashboard" class="admin-nav-link {{ ($activePage ?? 'dashboard') === 'dashboard' ? 'admin-nav-link-active' : '' }}">
                     <i class="fas fa-gauge-high w-5 text-[#FBD116]"></i>
                     <span>Dashboard</span>
@@ -86,7 +88,7 @@
                 </a>
             </nav>
 
-            <div class="mt-auto space-y-2 border-t border-white/20 pt-4">
+            <div class="mt-4 shrink-0 space-y-2 border-t border-white/20 pt-4">
                 <a href="/admin/profile" class="admin-sidebar-footer-link {{ ($activePage ?? '') === 'profile' ? 'admin-sidebar-footer-link-active' : '' }}">
                     <i class="fas fa-user-pen text-[#FBD116]"></i>
                     <span>Edit Profile</span>

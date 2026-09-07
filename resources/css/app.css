@@ -588,11 +588,41 @@
 
 #admin-sidebar {
     width: min(85vw, 18rem);
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+}
+
+.admin-sidebar-nav {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar {
+    width: 0.4rem;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.admin-sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.45);
 }
 
 @supports (-webkit-touch-callout: none) {
     .min-h-screen {
         min-height: -webkit-fill-available;
+    }
+
+    #admin-sidebar {
+        height: -webkit-fill-available;
+        max-height: -webkit-fill-available;
     }
 }
 
