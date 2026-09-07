@@ -9,6 +9,7 @@ let contestsTable;
 let contestsDataTableClass;
 let contestsTableMode;
 let hasBoundViewportListener = false;
+let contestsCategoryFilter = '';
 
 const CATEGORY_OPTIONS = [
     { value: 'song', label: 'Song Contest' },
@@ -27,6 +28,15 @@ export function initContestsModule() {
     const tableEl = document.getElementById('contests-table');
     if (!tableEl) return;
 
+    const categoryFilterEl = document.getElementById('contests-category-filter');
+    if (categoryFilterEl && !categoryFilterEl.dataset.bound) {
+        categoryFilterEl.dataset.bound = '1';
+        categoryFilterEl.addEventListener('change', () => {
+            contestsCategoryFilter = categoryFilterEl.value || '';
+            loadContests();
+        });
+    }
+
     loadAdminDataTableLibrary().then(async (DataTable) => {
         contestsDataTableClass = DataTable;
         await initializeContestsTable(tableEl);
@@ -39,7 +49,13 @@ export function initContestsModule() {
 export function loadContests(search = '') {
     if (!contestsTable) return;
 
-    axios.get('/admin/contests', { params: { search, per_page: 200 } })
+    axios.get('/admin/contests', {
+        params: {
+            search,
+            per_page: 200,
+            ...(contestsCategoryFilter ? { category: contestsCategoryFilter } : {}),
+        },
+    })
         .then(({ data }) => {
             const rows = data.data?.data ?? [];
             contestsTable.clear();
@@ -104,7 +120,7 @@ function categoryLabel(value) {
 function buildContestFormHtml(existing) {
     const statusValue = existing?.status ?? 'open';
     const activeValue = existing?.is_active === false ? '0' : '1';
-    const categoryValue = existing?.category ?? 'song';
+    const categoryValue = existing?.category ?? '';
     const allowedValue = existing?.allowed_entry_types ?? 'both';
     const statusOptions = STATUS_OPTIONS.map((option) => {
         const selected = statusValue === option.value ? 'selected' : '';
@@ -120,7 +136,11 @@ function buildContestFormHtml(existing) {
             <div class="admin-swal-fields">
                 <div class="admin-swal-field">
                     <label class="admin-swal-label" for="ct-category">Category *</label>
-                    <select id="ct-category" class="admin-swal-input">${categoryOptions}</select>
+                    <select id="ct-category" class="admin-swal-input" ${existing?.id ? 'disabled' : ''}>
+                        <option value="" disabled ${!existing?.category ? 'selected' : ''}>Select Song, Poster, or Video</option>
+                        ${categoryOptions}
+                    </select>
+                    <p class="mt-1 text-xs text-slate-500">Choose Song Contest, Poster Contest, or Video Contest.</p>
                 </div>
                 <div class="admin-swal-field" id="ct-allowed-wrap">
                     <label class="admin-swal-label" for="ct-allowed">Allowed song entry types</label>
@@ -216,10 +236,10 @@ function showContestForm(existing) {
             }
 
             return {
-                category,
+                category: existing?.id ? (existing.category || category) : category,
                 title,
                 theme: document.getElementById('ct-theme')?.value.trim() || null,
-                allowed_entry_types: category === 'song'
+                allowed_entry_types: (existing?.id ? (existing.category || category) : category) === 'song'
                     ? (document.getElementById('ct-allowed')?.value || 'both')
                     : null,
                 contest_year: yearRaw ? Number(yearRaw) : null,
