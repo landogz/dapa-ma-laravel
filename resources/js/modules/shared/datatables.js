@@ -12,6 +12,9 @@ export function getAdminDataTableOptions({
     scrollCollapse = true,
     deferRender = false,
     drawCallback,
+    layout,
+    language = {},
+    hidePagingWhenSinglePage = true,
 }) {
     return {
         searching: true,
@@ -25,24 +28,26 @@ export function getAdminDataTableOptions({
         processing: true,
         deferRender,
         stripeClasses: [],
-        layout: {
-            topStart: 'pageLength',
+        hidePagingWhenSinglePage,
+        layout: layout ?? {
+            topStart: null,
             topEnd: 'search',
             bottomStart: 'info',
-            bottomEnd: 'paging',
+            bottomEnd: ['pageLength', 'paging'],
         },
         language: {
             search: searchLabel,
             searchPlaceholder,
-            lengthMenu: 'Show _MENU_ entries',
+            lengthMenu: '_MENU_ per page',
             info: infoLabel,
             infoEmpty: 'No records available',
-            zeroRecords: 'No matching records found',
-            emptyTable: 'No data available',
+            zeroRecords: 'No matching records found. Try another search or clear filters.',
+            emptyTable: 'No records yet. Use Add to create the first one.',
             paginate: {
                 previous: 'Prev',
                 next: 'Next',
             },
+            ...language,
         },
         columns,
         columnDefs,
@@ -61,6 +66,20 @@ export function loadAdminDataTableLibrary() {
 
 export async function createAdminDataTable(tableElement, options) {
     const DataTable = await loadAdminDataTableLibrary();
+    const { hidePagingWhenSinglePage = true, ...tableOptions } = options;
+    const table = new DataTable(tableElement, tableOptions);
 
-    return new DataTable(tableElement, options);
+    if (hidePagingWhenSinglePage) {
+        const syncPagingVisibility = () => {
+            const pages = table.page.info().pages;
+            table.table().container()
+                ?.querySelector('.dt-paging')
+                ?.classList.toggle('is-single-page', pages <= 1);
+        };
+
+        table.on('draw', syncPagingVisibility);
+        syncPagingVisibility();
+    }
+
+    return table;
 }

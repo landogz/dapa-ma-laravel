@@ -54,7 +54,10 @@ class DiaryController extends Controller
 
     public function store(StoreDiaryEntryRequest $request): JsonResponse
     {
-        $entry = $this->diaryService->store($request->user(), $request->validated());
+        $entry = $this->diaryService->store(
+            $request->user(),
+            $this->payloadFromRequest($request),
+        );
 
         return response()->json([
             'status'  => true,
@@ -65,7 +68,11 @@ class DiaryController extends Controller
 
     public function update(UpdateDiaryEntryRequest $request, int $id): JsonResponse
     {
-        $entry = $this->diaryService->update($request->user(), $id, $request->validated());
+        $entry = $this->diaryService->update(
+            $request->user(),
+            $id,
+            $this->payloadFromRequest($request),
+        );
 
         return response()->json([
             'status'  => true,
@@ -83,5 +90,31 @@ class DiaryController extends Controller
             'message' => 'Diary entry deleted successfully.',
             'data'    => null,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function payloadFromRequest(StoreDiaryEntryRequest|UpdateDiaryEntryRequest $request): array
+    {
+        $data = $request->validated();
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image');
+        }
+
+        if ($request->boolean('remove_image')) {
+            $data['remove_image'] = true;
+        }
+
+        // Multipart forms send JSON-ish list fields as repeated keys or a JSON string.
+        if (isset($data['feelings']) && is_string($data['feelings'])) {
+            $decoded = json_decode($data['feelings'], true);
+            if (is_array($decoded)) {
+                $data['feelings'] = $decoded;
+            }
+        }
+
+        return $data;
     }
 }

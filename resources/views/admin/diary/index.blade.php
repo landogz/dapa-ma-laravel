@@ -8,7 +8,7 @@
                     <i class="fas fa-book-open"></i>
                 </span>
                 <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-3">
-                    <h2 class="admin-shell-title text-base sm:text-lg">My Diary (Talaarawan)</h2>
+                    <h2 class="admin-shell-title text-base sm:text-lg">My Journal</h2>
                     <p class="mt-0.5 text-xs sm:mt-0 sm:text-sm admin-shell-subtitle">
                         Private journal entries submitted from the mobile app.
                     </p>
@@ -18,7 +18,7 @@
 
         <div class="mt-4 rounded-2xl border border-[#055498]/15 bg-[#055498]/5 px-4 py-3 text-sm text-slate-600">
             <i class="fas fa-mobile-screen-button mr-2 text-[#055498]"></i>
-            Users create diary notes in the <strong>Diary</strong> tab of the DAPE-MA mobile app (one entry per day, rich text).
+            Users create journal notes in the <strong>Journal</strong> section of the DAPE-MA mobile app (one entry per day, rich text).
             This page is for super admin review and moderation only.
         </div>
 

@@ -59,14 +59,17 @@ class PostService
         $publishMeta = $this->resolveSuperAdminPublishMeta($author);
 
         $post = $this->postRepository->create([
-            'title'       => $data['title'],
-            'body'        => $data['body'],
-            'category_id' => $data['category_id'],
-            'media_url'   => $mediaUrl,
-            'youtube_url' => $data['youtube_url'] ?? null,
-            'status'      => $publishMeta['status'],
-            'publish_date' => $publishMeta['publish_date'],
-            'author_id'   => $author->id,
+            'title'             => $data['title'],
+            'body'              => $data['body'],
+            'category_id'       => $data['category_id'],
+            'media_url'         => $mediaUrl,
+            'youtube_url'       => $data['youtube_url'] ?? null,
+            'comments_enabled'  => array_key_exists('comments_enabled', $data)
+                ? (bool) $data['comments_enabled']
+                : true,
+            'status'            => $publishMeta['status'],
+            'publish_date'      => $publishMeta['publish_date'],
+            'author_id'         => $author->id,
         ]);
 
         if ($post->status === 'published') {
@@ -96,8 +99,12 @@ class PostService
 
         if ($actor?->role !== 'super_admin') {
             unset($payload['status']);
-        } else {
+        } elseif ($this->payloadTouchesPostContent($payload)) {
             $payload = $this->applySuperAdminPublishDefaults($payload, $post);
+        }
+
+        if (array_key_exists('comments_enabled', $payload)) {
+            $payload['comments_enabled'] = (bool) $payload['comments_enabled'];
         }
 
         $post = $this->postRepository->update($post, $payload);
@@ -226,6 +233,17 @@ class PostService
         $payload['publish_date'] = $post->publish_date ?? Carbon::now();
 
         return $payload;
+    }
+
+    private function payloadTouchesPostContent(array $payload): bool
+    {
+        foreach (['title', 'body', 'category_id', 'media_url', 'youtube_url', 'status', 'media_file'] as $key) {
+            if (array_key_exists($key, $payload)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function assertStatus(Post $post, array $allowedStatuses): void

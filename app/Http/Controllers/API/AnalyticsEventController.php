@@ -16,22 +16,26 @@ class AnalyticsEventController extends Controller
     {
         $data = $request->validate([
             'event_type' => ['required', 'string', 'max:100'],
-            'post_id'    => ['nullable', 'integer', 'exists:posts,id'],
-            'platform'   => ['nullable', 'string', 'in:android,ios,web'],
+            'post_id' => ['nullable', 'integer', 'exists:posts,id'],
+            'platform' => ['nullable', 'string', 'in:android,ios,web'],
+            'resource_type' => ['nullable', 'string', 'max:50'],
+            'resource_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
         AnalyticsEvent::query()->create([
             'event_type' => $data['event_type'],
-            'post_id'    => $data['post_id'] ?? null,
-            'user_id'    => $this->resolveUserId($request),
+            'post_id' => $data['post_id'] ?? null,
+            'resource_type' => $data['resource_type'] ?? null,
+            'resource_id' => $data['resource_id'] ?? null,
+            'user_id' => $this->resolveUserId($request),
             'session_id' => $this->resolveSessionId($request),
-            'platform'   => $data['platform'] ?? null,
+            'platform' => $data['platform'] ?? null,
         ]);
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Event recorded.',
-            'data'    => null,
+            'data' => null,
         ], 201);
     }
 

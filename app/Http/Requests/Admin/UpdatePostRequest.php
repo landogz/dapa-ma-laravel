@@ -14,11 +14,12 @@ class UpdatePostRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'title'       => ['sometimes', 'string', 'max:255'],
-            'body'        => ['sometimes', 'string'],
-            'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
-            'media_file'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
-            'youtube_url' => ['nullable', 'url', 'max:2048'],
+            'title'            => ['sometimes', 'string', 'max:255'],
+            'body'             => ['sometimes', 'string'],
+            'category_id'      => ['sometimes', 'integer', 'exists:categories,id'],
+            'media_file'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            'youtube_url'      => ['nullable', 'url', 'max:2048'],
+            'comments_enabled' => ['sometimes', 'boolean'],
         ];
 
         if ($this->user()?->role === 'super_admin') {

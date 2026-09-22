@@ -4,12 +4,14 @@
     <section class="admin-shell-card p-4 sm:p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="admin-section-header admin-section-header-accent flex-1 items-center gap-3 sm:gap-4">
-                <span class="admin-icon-badge">
+                <span class="admin-icon-badge admin-icon-badge-lg" aria-hidden="true">
                     <i class="fas fa-trophy"></i>
                 </span>
-                <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-3">
-                    <h2 class="admin-shell-title text-base sm:text-lg">Contests</h2>
-                    <p class="mt-0.5 text-xs sm:mt-0 sm:text-sm admin-shell-subtitle">One CRUD for Song, Poster, and Video contests — pick a category per contest.</p>
+                <div class="min-w-0 flex flex-col gap-1">
+                    <h2 class="admin-shell-title text-lg sm:text-xl">Contests</h2>
+                    <p class="admin-shell-subtitle max-w-2xl text-[11px] leading-relaxed sm:text-xs">
+                        Manage Song, Poster, and Video contests from one place — choose a category when creating.
+                    </p>
                 </div>
             </div>
             <div class="admin-page-actions admin-page-actions-centered lg:self-center">

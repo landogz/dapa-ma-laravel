@@ -10,6 +10,8 @@ class AnalyticsEvent extends Model
     protected $fillable = [
         'event_type',
         'post_id',
+        'resource_type',
+        'resource_id',
         'user_id',
         'session_id',
         'platform',

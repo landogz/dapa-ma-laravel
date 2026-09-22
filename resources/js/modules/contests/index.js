@@ -440,15 +440,24 @@ async function initializeContestsTable(tableEl) {
     }
 
     contestsTableMode = nextMode;
-    contestsTable = await createAdminDataTable(tableEl, getAdminDataTableOptions({
-        searchLabel: 'Search contests:',
-        searchPlaceholder: 'Search contests',
-        infoLabel: 'Showing _START_ to _END_ of _TOTAL_ contests',
-        columns: buildColumns(nextMode),
-        pageLength: nextMode === 'mobile' ? 5 : 10,
-        scrollX: nextMode !== 'mobile',
-        scrollCollapse: nextMode !== 'mobile',
-    }));
+    contestsTable = await createAdminDataTable(tableEl, {
+        ...getAdminDataTableOptions({
+            searchLabel: 'Search contests:',
+            searchPlaceholder: 'Search contests',
+            infoLabel: 'Showing _START_ to _END_ of _TOTAL_ contests',
+            language: {
+                emptyTable: 'No contests yet. Click Add Contest to create one.',
+                zeroRecords: 'No contests match your search or filters.',
+            },
+            columns: buildColumns(nextMode),
+            pageLength: nextMode === 'mobile' ? 5 : 10,
+            scrollX: nextMode !== 'mobile',
+            scrollCollapse: nextMode !== 'mobile',
+        }),
+        lengthMenu: nextMode === 'mobile'
+            ? [[5, 10, 25], [5, 10, 25]]
+            : [[10, 25, 50, 100], [10, 25, 50, 100]],
+    });
     mountContestToolbarFilters(tableEl);
     bindAdminActionTooltipSuppression(tableEl);
 }
@@ -504,12 +513,13 @@ function buildRowData(contest) {
         {
             tooltip: 'Review submissions',
             icon: 'fas fa-inbox',
-            className: 'admin-table-action-primary',
+            className: 'admin-table-action-warning',
             attrs: `onclick="window.Contests.reviewSubmissions(${contest.id})"`,
         },
         {
             tooltip: 'Edit contest',
             icon: 'fas fa-pen-to-square',
+            className: 'admin-table-action-primary',
             attrs: `onclick="window.Contests.edit(${contest.id})"`,
         },
         {
@@ -520,11 +530,18 @@ function buildRowData(contest) {
         },
     ];
 
-    const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
+    const desktopActions = buildAdminActionButtons(actions, {
+        isMobile: false,
+        nowrap: true,
+        className: 'admin-table-actions-panel',
+    });
     const mobileActions = buildAdminActionButtons(actions.map((action) => ({
         ...action,
         label: action.tooltip.split(' ')[0],
     })), { isMobile: true, nowrap: true });
+
+    const pendingMarkup = pendingCountMarkup(contest.pending_count);
+    const entriesMarkup = `<span class="admin-metric-count">${escapeHtml(String(contest.entries_count ?? 0))}</span>`;
 
     if (contestsTableMode === 'mobile') {
         return [
@@ -537,8 +554,8 @@ function buildRowData(contest) {
                     ${statusBadge(contest.status)}
                 </div>
                 <div class="admin-table-mobile-details">
-                    <p><span>Entries:</span> ${escapeHtml(String(contest.entries_count ?? 0))}</p>
-                    <p><span>Pending:</span> ${escapeHtml(String(contest.pending_count ?? 0))}</p>
+                    <p><span>Entries:</span> ${entriesMarkup}</p>
+                    <p><span>Pending:</span> ${pendingMarkup}</p>
                     <p><span>Year:</span> ${escapeHtml(contest.contest_year != null ? String(contest.contest_year) : '—')}</p>
                 </div>
             </div>`,
@@ -551,8 +568,8 @@ function buildRowData(contest) {
         escapeHtml(categoryLabel(contest.category)),
         escapeHtml(contest.title),
         statusBadge(contest.status),
-        escapeHtml(String(contest.entries_count ?? 0)),
-        escapeHtml(String(contest.pending_count ?? 0)),
+        entriesMarkup,
+        pendingMarkup,
         escapeHtml(contest.contest_year != null ? String(contest.contest_year) : '—'),
         desktopActions,
     ];
@@ -579,16 +596,25 @@ function escapeAttribute(value) {
 function statusBadge(status) {
     const label = String(status ?? 'unknown');
     const tone = {
-        open: 'rehab-status-badge-active',
-        approved: 'rehab-status-badge-active',
-        winner: 'rehab-status-badge-active',
-        pending: '',
-        closed: '',
-        finalist: '',
-        draft: 'rehab-status-badge-inactive',
-        rejected: 'rehab-status-badge-inactive',
-        completed: 'rehab-status-badge-active',
-    }[label] ?? '';
+        open: 'admin-status-open',
+        completed: 'admin-status-completed',
+        closed: 'admin-status-closed',
+        draft: 'admin-status-draft',
+        pending: 'admin-status-pending',
+        approved: 'admin-status-open',
+        winner: 'admin-status-open',
+        finalist: 'admin-status-closed',
+        rejected: 'admin-status-draft',
+    }[label] ?? 'admin-status-draft';
 
     return `<span class="admin-status-badge rehab-status-badge ${tone}">${escapeHtml(label)}</span>`;
+}
+
+function pendingCountMarkup(count) {
+    const value = Number(count ?? 0);
+    if (value > 0) {
+        return `<span class="admin-pending-count admin-pending-count-alert" title="${value} pending review">${escapeHtml(String(value))}</span>`;
+    }
+
+    return `<span class="admin-pending-count">${escapeHtml(String(value))}</span>`;
 }

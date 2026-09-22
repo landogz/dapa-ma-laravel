@@ -2,7 +2,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
-import { buildSwalForm, buildSwalOptions } from './shared/swal-forms';
+import { buildSwalForm, buildSwalOptions, formatApiValidationMessage } from './shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
 import { showErrorToast, showSuccessToast } from './shared/toast';
 
@@ -155,7 +155,8 @@ function bindEditButtons() {
                 }),
                 showCancelButton: true,
                 confirmButtonText: 'Save Changes',
-                preConfirm: () => {
+                allowOutsideClick: () => !Swal.isLoading(),
+                preConfirm: async () => {
                     const name = document.getElementById('user-name')?.value.trim();
                     const email = document.getElementById('user-email')?.value.trim();
                     const role = document.getElementById('user-role')?.value;
@@ -164,48 +165,51 @@ function bindEditButtons() {
 
                     if (!name || !email || !role) {
                         Swal.showValidationMessage('Name, email, and role are required.');
+                        return false;
+                    }
 
+                    if (password && password.length < 8) {
+                        Swal.showValidationMessage('Password must be at least 8 characters.');
                         return false;
                     }
 
                     if (password && password !== passwordConfirmation) {
                         Swal.showValidationMessage('Password confirmation does not match.');
-
                         return false;
                     }
 
-                    return {
+                    const payload = {
                         name,
                         email,
                         role,
-                        password: password || undefined,
-                        password_confirmation: password ? passwordConfirmation : undefined,
                     };
+
+                    if (password) {
+                        payload.password = password;
+                        payload.password_confirmation = passwordConfirmation;
+                    }
+
+                    try {
+                        const response = await axios.put(`/admin/users/${userId}`, payload);
+                        return response.data;
+                    } catch (error) {
+                        Swal.showValidationMessage(
+                            formatApiValidationMessage(
+                                error.response,
+                                error.response?.data?.message ?? 'Unable to update user. Please try again.',
+                            ),
+                        );
+                        return false;
+                    }
                 },
             }, { size: 'md' }));
 
-            if (!result.isConfirmed) {
+            if (!result.isConfirmed || !result.value) {
                 return;
             }
 
-            try {
-                const payload = { ...result.value };
-
-                if (!payload.password) {
-                    delete payload.password;
-                    delete payload.password_confirmation;
-                }
-
-                const response = await axios.put(`/admin/users/${userId}`, payload);
-
-                showSuccessToast(response.data.message ?? 'User updated successfully.', 'User updated');
-                loadUsers();
-            } catch (error) {
-                showErrorToast(
-                    error.response?.data?.message ?? 'Please try again.',
-                    'Unable to update user',
-                );
-            }
+            showSuccessToast(result.value.message ?? 'User updated successfully.', 'User updated');
+            loadUsers();
         });
     });
 }
@@ -519,7 +523,8 @@ async function createUserPrompt() {
         }),
         showCancelButton: true,
         confirmButtonText: 'Create User',
-        preConfirm: () => {
+        allowOutsideClick: () => !Swal.isLoading(),
+        preConfirm: async () => {
             const name = document.getElementById('user-name')?.value.trim();
             const email = document.getElementById('user-email')?.value.trim();
             const role = document.getElementById('user-role')?.value;
@@ -528,41 +533,47 @@ async function createUserPrompt() {
 
             if (!name || !email || !role || !password || !passwordConfirmation) {
                 Swal.showValidationMessage('All fields are required.');
+                return false;
+            }
 
+            if (password.length < 8) {
+                Swal.showValidationMessage('Password must be at least 8 characters.');
                 return false;
             }
 
             if (password !== passwordConfirmation) {
                 Swal.showValidationMessage('Password confirmation does not match.');
-
                 return false;
             }
 
-            return {
-                name,
-                email,
-                role,
-                password,
-                password_confirmation: passwordConfirmation,
-            };
+            try {
+                const response = await axios.post('/admin/users', {
+                    name,
+                    email,
+                    role,
+                    password,
+                    password_confirmation: passwordConfirmation,
+                });
+
+                return response.data;
+            } catch (error) {
+                Swal.showValidationMessage(
+                    formatApiValidationMessage(
+                        error.response,
+                        error.response?.data?.message ?? 'Unable to create user. Please try again.',
+                    ),
+                );
+                return false;
+            }
         },
     }, { size: 'md' }));
 
-    if (!result.isConfirmed) {
+    if (!result.isConfirmed || !result.value) {
         return;
     }
 
-    try {
-        const response = await axios.post('/admin/users', result.value);
-
-        showSuccessToast(response.data.message ?? 'User created successfully.', 'User created');
-        loadUsers();
-    } catch (error) {
-        showErrorToast(
-            error.response?.data?.message ?? 'Please try again.',
-            'Unable to create user',
-        );
-    }
+    showSuccessToast(result.value.message ?? 'User created successfully.', 'User created');
+    loadUsers();
 }
 
 window.Users = { create: createUserPrompt };

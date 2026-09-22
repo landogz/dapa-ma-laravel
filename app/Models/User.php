@@ -22,6 +22,12 @@ class User extends Authenticatable
         'name',
         'first_name',
         'last_name',
+        'nickname',
+        'pronouns',
+        'birthday',
+        'persona',
+        'interests',
+        'onboarding_completed_at',
         'email',
         'password',
         'role',
@@ -49,6 +55,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'birthday' => 'date',
+            'interests' => 'array',
+            'onboarding_completed_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

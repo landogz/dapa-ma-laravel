@@ -102,6 +102,23 @@ export function buildSwalForm({ description = '', rules = '', fields = [] }) {
     `;
 }
 
+/**
+ * Flatten Laravel / API validation payloads into a single message for Swal or toasts.
+ * Keeps the modal open when used with Swal.showValidationMessage + return false.
+ */
+export function formatApiValidationMessage(response, fallback = 'Unable to save. Please check the form and try again.') {
+    const errors = response?.data?.errors;
+
+    if (errors && typeof errors === 'object') {
+        const messages = Object.values(errors).flat().filter(Boolean);
+        if (messages.length > 0) {
+            return messages.join(' ');
+        }
+    }
+
+    return response?.data?.message ?? fallback;
+}
+
 function resolveSubtitle(popup, subtitle) {
     const embeddedSubtitle = popup
         .querySelector('[data-swal-subtitle]')
@@ -120,6 +137,36 @@ function resolveSubtitle(popup, subtitle) {
  * Build a guaranteed visible branded header bar for every admin modal.
  * SweetAlert's native header/title can be hard to style consistently across versions.
  */
+function isEffectivelyEmptyHtmlContainer(htmlContainer) {
+    if (!htmlContainer) {
+        return true;
+    }
+
+    const clone = htmlContainer.cloneNode(true);
+    clone.querySelectorAll('[hidden], .admin-swal-description').forEach((node) => node.remove());
+    const text = (clone.textContent || '').replace(/\u00a0/g, ' ').trim();
+    const hasVisibleWidgets = Boolean(
+        clone.querySelector(
+            'input, textarea, select, button, img, iframe, table, .admin-swal-form, .admin-swal-fields, .admin-swal-rules, .admin-swal-section',
+        ),
+    );
+
+    return !hasVisibleWidgets && text === '';
+}
+
+function collapseEmptyConfirmBody(popup) {
+    const htmlContainer = popup.querySelector('.swal2-html-container');
+    const emptyBody = isEffectivelyEmptyHtmlContainer(htmlContainer);
+
+    popup.classList.toggle('admin-swal-popup-confirm', emptyBody);
+    htmlContainer?.classList.toggle('admin-swal-html-empty', emptyBody);
+
+    if (emptyBody && htmlContainer) {
+        htmlContainer.setAttribute('hidden', 'hidden');
+        htmlContainer.style.display = 'none';
+    }
+}
+
 function mountAdminModalHeader(popup, { title, subtitle, showClose }) {
     popup.querySelectorAll('.admin-modal-header-bar').forEach((node) => node.remove());
 
@@ -149,7 +196,13 @@ function mountAdminModalHeader(popup, { title, subtitle, showClose }) {
         });
     }
 
-    popup.insertBefore(bar, popup.firstChild);
+    // Keep warning/success icons above the branded banner.
+    const icon = popup.querySelector('.swal2-icon');
+    if (icon) {
+        popup.insertBefore(bar, icon.nextSibling);
+    } else {
+        popup.insertBefore(bar, popup.firstChild);
+    }
 
     if (nativeTitle) {
         nativeTitle.setAttribute('hidden', 'hidden');
@@ -158,13 +211,20 @@ function mountAdminModalHeader(popup, { title, subtitle, showClose }) {
 
     const nativeHeader = popup.querySelector('.swal2-header');
     if (nativeHeader) {
+        // Keep the icon visible; only hide the native title wrapper chrome.
         nativeHeader.classList.add('admin-swal-header-native-hidden');
+        const headerIcon = nativeHeader.querySelector('.swal2-icon');
+        if (headerIcon && headerIcon.parentElement === nativeHeader) {
+            popup.insertBefore(headerIcon, bar);
+        }
     }
 
     const formDescription = popup.querySelector('.admin-swal-description');
     if (formDescription && subtitleText) {
         formDescription.hidden = true;
     }
+
+    collapseEmptyConfirmBody(popup);
 }
 
 /**
@@ -183,8 +243,26 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
 
     const showCancel = options.showCancelButton !== false;
     const showClose = options.showCloseButton !== false;
-    const subtitle = options.subtitle ?? null;
     const title = options.title ?? '';
+
+    // Prefer explicit subtitle; otherwise lift plain description HTML into the banner.
+    let subtitle = options.subtitle ?? null;
+    let html = options.html;
+    if (subtitle == null && typeof html === 'string') {
+        const descriptionMatch = html.match(
+            /class=["'][^"']*admin-swal-description[^"']*["'][^>]*>([\s\S]*?)<\/p>/i,
+        );
+        if (descriptionMatch) {
+            subtitle = descriptionMatch[1]
+                .replaceAll(/<[^>]+>/g, '')
+                .replaceAll('&nbsp;', ' ')
+                .trim();
+            // Avoid an empty expanding body under the banner on confirm dialogs.
+            if (danger || options.icon) {
+                html = ' ';
+            }
+        }
+    }
 
     // Keep title for Swal accessibility, but we render our own visible header bar.
     const { subtitle: _ignoredSubtitle, ...restOptions } = options;
@@ -192,6 +270,7 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
     return {
         ...restOptions,
         title: title || restOptions.title || ' ',
+        html,
         showCancelButton: showCancel,
         showCloseButton: false,
         cancelButtonText: options.cancelButtonText ?? 'Cancel',
@@ -243,6 +322,10 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
             title: [
                 'admin-swal-title',
                 options.customClass?.title,
+            ].filter(Boolean).join(' '),
+            icon: [
+                'admin-swal-icon',
+                options.customClass?.icon,
             ].filter(Boolean).join(' '),
         },
     };

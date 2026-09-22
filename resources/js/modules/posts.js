@@ -3,7 +3,7 @@ import Swal from 'sweetalert2';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
-import { buildSwalForm, buildSwalOptions } from './shared/swal-forms';
+import { buildSwalForm, buildSwalOptions, formatApiValidationMessage } from './shared/swal-forms';
 import { renderRatingBadge, renderStars } from './shared/ratings';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
 import { showSuccessToast, showErrorToast } from './shared/toast';
@@ -183,6 +183,10 @@ function openPostViewModal(post) {
                         <div class="post-view-metric" role="listitem">
                             <i class="fas fa-star" aria-hidden="true"></i>
                             <span><strong>${reviewsCount > 0 ? averageRating.toFixed(1) : '—'}</strong> · ${reviewsCount} ${reviewsCount === 1 ? 'rating' : 'ratings'}</span>
+                        </div>
+                        <div class="post-view-metric" role="listitem">
+                            <i class="fas fa-${isPostCommentsEnabled(post) ? 'comment-dots' : 'comment-slash'}" aria-hidden="true"></i>
+                            <span>${isPostCommentsEnabled(post) ? 'Comments enabled' : 'Comments disabled'}</span>
                         </div>
                     </div>
                 </div>
@@ -413,6 +417,55 @@ export async function promptEditPost(postId) {
 
     showSuccessToast(result.value.message, 'Post updated');
     loadPosts();
+}
+
+export async function togglePostComments(postId) {
+    const post = postsById.get(String(postId));
+
+    if (!post) {
+        showErrorToast('Unable to load the selected post.', 'Post');
+        return;
+    }
+
+    const currentlyEnabled = isPostCommentsEnabled(post);
+    const nextEnabled = !currentlyEnabled;
+    const actionLabel = nextEnabled ? 'Enable comments' : 'Disable comments';
+
+    const confirmed = await Swal.fire({
+        icon: 'question',
+        title: actionLabel + '?',
+        text: nextEnabled
+            ? 'Users will be able to comment on this post again.'
+            : 'Users will no longer be able to add new comments on this post.',
+        showCancelButton: true,
+        confirmButtonText: actionLabel,
+        confirmButtonColor: '#055498',
+    });
+
+    if (!confirmed.isConfirmed) {
+        return;
+    }
+
+    try {
+        const payload = new FormData();
+        payload.append('comments_enabled', nextEnabled ? '1' : '0');
+        payload.append('_method', 'PUT');
+
+        const { data } = await axios.post(`/admin/posts/${postId}`, payload);
+        const updated = data?.data ?? { ...post, comments_enabled: nextEnabled };
+        postsById.set(String(postId), { ...post, ...updated });
+        showSuccessToast(
+            data?.message
+                ?? (nextEnabled ? 'Comments enabled.' : 'Comments disabled.'),
+            'Comments',
+        );
+        loadPosts();
+    } catch ({ response }) {
+        showErrorToast(
+            formatApiValidationMessage(response, 'Unable to update comments setting.'),
+            'Error',
+        );
+    }
 }
 
 let pendingPostQueryHandled = false;
@@ -795,6 +848,7 @@ async function initializePostsTable(tableEl) {
                 { title: 'Status', className: 'dt-col-nowrap' },
                 { title: 'Author', className: 'dt-col-nowrap' },
                 { title: 'Publish Date', className: 'dt-col-nowrap' },
+                { title: 'Comments', className: 'dt-col-nowrap' },
                 { title: 'Rating', className: 'dt-col-nowrap' },
                 { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
             ],
@@ -806,7 +860,7 @@ function refreshVisiblePostActions() {
         return;
     }
 
-    const actionsColIndex = postsTableMode === 'mobile' ? 1 : 7;
+    const actionsColIndex = postsTableMode === 'mobile' ? 1 : 8;
 
     postsTable.rows({ page: 'current' }).every(function refreshRowActions() {
         const rowNode = this.node();
@@ -892,6 +946,7 @@ function buildPostRowData(post) {
                     <p><span>Category:</span> ${escapeHtml(post.category?.name ?? 'Uncategorized')}</p>
                     <p><span>Author:</span> ${escapeHtml(post.author?.name ?? 'N/A')}</p>
                     <p><span>Publish Date:</span> ${escapeHtml(formatDateTime(post.publish_date) || 'Not scheduled')}</p>
+                    <p><span>Comments:</span> ${isPostCommentsEnabled(post) ? 'Enabled' : 'Disabled'}</p>
                     <p><span>Engagement:</span> ${Number(post.likes_count ?? 0)} likes · ${Number(post.comments_count ?? 0)} comments</p>
                     <p><span>Rating:</span> ${renderRatingBadge(post, { compact: true })}</p>
                 </div>
@@ -907,9 +962,26 @@ function buildPostRowData(post) {
         statusBadge(post.status),
         escapeHtml(post.author?.name ?? '—'),
         escapeHtml(formatDateTime(post.publish_date) || '—'),
+        commentsEnabledBadge(post),
         renderRatingBadge(post),
         actionButtons(post),
     ];
+}
+
+function isPostCommentsEnabled(post) {
+    return !(post?.comments_enabled === false
+        || post?.comments_enabled === 0
+        || post?.comments_enabled === '0');
+}
+
+function commentsEnabledBadge(post) {
+    const enabled = isPostCommentsEnabled(post);
+    const cls = enabled
+        ? 'bg-emerald-100 text-emerald-800'
+        : 'bg-slate-100 text-slate-600';
+    const label = enabled ? 'Enabled' : 'Disabled';
+
+    return `<span class="admin-status-badge ${cls}">${label}</span>`;
 }
 
 function escapeHtml(value) {
@@ -976,6 +1048,17 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
     }
 
     fields.push(
+        {
+            id: 'post-comments-enabled',
+            label: 'Comments *',
+            type: 'select',
+            value: isPostCommentsEnabled(post) ? '1' : '0',
+            options: [
+                { value: '1', label: 'Enabled — users can comment' },
+                { value: '0', label: 'Disabled — comments turned off' },
+            ],
+            hint: 'You can change this anytime from the post actions menu.',
+        },
         {
             id: 'post-media-file',
             label: 'Featured Image',
@@ -1058,6 +1141,11 @@ async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonT
                 payload.status = statusValue;
             }
 
+            const commentsEnabledValue = document.getElementById('post-comments-enabled')?.value;
+            if (commentsEnabledValue !== undefined && commentsEnabledValue !== null && commentsEnabledValue !== '') {
+                payload.comments_enabled = commentsEnabledValue === '1';
+            }
+
             if (!payload.title || !payload.body || !categoryValue || Number.isNaN(payload.category_id) || payload.category_id < 1) {
                 Swal.showValidationMessage('Title, body, and category are required.');
                 return false;
@@ -1086,19 +1174,6 @@ function isValidHttpUrl(value) {
     } catch {
         return false;
     }
-}
-
-function formatApiValidationMessage(response) {
-    const errors = response?.data?.errors;
-
-    if (errors && typeof errors === 'object') {
-        const messages = Object.values(errors).flat().filter(Boolean);
-        if (messages.length > 0) {
-            return messages.join(' ');
-        }
-    }
-
-    return response?.data?.message ?? 'Unable to save. Please check the form and try again.';
 }
 
 function syncPostsPageActions() {
@@ -1170,6 +1245,10 @@ function buildMultipartPayload(formData, { method = 'POST' } = {}) {
         payload.append('status', formData.status);
     }
 
+    if (typeof formData.comments_enabled === 'boolean') {
+        payload.append('comments_enabled', formData.comments_enabled ? '1' : '0');
+    }
+
     if (method !== 'POST') {
         payload.append('_method', method);
     }
@@ -1194,6 +1273,15 @@ function getAvailableActions(post) {
             label: 'Edit',
             tooltip: 'Edit post',
             icon: 'fas fa-pen-to-square',
+            className: 'admin-table-action-primary',
+        });
+
+        const commentsOn = isPostCommentsEnabled(post);
+        actions.push({
+            handler: 'toggleComments',
+            label: commentsOn ? 'Disable comments' : 'Enable comments',
+            tooltip: commentsOn ? 'Disable comments' : 'Enable comments',
+            icon: commentsOn ? 'fas fa-comment-slash' : 'fas fa-comment-dots',
             className: 'admin-table-action-primary',
         });
     }
@@ -1308,6 +1396,7 @@ window.Posts = {
     createDraftPrompt: promptCreateDraft,
     viewPost,
     editPost: promptEditPost,
+    toggleComments: togglePostComments,
     submitForReview: submitPostForReview,
     schedulePost,
     publishNow,

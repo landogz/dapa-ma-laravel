@@ -35,6 +35,10 @@
                         <i class="fas fa-photo-film mr-2"></i>
                         Add IEC Material
                     </button>
+                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-app-translation" data-action-section="app-translations" title="Add English/Tagalog mobile string">
+                        <i class="fas fa-language mr-2"></i>
+                        Add Translation
+                    </button>
                     <button type="button" class="admin-quick-action admin-quick-action-orange" data-admin-action="send-notification" data-action-section="notifications" title="Send a push notification campaign">
                         <i class="fas fa-paper-plane mr-2"></i>
                         Send Notification
@@ -114,6 +118,20 @@
                 </div>
             </a>
 
+            <a href="/admin/app-translations" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="app-translations">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">Mobile</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">App Translations</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="app-translations">--</p>
+                        <p class="admin-trend" data-overview-trend="app-translations">–</p>
+                    </div>
+                    <span class="admin-icon-badge">
+                        <i class="fas fa-language"></i>
+                    </span>
+                </div>
+            </a>
+
             <a href="/admin/notifications" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="notifications">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -146,7 +164,7 @@
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <p class="text-xs uppercase tracking-[0.16em] text-[#7C3AED]">Mobile Journal</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">My Diary</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">My Journal</p>
                         <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="diary">--</p>
                         <p class="admin-trend" data-overview-trend="diary">–</p>
                     </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\UpdateOnboardingRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
@@ -114,6 +115,20 @@ class AuthController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Profile updated.',
+            'data'    => $this->profileService->formatUser($user),
+        ]);
+    }
+
+    public function updateOnboarding(UpdateOnboardingRequest $request): JsonResponse
+    {
+        $user = $this->profileService->updateOnboarding(
+            $request->user(),
+            $request->validated(),
+        );
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Onboarding updated.',
             'data'    => $this->profileService->formatUser($user),
         ]);
     }

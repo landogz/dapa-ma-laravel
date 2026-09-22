@@ -14,11 +14,12 @@ class StorePostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title'       => ['required', 'string', 'max:255'],
-            'body'        => ['required', 'string'],
-            'category_id' => ['required', 'integer', 'exists:categories,id'],
-            'media_file'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
-            'youtube_url' => ['nullable', 'url', 'max:2048'],
+            'title'             => ['required', 'string', 'max:255'],
+            'body'              => ['required', 'string'],
+            'category_id'       => ['required', 'integer', 'exists:categories,id'],
+            'media_file'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            'youtube_url'       => ['nullable', 'url', 'max:2048'],
+            'comments_enabled'  => ['sometimes', 'boolean'],
         ];
     }
 }

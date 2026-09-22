@@ -47,12 +47,24 @@ Route::get('/admin/contests', fn () => AdminPage::render('admin.contests.index',
 
 Route::get('/admin/iec-materials', fn () => AdminPage::render('admin.iec-materials.index', 'iec-materials', 'IEC Materials'));
 
+Route::get('/admin/app-translations', fn () => AdminPage::render('admin.app-translations.index', 'app-translations', 'App Translations'));
+
 Route::get('/admin/notifications', fn () => AdminPage::render('admin.notifications.index', 'notifications', 'Notifications'));
 
 Route::get('/admin/analytics', fn () => AdminPage::render('admin.analytics.index', 'analytics', 'Analytics'));
 
 Route::get('/admin/users', fn () => AdminPage::render('admin.users.index', 'users', 'Users'));
 
-Route::get('/admin/diary', fn () => AdminPage::render('admin.diary.index', 'diary', 'My Diary'));
+Route::get('/admin/diary', fn () => AdminPage::render('admin.diary.index', 'diary', 'My Journal'));
+
+Route::get('/admin/care-toolkit', fn () => AdminPage::render('admin.care-toolkit.index', 'care-toolkit', 'Care Toolkit'));
+
+Route::get('/admin/care-support', fn () => AdminPage::render('admin.care-support.index', 'care-support', 'Care Support'));
+
+Route::get('/admin/hope-directory', fn () => AdminPage::render('admin.hope-directory.index', 'hope-directory', 'Hope Directory'));
+
+Route::get('/admin/hope-events', fn () => AdminPage::render('admin.hope-events.index', 'hope-events', 'Hope Events'));
+
+Route::get('/admin/settings', fn () => AdminPage::render('admin.settings.index', 'settings', 'Settings'));
 
 Route::get('/admin/profile', fn () => AdminPage::render('admin.profile.index', 'profile', 'Edit Profile'));

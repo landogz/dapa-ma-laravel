@@ -54,17 +54,29 @@ class DiaryRepository
             'user_id'    => $user->id,
             'entry_date' => $data['entry_date'],
             'title'      => $data['title'] ?? null,
-            'body_html'  => $data['body_html'],
+            'sky'        => $data['sky'] ?? null,
+            'feelings'   => $data['feelings'] ?? null,
+            'impact'     => $data['impact'] ?? null,
+            'gratitude'  => $data['gratitude'] ?? null,
+            'body_html'  => $data['body_html'] ?? null,
+            'image_path' => $data['image_path'] ?? null,
         ]);
     }
 
     public function update(DiaryEntry $entry, array $data): DiaryEntry
     {
-        $entry->fill([
-            'title'     => $data['title'] ?? $entry->title,
-            'body_html' => $data['body_html'] ?? $entry->body_html,
-        ]);
-        $entry->save();
+        $payload = [];
+
+        foreach (['title', 'sky', 'feelings', 'impact', 'gratitude', 'body_html', 'image_path'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $payload[$field] = $data[$field];
+            }
+        }
+
+        if ($payload !== []) {
+            $entry->fill($payload);
+            $entry->save();
+        }
 
         return $entry->fresh();
     }

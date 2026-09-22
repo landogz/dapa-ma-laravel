@@ -11,14 +11,21 @@ class DiaryEntry extends Model
         'user_id',
         'entry_date',
         'title',
+        'sky',
+        'feelings',
+        'impact',
+        'gratitude',
         'body_html',
+        'image_path',
     ];
 
     protected function casts(): array
     {
         return [
             'entry_date' => 'date',
+            'feelings'   => 'array',
             'body_html'  => 'encrypted',
+            'gratitude'  => 'encrypted',
         ];
     }
 

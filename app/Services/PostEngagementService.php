@@ -142,6 +142,10 @@ class PostEngagementService
             abort(422, 'Only published posts can be commented on.');
         }
 
+        if (! $post->comments_enabled) {
+            abort(422, 'Comments are disabled for this post.');
+        }
+
         $parent = null;
         if ($parentId !== null) {
             $parent = $this->postEngagementRepository->findCommentForPost($parentId, $postId);

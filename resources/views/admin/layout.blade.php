@@ -62,6 +62,10 @@
                     <i class="fas fa-photo-film w-5 text-[#FBD116]"></i>
                     <span>IEC Materials</span>
                 </a>
+                <a href="/admin/app-translations" class="admin-nav-link {{ ($activePage ?? '') === 'app-translations' ? 'admin-nav-link-active' : '' }}" data-nav-section="app-translations">
+                    <i class="fas fa-language w-5 text-[#FBD116]"></i>
+                    <span>App Translations</span>
+                </a>
                 <a href="/admin/notifications" class="admin-nav-link {{ ($activePage ?? '') === 'notifications' ? 'admin-nav-link-active' : '' }}" data-nav-section="notifications">
                     <i class="fas fa-bell w-5 text-[#FBD116]"></i>
                     <span>Notifications</span>
@@ -76,7 +80,27 @@
                 </a>
                 <a href="/admin/diary" class="admin-nav-link {{ ($activePage ?? '') === 'diary' ? 'admin-nav-link-active' : '' }}" data-nav-section="diary">
                     <i class="fas fa-book-open w-5 text-[#FBD116]"></i>
-                    <span>My Diary</span>
+                    <span>My Journal</span>
+                </a>
+                <a href="/admin/care-toolkit" class="admin-nav-link {{ ($activePage ?? '') === 'care-toolkit' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-toolkit">
+                    <i class="fas fa-heart-pulse w-5 text-[#FBD116]"></i>
+                    <span>Care Toolkit</span>
+                </a>
+                <a href="/admin/care-support" class="admin-nav-link {{ ($activePage ?? '') === 'care-support' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-support">
+                    <i class="fas fa-handshake-angle w-5 text-[#FBD116]"></i>
+                    <span>Care Support</span>
+                </a>
+                <a href="/admin/hope-directory" class="admin-nav-link {{ ($activePage ?? '') === 'hope-directory' ? 'admin-nav-link-active' : '' }}" data-nav-section="hope-directory">
+                    <i class="fas fa-address-book w-5 text-[#FBD116]"></i>
+                    <span>Hope Directory</span>
+                </a>
+                <a href="/admin/hope-events" class="admin-nav-link {{ ($activePage ?? '') === 'hope-events' ? 'admin-nav-link-active' : '' }}" data-nav-section="hope-events">
+                    <i class="fas fa-calendar-days w-5 text-[#FBD116]"></i>
+                    <span>Hope Events</span>
+                </a>
+                <a href="/admin/settings" class="admin-nav-link {{ ($activePage ?? '') === 'settings' ? 'admin-nav-link-active' : '' }}" data-nav-section="settings">
+                    <i class="fas fa-gear w-5 text-[#FBD116]"></i>
+                    <span>Settings</span>
                 </a>
             </nav>
 

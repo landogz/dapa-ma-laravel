@@ -14,10 +14,16 @@ class Post extends Model
         'category_id',
         'media_url',
         'youtube_url',
+        'comments_enabled',
         'status',
         'review_notes',
         'publish_date',
         'author_id',
+    ];
+
+    protected $casts = [
+        'comments_enabled' => 'boolean',
+        'publish_date' => 'datetime',
     ];
 
     public function category(): BelongsTo

@@ -10,12 +10,18 @@ import { enableAdminSwalHeaders } from './shared/swal-forms';
 import { initTrainingsModule } from './trainings/index';
 import { initContestsModule } from './contests/index';
 import { initIecMaterialsModule } from './iec-materials/index';
+import { initAppTranslationsModule } from './app-translations/index';
+import { initSettingsModule } from './settings/index';
+import { initCareToolkitModule } from './care-toolkit/index';
+import { initCareSupportModule } from './care-support/index';
+import { initHopeDirectoryModule } from './hope-directory/index';
+import { initHopeEventsModule } from './hope-events/index';
 import { initUsersModule } from './users';
 
 const ADMIN_ROLE_SECTIONS = {
-    super_admin: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'notifications', 'analytics', 'users', 'diary'],
+    super_admin: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'analytics', 'users', 'diary', 'care-toolkit', 'care-support', 'hope-directory', 'hope-events', 'settings'],
     editor: ['posts'],
-    publisher: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'notifications'],
+    publisher: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'care-toolkit', 'care-support', 'hope-directory', 'hope-events', 'settings'],
     analytics_viewer: ['analytics'],
 };
 
@@ -25,10 +31,16 @@ const PAGE_SECTION_REQUIREMENTS = {
     'admin-trainings': 'trainings',
     'admin-contests': 'contests',
     'admin-iec-materials': 'iec-materials',
+    'admin-app-translations': 'app-translations',
     'admin-notifications': 'notifications',
     'admin-analytics': 'analytics',
     'admin-users': 'users',
     'admin-diary': 'diary',
+    'admin-care-toolkit': 'care-toolkit',
+    'admin-care-support': 'care-support',
+    'admin-hope-directory': 'hope-directory',
+    'admin-hope-events': 'hope-events',
+    'admin-settings': 'settings',
 };
 
 const SECTION_PATHS = {
@@ -37,10 +49,16 @@ const SECTION_PATHS = {
     trainings: '/admin/trainings',
     'contests': '/admin/contests',
     'iec-materials': '/admin/iec-materials',
+    'app-translations': '/admin/app-translations',
     notifications: '/admin/notifications',
     analytics: '/admin/analytics',
     users: '/admin/users',
     diary: '/admin/diary',
+    'care-toolkit': '/admin/care-toolkit',
+    'care-support': '/admin/care-support',
+    'hope-directory': '/admin/hope-directory',
+    'hope-events': '/admin/hope-events',
+    settings: '/admin/settings',
 };
 
 let inboxFilter = 'unread';
@@ -325,6 +343,9 @@ function initializePageContent(pageName, allowedSections) {
         case 'admin-iec-materials':
             initIecMaterialsModule();
             break;
+        case 'admin-app-translations':
+            initAppTranslationsModule();
+            break;
         case 'admin-notifications':
             initNotificationsModule();
             break;
@@ -337,8 +358,23 @@ function initializePageContent(pageName, allowedSections) {
         case 'admin-diary':
             initDiaryModule();
             break;
+        case 'admin-care-toolkit':
+            initCareToolkitModule();
+            break;
+        case 'admin-care-support':
+            initCareSupportModule();
+            break;
+        case 'admin-hope-directory':
+            initHopeDirectoryModule();
+            break;
+        case 'admin-hope-events':
+            initHopeEventsModule();
+            break;
         case 'admin-profile':
             initProfileModule();
+            break;
+        case 'admin-settings':
+            initSettingsModule();
             break;
         default:
             break;
@@ -364,6 +400,10 @@ function bindQuickActions() {
 
     document.querySelector('[data-admin-action="create-iec-material"]')?.addEventListener('click', () => {
         window.IecMaterials?.create();
+    });
+
+    document.querySelector('[data-admin-action="create-app-translation"]')?.addEventListener('click', () => {
+        window.AppTranslations?.create();
     });
 
     document.querySelector('[data-admin-action="send-notification"]')?.addEventListener('click', () => {
@@ -422,6 +462,12 @@ async function loadOverviewCounts(allowedSections) {
             key: 'iec-materials',
             allowed: allowedSections.includes('iec-materials'),
             request: () => window.axios.get('/admin/iec-materials', { params: { per_page: 1 } }),
+            count: (response) => response.data.data?.total,
+        },
+        {
+            key: 'app-translations',
+            allowed: allowedSections.includes('app-translations'),
+            request: () => window.axios.get('/admin/app-translations', { params: { per_page: 1 } }),
             count: (response) => response.data.data?.total,
         },
         {

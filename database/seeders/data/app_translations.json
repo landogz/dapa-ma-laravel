@@ -1,0 +1,1436 @@
+[
+  {
+    "key": "navHome",
+    "group": "navigation",
+    "en": "Home",
+    "tl": "Tahanan"
+  },
+  {
+    "key": "navRehab",
+    "group": "navigation",
+    "en": "Services",
+    "tl": "Serbisyo"
+  },
+  {
+    "key": "navSaved",
+    "group": "navigation",
+    "en": "Saved",
+    "tl": "Naka-save"
+  },
+  {
+    "key": "navDiary",
+    "group": "navigation",
+    "en": "Diary",
+    "tl": "Talaarawan"
+  },
+  {
+    "key": "navBible",
+    "group": "navigation",
+    "en": "Kid Listo",
+    "tl": "Kid Listo"
+  },
+  {
+    "key": "navAccount",
+    "group": "navigation",
+    "en": "Account",
+    "tl": "Account"
+  },
+  {
+    "key": "ddbServicesTitle",
+    "group": "ddb_services",
+    "en": "DDB Services",
+    "tl": "Mga Serbisyo ng DDB"
+  },
+  {
+    "key": "ddbServicesSubtitle",
+    "group": "ddb_services",
+    "en": "Browse DDB trainings, rehab centers, IEC materials, and contests.",
+    "tl": "Tingnan ang mga training, rehab center, IEC materials, at contests ng DDB."
+  },
+  {
+    "key": "contestsTitle",
+    "group": "ddb_services",
+    "en": "Contests",
+    "tl": "Mga Contest"
+  },
+  {
+    "key": "contestsSubtitle",
+    "group": "ddb_services",
+    "en": "Browse song, poster, and video contests in one place.",
+    "tl": "Tingnan ang song, poster, at video contests sa isang lugar."
+  },
+  {
+    "key": "contestDetailTitle",
+    "group": "ddb_services",
+    "en": "Contest details",
+    "tl": "Detalye ng contest"
+  },
+  {
+    "key": "searchContestsHint",
+    "group": "ddb_services",
+    "en": "Search contests...",
+    "tl": "Maghanap ng contest..."
+  },
+  {
+    "key": "noContestsFound",
+    "group": "ddb_services",
+    "en": "No contests found",
+    "tl": "Walang nahanap na contest"
+  },
+  {
+    "key": "contestCategoryAll",
+    "group": "ddb_services",
+    "en": "All",
+    "tl": "Lahat"
+  },
+  {
+    "key": "contestCategorySong",
+    "group": "ddb_services",
+    "en": "Song",
+    "tl": "Kanta"
+  },
+  {
+    "key": "contestCategoryPoster",
+    "group": "ddb_services",
+    "en": "Poster",
+    "tl": "Poster"
+  },
+  {
+    "key": "contestCategoryVideo",
+    "group": "ddb_services",
+    "en": "Video",
+    "tl": "Video"
+  },
+  {
+    "key": "posterImageUrlLabel",
+    "group": "ddb_services",
+    "en": "Poster image URL",
+    "tl": "URL ng poster image"
+  },
+  {
+    "key": "mediaOrLyricsRequired",
+    "group": "ddb_services",
+    "en": "Provide a media URL or lyrics.",
+    "tl": "Maglagay ng media URL o lyrics."
+  },
+  {
+    "key": "trainingsTitle",
+    "group": "ddb_services",
+    "en": "Trainings",
+    "tl": "Mga Training"
+  },
+  {
+    "key": "trainingsSubtitle",
+    "group": "ddb_services",
+    "en": "Upcoming capacity-building and preventive education programs.",
+    "tl": "Mga paparating na capacity-building at preventive education programs."
+  },
+  {
+    "key": "rehabCentersSubtitle",
+    "group": "ddb_services",
+    "en": "Find treatment and rehabilitation facilities near you.",
+    "tl": "Maghanap ng treatment at rehabilitation facilities."
+  },
+  {
+    "key": "songContestTitle",
+    "group": "ddb_services",
+    "en": "Playlist / Song Contest",
+    "tl": "Playlist / Song Contest"
+  },
+  {
+    "key": "songContestSubtitle",
+    "group": "ddb_services",
+    "en": "Join open contests, submit your entry, and see winners.",
+    "tl": "Sumali sa open contests, mag-submit ng entry, at tingnan ang mga panalo."
+  },
+  {
+    "key": "posterContestTitle",
+    "group": "ddb_services",
+    "en": "Poster-Making Contest",
+    "tl": "Poster-Making Contest"
+  },
+  {
+    "key": "posterContestSubtitle",
+    "group": "ddb_services",
+    "en": "Submit original advocacy posters for DDB review.",
+    "tl": "Mag-submit ng orihinal na advocacy poster para sa review ng DDB."
+  },
+  {
+    "key": "posterContestDetailTitle",
+    "group": "ddb_services",
+    "en": "Poster contest details",
+    "tl": "Detalye ng poster contest"
+  },
+  {
+    "key": "submitPosterEntry",
+    "group": "ddb_services",
+    "en": "Submit your poster",
+    "tl": "I-submit ang iyong poster"
+  },
+  {
+    "key": "loginToSubmitPoster",
+    "group": "ddb_services",
+    "en": "Sign in to submit your poster",
+    "tl": "Mag-sign in para mag-submit ng poster"
+  },
+  {
+    "key": "videoContestTitle",
+    "group": "ddb_services",
+    "en": "Video-Making Contest",
+    "tl": "Video-Making Contest"
+  },
+  {
+    "key": "videoContestSubtitle",
+    "group": "ddb_services",
+    "en": "Submit original advocacy videos via YouTube or video URL.",
+    "tl": "Mag-submit ng orihinal na advocacy video via YouTube o video URL."
+  },
+  {
+    "key": "videoContestDetailTitle",
+    "group": "ddb_services",
+    "en": "Video contest details",
+    "tl": "Detalye ng video contest"
+  },
+  {
+    "key": "submitVideoEntry",
+    "group": "ddb_services",
+    "en": "Submit your video",
+    "tl": "I-submit ang iyong video"
+  },
+  {
+    "key": "loginToSubmitVideo",
+    "group": "ddb_services",
+    "en": "Sign in to submit your video",
+    "tl": "Mag-sign in para mag-submit ng video"
+  },
+  {
+    "key": "videoUrlLabel",
+    "group": "ddb_services",
+    "en": "YouTube / video URL",
+    "tl": "YouTube / video URL"
+  },
+  {
+    "key": "videoUrlHint",
+    "group": "ddb_services",
+    "en": "Paste a YouTube or public video link",
+    "tl": "I-paste ang YouTube o public video link"
+  },
+  {
+    "key": "videoUrlInvalid",
+    "group": "ddb_services",
+    "en": "Enter a valid http(s) URL",
+    "tl": "Maglagay ng wastong http(s) URL"
+  },
+  {
+    "key": "publishedVideos",
+    "group": "ddb_services",
+    "en": "Published videos",
+    "tl": "Mga na-publish na video"
+  },
+  {
+    "key": "noPublishedVideosYet",
+    "group": "ddb_services",
+    "en": "No published videos yet. Submit yours for admin review.",
+    "tl": "Wala pang na-publish na video. Mag-submit para ma-review ng admin."
+  },
+  {
+    "key": "videoSubmittedForReview",
+    "group": "ddb_services",
+    "en": "Video submitted for admin review.",
+    "tl": "Naipasa ang video para sa review ng admin."
+  },
+  {
+    "key": "videoSubmitFailed",
+    "group": "ddb_services",
+    "en": "Unable to submit video. Please try again.",
+    "tl": "Hindi maipasa ang video. Subukan muli."
+  },
+  {
+    "key": "searchVideoContestHint",
+    "group": "ddb_services",
+    "en": "Search video contests...",
+    "tl": "Maghanap ng video contest..."
+  },
+  {
+    "key": "noVideoContestFound",
+    "group": "ddb_services",
+    "en": "No video contests found",
+    "tl": "Walang nahanap na video contest"
+  },
+  {
+    "key": "pasteVideoUrl",
+    "group": "ddb_services",
+    "en": "Paste video URL",
+    "tl": "I-paste ang video URL"
+  },
+  {
+    "key": "iecMaterialsTitle",
+    "group": "ddb_services",
+    "en": "IEC Materials (Animated)",
+    "tl": "IEC Materials (Animated)"
+  },
+  {
+    "key": "iecMaterialsSubtitle",
+    "group": "ddb_services",
+    "en": "Browse animated IEC GIFs, images, and advocacy clips.",
+    "tl": "Tingnan ang animated IEC GIF, larawan, at advocacy clips."
+  },
+  {
+    "key": "iecMaterialDetailTitle",
+    "group": "ddb_services",
+    "en": "IEC material",
+    "tl": "IEC material"
+  },
+  {
+    "key": "searchIecMaterialsHint",
+    "group": "ddb_services",
+    "en": "Search IEC materials...",
+    "tl": "Maghanap ng IEC materials..."
+  },
+  {
+    "key": "noIecMaterialsFound",
+    "group": "ddb_services",
+    "en": "No IEC materials found",
+    "tl": "Walang nahanap na IEC materials"
+  },
+  {
+    "key": "allTopics",
+    "group": "ddb_services",
+    "en": "All topics",
+    "tl": "Lahat ng topic"
+  },
+  {
+    "key": "allMediaTypes",
+    "group": "ddb_services",
+    "en": "All media",
+    "tl": "Lahat ng media"
+  },
+  {
+    "key": "aboutIecMaterial",
+    "group": "ddb_services",
+    "en": "About this material",
+    "tl": "Tungkol sa material na ito"
+  },
+  {
+    "key": "tapToViewIec",
+    "group": "ddb_services",
+    "en": "Tap to view",
+    "tl": "I-tap para tingnan"
+  },
+  {
+    "key": "creatorNameLabel",
+    "group": "ddb_services",
+    "en": "Creator name",
+    "tl": "Pangalan ng creator"
+  },
+  {
+    "key": "posterImageLabel",
+    "group": "ddb_services",
+    "en": "Poster image",
+    "tl": "Larawan ng poster"
+  },
+  {
+    "key": "pickPosterImage",
+    "group": "ddb_services",
+    "en": "Choose poster from gallery",
+    "tl": "Pumili ng poster mula sa gallery"
+  },
+  {
+    "key": "orPosterImageUrl",
+    "group": "ddb_services",
+    "en": "Or paste image URL",
+    "tl": "O i-paste ang image URL"
+  },
+  {
+    "key": "publishedPosters",
+    "group": "ddb_services",
+    "en": "Published posters",
+    "tl": "Mga na-publish na poster"
+  },
+  {
+    "key": "noPublishedPostersYet",
+    "group": "ddb_services",
+    "en": "No published posters yet. Submit yours for admin review.",
+    "tl": "Wala pang na-publish na poster. Mag-submit para ma-review ng admin."
+  },
+  {
+    "key": "posterSubmittedForReview",
+    "group": "ddb_services",
+    "en": "Poster submitted for admin review.",
+    "tl": "Naipasa ang poster para sa review ng admin."
+  },
+  {
+    "key": "posterSubmitFailed",
+    "group": "ddb_services",
+    "en": "Unable to submit poster. Please try again.",
+    "tl": "Hindi maipasa ang poster. Subukan muli."
+  },
+  {
+    "key": "searchPosterContestHint",
+    "group": "ddb_services",
+    "en": "Search poster contests...",
+    "tl": "Maghanap ng poster contest..."
+  },
+  {
+    "key": "noPosterContestFound",
+    "group": "ddb_services",
+    "en": "No poster contests found",
+    "tl": "Walang nahanap na poster contest"
+  },
+  {
+    "key": "songContestDetailTitle",
+    "group": "ddb_services",
+    "en": "Contest details",
+    "tl": "Detalye ng contest"
+  },
+  {
+    "key": "aboutEntry",
+    "group": "ddb_services",
+    "en": "About this entry",
+    "tl": "Tungkol sa entry"
+  },
+  {
+    "key": "themeLabel",
+    "group": "ddb_services",
+    "en": "Theme",
+    "tl": "Tema"
+  },
+  {
+    "key": "lyricsLabel",
+    "group": "ddb_services",
+    "en": "Lyrics",
+    "tl": "Lyrics"
+  },
+  {
+    "key": "playlistType",
+    "group": "ddb_services",
+    "en": "Playlist",
+    "tl": "Playlist"
+  },
+  {
+    "key": "songWritingType",
+    "group": "ddb_services",
+    "en": "Song writing",
+    "tl": "Pagsulat ng kanta"
+  },
+  {
+    "key": "allEntryTypes",
+    "group": "ddb_services",
+    "en": "All types",
+    "tl": "Lahat ng uri"
+  },
+  {
+    "key": "searchSongContestHint",
+    "group": "ddb_services",
+    "en": "Search contests...",
+    "tl": "Maghanap ng contest..."
+  },
+  {
+    "key": "noSongContestFound",
+    "group": "ddb_services",
+    "en": "No contests found",
+    "tl": "Walang nahanap na contest"
+  },
+  {
+    "key": "openOnYoutube",
+    "group": "ddb_services",
+    "en": "Open on YouTube",
+    "tl": "Buksan sa YouTube"
+  },
+  {
+    "key": "openMediaLink",
+    "group": "ddb_services",
+    "en": "Open media link",
+    "tl": "Buksan ang media link"
+  },
+  {
+    "key": "acceptingEntries",
+    "group": "ddb_services",
+    "en": "Accepting entries",
+    "tl": "Tumanggap ng entries"
+  },
+  {
+    "key": "contestRules",
+    "group": "ddb_services",
+    "en": "Rules",
+    "tl": "Mga patakaran"
+  },
+  {
+    "key": "yourEntryStatus",
+    "group": "ddb_services",
+    "en": "Your entry",
+    "tl": "Ang iyong entry"
+  },
+  {
+    "key": "submitContestEntry",
+    "group": "ddb_services",
+    "en": "Submit your entry",
+    "tl": "I-submit ang iyong entry"
+  },
+  {
+    "key": "loginToSubmitEntry",
+    "group": "ddb_services",
+    "en": "Sign in to submit your entry",
+    "tl": "Mag-sign in para mag-submit ng entry"
+  },
+  {
+    "key": "submissionsClosed",
+    "group": "ddb_services",
+    "en": "Submissions are closed",
+    "tl": "Sarado na ang pag-submit"
+  },
+  {
+    "key": "publishedEntries",
+    "group": "ddb_services",
+    "en": "Published entries",
+    "tl": "Mga na-publish na entry"
+  },
+  {
+    "key": "noPublishedEntriesYet",
+    "group": "ddb_services",
+    "en": "No published entries yet. Submit yours for admin review.",
+    "tl": "Wala pang na-publish na entry. Mag-submit para ma-review ng admin."
+  },
+  {
+    "key": "entrySubmittedForReview",
+    "group": "ddb_services",
+    "en": "Entry submitted for admin review.",
+    "tl": "Naipasa ang entry para sa review ng admin."
+  },
+  {
+    "key": "entrySubmitFailed",
+    "group": "ddb_services",
+    "en": "Unable to submit entry. Please try again.",
+    "tl": "Hindi maipasa ang entry. Subukan muli."
+  },
+  {
+    "key": "entryTypeLabel",
+    "group": "ddb_services",
+    "en": "Entry type",
+    "tl": "Uri ng entry"
+  },
+  {
+    "key": "entryTitleLabel",
+    "group": "ddb_services",
+    "en": "Title",
+    "tl": "Pamagat"
+  },
+  {
+    "key": "artistNameLabel",
+    "group": "ddb_services",
+    "en": "Artist / Creator name",
+    "tl": "Pangalan ng artist / creator"
+  },
+  {
+    "key": "mediaUrlLabel",
+    "group": "ddb_services",
+    "en": "Media URL",
+    "tl": "Media URL"
+  },
+  {
+    "key": "regionOptionalLabel",
+    "group": "ddb_services",
+    "en": "Region (optional)",
+    "tl": "Rehiyon (opsyonal)"
+  },
+  {
+    "key": "descriptionOptionalLabel",
+    "group": "ddb_services",
+    "en": "Description (optional)",
+    "tl": "Deskripsyon (opsyonal)"
+  },
+  {
+    "key": "requiredField",
+    "group": "ddb_services",
+    "en": "This field is required",
+    "tl": "Kinakailangan ang field na ito"
+  },
+  {
+    "key": "trainingDetailTitle",
+    "group": "ddb_services",
+    "en": "Training details",
+    "tl": "Detalye ng training"
+  },
+  {
+    "key": "aboutTraining",
+    "group": "ddb_services",
+    "en": "About this training",
+    "tl": "Tungkol sa training"
+  },
+  {
+    "key": "scheduleLabel",
+    "group": "ddb_services",
+    "en": "Schedule",
+    "tl": "Iskedyul"
+  },
+  {
+    "key": "timeLabel",
+    "group": "ddb_services",
+    "en": "Time",
+    "tl": "Oras"
+  },
+  {
+    "key": "venueLabel",
+    "group": "ddb_services",
+    "en": "Venue",
+    "tl": "Lugar"
+  },
+  {
+    "key": "organizerLabel",
+    "group": "ddb_services",
+    "en": "Organizer",
+    "tl": "Tagapag-organisa"
+  },
+  {
+    "key": "slotsLabel",
+    "group": "ddb_services",
+    "en": "Slots",
+    "tl": "Mga slot"
+  },
+  {
+    "key": "contactLabel",
+    "group": "ddb_services",
+    "en": "Contact",
+    "tl": "Contact"
+  },
+  {
+    "key": "registerOrLearnMore",
+    "group": "ddb_services",
+    "en": "Register / Learn more",
+    "tl": "Magparehistro / Alamin pa"
+  },
+  {
+    "key": "searchTrainingsHint",
+    "group": "ddb_services",
+    "en": "Search trainings...",
+    "tl": "Maghanap ng training..."
+  },
+  {
+    "key": "allCategories",
+    "group": "ddb_services",
+    "en": "All categories",
+    "tl": "Lahat ng kategorya"
+  },
+  {
+    "key": "noTrainingsFound",
+    "group": "ddb_services",
+    "en": "No trainings found",
+    "tl": "Walang nahanap na training"
+  },
+  {
+    "key": "welcomeBack",
+    "group": "home",
+    "en": "Welcome back,",
+    "tl": "Maligayang pagbabalik,"
+  },
+  {
+    "key": "guest",
+    "group": "home",
+    "en": "Guest",
+    "tl": "Bisita"
+  },
+  {
+    "key": "searchHint",
+    "group": "home",
+    "en": "Search information, rehab, news...",
+    "tl": "Maghanap ng impormasyon, rehab, balita..."
+  },
+  {
+    "key": "categoryAll",
+    "group": "categories",
+    "en": "All",
+    "tl": "Lahat"
+  },
+  {
+    "key": "categoryDrugEffects",
+    "group": "categories",
+    "en": "Drug Effects",
+    "tl": "Epekto ng Droga"
+  },
+  {
+    "key": "categoryRehabilitation",
+    "group": "categories",
+    "en": "Rehabilitation",
+    "tl": "Rehabilitasyon"
+  },
+  {
+    "key": "categoryPrevention",
+    "group": "categories",
+    "en": "Prevention",
+    "tl": "Pag-iwas"
+  },
+  {
+    "key": "categoryIec",
+    "group": "categories",
+    "en": "Information, Education, and Communication (IEC)",
+    "tl": "Impormasyon, Edukasyon, at Komunikasyon (IEC)"
+  },
+  {
+    "key": "categoryNews",
+    "group": "categories",
+    "en": "News",
+    "tl": "Balita"
+  },
+  {
+    "key": "categoryLegal",
+    "group": "categories",
+    "en": "Laws & Policies",
+    "tl": "Batas at Patakaran"
+  },
+  {
+    "key": "like",
+    "group": "post_engagement",
+    "en": "Like",
+    "tl": "Like"
+  },
+  {
+    "key": "comment",
+    "group": "post_engagement",
+    "en": "Comment",
+    "tl": "Komento"
+  },
+  {
+    "key": "savedToBookmarks",
+    "group": "post_engagement",
+    "en": "Saved to bookmarks",
+    "tl": "Nai-save sa mga bookmark"
+  },
+  {
+    "key": "removedFromBookmarks",
+    "group": "post_engagement",
+    "en": "Removed from bookmarks",
+    "tl": "Tinanggal sa mga bookmark"
+  },
+  {
+    "key": "bookmarkUpdateFailed",
+    "group": "post_engagement",
+    "en": "Could not update bookmark. Try again.",
+    "tl": "Hindi ma-update ang bookmark. Subukan muli."
+  },
+  {
+    "key": "accountTitle",
+    "group": "account",
+    "en": "Account",
+    "tl": "Account"
+  },
+  {
+    "key": "languageTitle",
+    "group": "account",
+    "en": "Language",
+    "tl": "Wika"
+  },
+  {
+    "key": "languageSubtitle",
+    "group": "account",
+    "en": "Choose your preferred app language",
+    "tl": "Piliin ang wika ng app"
+  },
+  {
+    "key": "signedInHint",
+    "group": "account",
+    "en": "Save bookmarks and submit reviews",
+    "tl": "Mag-save ng bookmark at magbigay ng review"
+  },
+  {
+    "key": "youAreSignedIn",
+    "group": "account",
+    "en": "You are signed in",
+    "tl": "Naka-sign in ka"
+  },
+  {
+    "key": "editProfile",
+    "group": "account",
+    "en": "Edit profile",
+    "tl": "I-edit ang profile"
+  },
+  {
+    "key": "changePassword",
+    "group": "account",
+    "en": "Change password",
+    "tl": "Palitan ang password"
+  },
+  {
+    "key": "logOut",
+    "group": "account",
+    "en": "Log out",
+    "tl": "Mag-log out"
+  },
+  {
+    "key": "welcomeTitle",
+    "group": "account",
+    "en": "Welcome to DAPE-MA",
+    "tl": "Maligayang pagdating sa DAPE-MA"
+  },
+  {
+    "key": "welcomeBody",
+    "group": "account",
+    "en": "Sign in or create an account to save bookmarks and submit reviews.",
+    "tl": "Mag-sign in o gumawa ng account para mag-save ng bookmark at mag-review."
+  },
+  {
+    "key": "login",
+    "group": "account",
+    "en": "Login",
+    "tl": "Mag-login"
+  },
+  {
+    "key": "register",
+    "group": "account",
+    "en": "Register",
+    "tl": "Magrehistro"
+  },
+  {
+    "key": "forgotPassword",
+    "group": "account",
+    "en": "Forgot password?",
+    "tl": "Nakalimutan ang password?"
+  },
+  {
+    "key": "profileUpdated",
+    "group": "account",
+    "en": "Profile updated",
+    "tl": "Na-update ang profile"
+  },
+  {
+    "key": "nameRequired",
+    "group": "account",
+    "en": "Name is required",
+    "tl": "Kailangan ang pangalan"
+  },
+  {
+    "key": "updateFailed",
+    "group": "account",
+    "en": "Update failed. Please try again.",
+    "tl": "Hindi na-update. Subukan muli."
+  },
+  {
+    "key": "changePhoto",
+    "group": "account",
+    "en": "Change photo",
+    "tl": "Palitan ang larawan"
+  },
+  {
+    "key": "name",
+    "group": "account",
+    "en": "Name",
+    "tl": "Pangalan"
+  },
+  {
+    "key": "save",
+    "group": "account",
+    "en": "Save",
+    "tl": "I-save"
+  },
+  {
+    "key": "currentPasswordRequired",
+    "group": "account",
+    "en": "Current password is required",
+    "tl": "Kailangan ang kasalukuyang password"
+  },
+  {
+    "key": "passwordMinLength",
+    "group": "account",
+    "en": "New password must be at least 6 characters",
+    "tl": "Ang bagong password ay dapat 6 character"
+  },
+  {
+    "key": "passwordsDoNotMatch",
+    "group": "account",
+    "en": "New passwords do not match",
+    "tl": "Hindi magkatugma ang mga bagong password"
+  },
+  {
+    "key": "passwordUpdated",
+    "group": "account",
+    "en": "Password updated successfully",
+    "tl": "Matagumpay na na-update ang password"
+  },
+  {
+    "key": "passwordUpdateFailed",
+    "group": "account",
+    "en": "Failed to update password. Check current password.",
+    "tl": "Hindi na-update ang password. Suriin ang kasalukuyang password."
+  },
+  {
+    "key": "currentPassword",
+    "group": "account",
+    "en": "Current password",
+    "tl": "Kasalukuyang password"
+  },
+  {
+    "key": "newPassword",
+    "group": "account",
+    "en": "New password",
+    "tl": "Bagong password"
+  },
+  {
+    "key": "confirmNewPassword",
+    "group": "account",
+    "en": "Confirm new password",
+    "tl": "Kumpirmahin ang bagong password"
+  },
+  {
+    "key": "updatePassword",
+    "group": "account",
+    "en": "Update password",
+    "tl": "I-update ang password"
+  },
+  {
+    "key": "signIn",
+    "group": "auth",
+    "en": "Sign in",
+    "tl": "Mag-sign in"
+  },
+  {
+    "key": "email",
+    "group": "auth",
+    "en": "Email",
+    "tl": "Email"
+  },
+  {
+    "key": "password",
+    "group": "auth",
+    "en": "Password",
+    "tl": "Password"
+  },
+  {
+    "key": "emailRequired",
+    "group": "auth",
+    "en": "Email is required",
+    "tl": "Kailangan ang email"
+  },
+  {
+    "key": "passwordRequired",
+    "group": "auth",
+    "en": "Password is required",
+    "tl": "Kailangan ang password"
+  },
+  {
+    "key": "loginFailed",
+    "group": "auth",
+    "en": "Login failed. Please check your credentials.",
+    "tl": "Hindi matagumpay ang login. Suriin ang credentials."
+  },
+  {
+    "key": "noAccount",
+    "group": "auth",
+    "en": "t have an account? \", ",
+    "tl": ""
+  },
+  {
+    "key": "fullName",
+    "group": "auth",
+    "en": "Full name",
+    "tl": "Buong pangalan"
+  },
+  {
+    "key": "confirmPassword",
+    "group": "auth",
+    "en": "Confirm password",
+    "tl": "Kumpirmahin ang password"
+  },
+  {
+    "key": "createAccount",
+    "group": "auth",
+    "en": "Create account",
+    "tl": "Gumawa ng account"
+  },
+  {
+    "key": "alreadyHaveAccount",
+    "group": "auth",
+    "en": "Already have an account? ",
+    "tl": "May account na? "
+  },
+  {
+    "key": "resetPassword",
+    "group": "auth",
+    "en": "Reset password",
+    "tl": "I-reset ang password"
+  },
+  {
+    "key": "sendResetLink",
+    "group": "auth",
+    "en": "Send reset link",
+    "tl": "Ipadala ang reset link"
+  },
+  {
+    "key": "resetInstructions",
+    "group": "auth",
+    "en": "Enter your email and we will send password reset instructions.",
+    "tl": "Ilagay ang email at padadalhan ka namin ng mga tagubilin sa pag-reset ng password."
+  },
+  {
+    "key": "resetSuccess",
+    "group": "auth",
+    "en": "Password reset instructions have been sent to your email.",
+    "tl": "Naipadala na ang mga tagubilin sa pag-reset ng password sa iyong email."
+  },
+  {
+    "key": "resetFailed",
+    "group": "auth",
+    "en": "Unable to send reset link. Please try again.",
+    "tl": "Hindi maipadala ang reset link. Subukan muli."
+  },
+  {
+    "key": "backToLogin",
+    "group": "auth",
+    "en": "Back to Login",
+    "tl": "Bumalik sa Login"
+  },
+  {
+    "key": "bookmarksTitle",
+    "group": "bookmarks",
+    "en": "Bookmarks",
+    "tl": "Mga Bookmark"
+  },
+  {
+    "key": "rehabCentersTitle",
+    "group": "rehab",
+    "en": "Rehab Centers",
+    "tl": "Mga Rehab Center"
+  },
+  {
+    "key": "allRegions",
+    "group": "rehab",
+    "en": "All regions",
+    "tl": "Lahat ng rehiyon"
+  },
+  {
+    "key": "searchRehabHint",
+    "group": "rehab",
+    "en": "Search rehab centers...",
+    "tl": "Maghanap ng rehab center..."
+  },
+  {
+    "key": "rateAndReview",
+    "group": "reviews",
+    "en": "Rate & Review",
+    "tl": "Mag-rate at Mag-review"
+  },
+  {
+    "key": "updateYourRating",
+    "group": "reviews",
+    "en": "Update your rating",
+    "tl": "I-update ang iyong rating"
+  },
+  {
+    "key": "noRatingsYet",
+    "group": "reviews",
+    "en": "No ratings yet",
+    "tl": "Wala pang rating"
+  },
+  {
+    "key": "ratingSubmitted",
+    "group": "reviews",
+    "en": "Rating submitted",
+    "tl": "Naipasa ang rating"
+  },
+  {
+    "key": "submitRating",
+    "group": "reviews",
+    "en": "Submit rating",
+    "tl": "Ipasa ang rating"
+  },
+  {
+    "key": "chooseRating",
+    "group": "reviews",
+    "en": "Tap a star to choose your rating.",
+    "tl": "Pindutin ang bituin para pumili ng rating."
+  },
+  {
+    "key": "commentOptional",
+    "group": "reviews",
+    "en": "Comment (optional)",
+    "tl": "Komento (opsyonal)"
+  },
+  {
+    "key": "writeComment",
+    "group": "comments",
+    "en": "Write a comment...",
+    "tl": "Sumulat ng komento..."
+  },
+  {
+    "key": "reply",
+    "group": "comments",
+    "en": "Reply",
+    "tl": "Tumugon"
+  },
+  {
+    "key": "replyingTo",
+    "group": "comments",
+    "en": "Replying to",
+    "tl": "Tumutugon kay"
+  },
+  {
+    "key": "edit",
+    "group": "comments",
+    "en": "Edit",
+    "tl": "I-edit"
+  },
+  {
+    "key": "deleteAction",
+    "group": "comments",
+    "en": "Delete",
+    "tl": "Burahin"
+  },
+  {
+    "key": "registrationFailed",
+    "group": "registration",
+    "en": "Registration failed. Please check your details.",
+    "tl": "Hindi matagumpay ang pagrehistro. Suriin ang mga detalye."
+  },
+  {
+    "key": "passwordMinSix",
+    "group": "registration",
+    "en": "Password must be at least 6 characters",
+    "tl": "Ang password ay dapat hindi bababa sa 6 character"
+  },
+  {
+    "key": "bookmarkRemoveFailed",
+    "group": "bookmarks_extras",
+    "en": "Could not remove bookmark. Try again.",
+    "tl": "Hindi matanggal ang bookmark. Subukan muli."
+  },
+  {
+    "key": "noBookmarksYet",
+    "group": "bookmarks_extras",
+    "en": "No saved posts yet",
+    "tl": "Wala pang naka-save na post"
+  },
+  {
+    "key": "searchRehabByHint",
+    "group": "rehab_extras",
+    "en": "Search by name, address, or province",
+    "tl": "Maghanap ayon sa pangalan, address, o lalawigan"
+  },
+  {
+    "key": "noRehabFound",
+    "group": "rehab_extras",
+    "en": "No rehab centers found",
+    "tl": "Walang nahanap na rehab center"
+  },
+  {
+    "key": "tryDifferentSearch",
+    "group": "rehab_extras",
+    "en": "Try a different region or search",
+    "tl": "Subukan ang ibang rehiyon o paghahanap"
+  },
+  {
+    "key": "checkBackLater",
+    "group": "rehab_extras",
+    "en": "Check back later for listings",
+    "tl": "Bumalik muli mamaya para sa mga listahan"
+  },
+  {
+    "key": "regionLabel",
+    "group": "rehab_extras",
+    "en": "Region",
+    "tl": "Rehiyon"
+  },
+  {
+    "key": "commentPosted",
+    "group": "post_detail",
+    "en": "Comment posted",
+    "tl": "Naipost ang komento"
+  },
+  {
+    "key": "replyPosted",
+    "group": "post_detail",
+    "en": "Reply posted",
+    "tl": "Naipost ang tugon"
+  },
+  {
+    "key": "commentDeleted",
+    "group": "post_detail",
+    "en": "Comment deleted",
+    "tl": "Nabura ang komento"
+  },
+  {
+    "key": "commentUpdated",
+    "group": "post_detail",
+    "en": "Comment updated",
+    "tl": "Na-update ang komento"
+  },
+  {
+    "key": "deleteCommentTitle",
+    "group": "post_detail",
+    "en": "Delete comment?",
+    "tl": "Burahin ang komento?"
+  },
+  {
+    "key": "deleteCommentBody",
+    "group": "post_detail",
+    "en": "This comment will be removed permanently.",
+    "tl": "Permanenteng mabubura ang komentong ito."
+  },
+  {
+    "key": "cancel",
+    "group": "post_detail",
+    "en": "Cancel",
+    "tl": "Kanselahin"
+  },
+  {
+    "key": "commentsTitle",
+    "group": "post_detail",
+    "en": "Comments",
+    "tl": "Mga Komento"
+  },
+  {
+    "key": "loadPreviousComments",
+    "group": "post_detail",
+    "en": "Load previous comments...",
+    "tl": "I-load ang mga naunang komento..."
+  },
+  {
+    "key": "retry",
+    "group": "post_detail",
+    "en": "Retry",
+    "tl": "Subukan muli"
+  },
+  {
+    "key": "noCommentsYet",
+    "group": "post_detail",
+    "en": "No comments yet. Be the first to comment.",
+    "tl": "Wala pang komento. Ikaw ang unang magkomento."
+  },
+  {
+    "key": "writeReply",
+    "group": "post_detail",
+    "en": "Write a reply...",
+    "tl": "Sumulat ng tugon..."
+  },
+  {
+    "key": "rateThisContent",
+    "group": "review_sheet",
+    "en": "Rate this content",
+    "tl": "I-rate ang nilalamang ito"
+  },
+  {
+    "key": "editComment",
+    "group": "comment_edit",
+    "en": "Edit comment",
+    "tl": "I-edit ang komento"
+  },
+  {
+    "key": "commentCannotBeEmpty",
+    "group": "comment_edit",
+    "en": "Comment cannot be empty",
+    "tl": "Hindi maaaring walang laman ang komento"
+  },
+  {
+    "key": "updateCommentHint",
+    "group": "comment_edit",
+    "en": "Update your comment...",
+    "tl": "I-update ang iyong komento..."
+  },
+  {
+    "key": "saveChanges",
+    "group": "comment_edit",
+    "en": "Save changes",
+    "tl": "I-save ang mga pagbabago"
+  },
+  {
+    "key": "commentUpdateFailed",
+    "group": "comment_edit",
+    "en": "Could not update comment. Try again.",
+    "tl": "Hindi ma-update ang komento. Subukan muli."
+  },
+  {
+    "key": "serverUpdateRequired",
+    "group": "errors_engagement",
+    "en": "Likes and comments need the latest server update. Deploy Laravel and run php artisan migrate.",
+    "tl": "Kailangan ng pinakabagong server update ang likes at komento."
+  },
+  {
+    "key": "ownCommentsOnly",
+    "group": "errors_engagement",
+    "en": "You can only manage your own comments.",
+    "tl": "Maaari mo lang pamahalaan ang sarili mong komento."
+  },
+  {
+    "key": "noInternet",
+    "group": "errors_engagement",
+    "en": "No internet connection. Check your network and try again.",
+    "tl": "Walang internet. Suriin ang network at subukan muli."
+  },
+  {
+    "key": "justNow",
+    "group": "errors_engagement",
+    "en": "Just now",
+    "tl": "Ngayon lang"
+  },
+  {
+    "key": "dailyVerseTitle",
+    "group": "daily_verse_kid_listo_says",
+    "en": "Kid Listo Says",
+    "tl": "Kid Listo Says"
+  },
+  {
+    "key": "kidListoSaysTitle",
+    "group": "daily_verse_kid_listo_says",
+    "en": "Kid Listo Says",
+    "tl": "Kid Listo Says"
+  },
+  {
+    "key": "todaysScripture",
+    "group": "daily_verse_kid_listo_says",
+    "en": "s scripture\", ",
+    "tl": ""
+  },
+  {
+    "key": "skip",
+    "group": "daily_verse_kid_listo_says",
+    "en": "Skip",
+    "tl": "Laktawan"
+  },
+  {
+    "key": "continueToApp",
+    "group": "daily_verse_kid_listo_says",
+    "en": "Continue to app",
+    "tl": "Magpatuloy sa app"
+  },
+  {
+    "key": "openBible",
+    "group": "daily_verse_kid_listo_says",
+    "en": "Open Bible",
+    "tl": "Buksan ang Bibliya"
+  },
+  {
+    "key": "openKidListoBible",
+    "group": "daily_verse_kid_listo_says",
+    "en": "Open Kid Listo Bible",
+    "tl": "Buksan ang Kid Listo Bible"
+  },
+  {
+    "key": "dailyVerseFallback",
+    "group": "daily_verse_kid_listo_says",
+    "en": "Trust in the Lord with all your heart.",
+    "tl": "Manalig ka sa Panginoon ng buong puso mo."
+  },
+  {
+    "key": "dailyVerseReferenceFallback",
+    "group": "daily_verse_kid_listo_says",
+    "en": "Proverbs 3:5",
+    "tl": "Kawikaan 3:5"
+  },
+  {
+    "key": "bibleTitle",
+    "group": "bible",
+    "en": "Kid Listo Says · Bible",
+    "tl": "Kid Listo Says · Bibliya"
+  },
+  {
+    "key": "searchBibleBooks",
+    "group": "bible",
+    "en": "Search books...",
+    "tl": "Maghanap ng aklat..."
+  },
+  {
+    "key": "oldTestament",
+    "group": "bible",
+    "en": "Old Testament",
+    "tl": "Lumang Tipan"
+  },
+  {
+    "key": "newTestament",
+    "group": "bible",
+    "en": "New Testament",
+    "tl": "Bagong Tipan"
+  },
+  {
+    "key": "noBibleBooksFound",
+    "group": "bible",
+    "en": "No books found",
+    "tl": "Walang nahanap na aklat"
+  },
+  {
+    "key": "bibleLoadFailed",
+    "group": "bible",
+    "en": "Could not load passage. Try again.",
+    "tl": "Hindi ma-load ang talata. Subukan muli."
+  },
+  {
+    "key": "bibleLanguageNote",
+    "group": "bible",
+    "en": "Kid Listo Bible text follows your app language (English or Tagalog).",
+    "tl": "Sinusunod ng Kid Listo Bible ang wika ng app (English o Tagalog)."
+  },
+  {
+    "key": "diaryTitle",
+    "group": "diary",
+    "en": "My Diary",
+    "tl": "Aking Talaarawan"
+  },
+  {
+    "key": "writeToday",
+    "group": "diary",
+    "en": "s note\", ",
+    "tl": ""
+  },
+  {
+    "key": "diaryLoginRequired",
+    "group": "diary",
+    "en": "Sign in to keep your private daily journal.",
+    "tl": "Mag-sign in para sa iyong pribadong talaarawan."
+  },
+  {
+    "key": "diaryEmpty",
+    "group": "diary",
+    "en": "No diary entries yet. Tap Write today to begin.",
+    "tl": "Wala pang tala. Pindutin ang Sumulat ngayong araw para magsimula."
+  },
+  {
+    "key": "diaryEditorTitle",
+    "group": "diary",
+    "en": "Diary entry",
+    "tl": "Tala sa talaarawan"
+  },
+  {
+    "key": "diaryTitleHint",
+    "group": "diary",
+    "en": "Title (optional)",
+    "tl": "Pamagat (opsyonal)"
+  },
+  {
+    "key": "diaryBodyHint",
+    "group": "diary",
+    "en": "What happened today?",
+    "tl": "Ano ang nangyari ngayon?"
+  },
+  {
+    "key": "diaryBodyRequired",
+    "group": "diary",
+    "en": "Please write something in your diary.",
+    "tl": "Magsulat muna sa iyong talaarawan."
+  },
+  {
+    "key": "diarySaved",
+    "group": "diary",
+    "en": "Diary entry saved",
+    "tl": "Nai-save ang tala"
+  },
+  {
+    "key": "diarySaveFailed",
+    "group": "diary",
+    "en": "Could not save diary entry.",
+    "tl": "Hindi mai-save ang tala."
+  },
+  {
+    "key": "deleteDiaryTitle",
+    "group": "diary",
+    "en": "Delete diary entry?",
+    "tl": "Burahin ang tala?"
+  },
+  {
+    "key": "deleteDiaryBody",
+    "group": "diary",
+    "en": "This entry will be removed permanently.",
+    "tl": "Permanenteng mabubura ang talang ito."
+  },
+  {
+    "key": "diaryDeleteFailed",
+    "group": "diary",
+    "en": "Could not delete diary entry.",
+    "tl": "Hindi mabura ang tala."
+  }
+]
