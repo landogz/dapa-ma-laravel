@@ -6,6 +6,8 @@ import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../s
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let supportTable;
+let supportTableMode;
+let hasBoundViewportListener = false;
 let currentCategoryFilter = '';
 
 const CATEGORY_LABELS = {
@@ -31,28 +33,82 @@ export function initCareSupportModule() {
         });
 
     initializeSupportTable(tableEl).then(() => {
+        bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
         loadCareSupportResources();
     });
 }
 
 async function initializeSupportTable(tableElement) {
+    const nextMode = getTableMode();
+
+    if (supportTable && supportTableMode === nextMode) {
+        return;
+    }
+
+    if (supportTable) {
+        supportTable.destroy();
+        tableElement.innerHTML = '';
+    }
+
+    supportTableMode = nextMode;
     supportTable = await createAdminDataTable(
         tableElement,
         getAdminDataTableOptions({
-            columns: [
-                { title: 'Order', width: '64px' },
-                { title: 'Category' },
-                { title: 'Title (EN)' },
-                { title: 'Phone / Link' },
-                { title: 'Status' },
-                { title: 'Actions', orderable: false, searchable: false },
-            ],
+            columns: buildColumns(nextMode),
             searchPlaceholder: 'Search support resources...',
             infoLabel: 'Showing _START_ to _END_ of _TOTAL_ resources',
-            pageLength: 15,
+            pageLength: nextMode === 'mobile' ? 5 : 15,
+            scrollX: nextMode !== 'mobile',
+            scrollCollapse: nextMode !== 'mobile',
         }),
     );
+}
+
+function bindViewportListener(tableEl) {
+    if (hasBoundViewportListener) {
+        return;
+    }
+
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = async () => {
+        const nextMode = getTableMode();
+        if (nextMode === supportTableMode) {
+            return;
+        }
+
+        await initializeSupportTable(tableEl);
+        loadCareSupportResources();
+    };
+
+    if (typeof mobileQuery.addEventListener === 'function') {
+        mobileQuery.addEventListener('change', handleViewportChange);
+    } else {
+        mobileQuery.addListener(handleViewportChange);
+    }
+
+    hasBoundViewportListener = true;
+}
+
+function getTableMode() {
+    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+}
+
+function buildColumns(mode) {
+    if (mode === 'mobile') {
+        return [
+            { title: 'Resource', className: 'dt-col-mobile-summary', orderable: false },
+        ];
+    }
+
+    return [
+        { title: 'Order', width: '64px', className: 'dt-col-nowrap' },
+        { title: 'Category', className: 'dt-col-nowrap' },
+        { title: 'Title (EN)', className: 'dt-col-primary dt-col-wide' },
+        { title: 'Phone / Link', className: 'dt-col-wide' },
+        { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
+    ];
 }
 
 export function loadCareSupportResources() {
@@ -118,26 +174,53 @@ function buildRowData(row) {
         ? '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>'
         : '<span class="admin-status-badge rehab-status-badge rehab-status-badge-inactive">Inactive</span>';
 
+    const actions = [
+        {
+            tooltip: 'Edit resource',
+            icon: 'fas fa-pen-to-square',
+            className: 'admin-table-action-primary',
+            attrs: `onclick="window.CareSupport.edit(${row.id})"`,
+        },
+        {
+            tooltip: 'Delete resource',
+            icon: 'fas fa-trash',
+            className: 'admin-table-action-danger',
+            attrs: `onclick="window.CareSupport.remove(${row.id})"`,
+        },
+    ];
+
+    const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
+    const mobileActions = buildAdminActionButtons([
+        { ...actions[0], label: 'Edit' },
+        { ...actions[1], label: 'Delete' },
+    ], { isMobile: true, nowrap: true });
+
+    if (supportTableMode === 'mobile') {
+        return [
+            `<div class="admin-table-mobile-card">
+                <div class="admin-table-mobile-title-row">
+                    <div>
+                        <p class="admin-table-mobile-kicker">${category}</p>
+                        <p class="admin-table-mobile-title">${title || '—'}</p>
+                    </div>
+                    ${status}
+                </div>
+                <div class="admin-table-mobile-details">
+                    <p><span>Order:</span> ${escapeHtml(String(row.sort_order ?? 0))}</p>
+                    <p><span>Phone / Link:</span> ${contact}</p>
+                </div>
+                <div class="admin-table-mobile-actions">${mobileActions}</div>
+            </div>`,
+        ];
+    }
+
     return [
         String(row.sort_order ?? 0),
         category,
         title || '—',
         contact,
         status,
-        buildAdminActionButtons([
-            {
-                tooltip: 'Edit resource',
-                icon: 'fas fa-pen-to-square',
-                className: 'admin-table-action-primary',
-                attrs: `onclick="window.CareSupport.edit(${row.id})"`,
-            },
-            {
-                tooltip: 'Delete resource',
-                icon: 'fas fa-trash',
-                className: 'admin-table-action-danger',
-                attrs: `onclick="window.CareSupport.remove(${row.id})"`,
-            },
-        ]),
+        desktopActions,
     ];
 }
 

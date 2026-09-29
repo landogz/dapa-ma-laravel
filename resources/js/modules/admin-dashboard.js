@@ -7,6 +7,7 @@ import { initPostsModule } from './posts';
 import { initProfileModule } from './profile';
 import { initRehabCentersModule } from './rehab-centers/index';
 import { enableAdminSwalHeaders } from './shared/swal-forms';
+import { startAdminFilterSelectWatcher } from './shared/filter-select';
 import { initTrainingsModule } from './trainings/index';
 import { initContestsModule } from './contests/index';
 import { initIecMaterialsModule } from './iec-materials/index';
@@ -97,6 +98,7 @@ export async function initAdminPage(pageName) {
 
     bindQuickActions();
     initializePageContent(pageName, allowedSections);
+    startAdminFilterSelectWatcher(appRoot);
 }
 
 function bindShell(appRoot) {
@@ -226,6 +228,22 @@ function revealNavigation(allowedSections) {
         const canView = sectionName && allowedSections.includes(sectionName);
 
         link.classList.toggle('hidden', !canView);
+    });
+
+    document.querySelectorAll('.admin-nav-group').forEach((group) => {
+        const gatedLinks = group.querySelectorAll('[data-nav-section]');
+
+        // Groups with no permission-gated links (e.g. Overview → Dashboard) always stay visible.
+        if (gatedLinks.length === 0) {
+            group.classList.remove('hidden');
+            return;
+        }
+
+        const hasVisibleLink = Array.from(gatedLinks).some(
+            (link) => !link.classList.contains('hidden'),
+        );
+
+        group.classList.toggle('hidden', !hasVisibleLink);
     });
 
     document.querySelectorAll('[data-card-section]').forEach((card) => {

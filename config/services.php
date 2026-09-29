@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Firebase Cloud Messaging (legacy HTTP API)
+    |--------------------------------------------------------------------------
+    |
+    | Use the Cloud Messaging "Server key" from Firebase Console → Project
+    | settings → Cloud Messaging (not a service-account email/JSON client_email).
+    |
+    */
+    'fcm' => [
+        'server_key' => env('FCM_SERVER_KEY'),
+    ],
+
 ];

@@ -14,10 +14,14 @@ class Notification extends Model
         'post_id',
         'sent_by',
         'sent_at',
+        'recipient_count',
+        'inbox_count',
     ];
 
     protected $casts = [
         'sent_at' => 'datetime',
+        'recipient_count' => 'integer',
+        'inbox_count' => 'integer',
     ];
 
     public function sender(): BelongsTo

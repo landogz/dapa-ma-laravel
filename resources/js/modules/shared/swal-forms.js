@@ -52,10 +52,36 @@ function renderField(field) {
     }
 
     if (field.type === 'file') {
+        const previewUrl = field.previewUrl ? escapeHtml(field.previewUrl) : '';
+        const showPreview = field.showPreview === true || Boolean(field.previewUrl);
+        const previewBlock = showPreview
+            ? `
+                <div class="admin-swal-image-preview-wrap" data-image-preview-for="${escapeHtml(field.id)}">
+                    <img
+                        id="${escapeHtml(field.id)}-preview"
+                        class="admin-swal-image-preview"
+                        ${previewUrl ? `src="${previewUrl}"` : ''}
+                        alt=""
+                        ${previewUrl ? '' : 'hidden'}
+                    >
+                    <div
+                        id="${escapeHtml(field.id)}-preview-empty"
+                        class="admin-swal-image-preview-empty"
+                        ${previewUrl ? 'hidden' : ''}
+                        aria-hidden="${previewUrl ? 'true' : 'false'}"
+                    >
+                        <i class="fas fa-image" aria-hidden="true"></i>
+                        <span>No image</span>
+                    </div>
+                </div>
+            `
+            : '';
+
         return `
             <div class="admin-swal-field">
                 ${label}
-                <input id="${field.id}" class="admin-swal-input" type="file"${field.accept ? ` accept="${escapeHtml(field.accept)}"` : ''}>
+                ${previewBlock}
+                <input id="${field.id}" class="admin-swal-input" type="file"${field.accept ? ` accept="${escapeHtml(field.accept)}"` : ''} data-image-preview-input="${showPreview ? 'true' : 'false'}"${previewUrl ? ` data-preview-fallback="${previewUrl}"` : ''}>
                 ${hint}
             </div>
         `;
@@ -103,6 +129,68 @@ export function buildSwalForm({ description = '', rules = '', fields = [] }) {
 }
 
 /**
+ * Live-update image previews for file inputs rendered with showPreview / previewUrl.
+ */
+export function bindImageFilePreviews(root = document) {
+    root.querySelectorAll('input[type="file"][data-image-preview-input="true"]').forEach((input) => {
+        if (input.dataset.previewBound === '1') {
+            return;
+        }
+
+        input.dataset.previewBound = '1';
+
+        const preview = root.querySelector(`#${CSS.escape(input.id)}-preview`);
+        const empty = root.querySelector(`#${CSS.escape(input.id)}-preview-empty`);
+
+        if (!preview) {
+            return;
+        }
+
+        let objectUrl = null;
+
+        input.addEventListener('change', () => {
+            const file = input.files?.[0] ?? null;
+
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+                objectUrl = null;
+            }
+
+            const showPreviewImage = (url) => {
+                preview.src = url;
+                preview.hidden = false;
+                if (empty) {
+                    empty.hidden = true;
+                    empty.setAttribute('aria-hidden', 'true');
+                }
+            };
+
+            const showEmptyState = () => {
+                preview.removeAttribute('src');
+                preview.hidden = true;
+                if (empty) {
+                    empty.hidden = false;
+                    empty.setAttribute('aria-hidden', 'false');
+                }
+            };
+
+            if (!file || !file.type.startsWith('image/')) {
+                const fallback = input.getAttribute('data-preview-fallback') || '';
+                if (fallback) {
+                    showPreviewImage(fallback);
+                } else {
+                    showEmptyState();
+                }
+                return;
+            }
+
+            objectUrl = URL.createObjectURL(file);
+            showPreviewImage(objectUrl);
+        });
+    });
+}
+
+/**
  * Flatten Laravel / API validation payloads into a single message for Swal or toasts.
  * Keeps the modal open when used with Swal.showValidationMessage + return false.
  */
@@ -117,6 +205,66 @@ export function formatApiValidationMessage(response, fallback = 'Unable to save.
     }
 
     return response?.data?.message ?? fallback;
+}
+
+function htmlLooksLikeForm(html) {
+    return /admin-swal-form|admin-swal-fields|admin-swal-section|admin-swal-repeatable|<input|<textarea|<select/i
+        .test(String(html ?? ''));
+}
+
+/**
+ * True for yes/cancel prompts (delete, disable, publish, etc.).
+ * False for create/edit form shells.
+ */
+export function isConfirmDialog(options = {}, { danger = false } = {}) {
+    if (options.confirmOnly === true) {
+        return true;
+    }
+
+    if (options.confirmOnly === false) {
+        return false;
+    }
+
+    if (htmlLooksLikeForm(options.html)) {
+        return false;
+    }
+
+    const icon = options.icon;
+    const isConfirmIcon = icon === 'warning'
+        || icon === 'question'
+        || icon === 'info'
+        || icon === 'error';
+
+    if (!isConfirmIcon && !danger) {
+        return false;
+    }
+
+    return options.showCancelButton !== false;
+}
+
+/**
+ * Shared SweetAlert2 confirmation helper.
+ * Use for delete / toggle / irreversible prompts — never hand-roll confirmation modals.
+ */
+export function confirmWithSwal({
+    title,
+    text = '',
+    html = null,
+    icon = 'question',
+    confirmButtonText = 'Confirm',
+    cancelButtonText = 'Cancel',
+    danger = false,
+} = {}) {
+    return Swal.fire(buildSwalOptions({
+        confirmOnly: true,
+        icon,
+        title,
+        text: html ? undefined : text,
+        html: html || undefined,
+        showCancelButton: true,
+        confirmButtonText,
+        cancelButtonText,
+    }, { danger, size: 'sm' }));
 }
 
 function resolveSubtitle(popup, subtitle) {
@@ -158,7 +306,7 @@ function collapseEmptyConfirmBody(popup) {
     const htmlContainer = popup.querySelector('.swal2-html-container');
     const emptyBody = isEffectivelyEmptyHtmlContainer(htmlContainer);
 
-    popup.classList.toggle('admin-swal-popup-confirm', emptyBody);
+    popup.classList.toggle('admin-swal-popup-confirm', true);
     htmlContainer?.classList.toggle('admin-swal-html-empty', emptyBody);
 
     if (emptyBody && htmlContainer) {
@@ -223,32 +371,55 @@ function mountAdminModalHeader(popup, { title, subtitle, showClose }) {
     if (formDescription && subtitleText) {
         formDescription.hidden = true;
     }
+}
+
+/**
+ * Classic SweetAlert2 confirm layout (icon + title + text + actions).
+ * No form-style blue header bar.
+ */
+function mountConfirmDialog(popup) {
+    popup.querySelectorAll('.admin-modal-header-bar').forEach((node) => node.remove());
+    popup.classList.add('admin-swal-popup-confirm');
+
+    const nativeTitle = popup.querySelector('.swal2-title');
+    if (nativeTitle) {
+        nativeTitle.removeAttribute('hidden');
+        nativeTitle.style.display = '';
+    }
+
+    const nativeHeader = popup.querySelector('.swal2-header');
+    if (nativeHeader) {
+        nativeHeader.classList.remove('admin-swal-header-native-hidden');
+    }
 
     collapseEmptyConfirmBody(popup);
 }
 
 /**
  * Standard admin modal shell:
- * - modern brand header (title + optional subtitle + close)
- * - scrollable body
- * - footer actions with Cancel + Confirm
+ * - modern brand header (title + optional subtitle + close) for forms
+ * - classic SweetAlert2 confirm layout for yes/cancel prompts
+ * - scrollable body + footer actions
  */
 export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } = {}) {
     const userDidOpen = options.didOpen;
+    const confirmDialog = isConfirmDialog(options, { danger });
     const popupSizeClass = {
         sm: 'admin-swal-popup admin-swal-popup-sm',
         md: 'admin-swal-popup admin-swal-popup-md',
         lg: 'admin-swal-popup',
-    }[size] ?? 'admin-swal-popup';
+    }[confirmDialog ? 'sm' : size] ?? 'admin-swal-popup';
 
     const showCancel = options.showCancelButton !== false;
-    const showClose = options.showCloseButton !== false;
+    const showClose = confirmDialog ? false : options.showCloseButton !== false;
     const title = options.title ?? '';
 
-    // Prefer explicit subtitle; otherwise lift plain description HTML into the banner.
+    // Prefer explicit subtitle; otherwise lift plain description HTML into the banner (forms only).
     let subtitle = options.subtitle ?? null;
     let html = options.html;
-    if (subtitle == null && typeof html === 'string') {
+    let text = options.text;
+
+    if (!confirmDialog && subtitle == null && typeof html === 'string') {
         const descriptionMatch = html.match(
             /class=["'][^"']*admin-swal-description[^"']*["'][^>]*>([\s\S]*?)<\/p>/i,
         );
@@ -257,36 +428,55 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
                 .replaceAll(/<[^>]+>/g, '')
                 .replaceAll('&nbsp;', ' ')
                 .trim();
-            // Avoid an empty expanding body under the banner on confirm dialogs.
             if (danger || options.icon) {
                 html = ' ';
             }
         }
     }
 
-    // Keep title for Swal accessibility, but we render our own visible header bar.
-    const { subtitle: _ignoredSubtitle, ...restOptions } = options;
+    // Confirm dialogs: prefer plain text body; lift description HTML into `text` when needed.
+    if (confirmDialog && !text && typeof html === 'string') {
+        const descriptionMatch = html.match(
+            /class=["'][^"']*admin-swal-description[^"']*["'][^>]*>([\s\S]*?)<\/p>/i,
+        );
+        if (descriptionMatch) {
+            text = descriptionMatch[1]
+                .replaceAll(/<[^>]+>/g, '')
+                .replaceAll('&nbsp;', ' ')
+                .trim();
+            html = undefined;
+        }
+    }
+
+    // Keep title for Swal accessibility, but forms render our own visible header bar.
+    const { subtitle: _ignoredSubtitle, confirmOnly: _ignoredConfirmOnly, ...restOptions } = options;
 
     return {
         ...restOptions,
         title: title || restOptions.title || ' ',
-        html,
+        text: confirmDialog ? (text ?? restOptions.text) : restOptions.text,
+        html: confirmDialog && text && !html ? undefined : html,
         showCancelButton: showCancel,
         showCloseButton: false,
         cancelButtonText: options.cancelButtonText ?? 'Cancel',
-        confirmButtonText: options.confirmButtonText ?? 'Save',
+        confirmButtonText: options.confirmButtonText ?? (confirmDialog ? 'Confirm' : 'Save'),
         reverseButtons: options.reverseButtons ?? true,
         focusConfirm: options.focusConfirm ?? false,
         buttonsStyling: false,
         didOpen: (popup) => {
             bindPasswordToggles(popup);
+            bindImageFilePreviews(popup);
 
-            const resolvedSubtitle = resolveSubtitle(popup, subtitle);
-            mountAdminModalHeader(popup, {
-                title: title || popup.querySelector('.swal2-title')?.textContent || '',
-                subtitle: resolvedSubtitle,
-                showClose,
-            });
+            if (confirmDialog) {
+                mountConfirmDialog(popup);
+            } else {
+                const resolvedSubtitle = resolveSubtitle(popup, subtitle);
+                mountAdminModalHeader(popup, {
+                    title: title || popup.querySelector('.swal2-title')?.textContent || '',
+                    subtitle: resolvedSubtitle,
+                    showClose,
+                });
+            }
 
             if (typeof userDidOpen === 'function') {
                 userDidOpen(popup);
@@ -309,19 +499,28 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
             popup: [
                 popupSizeClass,
                 'admin-swal-popup-shell',
+                confirmDialog ? 'admin-swal-popup-confirm' : '',
                 options.customClass?.popup,
             ].filter(Boolean).join(' '),
             actions: [
                 'admin-swal-actions',
+                confirmDialog ? 'admin-swal-actions-confirm' : '',
                 options.customClass?.actions,
             ].filter(Boolean).join(' '),
             header: [
                 'admin-swal-header',
+                confirmDialog ? 'admin-swal-header-confirm' : '',
                 options.customClass?.header,
             ].filter(Boolean).join(' '),
             title: [
                 'admin-swal-title',
+                confirmDialog ? 'admin-swal-title-confirm' : '',
                 options.customClass?.title,
+            ].filter(Boolean).join(' '),
+            htmlContainer: [
+                'admin-swal-html',
+                confirmDialog ? 'admin-swal-html-confirm' : '',
+                options.customClass?.htmlContainer,
             ].filter(Boolean).join(' '),
             icon: [
                 'admin-swal-icon',

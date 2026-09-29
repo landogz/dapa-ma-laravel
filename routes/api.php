@@ -82,6 +82,9 @@ Route::prefix('v1')
             Route::get('/{id}/comments', [PostEngagementController::class, 'comments'])
                 ->whereNumber('id')
                 ->name('comments.index');
+            Route::get('/{id}/reactions', [PostEngagementController::class, 'reactions'])
+                ->whereNumber('id')
+                ->name('reactions.index');
             Route::get('/{id}/reviews', [ReviewController::class, 'indexForPost'])
                 ->whereNumber('id')
                 ->name('reviews.index');
@@ -237,6 +240,7 @@ Route::prefix('v1')
                     Route::put('/users/{user}/role',         [UserAdminController::class, 'updateRole'])->name('users.role');
                     Route::delete('/users/{user}',           [UserAdminController::class, 'destroy'])->name('users.destroy');
                     Route::get('/diary-entries',             [DiaryAdminController::class, 'index'])->name('diary-entries.index');
+                    Route::get('/diary-users',               [DiaryAdminController::class, 'users'])->name('diary-users.index');
                     Route::get('/diary-entries/{id}',       [DiaryAdminController::class, 'show'])->whereNumber('id')->name('diary-entries.show');
                     Route::delete('/diary-entries/{id}',    [DiaryAdminController::class, 'destroy'])->whereNumber('id')->name('diary-entries.destroy');
                     Route::put('/posts/{post}/archive',      [PostAdminController::class, 'archive'])->name('posts.archive');
@@ -267,8 +271,11 @@ Route::prefix('v1')
 
                 // Publisher + Super Admin — notifications
                 Route::middleware('role:publisher,super_admin')->group(function (): void {
-                    Route::get('/notifications',       [NotificationAdminController::class, 'index'])->name('notifications.index');
+                    Route::get('/notifications', [NotificationAdminController::class, 'index'])->name('notifications.index');
+                    Route::get('/notifications/audience-count', [NotificationAdminController::class, 'audienceCount'])->name('notifications.audience-count');
                     Route::post('/notifications/send', [NotificationAdminController::class, 'send'])->name('notifications.send');
+                    Route::get('/notifications/{id}', [NotificationAdminController::class, 'show'])->whereNumber('id')->name('notifications.show');
+                    Route::delete('/notifications/{id}', [NotificationAdminController::class, 'destroy'])->whereNumber('id')->name('notifications.destroy');
 
                     Route::get('/legal-pages', [LegalPageAdminController::class, 'index'])->name('legal-pages.index');
                     Route::get('/legal-pages/{slug}', [LegalPageAdminController::class, 'show'])

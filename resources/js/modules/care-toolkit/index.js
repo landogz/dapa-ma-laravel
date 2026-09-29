@@ -6,6 +6,8 @@ import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../s
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let toolkitTable;
+let toolkitTableMode;
+let hasBoundViewportListener = false;
 let currentTypeFilter = '';
 
 const TYPE_LABELS = {
@@ -36,28 +38,82 @@ export function initCareToolkitModule() {
         });
 
     initializeToolkitTable(tableEl).then(() => {
+        bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
         loadCareToolkitQuestions();
     });
 }
 
 async function initializeToolkitTable(tableElement) {
+    const nextMode = getTableMode();
+
+    if (toolkitTable && toolkitTableMode === nextMode) {
+        return;
+    }
+
+    if (toolkitTable) {
+        toolkitTable.destroy();
+        tableElement.innerHTML = '';
+    }
+
+    toolkitTableMode = nextMode;
     toolkitTable = await createAdminDataTable(
         tableElement,
         getAdminDataTableOptions({
-            columns: [
-                { title: 'Order', width: '64px' },
-                { title: 'Toolkit' },
-                { title: 'Answer type' },
-                { title: 'Question (EN)' },
-                { title: 'Status' },
-                { title: 'Actions', orderable: false, searchable: false },
-            ],
+            columns: buildColumns(nextMode),
             searchPlaceholder: 'Search toolkit questions...',
             infoLabel: 'Showing _START_ to _END_ of _TOTAL_ questions',
-            pageLength: 15,
+            pageLength: nextMode === 'mobile' ? 5 : 15,
+            scrollX: nextMode !== 'mobile',
+            scrollCollapse: nextMode !== 'mobile',
         }),
     );
+}
+
+function bindViewportListener(tableEl) {
+    if (hasBoundViewportListener) {
+        return;
+    }
+
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = async () => {
+        const nextMode = getTableMode();
+        if (nextMode === toolkitTableMode) {
+            return;
+        }
+
+        await initializeToolkitTable(tableEl);
+        loadCareToolkitQuestions();
+    };
+
+    if (typeof mobileQuery.addEventListener === 'function') {
+        mobileQuery.addEventListener('change', handleViewportChange);
+    } else {
+        mobileQuery.addListener(handleViewportChange);
+    }
+
+    hasBoundViewportListener = true;
+}
+
+function getTableMode() {
+    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+}
+
+function buildColumns(mode) {
+    if (mode === 'mobile') {
+        return [
+            { title: 'Question', className: 'dt-col-mobile-summary', orderable: false },
+        ];
+    }
+
+    return [
+        { title: 'Order', width: '64px', className: 'dt-col-nowrap' },
+        { title: 'Toolkit', className: 'dt-col-nowrap' },
+        { title: 'Answer type', className: 'dt-col-nowrap' },
+        { title: 'Question (EN)', className: 'dt-col-primary dt-col-wide' },
+        { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
+    ];
 }
 
 export function loadCareToolkitQuestions() {
@@ -123,26 +179,53 @@ function buildRowData(row) {
         ? '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>'
         : '<span class="admin-status-badge rehab-status-badge rehab-status-badge-inactive">Inactive</span>';
 
+    const actions = [
+        {
+            tooltip: 'Edit question',
+            icon: 'fas fa-pen-to-square',
+            className: 'admin-table-action-primary',
+            attrs: `onclick="window.CareToolkit.edit(${row.id})"`,
+        },
+        {
+            tooltip: 'Delete question',
+            icon: 'fas fa-trash',
+            className: 'admin-table-action-danger',
+            attrs: `onclick="window.CareToolkit.remove(${row.id})"`,
+        },
+    ];
+
+    const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
+    const mobileActions = buildAdminActionButtons([
+        { ...actions[0], label: 'Edit' },
+        { ...actions[1], label: 'Delete' },
+    ], { isMobile: true, nowrap: true });
+
+    if (toolkitTableMode === 'mobile') {
+        return [
+            `<div class="admin-table-mobile-card">
+                <div class="admin-table-mobile-title-row">
+                    <div>
+                        <p class="admin-table-mobile-kicker">${type}</p>
+                        <p class="admin-table-mobile-title">${preview || '—'}</p>
+                    </div>
+                    ${status}
+                </div>
+                <div class="admin-table-mobile-details">
+                    <p><span>Order:</span> ${escapeHtml(String(row.sort_order ?? 0))}</p>
+                    <p><span>Answer type:</span> ${answer}</p>
+                </div>
+                <div class="admin-table-mobile-actions">${mobileActions}</div>
+            </div>`,
+        ];
+    }
+
     return [
         String(row.sort_order ?? 0),
         type,
         answer,
         preview || '—',
         status,
-        buildAdminActionButtons([
-            {
-                tooltip: 'Edit question',
-                icon: 'fas fa-pen-to-square',
-                className: 'admin-table-action-primary',
-                attrs: `onclick="window.CareToolkit.edit(${row.id})"`,
-            },
-            {
-                tooltip: 'Delete question',
-                icon: 'fas fa-trash',
-                className: 'admin-table-action-danger',
-                attrs: `onclick="window.CareToolkit.remove(${row.id})"`,
-            },
-        ]),
+        desktopActions,
     ];
 }
 

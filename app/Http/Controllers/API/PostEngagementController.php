@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Post\SetPostReactionRequest;
 use App\Http\Requests\Post\StorePostCommentRequest;
 use App\Http\Requests\Post\UpdatePostCommentRequest;
+use App\Models\PostLike;
 use App\Services\PostEngagementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,14 +18,43 @@ class PostEngagementController extends Controller
     ) {
     }
 
-    public function toggleLike(Request $request, int $id): JsonResponse
+    public function toggleLike(SetPostReactionRequest $request, int $id): JsonResponse
     {
-        $result = $this->postEngagementService->toggleLike($request->user(), $id);
+        $reaction = $request->validated('reaction') ?? PostLike::REACTION_LIKE;
+        $result = $this->postEngagementService->toggleLike(
+            $request->user(),
+            $id,
+            $reaction,
+        );
+
+        $message = 'Post reaction updated.';
+        if (! ($result['liked'] ?? false)) {
+            $message = 'Reaction removed.';
+        } elseif (($result['user_reaction'] ?? null) === PostLike::REACTION_LIKE) {
+            $message = 'Post liked.';
+        }
 
         return response()->json([
-            'status'  => true,
-            'message' => $result['liked'] ? 'Post liked.' : 'Post unliked.',
-            'data'    => $result,
+            'status' => true,
+            'message' => $message,
+            'data' => $result,
+        ]);
+    }
+
+    public function reactions(int $id, Request $request): JsonResponse
+    {
+        $perPage = max(1, min(100, (int) $request->integer('per_page', 30)));
+        $type = $request->query('type');
+        $type = is_string($type) && in_array($type, PostLike::REACTION_TYPES, true)
+            ? $type
+            : null;
+
+        $reactors = $this->postEngagementService->listReactors($id, $type, $perPage);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Reactors fetched successfully.',
+            'data' => $reactors,
         ]);
     }
 

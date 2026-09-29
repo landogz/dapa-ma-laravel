@@ -16,7 +16,7 @@
             </div>
             <div class="admin-page-actions admin-page-actions-centered flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:self-center">
                 <label class="sr-only" for="care-toolkit-type-filter">Filter by toolkit</label>
-                <select id="care-toolkit-type-filter" class="admin-input w-full sm:w-48">
+                <select id="care-toolkit-type-filter" class="admin-filter-select admin-choice-select-page w-full sm:w-48" aria-label="Filter by toolkit">
                     <option value="">All toolkits</option>
                     <option value="stress">Stress Check</option>
                     <option value="anxiety">Anxiety Check</option>

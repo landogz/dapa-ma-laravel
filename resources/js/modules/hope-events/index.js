@@ -6,6 +6,8 @@ import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../s
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let eventsTable;
+let eventsTableMode;
+let hasBoundViewportListener = false;
 let audienceFilter = '';
 
 const AUDIENCE_LABELS = {
@@ -28,30 +30,84 @@ export function initHopeEventsModule() {
         });
 
     initializeTable(tableEl).then(() => {
+        bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
         loadRows();
     });
 }
 
 async function initializeTable(tableElement) {
+    const nextMode = getTableMode();
+
+    if (eventsTable && eventsTableMode === nextMode) {
+        return;
+    }
+
+    if (eventsTable) {
+        eventsTable.destroy();
+        tableElement.innerHTML = '';
+    }
+
+    eventsTableMode = nextMode;
     eventsTable = await createAdminDataTable(
         tableElement,
         getAdminDataTableOptions({
-            columns: [
-                { title: 'Order', width: '64px' },
-                { title: 'Event' },
-                { title: 'Audience' },
-                { title: 'Dates' },
-                { title: 'Slots' },
-                { title: 'Status' },
-                { title: 'Actions', orderable: false, searchable: false },
-            ],
+            columns: buildColumns(nextMode),
             searchPlaceholder: 'Search events...',
             infoLabel: 'Showing _START_ to _END_ of _TOTAL_ events',
-            pageLength: 15,
+            pageLength: nextMode === 'mobile' ? 5 : 15,
+            scrollX: nextMode !== 'mobile',
+            scrollCollapse: nextMode !== 'mobile',
             drawCallback: () => bindRowActions(),
         }),
     );
+}
+
+function bindViewportListener(tableEl) {
+    if (hasBoundViewportListener) {
+        return;
+    }
+
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = async () => {
+        const nextMode = getTableMode();
+        if (nextMode === eventsTableMode) {
+            return;
+        }
+
+        await initializeTable(tableEl);
+        loadRows();
+    };
+
+    if (typeof mobileQuery.addEventListener === 'function') {
+        mobileQuery.addEventListener('change', handleViewportChange);
+    } else {
+        mobileQuery.addListener(handleViewportChange);
+    }
+
+    hasBoundViewportListener = true;
+}
+
+function getTableMode() {
+    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+}
+
+function buildColumns(mode) {
+    if (mode === 'mobile') {
+        return [
+            { title: 'Event', className: 'dt-col-mobile-summary', orderable: false },
+        ];
+    }
+
+    return [
+        { title: 'Order', width: '64px', className: 'dt-col-nowrap' },
+        { title: 'Event', className: 'dt-col-primary dt-col-media' },
+        { title: 'Audience', className: 'dt-col-nowrap' },
+        { title: 'Dates', className: 'dt-col-nowrap' },
+        { title: 'Slots', className: 'dt-col-nowrap' },
+        { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
+    ];
 }
 
 function loadRows() {
@@ -104,7 +160,7 @@ function buildRow(row) {
         ? (row.online_label || 'Online')
         : (row.venue || '—');
     const dates = [row.start_date, row.end_date].filter(Boolean).join(' → ') || '—';
-    const actions = buildAdminActionButtons([
+    const actions = [
         {
             tooltip: 'Edit event',
             icon: 'fas fa-pen-to-square',
@@ -117,7 +173,34 @@ function buildRow(row) {
             className: 'admin-table-action-danger',
             attrs: `data-hope-event-delete="${row.id}"`,
         },
-    ]);
+    ];
+
+    const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
+    const mobileActions = buildAdminActionButtons([
+        { ...actions[0], label: 'Edit' },
+        { ...actions[1], label: 'Delete' },
+    ], { isMobile: true, nowrap: true });
+
+    if (eventsTableMode === 'mobile') {
+        return [
+            `<div class="admin-table-mobile-card">
+                <div class="admin-table-mobile-title-row">
+                    <div>
+                        <p class="admin-table-mobile-kicker">Order ${escapeHtml(String(row.sort_order ?? 0))}</p>
+                        <p class="admin-table-mobile-title">${escapeHtml(row.title)}</p>
+                    </div>
+                    ${statusBadge(row)}
+                </div>
+                <div class="admin-table-mobile-details">
+                    <p><span>Audience:</span> ${audienceBadge(row.audience)}</p>
+                    <p><span>Dates:</span> ${escapeHtml(dates)}</p>
+                    <p><span>Location:</span> ${escapeHtml(location)}</p>
+                    <p><span>Slots:</span> ${escapeHtml(String(row.slots ?? '—'))}</p>
+                </div>
+                <div class="admin-table-mobile-actions">${mobileActions}</div>
+            </div>`,
+        ];
+    }
 
     return [
         row.sort_order ?? 0,
@@ -132,7 +215,7 @@ function buildRow(row) {
         escapeHtml(dates),
         row.slots ?? '—',
         statusBadge(row),
-        `<div class="admin-table-actions-nowrap">${actions}</div>`,
+        `<div class="admin-table-actions-nowrap">${desktopActions}</div>`,
     ];
 }
 

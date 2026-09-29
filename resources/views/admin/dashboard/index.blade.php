@@ -23,10 +23,6 @@
                         <i class="fas fa-house-medical mr-2"></i>
                         Add Rehab Center
                     </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-training" data-action-section="trainings" title="Add a new DDB training listing">
-                        <i class="fas fa-chalkboard-user mr-2"></i>
-                        Add Training
-                    </button>
                     <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-contest" data-action-section="contests" title="Add a Song, Poster, or Video contest">
                         <i class="fas fa-trophy mr-2"></i>
                         Add Contest
@@ -39,8 +35,8 @@
                         <i class="fas fa-language mr-2"></i>
                         Add Translation
                     </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-orange" data-admin-action="send-notification" data-action-section="notifications" title="Send a push notification campaign">
-                        <i class="fas fa-paper-plane mr-2"></i>
+                    <button type="button" class="admin-quick-action admin-quick-action-orange" data-admin-action="send-notification" data-action-section="notifications" title="Send an in-app notification campaign">
+                        <i class="fas fa-bell mr-2"></i>
                         Send Notification
                     </button>
                 </div>
@@ -76,19 +72,6 @@
                 </div>
             </a>
 
-            <a href="/admin/trainings" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="trainings">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">DDB Services</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">Trainings</p>
-                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="trainings">--</p>
-                        <p class="admin-trend" data-overview-trend="trainings">–</p>
-                    </div>
-                    <span class="admin-icon-badge">
-                        <i class="fas fa-chalkboard-user"></i>
-                    </span>
-                </div>
-            </a>
             <a href="/admin/contests" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="contests">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -163,8 +146,8 @@
             <a href="/admin/diary" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="diary">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#7C3AED]">Mobile Journal</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">My Journal</p>
+                        <p class="text-xs uppercase tracking-[0.16em] text-[#7C3AED]">All Users</p>
+                        <p class="mt-3 text-base font-semibold text-slate-900">Journal</p>
                         <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="diary">--</p>
                         <p class="admin-trend" data-overview-trend="diary">–</p>
                     </div>

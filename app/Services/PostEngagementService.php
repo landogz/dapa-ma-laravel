@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Post;
 use App\Models\PostComment;
+use App\Models\PostLike;
 use App\Models\User;
 use App\Repositories\PostEngagementRepository;
 use App\Repositories\PostRepository;
@@ -44,25 +45,20 @@ class PostEngagementService
 
     public function attachLikedState(LengthAwarePaginator $posts, ?User $user): LengthAwarePaginator
     {
-        if (! $user) {
-            $posts->getCollection()->transform(function (Post $post) {
-                $post->setAttribute('is_liked', false);
+        $postIds = $posts->getCollection()->pluck('id');
+        $countsByPost = $this->reactionCountsByPostIds($postIds);
+        $userReactions = $user
+            ? $this->postEngagementRepository->reactionsForUserPosts($user, $postIds)
+            : [];
 
-                return $post;
-            });
+        $posts->getCollection()->transform(function (Post $post) use ($countsByPost, $userReactions) {
+            $counts = $countsByPost[$post->id] ?? PostLike::emptyReactionCounts();
+            $userReaction = $userReactions[$post->id]['reaction'] ?? null;
 
-            return $posts;
-        }
-
-        $likedIds = $this->postEngagementRepository->likedPostIdsForUser(
-            $user,
-            $posts->getCollection()->pluck('id'),
-        );
-
-        $likedLookup = array_fill_keys($likedIds, true);
-
-        $posts->getCollection()->transform(function (Post $post) use ($likedLookup) {
-            $post->setAttribute('is_liked', isset($likedLookup[$post->id]));
+            $post->setAttribute('reaction_counts', $counts);
+            $post->setAttribute('user_reaction', $userReaction);
+            $post->setAttribute('is_liked', $userReaction !== null);
+            $post->setAttribute('likes_count', array_sum($counts));
 
             return $post;
         });
@@ -72,23 +68,26 @@ class PostEngagementService
 
     public function attachLikedStateToPost(Post $post, ?User $user): Post
     {
-        if (! $user) {
-            $post->setAttribute('is_liked', false);
+        $counts = $this->postEngagementRepository->reactionCountsForPost($post);
+        $userReaction = null;
 
-            return $post;
+        if ($user) {
+            $map = $this->postEngagementRepository->reactionsForUserPosts(
+                $user,
+                collect([$post->id]),
+            );
+            $userReaction = $map[$post->id]['reaction'] ?? null;
         }
 
-        $likedIds = $this->postEngagementRepository->likedPostIdsForUser(
-            $user,
-            collect([$post->id]),
-        );
-
-        $post->setAttribute('is_liked', in_array($post->id, $likedIds, true));
+        $post->setAttribute('reaction_counts', $counts);
+        $post->setAttribute('user_reaction', $userReaction);
+        $post->setAttribute('is_liked', $userReaction !== null);
+        $post->setAttribute('likes_count', array_sum($counts));
 
         return $post;
     }
 
-    public function toggleLike(User $user, int $postId): array
+    public function toggleLike(User $user, int $postId, string $reaction = PostLike::REACTION_LIKE): array
     {
         $post = $this->postRepository->findOrFail($postId);
 
@@ -96,14 +95,79 @@ class PostEngagementService
             abort(422, 'Only published posts can be liked.');
         }
 
-        $result = $this->postEngagementRepository->toggleLike($user, $post);
+        $existing = $this->postEngagementRepository->reactionsForUserPosts(
+            $user,
+            collect([$postId]),
+        );
+        $hadReaction = isset($existing[$postId]);
 
-        if (($result['liked'] ?? false) === true) {
+        $result = $this->postEngagementRepository->toggleLike($user, $post, $reaction);
+
+        if (($result['liked'] ?? false) === true && ! $hadReaction) {
             $post->loadMissing('author');
             $this->userNotificationService->notifyPostLiked($post, $user);
         }
 
         return $result;
+    }
+
+    public function listReactors(int $postId, ?string $reaction = null, int $perPage = 30): LengthAwarePaginator
+    {
+        $post = $this->postRepository->findOrFail($postId);
+
+        if ($post->status !== 'published') {
+            abort(404, 'Post not found.');
+        }
+
+        $paginator = $this->postEngagementRepository->listReactors($post, $reaction, $perPage);
+
+        $paginator->getCollection()->transform(function (PostLike $like) {
+            if ($like->relationLoaded('user') && $like->user) {
+                $like->user->setAttribute(
+                    'profile_image_url',
+                    $this->profileService->profileImageUrl($like->user),
+                );
+            }
+
+            return $like;
+        });
+
+        return $paginator;
+    }
+
+    /**
+     * @param  Collection<int, int|string>  $postIds
+     * @return array<int, array<string, int>>
+     */
+    private function reactionCountsByPostIds(Collection $postIds): array
+    {
+        if ($postIds->isEmpty()) {
+            return [];
+        }
+
+        $rows = PostLike::query()
+            ->selectRaw('post_id, reaction, COUNT(*) as aggregate')
+            ->whereIn('post_id', $postIds)
+            ->groupBy('post_id', 'reaction')
+            ->get();
+
+        $map = [];
+        foreach ($postIds as $postId) {
+            $map[(int) $postId] = PostLike::emptyReactionCounts();
+        }
+
+        foreach ($rows as $row) {
+            $postId = (int) $row->post_id;
+            $reaction = (string) $row->reaction;
+            if (! isset($map[$postId])) {
+                $map[$postId] = PostLike::emptyReactionCounts();
+            }
+            if (array_key_exists($reaction, $map[$postId])) {
+                $map[$postId][$reaction] = (int) $row->aggregate;
+            }
+        }
+
+        return $map;
     }
 
     public function listComments(int $postId, int $perPage = 20): LengthAwarePaginator

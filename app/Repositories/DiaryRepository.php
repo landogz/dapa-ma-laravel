@@ -17,13 +17,68 @@ class DiaryRepository
             ->paginate($perPage);
     }
 
-    public function paginateAdmin(int $perPage = 20): LengthAwarePaginator
+    public function paginateAdmin(int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
-        return DiaryEntry::query()
+        $query = DiaryEntry::query()
             ->with(['user:id,name,email'])
             ->orderByDesc('entry_date')
-            ->orderByDesc('id')
-            ->paginate($perPage);
+            ->orderByDesc('id');
+
+        $userId = isset($filters['user_id']) ? (int) $filters['user_id'] : 0;
+        if ($userId > 0) {
+            $query->where('user_id', $userId);
+        }
+
+        $sky = isset($filters['sky']) ? trim((string) $filters['sky']) : '';
+        if ($sky !== '') {
+            $query->where('sky', $sky);
+        }
+
+        $search = isset($filters['search']) ? trim((string) $filters['search']) : '';
+        if ($search !== '') {
+            $like = '%'.$search.'%';
+            $query->where(function ($builder) use ($like): void {
+                $builder
+                    ->where('title', 'like', $like)
+                    ->orWhere('body_html', 'like', $like)
+                    ->orWhere('gratitude', 'like', $like)
+                    ->orWhere('sky', 'like', $like)
+                    ->orWhere('impact', 'like', $like)
+                    ->orWhereHas('user', function ($userQuery) use ($like): void {
+                        $userQuery
+                            ->where('name', 'like', $like)
+                            ->orWhere('email', 'like', $like)
+                            ->orWhere('first_name', 'like', $like)
+                            ->orWhere('last_name', 'like', $like)
+                            ->orWhere('nickname', 'like', $like);
+                    });
+            });
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Users who have at least one journal entry (for admin filter).
+     *
+     * @return list<array{id:int,name:string,email:?string,entries_count:int}>
+     */
+    public function listUsersWithEntries(): array
+    {
+        return User::query()
+            ->select(['users.id', 'users.name', 'users.email'])
+            ->selectRaw('COUNT(diary_entries.id) as entries_count')
+            ->join('diary_entries', 'diary_entries.user_id', '=', 'users.id')
+            ->groupBy('users.id', 'users.name', 'users.email')
+            ->orderBy('users.name')
+            ->get()
+            ->map(static fn (User $user): array => [
+                'id' => (int) $user->id,
+                'name' => (string) $user->name,
+                'email' => $user->email,
+                'entries_count' => (int) ($user->entries_count ?? 0),
+            ])
+            ->all();
     }
 
     public function findOrFail(int $id): DiaryEntry

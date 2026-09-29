@@ -49,13 +49,13 @@ Route::get('/admin/iec-materials', fn () => AdminPage::render('admin.iec-materia
 
 Route::get('/admin/app-translations', fn () => AdminPage::render('admin.app-translations.index', 'app-translations', 'App Translations'));
 
-Route::get('/admin/notifications', fn () => AdminPage::render('admin.notifications.index', 'notifications', 'Notifications'));
+Route::get('/admin/notifications', fn () => AdminPage::render('admin.notifications.index', 'notifications', 'In-app Notifications'));
 
 Route::get('/admin/analytics', fn () => AdminPage::render('admin.analytics.index', 'analytics', 'Analytics'));
 
 Route::get('/admin/users', fn () => AdminPage::render('admin.users.index', 'users', 'Users'));
 
-Route::get('/admin/diary', fn () => AdminPage::render('admin.diary.index', 'diary', 'My Journal'));
+Route::get('/admin/diary', fn () => AdminPage::render('admin.diary.index', 'diary', 'Journal'));
 
 Route::get('/admin/care-toolkit', fn () => AdminPage::render('admin.care-toolkit.index', 'care-toolkit', 'Care Toolkit'));
 

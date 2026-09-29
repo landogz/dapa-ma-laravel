@@ -16,15 +16,37 @@ class DiaryAdminController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $perPage = (int) $request->integer('per_page', 20);
-        $paginator = $this->diaryService->listAdmin($perPage);
+        $validated = $request->validate([
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:500'],
+            'user_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'sky' => ['sometimes', 'nullable', 'string', 'max:64'],
+            'search' => ['sometimes', 'nullable', 'string', 'max:200'],
+        ]);
+
+        $perPage = (int) ($validated['per_page'] ?? 20);
+        $filters = [
+            'user_id' => $validated['user_id'] ?? null,
+            'sky' => $validated['sky'] ?? null,
+            'search' => $validated['search'] ?? null,
+        ];
+
+        $paginator = $this->diaryService->listAdmin($perPage, $filters);
 
         return response()->json([
-            'status'  => true,
-            'message' => 'Diary entries fetched successfully.',
-            'data'    => $paginator->through(
+            'status' => true,
+            'message' => 'Journal entries fetched successfully.',
+            'data' => $paginator->through(
                 fn ($entry) => $this->diaryService->formatAdminEntry($entry),
             ),
+        ]);
+    }
+
+    public function users(): JsonResponse
+    {
+        return response()->json([
+            'status' => true,
+            'message' => 'Journal users fetched successfully.',
+            'data' => $this->diaryService->listAdminUsers(),
         ]);
     }
 
@@ -33,9 +55,9 @@ class DiaryAdminController extends Controller
         $entry = $this->diaryService->showAdmin($id);
 
         return response()->json([
-            'status'  => true,
-            'message' => 'Diary entry fetched successfully.',
-            'data'    => $this->diaryService->formatAdminEntry($entry),
+            'status' => true,
+            'message' => 'Journal entry fetched successfully.',
+            'data' => $this->diaryService->formatAdminEntry($entry),
         ]);
     }
 
@@ -44,9 +66,9 @@ class DiaryAdminController extends Controller
         $this->diaryService->deleteAdmin($id);
 
         return response()->json([
-            'status'  => true,
-            'message' => 'Diary entry deleted successfully.',
-            'data'    => null,
+            'status' => true,
+            'message' => 'Journal entry deleted successfully.',
+            'data' => null,
         ]);
     }
 }

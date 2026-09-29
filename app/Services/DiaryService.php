@@ -110,9 +110,17 @@ class DiaryService
         ];
     }
 
-    public function listAdmin(int $perPage = 20): LengthAwarePaginator
+    public function listAdmin(int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
-        return $this->diaryRepository->paginateAdmin($perPage);
+        return $this->diaryRepository->paginateAdmin($perPage, $filters);
+    }
+
+    /**
+     * @return list<array{id:int,name:string,email:?string,entries_count:int}>
+     */
+    public function listAdminUsers(): array
+    {
+        return $this->diaryRepository->listUsersWithEntries();
     }
 
     public function showAdmin(int $id): DiaryEntry

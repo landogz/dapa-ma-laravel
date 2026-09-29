@@ -6,6 +6,8 @@ import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../s
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let directoryTable;
+let directoryTableMode;
+let hasBoundViewportListener = false;
 let categoryFilter = '';
 
 const CATEGORY_LABELS = {
@@ -28,29 +30,83 @@ export function initHopeDirectoryModule() {
         });
 
     initializeTable(tableEl).then(() => {
+        bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
         loadRows();
     });
 }
 
 async function initializeTable(tableElement) {
+    const nextMode = getTableMode();
+
+    if (directoryTable && directoryTableMode === nextMode) {
+        return;
+    }
+
+    if (directoryTable) {
+        directoryTable.destroy();
+        tableElement.innerHTML = '';
+    }
+
+    directoryTableMode = nextMode;
     directoryTable = await createAdminDataTable(
         tableElement,
         getAdminDataTableOptions({
-            columns: [
-                { title: 'Order', width: '64px' },
-                { title: 'Organization' },
-                { title: 'Category' },
-                { title: 'Contact' },
-                { title: 'Status' },
-                { title: 'Actions', orderable: false, searchable: false },
-            ],
+            columns: buildColumns(nextMode),
             searchPlaceholder: 'Search directory...',
             infoLabel: 'Showing _START_ to _END_ of _TOTAL_ organizations',
-            pageLength: 15,
+            pageLength: nextMode === 'mobile' ? 5 : 15,
+            scrollX: nextMode !== 'mobile',
+            scrollCollapse: nextMode !== 'mobile',
             drawCallback: () => bindRowActions(),
         }),
     );
+}
+
+function bindViewportListener(tableEl) {
+    if (hasBoundViewportListener) {
+        return;
+    }
+
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = async () => {
+        const nextMode = getTableMode();
+        if (nextMode === directoryTableMode) {
+            return;
+        }
+
+        await initializeTable(tableEl);
+        loadRows();
+    };
+
+    if (typeof mobileQuery.addEventListener === 'function') {
+        mobileQuery.addEventListener('change', handleViewportChange);
+    } else {
+        mobileQuery.addListener(handleViewportChange);
+    }
+
+    hasBoundViewportListener = true;
+}
+
+function getTableMode() {
+    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+}
+
+function buildColumns(mode) {
+    if (mode === 'mobile') {
+        return [
+            { title: 'Organization', className: 'dt-col-mobile-summary', orderable: false },
+        ];
+    }
+
+    return [
+        { title: 'Order', width: '64px', className: 'dt-col-nowrap' },
+        { title: 'Organization', className: 'dt-col-primary dt-col-media' },
+        { title: 'Category', className: 'dt-col-nowrap' },
+        { title: 'Contact', className: 'dt-col-wide' },
+        { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
+    ];
 }
 
 function loadRows() {
@@ -93,7 +149,8 @@ function buildRow(row) {
         ? '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>'
         : '<span class="admin-status-badge rehab-status-badge rehab-status-badge-inactive">Inactive</span>';
     const contact = escapeHtml([row.phone, row.email].filter(Boolean).join(' · ') || '—');
-    const actions = buildAdminActionButtons([
+    const summary = escapeHtml(row.description ?? row.address ?? '');
+    const actions = [
         {
             tooltip: 'Edit organization',
             icon: 'fas fa-pen-to-square',
@@ -106,7 +163,33 @@ function buildRow(row) {
             className: 'admin-table-action-danger',
             attrs: `data-hope-directory-delete="${row.id}"`,
         },
-    ]);
+    ];
+
+    const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
+    const mobileActions = buildAdminActionButtons([
+        { ...actions[0], label: 'Edit' },
+        { ...actions[1], label: 'Delete' },
+    ], { isMobile: true, nowrap: true });
+
+    if (directoryTableMode === 'mobile') {
+        return [
+            `<div class="admin-table-mobile-card">
+                <div class="admin-table-mobile-title-row">
+                    <div>
+                        <p class="admin-table-mobile-kicker">Order ${escapeHtml(String(row.sort_order ?? 0))}</p>
+                        <p class="admin-table-mobile-title">${escapeHtml(row.name)}</p>
+                    </div>
+                    ${status}
+                </div>
+                <div class="admin-table-mobile-details">
+                    <p><span>Category:</span> ${categoryBadge(row.category)}</p>
+                    <p><span>Contact:</span> ${contact}</p>
+                    ${summary ? `<p><span>About:</span> ${summary}</p>` : ''}
+                </div>
+                <div class="admin-table-mobile-actions">${mobileActions}</div>
+            </div>`,
+        ];
+    }
 
     return [
         row.sort_order ?? 0,
@@ -114,13 +197,13 @@ function buildRow(row) {
             ${mediaThumb(row.logo_url)}
             <div class="admin-table-media-copy">
                 <div class="font-semibold text-slate-800">${escapeHtml(row.name)}</div>
-                <div class="text-xs text-slate-500 line-clamp-2">${escapeHtml(row.description ?? row.address ?? '')}</div>
+                <div class="text-xs text-slate-500 line-clamp-2">${summary}</div>
             </div>
          </div>`,
         categoryBadge(row.category),
         contact,
         status,
-        `<div class="admin-table-actions-nowrap">${actions}</div>`,
+        `<div class="admin-table-actions-nowrap">${desktopActions}</div>`,
     ];
 }
 

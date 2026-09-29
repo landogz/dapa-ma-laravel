@@ -3,7 +3,7 @@ import Swal from 'sweetalert2';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
-import { buildSwalForm, buildSwalOptions, formatApiValidationMessage } from './shared/swal-forms';
+import { buildSwalForm, buildSwalOptions, confirmWithSwal, formatApiValidationMessage } from './shared/swal-forms';
 import { renderRatingBadge, renderStars } from './shared/ratings';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
 import { showSuccessToast, showErrorToast } from './shared/toast';
@@ -233,7 +233,7 @@ function renderPostEngagementPanel({ likes, comments, reviews, likesCount, comme
     const tabs = [];
 
     if (likesCount > 0) {
-        tabs.push({ id: 'likes', label: `Likes (${likesCount})`, html: renderPostLikesSection(likes) });
+        tabs.push({ id: 'likes', label: `Reactions (${likesCount})`, html: renderPostLikesSection(likes) });
     }
 
     if (commentsCount > 0) {
@@ -299,6 +299,21 @@ function bindPostEngagementTabs() {
     });
 }
 
+function reactionEmoji(reaction) {
+    switch (String(reaction || 'like')) {
+        case 'love':
+            return '❤️';
+        case 'haha':
+            return '😆';
+        case 'sad':
+            return '😢';
+        case 'angry':
+            return '😡';
+        default:
+            return '👍';
+    }
+}
+
 function renderPostLikesSection(likes) {
     const items = likes.slice(0, 20).map((like) => `
         <li>
@@ -307,7 +322,7 @@ function renderPostLikesSection(likes) {
                 <strong>${escapeHtml(like.user?.name ?? 'Unknown user')}</strong>
                 <span>${escapeHtml(like.user?.email ?? '')}</span>
             </div>
-            <em>${escapeHtml(formatDateTime(like.created_at) || '')}</em>
+            <em title="${escapeHtml(like.reaction ?? 'like')}">${reactionEmoji(like.reaction)} ${escapeHtml(formatDateTime(like.created_at) || '')}</em>
         </li>
     `).join('');
 
@@ -431,15 +446,13 @@ export async function togglePostComments(postId) {
     const nextEnabled = !currentlyEnabled;
     const actionLabel = nextEnabled ? 'Enable comments' : 'Disable comments';
 
-    const confirmed = await Swal.fire({
+    const confirmed = await confirmWithSwal({
         icon: 'question',
-        title: actionLabel + '?',
+        title: `${actionLabel}?`,
         text: nextEnabled
             ? 'Users will be able to comment on this post again.'
             : 'Users will no longer be able to add new comments on this post.',
-        showCancelButton: true,
         confirmButtonText: actionLabel,
-        confirmButtonColor: '#055498',
     });
 
     if (!confirmed.isConfirmed) {
@@ -522,22 +535,20 @@ export function updatePost(postId, formData) {
 }
 
 export function submitPostForReview(postId) {
-    Swal.fire({
+    confirmWithSwal({
         icon: 'question',
         title: 'Submit for Review?',
         text: 'This will send the post to a Publisher for review.',
-        showCancelButton: true,
         confirmButtonText: 'Submit',
-        confirmButtonColor: '#055498',
     }).then(({ isConfirmed }) => {
         if (!isConfirmed) return;
         axios.put(`/admin/posts/${postId}/submit`)
             .then(({ data }) => {
-                Swal.fire({ icon: 'success', title: 'Submitted', text: data.message });
+                showSuccessToast(data.message, 'Submitted');
                 loadPosts();
             })
             .catch(({ response }) => {
-                Swal.fire({ icon: 'error', title: 'Error', text: response?.data?.message ?? 'Submission failed.' });
+                showErrorToast(response?.data?.message ?? 'Submission failed.', 'Error');
             });
     });
 }
@@ -573,11 +584,11 @@ export function rejectPost(postId) {
         if (!isConfirmed) return;
         axios.put(`/admin/posts/${postId}/reject`, { review_notes: value })
             .then(({ data }) => {
-                Swal.fire({ icon: 'success', title: 'Rejected', text: data.message });
+                showSuccessToast(data.message, 'Rejected');
                 loadPosts();
             })
             .catch(({ response }) => {
-                Swal.fire({ icon: 'error', title: 'Error', text: response?.data?.message ?? 'Rejection failed.' });
+                showErrorToast(response?.data?.message ?? 'Rejection failed.', 'Error');
             });
     });
 }
@@ -609,74 +620,70 @@ export function schedulePost(postId) {
         if (!isConfirmed) return;
         axios.put(`/admin/posts/${postId}/schedule`, { publish_date: value })
             .then(({ data }) => {
-                Swal.fire({ icon: 'success', title: 'Scheduled', text: data.message });
+                showSuccessToast(data.message, 'Scheduled');
                 loadPosts();
             })
             .catch(({ response }) => {
-                Swal.fire({ icon: 'error', title: 'Error', text: response?.data?.message ?? 'Schedule failed.' });
+                showErrorToast(response?.data?.message ?? 'Schedule failed.', 'Error');
             });
     });
 }
 
 export function publishNow(postId) {
-    Swal.fire({
+    confirmWithSwal({
         icon: 'question',
         title: 'Publish this post now?',
         text: 'This will approve and publish the post immediately.',
-        showCancelButton: true,
         confirmButtonText: 'Publish now',
-        confirmButtonColor: '#055498',
     }).then(({ isConfirmed }) => {
         if (!isConfirmed) return;
         axios.put(`/admin/posts/${postId}/publish`)
             .then(({ data }) => {
-                Swal.fire({ icon: 'success', title: 'Published', text: data.message });
+                showSuccessToast(data.message, 'Published');
                 loadPosts();
             })
             .catch(({ response }) => {
-                Swal.fire({ icon: 'error', title: 'Error', text: response?.data?.message ?? 'Publish failed.' });
+                showErrorToast(response?.data?.message ?? 'Publish failed.', 'Error');
             });
     });
 }
 
 export function archivePost(postId) {
-    Swal.fire({
+    confirmWithSwal({
         icon: 'warning',
         title: 'Archive Post?',
         text: 'This will remove the post from the public feed.',
-        showCancelButton: true,
         confirmButtonText: 'Archive',
-        confirmButtonColor: '#CE2028',
+        danger: true,
     }).then(({ isConfirmed }) => {
         if (!isConfirmed) return;
         axios.put(`/admin/posts/${postId}/archive`)
             .then(({ data }) => {
-                Swal.fire({ icon: 'success', title: 'Archived', text: data.message });
+                showSuccessToast(data.message, 'Archived');
                 loadPosts();
             })
             .catch(({ response }) => {
-                Swal.fire({ icon: 'error', title: 'Error', text: response?.data?.message ?? 'Archive failed.' });
+                showErrorToast(response?.data?.message ?? 'Archive failed.', 'Error');
             });
     });
 }
 
 export function deletePost(postId) {
-    Swal.fire({
-        icon: 'error',
+    confirmWithSwal({
+        icon: 'warning',
         title: 'Delete Post Permanently?',
         text: 'This action cannot be undone.',
-        showCancelButton: true,
         confirmButtonText: 'Delete',
-        confirmButtonColor: '#CE2028',
+        danger: true,
     }).then(({ isConfirmed }) => {
         if (!isConfirmed) return;
         axios.delete(`/admin/posts/${postId}`)
             .then(({ data }) => {
-                Swal.fire({ icon: 'success', title: 'Deleted', text: data.message });
+                showSuccessToast(data.message, 'Deleted');
                 loadPosts();
             })
             .catch(({ response }) => {
-                Swal.fire({ icon: 'error', title: 'Error', text: response?.data?.message ?? 'Delete failed.' });
+                showErrorToast(response?.data?.message ?? 'Delete failed.', 'Error');
             });
     });
 }
@@ -947,7 +954,7 @@ function buildPostRowData(post) {
                     <p><span>Author:</span> ${escapeHtml(post.author?.name ?? 'N/A')}</p>
                     <p><span>Publish Date:</span> ${escapeHtml(formatDateTime(post.publish_date) || 'Not scheduled')}</p>
                     <p><span>Comments:</span> ${isPostCommentsEnabled(post) ? 'Enabled' : 'Disabled'}</p>
-                    <p><span>Engagement:</span> ${Number(post.likes_count ?? 0)} likes · ${Number(post.comments_count ?? 0)} comments</p>
+                    <p><span>Engagement:</span> ${Number(post.likes_count ?? 0)} reactions · ${Number(post.comments_count ?? 0)} comments</p>
                     <p><span>Rating:</span> ${renderRatingBadge(post, { compact: true })}</p>
                 </div>
             </div>`,
@@ -1020,6 +1027,17 @@ function formatDateTime(value) {
 
 function buildPostForm(post = null, categoryOptions = [], { showStatus = false, isSuperAdmin = false } = {}) {
     const fields = [
+        {
+            id: 'post-media-file',
+            label: 'Featured Image',
+            type: 'file',
+            accept: 'image/*',
+            showPreview: true,
+            previewUrl: post?.media_url ?? '',
+            hint: post?.media_url
+                ? 'Choose a new image only if you want to replace the current upload.'
+                : 'Upload a JPG, PNG, WEBP, or GIF image up to 5MB.',
+        },
         { id: 'post-title', label: 'Title *', placeholder: 'Enter post title', value: post?.title ?? '' },
         { id: 'post-body', label: 'Body / rich text content *', type: 'textarea', placeholder: 'Write the main content', value: post?.body ?? '' },
         {
@@ -1058,15 +1076,6 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
                 { value: '0', label: 'Disabled — comments turned off' },
             ],
             hint: 'You can change this anytime from the post actions menu.',
-        },
-        {
-            id: 'post-media-file',
-            label: 'Featured Image',
-            type: 'file',
-            accept: 'image/*',
-            hint: post?.media_url
-                ? 'Choose a new image only if you want to replace the current upload.'
-                : 'Upload a JPG, PNG, WEBP, or GIF image up to 5MB.',
         },
         { id: 'post-youtube-url', label: 'YouTube URL', placeholder: 'Paste YouTube link', value: post?.youtube_url ?? '' },
     );

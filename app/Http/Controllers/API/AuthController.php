@@ -9,6 +9,7 @@ use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Services\NotificationService;
 use App\Services\ProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class AuthController extends Controller
 {
     public function __construct(
         private readonly ProfileService $profileService,
+        private readonly NotificationService $notificationService,
     ) {
     }
 
@@ -83,7 +85,11 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()?->currentAccessToken()?->delete();
+        $user = $request->user();
+        if ($user) {
+            $this->notificationService->clearDeviceToken($user);
+            $user->currentAccessToken()?->delete();
+        }
 
         return response()->json([
             'status'  => true,

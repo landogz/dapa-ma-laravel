@@ -16,7 +16,7 @@
             </div>
             <div class="admin-page-actions admin-page-actions-centered flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:self-center">
                 <label class="sr-only" for="hope-directory-category-filter">Filter by category</label>
-                <select id="hope-directory-category-filter" class="admin-input w-full sm:w-52" aria-label="Filter by category">
+                <select id="hope-directory-category-filter" class="admin-filter-select admin-choice-select-page w-full sm:w-52" aria-label="Filter by category">
                     <option value="">All categories</option>
                     <option value="government">Gov't</option>
                     <option value="ngo">NGOs</option>

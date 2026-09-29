@@ -37,71 +37,94 @@
                 </div>
             </div>
 
-            <nav data-admin-nav aria-hidden="true" class="admin-sidebar-nav pointer-events-none mt-6 min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1 text-sm opacity-0 transition-opacity duration-200">
-                <a href="/admin/dashboard" class="admin-nav-link {{ ($activePage ?? 'dashboard') === 'dashboard' ? 'admin-nav-link-active' : '' }}">
-                    <i class="fas fa-gauge-high w-5 text-[#FBD116]"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="/admin/posts" class="admin-nav-link {{ ($activePage ?? '') === 'posts' ? 'admin-nav-link-active' : '' }}" data-nav-section="posts">
-                    <i class="fas fa-file-pen w-5 text-[#FBD116]"></i>
-                    <span>Posts</span>
-                </a>
-                <a href="/admin/rehab-centers" class="admin-nav-link {{ ($activePage ?? '') === 'rehab-centers' ? 'admin-nav-link-active' : '' }}" data-nav-section="rehab-centers">
-                    <i class="fas fa-hospital w-5 text-[#FBD116]"></i>
-                    <span>Rehab Centers</span>
-                </a>
-                <a href="/admin/trainings" class="admin-nav-link {{ ($activePage ?? '') === 'trainings' ? 'admin-nav-link-active' : '' }}" data-nav-section="trainings">
-                    <i class="fas fa-chalkboard-user w-5 text-[#FBD116]"></i>
-                    <span>Trainings</span>
-                </a>
-                <a href="/admin/contests" class="admin-nav-link {{ ($activePage ?? '') === 'contests' ? 'admin-nav-link-active' : '' }}" data-nav-section="contests">
-                    <i class="fas fa-trophy w-5 text-[#FBD116]"></i>
-                    <span>Contests</span>
-                </a>
-                <a href="/admin/iec-materials" class="admin-nav-link {{ ($activePage ?? '') === 'iec-materials' ? 'admin-nav-link-active' : '' }}" data-nav-section="iec-materials">
-                    <i class="fas fa-photo-film w-5 text-[#FBD116]"></i>
-                    <span>IEC Materials</span>
-                </a>
-                <a href="/admin/app-translations" class="admin-nav-link {{ ($activePage ?? '') === 'app-translations' ? 'admin-nav-link-active' : '' }}" data-nav-section="app-translations">
-                    <i class="fas fa-language w-5 text-[#FBD116]"></i>
-                    <span>App Translations</span>
-                </a>
-                <a href="/admin/notifications" class="admin-nav-link {{ ($activePage ?? '') === 'notifications' ? 'admin-nav-link-active' : '' }}" data-nav-section="notifications">
-                    <i class="fas fa-bell w-5 text-[#FBD116]"></i>
-                    <span>Notifications</span>
-                </a>
-                <a href="/admin/analytics" class="admin-nav-link {{ ($activePage ?? '') === 'analytics' ? 'admin-nav-link-active' : '' }}" data-nav-section="analytics">
-                    <i class="fas fa-chart-column w-5 text-[#FBD116]"></i>
-                    <span>Analytics</span>
-                </a>
-                <a href="/admin/users" class="admin-nav-link {{ ($activePage ?? '') === 'users' ? 'admin-nav-link-active' : '' }}" data-nav-section="users">
-                    <i class="fas fa-users w-5 text-[#FBD116]"></i>
-                    <span>Users</span>
-                </a>
-                <a href="/admin/diary" class="admin-nav-link {{ ($activePage ?? '') === 'diary' ? 'admin-nav-link-active' : '' }}" data-nav-section="diary">
-                    <i class="fas fa-book-open w-5 text-[#FBD116]"></i>
-                    <span>My Journal</span>
-                </a>
-                <a href="/admin/care-toolkit" class="admin-nav-link {{ ($activePage ?? '') === 'care-toolkit' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-toolkit">
-                    <i class="fas fa-heart-pulse w-5 text-[#FBD116]"></i>
-                    <span>Care Toolkit</span>
-                </a>
-                <a href="/admin/care-support" class="admin-nav-link {{ ($activePage ?? '') === 'care-support' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-support">
-                    <i class="fas fa-handshake-angle w-5 text-[#FBD116]"></i>
-                    <span>Care Support</span>
-                </a>
-                <a href="/admin/hope-directory" class="admin-nav-link {{ ($activePage ?? '') === 'hope-directory' ? 'admin-nav-link-active' : '' }}" data-nav-section="hope-directory">
-                    <i class="fas fa-address-book w-5 text-[#FBD116]"></i>
-                    <span>Hope Directory</span>
-                </a>
-                <a href="/admin/hope-events" class="admin-nav-link {{ ($activePage ?? '') === 'hope-events' ? 'admin-nav-link-active' : '' }}" data-nav-section="hope-events">
-                    <i class="fas fa-calendar-days w-5 text-[#FBD116]"></i>
-                    <span>Hope Events</span>
-                </a>
-                <a href="/admin/settings" class="admin-nav-link {{ ($activePage ?? '') === 'settings' ? 'admin-nav-link-active' : '' }}" data-nav-section="settings">
-                    <i class="fas fa-gear w-5 text-[#FBD116]"></i>
-                    <span>Settings</span>
-                </a>
+            <nav data-admin-nav aria-hidden="true" class="admin-sidebar-nav pointer-events-none mt-6 min-h-0 flex-1 space-y-0 overflow-y-auto overscroll-contain pr-1 text-sm opacity-0 transition-opacity duration-200">
+                <div class="admin-nav-group">
+                    <p class="admin-nav-group-label">Overview</p>
+                    <a href="/admin/dashboard" class="admin-nav-link {{ ($activePage ?? 'dashboard') === 'dashboard' ? 'admin-nav-link-active' : '' }}">
+                        <i class="fas fa-gauge-high w-5 text-[#FBD116]"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="admin-nav-group">
+                    <p class="admin-nav-group-label">Content</p>
+                    <a href="/admin/posts" class="admin-nav-link {{ ($activePage ?? '') === 'posts' ? 'admin-nav-link-active' : '' }}" data-nav-section="posts">
+                        <i class="fas fa-file-pen w-5 text-[#FBD116]"></i>
+                        <span>Posts</span>
+                    </a>
+                    <a href="/admin/contests" class="admin-nav-link {{ ($activePage ?? '') === 'contests' ? 'admin-nav-link-active' : '' }}" data-nav-section="contests">
+                        <i class="fas fa-trophy w-5 text-[#FBD116]"></i>
+                        <span>Contests</span>
+                    </a>
+                    <a href="/admin/iec-materials" class="admin-nav-link {{ ($activePage ?? '') === 'iec-materials' ? 'admin-nav-link-active' : '' }}" data-nav-section="iec-materials">
+                        <i class="fas fa-photo-film w-5 text-[#FBD116]"></i>
+                        <span>IEC Materials</span>
+                    </a>
+                </div>
+
+                <div class="admin-nav-group">
+                    <p class="admin-nav-group-label">Services</p>
+                    <a href="/admin/rehab-centers" class="admin-nav-link {{ ($activePage ?? '') === 'rehab-centers' ? 'admin-nav-link-active' : '' }}" data-nav-section="rehab-centers">
+                        <i class="fas fa-hospital w-5 text-[#FBD116]"></i>
+                        <span>Rehab Centers</span>
+                    </a>
+                </div>
+
+                <div class="admin-nav-group">
+                    <p class="admin-nav-group-label">Care</p>
+                    <a href="/admin/care-toolkit" class="admin-nav-link {{ ($activePage ?? '') === 'care-toolkit' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-toolkit">
+                        <i class="fas fa-heart-pulse w-5 text-[#FBD116]"></i>
+                        <span>Care Toolkit</span>
+                    </a>
+                    <a href="/admin/care-support" class="admin-nav-link {{ ($activePage ?? '') === 'care-support' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-support">
+                        <i class="fas fa-handshake-angle w-5 text-[#FBD116]"></i>
+                        <span>Care Support</span>
+                    </a>
+                    <a href="/admin/diary" class="admin-nav-link {{ ($activePage ?? '') === 'diary' ? 'admin-nav-link-active' : '' }}" data-nav-section="diary">
+                        <i class="fas fa-book-open w-5 text-[#FBD116]"></i>
+                        <span>Journal</span>
+                    </a>
+                </div>
+
+                <div class="admin-nav-group">
+                    <p class="admin-nav-group-label">Hope</p>
+                    <a href="/admin/hope-directory" class="admin-nav-link {{ ($activePage ?? '') === 'hope-directory' ? 'admin-nav-link-active' : '' }}" data-nav-section="hope-directory">
+                        <i class="fas fa-address-book w-5 text-[#FBD116]"></i>
+                        <span>Hope Directory</span>
+                    </a>
+                    <a href="/admin/hope-events" class="admin-nav-link {{ ($activePage ?? '') === 'hope-events' ? 'admin-nav-link-active' : '' }}" data-nav-section="hope-events">
+                        <i class="fas fa-calendar-days w-5 text-[#FBD116]"></i>
+                        <span>Hope Events</span>
+                    </a>
+                </div>
+
+                <div class="admin-nav-group">
+                    <p class="admin-nav-group-label">Reach</p>
+                    <a href="/admin/notifications" class="admin-nav-link {{ ($activePage ?? '') === 'notifications' ? 'admin-nav-link-active' : '' }}" data-nav-section="notifications">
+                        <i class="fas fa-bell w-5 text-[#FBD116]"></i>
+                        <span>Notifications</span>
+                    </a>
+                    <a href="/admin/analytics" class="admin-nav-link {{ ($activePage ?? '') === 'analytics' ? 'admin-nav-link-active' : '' }}" data-nav-section="analytics">
+                        <i class="fas fa-chart-column w-5 text-[#FBD116]"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="/admin/app-translations" class="admin-nav-link {{ ($activePage ?? '') === 'app-translations' ? 'admin-nav-link-active' : '' }}" data-nav-section="app-translations">
+                        <i class="fas fa-language w-5 text-[#FBD116]"></i>
+                        <span>App Translations</span>
+                    </a>
+                </div>
+
+                <div class="admin-nav-group">
+                    <p class="admin-nav-group-label">Administration</p>
+                    <a href="/admin/users" class="admin-nav-link {{ ($activePage ?? '') === 'users' ? 'admin-nav-link-active' : '' }}" data-nav-section="users">
+                        <i class="fas fa-users w-5 text-[#FBD116]"></i>
+                        <span>Users</span>
+                    </a>
+                    <a href="/admin/settings" class="admin-nav-link {{ ($activePage ?? '') === 'settings' ? 'admin-nav-link-active' : '' }}" data-nav-section="settings">
+                        <i class="fas fa-gear w-5 text-[#FBD116]"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
             </nav>
 
             <div class="mt-4 shrink-0 space-y-2 border-t border-white/20 pt-4">

@@ -16,7 +16,7 @@
             </div>
             <div class="admin-page-actions admin-page-actions-centered flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:self-center">
                 <label class="sr-only" for="hope-events-audience-filter">Filter by audience</label>
-                <select id="hope-events-audience-filter" class="admin-input w-full sm:w-52" aria-label="Filter by audience">
+                <select id="hope-events-audience-filter" class="admin-filter-select admin-choice-select-page w-full sm:w-52" aria-label="Filter by audience">
                     <option value="">All audiences</option>
                     <option value="youth">Youth</option>
                     <option value="parents">Parents</option>
