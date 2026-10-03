@@ -419,9 +419,35 @@ function buildFormHtml(row) {
 }
 
 function speakerRowHtml(speaker = {}) {
+    const photoUrl = speaker.photo_url || '';
+    const photoPath = speaker.photo_path || '';
+    const hasPhoto = Boolean(photoUrl || photoPath);
+
     return `
         <div class="admin-swal-repeatable-row" data-he-speaker-row>
             <div class="admin-swal-repeatable-row-grid admin-swal-repeatable-row-grid-speaker">
+                <div class="admin-swal-field admin-swal-speaker-photo-field">
+                    <label class="admin-swal-label">Photo</label>
+                    <div class="admin-swal-speaker-photo">
+                        <div class="admin-swal-speaker-photo-preview" data-he-speaker-preview>
+                            ${photoUrl
+                                ? `<img src="${escapeAttr(photoUrl)}" alt="Speaker photo">`
+                                : '<span class="admin-swal-speaker-photo-placeholder"><i class="fas fa-user" aria-hidden="true"></i></span>'}
+                        </div>
+                        <div class="admin-swal-speaker-photo-controls">
+                            <input class="admin-swal-input" data-he-speaker-photo type="file" accept="image/jpeg,image/png,image/webp">
+                            <input type="hidden" data-he-speaker-photo-path value="${escapeAttr(photoPath)}">
+                            <input type="hidden" data-he-speaker-remove-photo value="0">
+                            ${hasPhoto
+                                ? `<button type="button" class="admin-swal-repeatable-remove admin-swal-speaker-photo-clear" data-he-clear-speaker-photo aria-label="Remove speaker photo">
+                                    <i class="fas fa-image" aria-hidden="true"></i>
+                                    <span>Clear photo</span>
+                                   </button>`
+                                : ''}
+                            <p class="admin-swal-hint">JPG, PNG, or WebP. Shown on the Speakers tab.</p>
+                        </div>
+                    </div>
+                </div>
                 <div class="admin-swal-field">
                     <label class="admin-swal-label">Name *</label>
                     <input class="admin-swal-input" data-he-speaker-name type="text" placeholder="Speaker name" value="${escapeAttr(speaker.name ?? '')}">
@@ -481,14 +507,27 @@ function mountRepeatableLists(row) {
 
     document.querySelector('[data-he-add-speaker]')?.addEventListener('click', () => {
         speakersList.insertAdjacentHTML('beforeend', speakerRowHtml());
+        bindSpeakerPhotoControls(speakersList.lastElementChild);
     });
 
     document.querySelector('[data-he-add-faq]')?.addEventListener('click', () => {
         faqsList.insertAdjacentHTML('beforeend', faqRowHtml());
     });
 
+    speakersList.querySelectorAll('[data-he-speaker-row]').forEach((rowEl) => {
+        bindSpeakerPhotoControls(rowEl);
+    });
+
     const popup = speakersList.closest('.swal2-popup') || document;
     popup.addEventListener('click', (event) => {
+        const clearPhotoBtn = event.target.closest('[data-he-clear-speaker-photo]');
+        if (clearPhotoBtn) {
+            const rowEl = clearPhotoBtn.closest('[data-he-speaker-row]');
+            if (!rowEl) return;
+            clearSpeakerPhoto(rowEl);
+            return;
+        }
+
         const removeBtn = event.target.closest('[data-he-remove-row]');
         if (!removeBtn) return;
         const rowEl = removeBtn.closest('[data-he-speaker-row], [data-he-faq-row]');
@@ -499,6 +538,7 @@ function mountRepeatableLists(row) {
         if (list && list.children.length === 0) {
             if (list.id === 'he-speakers-list') {
                 list.insertAdjacentHTML('beforeend', speakerRowHtml());
+                bindSpeakerPhotoControls(list.lastElementChild);
             } else if (list.id === 'he-faqs-list') {
                 list.insertAdjacentHTML('beforeend', faqRowHtml());
             }
@@ -506,13 +546,56 @@ function mountRepeatableLists(row) {
     });
 }
 
+function bindSpeakerPhotoControls(rowEl) {
+    if (!rowEl || rowEl.dataset.photoBound === '1') return;
+    rowEl.dataset.photoBound = '1';
+
+    const input = rowEl.querySelector('[data-he-speaker-photo]');
+    input?.addEventListener('change', () => {
+        const file = input.files?.[0];
+        const preview = rowEl.querySelector('[data-he-speaker-preview]');
+        const removeFlag = rowEl.querySelector('[data-he-speaker-remove-photo]');
+        if (!preview) return;
+
+        if (!file) return;
+
+        if (removeFlag) removeFlag.value = '0';
+        const url = URL.createObjectURL(file);
+        preview.innerHTML = `<img src="${escapeAttr(url)}" alt="Speaker photo preview">`;
+    });
+}
+
+function clearSpeakerPhoto(rowEl) {
+    const preview = rowEl.querySelector('[data-he-speaker-preview]');
+    const fileInput = rowEl.querySelector('[data-he-speaker-photo]');
+    const pathInput = rowEl.querySelector('[data-he-speaker-photo-path]');
+    const removeFlag = rowEl.querySelector('[data-he-speaker-remove-photo]');
+
+    if (fileInput) fileInput.value = '';
+    if (pathInput) pathInput.value = '';
+    if (removeFlag) removeFlag.value = '1';
+    if (preview) {
+        preview.innerHTML = '<span class="admin-swal-speaker-photo-placeholder"><i class="fas fa-user" aria-hidden="true"></i></span>';
+    }
+
+    rowEl.querySelector('[data-he-clear-speaker-photo]')?.remove();
+}
+
 function collectSpeakers() {
     return [...document.querySelectorAll('[data-he-speaker-row]')]
-        .map((rowEl) => ({
-            name: rowEl.querySelector('[data-he-speaker-name]')?.value.trim() || '',
-            role: rowEl.querySelector('[data-he-speaker-role]')?.value.trim() || '',
-        }))
-        .filter((speaker) => speaker.name);
+        .map((rowEl) => {
+            const name = rowEl.querySelector('[data-he-speaker-name]')?.value.trim() || '';
+            if (!name) return null;
+
+            return {
+                name,
+                role: rowEl.querySelector('[data-he-speaker-role]')?.value.trim() || '',
+                photo_path: rowEl.querySelector('[data-he-speaker-photo-path]')?.value || '',
+                remove_photo: rowEl.querySelector('[data-he-speaker-remove-photo]')?.value === '1',
+                photo: rowEl.querySelector('[data-he-speaker-photo]')?.files?.[0] || null,
+            };
+        })
+        .filter(Boolean);
 }
 
 function collectFaqs() {
@@ -554,10 +637,14 @@ function showForm(row) {
                 .some((rowEl) => {
                     const name = rowEl.querySelector('[data-he-speaker-name]')?.value.trim() || '';
                     const role = rowEl.querySelector('[data-he-speaker-role]')?.value.trim() || '';
-                    return !name && role;
+                    const hasPhoto = Boolean(
+                        rowEl.querySelector('[data-he-speaker-photo]')?.files?.[0]
+                        || rowEl.querySelector('[data-he-speaker-photo-path]')?.value,
+                    );
+                    return !name && (role || hasPhoto);
                 });
             if (incompleteSpeaker) {
-                Swal.showValidationMessage('Speaker name is required when a role is set.');
+                Swal.showValidationMessage('Speaker name is required when a role or photo is set.');
                 return false;
             }
 
@@ -593,7 +680,7 @@ function showForm(row) {
                 who_can_join: document.getElementById('he-who')?.value.trim() || '',
                 highlights: JSON.stringify(highlightItems),
                 details_text: document.getElementById('he-details')?.value.trim() || '',
-                speakers: JSON.stringify(speakers),
+                speakers,
                 faqs: JSON.stringify(collectFaqs()),
                 is_active: document.getElementById('he-active')?.value === '1' ? '1' : '0',
                 cover: document.getElementById('he-cover')?.files?.[0] || null,
@@ -606,6 +693,21 @@ function showForm(row) {
         Object.entries(value).forEach(([key, val]) => {
             if (key === 'cover') {
                 if (val) form.append('cover', val);
+                return;
+            }
+            if (key === 'speakers') {
+                const payload = (val || []).map(({ name, role, photo_path, remove_photo }) => ({
+                    name,
+                    role,
+                    photo_path: photo_path || '',
+                    remove_photo: remove_photo ? '1' : '0',
+                }));
+                form.append('speakers', JSON.stringify(payload));
+                (val || []).forEach((speaker, index) => {
+                    if (speaker.photo) {
+                        form.append(`speaker_photos[${index}]`, speaker.photo);
+                    }
+                });
                 return;
             }
             if (val === '' && (key === 'registration_url' || key === 'audience' || key === 'slots')) {

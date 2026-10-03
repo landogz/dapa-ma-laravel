@@ -1784,10 +1784,56 @@
     gap: 0.65rem;
 }
 
+.admin-swal-speaker-photo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.admin-swal-speaker-photo-preview {
+    width: 4.5rem;
+    height: 4.5rem;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 9999px;
+    border: 1px solid #dbe4f0;
+    background: #e8f1fa;
+    display: grid;
+    place-items: center;
+}
+
+.admin-swal-speaker-photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.admin-swal-speaker-photo-placeholder {
+    color: #055498;
+    font-size: 1.25rem;
+}
+
+.admin-swal-speaker-photo-controls {
+    min-width: 0;
+    flex: 1 1 10rem;
+    display: grid;
+    gap: 0.45rem;
+}
+
+.admin-swal-speaker-photo-clear {
+    width: fit-content;
+    min-height: 2.5rem;
+    padding: 0.45rem 0.75rem;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
 @media (min-width: 640px) {
     .admin-swal-repeatable-row-grid-speaker {
-        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
-        align-items: end;
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+        align-items: start;
     }
 
     .admin-swal-repeatable-row-grid-faq {

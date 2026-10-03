@@ -36,6 +36,13 @@ class HopeEventService
             $payload['cover_path'] = $data['cover']->store('hope-events', 'public');
         }
 
+        if (array_key_exists('speakers', $payload)) {
+            $payload['speakers'] = $this->processSpeakers(
+                $payload['speakers'] ?? [],
+                $data['speaker_photos'] ?? [],
+            );
+        }
+
         return $this->repository->create($payload);
     }
 
@@ -51,12 +58,21 @@ class HopeEventService
             $payload['cover_path'] = null;
         }
 
+        if (array_key_exists('speakers', $payload)) {
+            $payload['speakers'] = $this->processSpeakers(
+                $payload['speakers'] ?? [],
+                $data['speaker_photos'] ?? [],
+                $event->speakers ?? [],
+            );
+        }
+
         return $this->repository->update($event, $payload);
     }
 
     public function delete(HopeEvent $event): void
     {
         $this->deleteCover($event->cover_path);
+        $this->deleteSpeakerPhotos($event->speakers ?? []);
         $this->repository->delete($event);
     }
 
@@ -111,6 +127,102 @@ class HopeEventService
         }
 
         return $payload;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $speakers
+     * @param  array<int, UploadedFile|null>  $photoFiles
+     * @param  list<array<string, mixed>>|null  $previousSpeakers
+     * @return list<array{name: string, role: ?string, photo_path?: string}>
+     */
+    private function processSpeakers(
+        array $speakers,
+        array $photoFiles = [],
+        ?array $previousSpeakers = null,
+    ): array {
+        $keptPaths = [];
+        $result = [];
+
+        foreach (array_values($speakers) as $index => $speaker) {
+            if (!is_array($speaker)) {
+                continue;
+            }
+
+            $name = trim((string) ($speaker['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $role = trim((string) ($speaker['role'] ?? ''));
+            $photoPath = isset($speaker['photo_path']) && $speaker['photo_path'] !== ''
+                ? (string) $speaker['photo_path']
+                : null;
+            $removePhoto = filter_var(
+                $speaker['remove_photo'] ?? false,
+                FILTER_VALIDATE_BOOLEAN,
+            );
+
+            if ($removePhoto && $photoPath) {
+                $this->deleteSpeakerPhoto($photoPath);
+                $photoPath = null;
+            }
+
+            $upload = $photoFiles[$index] ?? null;
+            if ($upload instanceof UploadedFile) {
+                if ($photoPath) {
+                    $this->deleteSpeakerPhoto($photoPath);
+                }
+                $photoPath = $upload->store('hope-events/speakers', 'public');
+            }
+
+            $item = [
+                'name' => $name,
+                'role' => $role !== '' ? $role : null,
+            ];
+            if ($photoPath) {
+                $item['photo_path'] = $photoPath;
+                $keptPaths[] = $photoPath;
+            }
+
+            $result[] = $item;
+        }
+
+        if ($previousSpeakers !== null) {
+            foreach ($previousSpeakers as $prev) {
+                if (!is_array($prev)) {
+                    continue;
+                }
+                $prevPath = isset($prev['photo_path']) ? (string) $prev['photo_path'] : '';
+                if ($prevPath !== '' && !in_array($prevPath, $keptPaths, true)) {
+                    $this->deleteSpeakerPhoto($prevPath);
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $speakers
+     */
+    private function deleteSpeakerPhotos(array $speakers): void
+    {
+        foreach ($speakers as $speaker) {
+            if (!is_array($speaker)) {
+                continue;
+            }
+            $path = isset($speaker['photo_path']) ? (string) $speaker['photo_path'] : '';
+            if ($path !== '') {
+                $this->deleteSpeakerPhoto($path);
+            }
+        }
+    }
+
+    private function deleteSpeakerPhoto(?string $path): void
+    {
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     private function deleteCover(?string $path): void

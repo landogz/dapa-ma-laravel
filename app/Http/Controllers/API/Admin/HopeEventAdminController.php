@@ -49,6 +49,7 @@ class HopeEventAdminController extends Controller
         if ($request->hasFile('cover')) {
             $data['cover'] = $request->file('cover');
         }
+        $data['speaker_photos'] = $this->collectSpeakerPhotos($request);
 
         $event = $this->hopeEventService->create($data);
 
@@ -68,6 +69,7 @@ class HopeEventAdminController extends Controller
         if ($request->boolean('remove_cover')) {
             $data['remove_cover'] = true;
         }
+        $data['speaker_photos'] = $this->collectSpeakerPhotos($request);
 
         $event = $this->hopeEventService->update($hopeEvent, $data);
 
@@ -86,5 +88,23 @@ class HopeEventAdminController extends Controller
             'status'  => true,
             'message' => 'Hope event deleted.',
         ]);
+    }
+
+    /**
+     * @return array<int, \Illuminate\Http\UploadedFile>
+     */
+    private function collectSpeakerPhotos(Request $request): array
+    {
+        $files = [];
+        $photos = $request->file('speaker_photos');
+        if (is_array($photos)) {
+            foreach ($photos as $index => $file) {
+                if ($file) {
+                    $files[(int) $index] = $file;
+                }
+            }
+        }
+
+        return $files;
     }
 }

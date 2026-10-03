@@ -9,7 +9,9 @@ use App\Models\User;
 use App\Repositories\PostEngagementRepository;
 use App\Repositories\PostRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class PostEngagementService
@@ -199,6 +201,7 @@ class PostEngagementService
         int $postId,
         string $body,
         ?int $parentId = null,
+        ?UploadedFile $image = null,
     ): PostComment {
         $post = $this->postRepository->findOrFail($postId);
 
@@ -215,11 +218,17 @@ class PostEngagementService
             $parent = $this->postEngagementRepository->findCommentForPost($parentId, $postId);
         }
 
+        $imagePath = null;
+        if ($image !== null) {
+            $imagePath = $image->store('post-comments', 'public');
+        }
+
         $comment = $this->postEngagementRepository->createComment(
             $user,
             $post,
             $body,
             $parentId,
+            $imagePath,
         );
 
         $post->loadMissing('author');
@@ -269,6 +278,10 @@ class PostEngagementService
 
         if ($comment->user_id !== $user->id) {
             abort(403, 'You can only delete your own comments.');
+        }
+
+        if ($comment->image_path && Storage::disk('public')->exists($comment->image_path)) {
+            Storage::disk('public')->delete($comment->image_path);
         }
 
         $this->postEngagementRepository->deleteComment($comment);

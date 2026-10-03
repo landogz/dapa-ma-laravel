@@ -150,12 +150,14 @@ class PostEngagementRepository
         Post $post,
         string $body,
         ?int $parentId = null,
+        ?string $imagePath = null,
     ): PostComment {
         return PostComment::create([
-            'user_id'   => $user->id,
-            'post_id'   => $post->id,
-            'parent_id' => $parentId,
-            'body'      => $body,
+            'user_id'    => $user->id,
+            'post_id'    => $post->id,
+            'parent_id'  => $parentId,
+            'body'       => $body,
+            'image_path' => $imagePath,
         ])->load('user:id,name,profile_image_url');
     }
 

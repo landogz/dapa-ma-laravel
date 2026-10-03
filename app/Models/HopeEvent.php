@@ -59,6 +59,46 @@ class HopeEvent extends Model
         return Storage::disk('public')->url($this->cover_path);
     }
 
+    public static function speakerPhotoUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($path);
+    }
+
+    /**
+     * @return list<array{name: string, role: ?string, photo_url: ?string, photo_path?: ?string}>
+     */
+    public function speakersForApi(bool $includePaths = false): array
+    {
+        $out = [];
+        foreach ($this->speakers ?? [] as $speaker) {
+            if (!is_array($speaker)) {
+                continue;
+            }
+            $name = trim((string) ($speaker['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $path = isset($speaker['photo_path']) ? (string) $speaker['photo_path'] : null;
+            $item = [
+                'name'      => $name,
+                'role'      => isset($speaker['role']) && $speaker['role'] !== ''
+                    ? (string) $speaker['role']
+                    : null,
+                'photo_url' => self::speakerPhotoUrl($path ?: null),
+            ];
+            if ($includePaths) {
+                $item['photo_path'] = $path ?: null;
+            }
+            $out[] = $item;
+        }
+
+        return $out;
+    }
+
     public function toPublicArray(bool $detailed = false): array
     {
         $base = [
@@ -88,7 +128,7 @@ class HopeEvent extends Model
             'who_can_join'  => $this->who_can_join,
             'highlights'    => $this->highlights ?? [],
             'details_text'  => $this->details_text,
-            'speakers'      => $this->speakers ?? [],
+            'speakers'      => $this->speakersForApi(false),
             'faqs'          => $this->faqs ?? [],
         ];
     }
@@ -97,6 +137,7 @@ class HopeEvent extends Model
     {
         return [
             ...$this->toPublicArray(true),
+            'speakers'   => $this->speakersForApi(true),
             'cover_path' => $this->cover_path,
             'is_active'  => $this->is_active,
             'created_at' => $this->created_at?->toIso8601String(),

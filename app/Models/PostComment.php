@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class PostComment extends Model
 {
@@ -13,6 +14,11 @@ class PostComment extends Model
         'post_id',
         'parent_id',
         'body',
+        'image_path',
+    ];
+
+    protected $appends = [
+        'image_url',
     ];
 
     public function user(): BelongsTo
@@ -33,5 +39,14 @@ class PostComment extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id')->orderBy('created_at');
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        if (!$this->image_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->image_path);
     }
 }

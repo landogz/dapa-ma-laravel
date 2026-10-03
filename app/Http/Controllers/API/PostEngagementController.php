@@ -72,11 +72,14 @@ class PostEngagementController extends Controller
 
     public function storeComment(StorePostCommentRequest $request, int $id): JsonResponse
     {
+        $body = trim((string) ($request->validated('body') ?? ''));
+
         $comment = $this->postEngagementService->createComment(
             $request->user(),
             $id,
-            $request->validated('body'),
+            $body,
             $request->validated('parent_id'),
+            $request->file('image'),
         );
 
         return response()->json([

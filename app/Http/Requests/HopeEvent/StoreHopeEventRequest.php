@@ -23,6 +23,25 @@ class StoreHopeEventRequest extends FormRequest
                 }
             }
         }
+
+        if (is_array($this->input('speakers'))) {
+            $this->merge([
+                'speakers' => array_map(static function ($speaker) {
+                    if (!is_array($speaker)) {
+                        return $speaker;
+                    }
+                    if (array_key_exists('remove_photo', $speaker)) {
+                        $speaker['remove_photo'] = filter_var(
+                            $speaker['remove_photo'],
+                            FILTER_VALIDATE_BOOLEAN,
+                            FILTER_NULL_ON_FAILURE,
+                        ) ?? false;
+                    }
+
+                    return $speaker;
+                }, $this->input('speakers')),
+            ]);
+        }
     }
 
     public function rules(): array
@@ -44,15 +63,19 @@ class StoreHopeEventRequest extends FormRequest
             'who_can_join'     => ['nullable', 'string', 'max:5000'],
             'highlights'       => ['nullable', 'array', 'max:20'],
             'details_text'     => ['nullable', 'string', 'max:20000'],
-            'speakers'         => ['nullable', 'array', 'max:30'],
-            'speakers.*.name'  => ['required_with:speakers', 'string', 'max:255'],
-            'speakers.*.role'  => ['nullable', 'string', 'max:255'],
-            'faqs'             => ['nullable', 'array', 'max:30'],
-            'faqs.*.question'  => ['required_with:faqs', 'string', 'max:500'],
-            'faqs.*.answer'    => ['required_with:faqs', 'string', 'max:5000'],
-            'cover'            => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
-            'sort_order'       => ['nullable', 'integer', 'min:0', 'max:9999'],
-            'is_active'        => ['nullable', 'boolean'],
+            'speakers'               => ['nullable', 'array', 'max:30'],
+            'speakers.*.name'        => ['required_with:speakers', 'string', 'max:255'],
+            'speakers.*.role'        => ['nullable', 'string', 'max:255'],
+            'speakers.*.photo_path'  => ['nullable', 'string', 'max:500'],
+            'speakers.*.remove_photo'=> ['nullable', 'boolean'],
+            'speaker_photos'         => ['nullable', 'array', 'max:30'],
+            'speaker_photos.*'       => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'faqs'                   => ['nullable', 'array', 'max:30'],
+            'faqs.*.question'        => ['required_with:faqs', 'string', 'max:500'],
+            'faqs.*.answer'          => ['required_with:faqs', 'string', 'max:5000'],
+            'cover'                  => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'sort_order'             => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'is_active'              => ['nullable', 'boolean'],
         ];
     }
 }

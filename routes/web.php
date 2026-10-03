@@ -8,7 +8,7 @@ Route::get('/', function () {
     return redirect('/admin/login');
 });
 
-Route::view('/chat', 'chat.botpress');
+Route::view('/chat', 'chat.tawk');
 
 Route::get('/posts/{id}', function (int $id) {
     return view('posts.show', ['postId' => $id]);
