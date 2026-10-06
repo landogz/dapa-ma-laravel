@@ -11,18 +11,21 @@
 #   sudo bash deploy/install-ubuntu.sh
 #
 # Optional environment overrides before running:
-#   APP_DOMAIN=api.example.com
-#   APP_URL=https://api.example.com
+#   APP_DOMAIN=dapemade.ddb.gov.ph
+#   APP_URL=https://dapemade.ddb.gov.ph
 #   GIT_REPO=https://github.com/landogz/dapa-ma-laravel.git
 #   APP_DIR=/var/www/dape-ma-laravel
-#   DB_DATABASE=DAPE_MA
-#   DB_USERNAME=dape_ma_user
+#   DB_DATABASE=dapemadb
+#   DB_USERNAME=dapemadb
 #   DB_PASSWORD='your-strong-password'   # generated if omitted
 #   SKIP_CLONE=0                         # set 1 if code already present
 #   SKIP_MIGRATE=0
 #   ENABLE_SSL=0                         # set 1 + APP_DOMAIN for Certbot
 # =============================================================================
 set -euo pipefail
+
+# Always allow Composer when this script is run via sudo.
+export COMPOSER_ALLOW_SUPERUSER=1
 
 if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
   echo "Run as root: sudo bash $0" >&2
@@ -38,14 +41,14 @@ GIT_BRANCH="${GIT_BRANCH:-main}"
 PHP_VERSION="${PHP_VERSION:-8.3}"
 WEB_USER="${WEB_USER:-www-data}"
 
-DB_DATABASE="${DB_DATABASE:-DAPE_MA}"
-DB_USERNAME="${DB_USERNAME:-dape_ma_user}"
+DB_DATABASE="${DB_DATABASE:-dapemadb}"
+DB_USERNAME="${DB_USERNAME:-dapemadb}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 DB_ROOT_PASSWORD="${DB_ROOT_PASSWORD:-}"
 
 # Detect public/private IP for default APP_URL when no domain is set
 PRIMARY_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
-APP_DOMAIN="${APP_DOMAIN:-}"
+APP_DOMAIN="${APP_DOMAIN:-dapemade.ddb.gov.ph}"
 if [[ -n "${APP_DOMAIN}" ]]; then
   APP_URL="${APP_URL:-https://${APP_DOMAIN}}"
 else
@@ -258,7 +261,7 @@ if ! grep -qE '^APP_KEY=base64:' .env; then
   php artisan key:generate --force
 fi
 
-php artisan storage:link || true
+php artisan storage:link 2>/dev/null || true
 
 if [[ "${SKIP_MIGRATE}" != "1" ]]; then
   php artisan migrate --force
