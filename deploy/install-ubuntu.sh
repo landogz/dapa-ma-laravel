@@ -233,12 +233,20 @@ set_env DB_PORT 3306
 set_env DB_DATABASE "${DB_DATABASE}"
 set_env DB_USERNAME "${DB_USERNAME}"
 set_env DB_PASSWORD "${DB_PASSWORD}"
-set_env SESSION_DRIVER database
-set_env CACHE_STORE database
 set_env QUEUE_CONNECTION database
 set_env FILESYSTEM_DISK local
 set_env LOG_CHANNEL stack
 set_env LOG_LEVEL warning
+
+# Before migrations exist, database cache/session tables are missing.
+# Use file drivers until migrate (shell or /install/ UI) finishes.
+if [[ "${SKIP_MIGRATE}" == "1" ]]; then
+  set_env SESSION_DRIVER file
+  set_env CACHE_STORE file
+else
+  set_env SESSION_DRIVER database
+  set_env CACHE_STORE database
+fi
 
 # ---------------------------------------------------------------------------
 # 6) Composer + Laravel setup
@@ -254,6 +262,8 @@ php artisan storage:link || true
 
 if [[ "${SKIP_MIGRATE}" != "1" ]]; then
   php artisan migrate --force
+  set_env SESSION_DRIVER database
+  set_env CACHE_STORE database
   # Mark installed so / redirects to admin (web installer also writes this).
   mkdir -p storage/app
   echo "{\"installed_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"via\":\"install-ubuntu.sh\"}" > storage/app/installed
@@ -266,8 +276,9 @@ if [[ "${INSTALL_NODE}" == "1" ]] && [[ ! -f public/build/manifest.json ]]; then
   npm run build
 fi
 
-php artisan optimize:clear
-if [[ "${WEB_INSTALLER}" != "1" ]]; then
+# Never require DB cache/session tables for this clear (safe pre-migrate).
+CACHE_STORE=file SESSION_DRIVER=file php artisan optimize:clear || true
+if [[ "${WEB_INSTALLER}" != "1" ]] && [[ "${SKIP_MIGRATE}" != "1" ]]; then
   php artisan config:cache
   php artisan route:cache
   php artisan view:cache

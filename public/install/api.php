@@ -142,8 +142,9 @@ try {
                 'DB_DATABASE' => installer_quote_env($database),
                 'DB_USERNAME' => installer_quote_env($username),
                 'DB_PASSWORD' => installer_quote_env($password),
-                'SESSION_DRIVER' => 'database',
-                'CACHE_STORE' => 'database',
+                // File drivers until migrate creates cache/sessions tables.
+                'SESSION_DRIVER' => 'file',
+                'CACHE_STORE' => 'file',
                 'QUEUE_CONNECTION' => 'database',
                 'LOG_LEVEL' => 'warning',
             ]);
@@ -163,6 +164,12 @@ try {
                 installer_json(['status' => false, 'message' => 'Migration failed. Check DB credentials and logs.', 'steps' => $steps], 500);
             }
 
+            // Switch to database drivers after tables exist.
+            installer_write_env([
+                'SESSION_DRIVER' => 'database',
+                'CACHE_STORE' => 'database',
+            ]);
+
             if ($seedDemo) {
                 $code = installer_run('php artisan db:seed --force', $out);
                 $steps[] = ['step' => 'db:seed', 'code' => $code, 'output' => $out];
@@ -174,7 +181,7 @@ try {
             $code = installer_run('php artisan storage:link', $out);
             $steps[] = ['step' => 'storage:link', 'code' => $code, 'output' => $out];
 
-            installer_run('php artisan optimize:clear', $out);
+            installer_run('CACHE_STORE=file SESSION_DRIVER=file php artisan optimize:clear', $out);
             installer_run('php artisan config:cache', $out);
             installer_run('php artisan route:cache', $out);
             installer_run('php artisan view:cache', $out);
