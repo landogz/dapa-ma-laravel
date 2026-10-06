@@ -5,6 +5,10 @@ use App\Support\AdminPage;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
+    if (! is_file(storage_path('app/installed'))) {
+        return redirect('/install/');
+    }
+
     return redirect('/admin/login');
 });
 
