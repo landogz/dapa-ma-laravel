@@ -41,14 +41,14 @@ GIT_BRANCH="${GIT_BRANCH:-main}"
 PHP_VERSION="${PHP_VERSION:-8.3}"
 WEB_USER="${WEB_USER:-www-data}"
 
-DB_DATABASE="${DB_DATABASE:-dapemadb}"
-DB_USERNAME="${DB_USERNAME:-dapemadb}"
+DB_DATABASE="${DB_DATABASE:-DAPE_MA}"
+DB_USERNAME="${DB_USERNAME:-dape_ma_user}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 DB_ROOT_PASSWORD="${DB_ROOT_PASSWORD:-}"
 
 # Detect public/private IP for default APP_URL when no domain is set
 PRIMARY_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
-APP_DOMAIN="${APP_DOMAIN:-dapemade.ddb.gov.ph}"
+APP_DOMAIN="${APP_DOMAIN:-}"
 if [[ -n "${APP_DOMAIN}" ]]; then
   APP_URL="${APP_URL:-https://${APP_DOMAIN}}"
 else
