@@ -2,6 +2,11 @@
 
 Scripts + browser installer for a **fresh Ubuntu 24.04** VPS (Nginx, PHP 8.3, MySQL 8, Composer, queue worker).
 
+**Full blank-server walkthrough:**
+
+- Markdown: [INSTALL-FROM-SCRATCH.md](INSTALL-FROM-SCRATCH.md)
+- HTML (open in browser): [install-guide.html](install-guide.html)
+
 ---
 
 ## Start to finish (recommended)

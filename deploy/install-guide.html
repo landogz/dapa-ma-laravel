@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DAPE-MA Laravel — Install from Scratch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue: #055498;
+      --nile: #123a60;
+      --red: #CE2028;
+      --gold: #FBD116;
+      --bg: #f3f6fa;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --code-bg: #0b1726;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Montserrat, system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.55;
+    }
+    .hero {
+      background: linear-gradient(135deg, #055498 0%, #123a60 100%);
+      color: #fff;
+      padding: 40px 20px 48px;
+    }
+    .hero-inner, .wrap {
+      max-width: 880px;
+      margin: 0 auto;
+    }
+    .badge {
+      display: inline-block;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      background: rgba(251, 209, 22, .95);
+      color: var(--nile);
+      padding: 6px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 700;
+    }
+    .hero p {
+      margin: 0;
+      opacity: .92;
+      max-width: 62ch;
+      font-size: .98rem;
+    }
+    .toc {
+      display: grid;
+      gap: 8px;
+      margin: -28px auto 28px;
+      max-width: 880px;
+      padding: 0 20px;
+      position: relative;
+    }
+    .toc-card {
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 12px 36px rgba(18, 58, 96, .12);
+      padding: 18px 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px 16px;
+    }
+    .toc a {
+      color: var(--blue);
+      text-decoration: none;
+      font-size: .86rem;
+      font-weight: 600;
+    }
+    .toc a:hover { text-decoration: underline; }
+    .wrap { padding: 8px 20px 56px; }
+    section {
+      background: var(--card);
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      padding: 22px 22px 18px;
+      margin-bottom: 16px;
+    }
+    h2 {
+      margin: 0 0 8px;
+      font-size: 1.15rem;
+      color: var(--nile);
+    }
+    h3 {
+      margin: 18px 0 8px;
+      font-size: .98rem;
+      color: var(--blue);
+    }
+    p, li { font-size: .92rem; }
+    .lead { color: var(--muted); margin: 0 0 14px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+      margin: 10px 0 4px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f8fafc; color: var(--nile); }
+    code, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .84em;
+    }
+    pre {
+      position: relative;
+      background: var(--code-bg);
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      font-size: .82rem;
+      line-height: 1.5;
+      margin: 10px 0 6px;
+    }
+    pre code { color: inherit; font-size: inherit; }
+    .copy {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      border: 0;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font: inherit;
+      font-size: .72rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: rgba(255,255,255,.12);
+      color: #fff;
+      min-height: 32px;
+    }
+    .copy:hover { background: rgba(255,255,255,.2); }
+    .note {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: .88rem;
+      margin: 12px 0;
+    }
+    .warn {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: .88rem;
+      margin: 12px 0;
+    }
+    .ok {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: .88rem;
+      margin: 12px 0;
+    }
+    ul { padding-left: 1.2rem; }
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: .8rem;
+      padding: 8px 20px 40px;
+    }
+    @media (max-width: 640px) {
+      section { padding: 16px; }
+      .hero { padding: 28px 16px 40px; }
+    }
+    @media print {
+      .hero { background: #123a60 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .copy { display: none; }
+      section { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="badge">Deploy guide</div>
+      <h1>DAPE-MA Laravel — Install from Scratch</h1>
+      <p>
+        Step-by-step setup on a blank Ubuntu 24.04 server: Nginx, PHP 8.3, MySQL 8,
+        Composer, then Laravel + browser installer. Includes how to put MySQL into
+        <code style="color:#FBD116">.env</code>.
+      </p>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Contents">
+    <div class="toc-card">
+      <a href="#overview">Overview</a>
+      <a href="#step1">1. DNS</a>
+      <a href="#step2">2. SSH</a>
+      <a href="#step3">3. Update + Git</a>
+      <a href="#step4">4. Clone</a>
+      <a href="#step5">5. Stack installer</a>
+      <a href="#step5b">5b. MySQL → .env</a>
+      <a href="#step6">6. Web installer</a>
+      <a href="#step7">7. HTTPS</a>
+      <a href="#step8">8. Verify</a>
+      <a href="#step9">9. Mobile</a>
+      <a href="#step10">10. Updates</a>
+      <a href="#example">Example (DDB)</a>
+      <a href="#troubleshoot">Troubleshooting</a>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <section id="overview">
+      <h2>Overview — what you get</h2>
+      <table>
+        <thead>
+          <tr><th>Item</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Stack</td><td>Nginx, PHP 8.3-FPM, MySQL 8, Composer, Supervisor, UFW</td></tr>
+          <tr><td>App path</td><td><code>/var/www/dape-ma-laravel</code></td></tr>
+          <tr><td>Web root</td><td><code>/var/www/dape-ma-laravel/public</code></td></tr>
+          <tr><td>Admin</td><td><code>https://YOUR_DOMAIN/admin/login</code></td></tr>
+          <tr><td>API</td><td><code>https://YOUR_DOMAIN/api/v1</code></td></tr>
+        </tbody>
+      </table>
+      <p class="lead" style="margin-top:12px">Replace placeholders: <code>YOUR_USER</code>, <code>SERVER_IP</code>, <code>YOUR_DOMAIN</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASS</code>.</p>
+    </section>
+
+    <section id="step1">
+      <h2>Step 1 — Prepare DNS</h2>
+      <p class="lead">Create an A record (recommended before HTTPS):</p>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>YOUR_DOMAIN  →  SERVER_IP</code></pre>
+      <p>Skip if you will use <code>http://SERVER_IP</code> only for now.</p>
+    </section>
+
+    <section id="step2">
+      <h2>Step 2 — SSH into the server</h2>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>ssh YOUR_USER@SERVER_IP</code></pre>
+      <p>You need a user that can run <code>sudo</code>.</p>
+    </section>
+
+    <section id="step3">
+      <h2>Step 3 — Update Ubuntu and install Git</h2>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo apt update
+sudo apt upgrade -y
+sudo apt install -y git</code></pre>
+    </section>
+
+    <section id="step4">
+      <h2>Step 4 — Download the installer</h2>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>git clone https://github.com/landogz/dapa-ma-laravel.git /tmp/dape-ma-laravel</code></pre>
+      <div class="note">Always use a fresh clone so you get the latest <code>deploy/install-ubuntu.sh</code>.</div>
+    </section>
+
+    <section id="step5">
+      <h2>Step 5 — Run the stack installer</h2>
+      <p class="lead">Installs Nginx, PHP, MySQL, Composer, clones the app, creates DB user, Nginx site, queue worker, firewall.</p>
+
+      <h3>Option A — Domain + your DB password</h3>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo \
+  APP_DOMAIN=YOUR_DOMAIN \
+  APP_URL=https://YOUR_DOMAIN \
+  DB_DATABASE=DB_NAME \
+  DB_USERNAME=DB_USER \
+  DB_PASSWORD='DB_PASS' \
+  bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh</code></pre>
+
+      <h3>Option B — IP only</h3>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo \
+  APP_URL=http://SERVER_IP \
+  DB_DATABASE=DB_NAME \
+  DB_USERNAME=DB_USER \
+  DB_PASSWORD='DB_PASS' \
+  bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh</code></pre>
+
+      <h3>Option C — Auto-generate DB password</h3>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh
+sudo cat /var/www/dape-ma-laravel/.install-credentials</code></pre>
+
+      <div class="ok">Wait for <strong>INSTALL COMPLETE</strong>. Log: <code>/var/log/dape-ma-install.log</code></div>
+      <p>Default <code>WEB_INSTALLER=1</code> skips migrate so you finish in the browser at <code>/install/</code>.</p>
+    </section>
+
+    <section id="step5b">
+      <h2>Step 5b — Add MySQL connection to <code>.env</code></h2>
+      <p class="lead">
+        Laravel reads the database from <code>/var/www/dape-ma-laravel/.env</code>.
+        The stack script and web installer usually write this for you. Use this when you need to set or fix MySQL by hand.
+      </p>
+
+      <h3>1) Open the file</h3>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>cd /var/www/dape-ma-laravel
+sudo nano .env</code></pre>
+
+      <h3>2) Set these MySQL lines</h3>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=DB_NAME
+DB_USERNAME=DB_USER
+DB_PASSWORD=DB_PASS</code></pre>
+      <ul>
+        <li>On the same server as MySQL, host is almost always <code>127.0.0.1</code> (not the public IP).</li>
+        <li>If the password has <code>@</code>, <code>#</code>, spaces, or quotes, wrap it in double quotes.</li>
+      </ul>
+
+      <h3>3) Example (DDB server)</h3>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=dapemadb
+DB_USERNAME=dapemadb
+DB_PASSWORD="dapemadb@2026"
+
+APP_URL=https://dapemade.ddb.gov.ph</code></pre>
+
+      <h3>4) Before first migrate</h3>
+      <div class="warn">
+        If tables are not created yet, use file drivers so cache clear does not fail on missing <code>cache</code> / <code>sessions</code> tables.
+      </div>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>CACHE_STORE=file
+SESSION_DRIVER=file</code></pre>
+      <p>After a successful migrate, you can switch back to:</p>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>CACHE_STORE=database
+SESSION_DRIVER=database</code></pre>
+
+      <h3>5) Apply and test</h3>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>cd /var/www/dape-ma-laravel
+CACHE_STORE=file SESSION_DRIVER=file php artisan optimize:clear
+php artisan migrate --force
+php artisan db:seed --force
+sudo sed -i 's/^CACHE_STORE=.*/CACHE_STORE=database/' .env
+sudo sed -i 's/^SESSION_DRIVER=.*/SESSION_DRIVER=database/' .env
+php artisan config:cache
+php artisan db:show</code></pre>
+
+      <h3>6) Create MySQL DB + user yourself (if needed)</h3>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo mysql -e "
+CREATE DATABASE IF NOT EXISTS dapemadb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'dapemadb'@'localhost' IDENTIFIED BY 'dapemadb@2026';
+ALTER USER 'dapemadb'@'localhost' IDENTIFIED BY 'dapemadb@2026';
+GRANT ALL PRIVILEGES ON dapemadb.* TO 'dapemadb'@'localhost';
+FLUSH PRIVILEGES;
+"</code></pre>
+      <p>Then put the same name / user / password into <code>.env</code>.</p>
+    </section>
+
+    <section id="step6">
+      <h2>Step 6 — Open the web installer</h2>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>http://SERVER_IP/install/
+# or
+https://YOUR_DOMAIN/install/</code></pre>
+      <div class="note">The web installer also writes MySQL into <code>.env</code> when you complete the Database step. Prefer that on first setup; use Step 5b for manual fixes.</div>
+
+      <h3>6.1 Requirements</h3>
+      <ul>
+        <li>Wait for all checks to show OK</li>
+        <li>Recheck if anything fails, then Continue</li>
+      </ul>
+
+      <h3>6.2 App</h3>
+      <ul>
+        <li>App name: <code>DAPE-MA</code></li>
+        <li>App URL: <code>https://YOUR_DOMAIN</code> or <code>http://SERVER_IP</code></li>
+        <li>Optional: Seed demo data</li>
+      </ul>
+
+      <h3>6.3 Database</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>DB host</td><td><code>127.0.0.1</code></td></tr>
+          <tr><td>DB port</td><td><code>3306</code></td></tr>
+          <tr><td>Database name</td><td><code>DB_NAME</code></td></tr>
+          <tr><td>DB username</td><td><code>DB_USER</code></td></tr>
+          <tr><td>DB password</td><td><code>DB_PASS</code></td></tr>
+        </tbody>
+      </table>
+      <p>Test connection → Install now.</p>
+
+      <h3>6.4 Finish</h3>
+      <ul>
+        <li>Open Admin Login</li>
+        <li>Demo (if seeded): <code>superadmin@dape-ma.local</code> / <code>password</code> — change immediately</li>
+      </ul>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo mv /var/www/dape-ma-laravel/public/install \
+  /var/www/dape-ma-laravel/public/install.bak</code></pre>
+    </section>
+
+    <section id="step7">
+      <h2>Step 7 — Enable HTTPS</h2>
+      <p class="lead">Only after DNS points to this server.</p>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d YOUR_DOMAIN
+
+cd /var/www/dape-ma-laravel
+sudo sed -i 's|^APP_URL=.*|APP_URL=https://YOUR_DOMAIN|' .env
+sudo -u www-data php artisan config:cache</code></pre>
+    </section>
+
+    <section id="step8">
+      <h2>Step 8 — Verify</h2>
+      <table>
+        <thead><tr><th>Check</th><th>URL</th></tr></thead>
+        <tbody>
+          <tr><td>Admin</td><td><code>https://YOUR_DOMAIN/admin/login</code></td></tr>
+          <tr><td>API health</td><td><code>https://YOUR_DOMAIN/api/v1/health</code></td></tr>
+          <tr><td>Posts</td><td><code>https://YOUR_DOMAIN/api/v1/posts</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="step9">
+      <h2>Step 9 — Point the mobile app (later)</h2>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>// lib/core/network/endpoints.dart
+static const bool useLocalApi = false;
+static const String _productionBaseUrl = 'https://YOUR_DOMAIN/api/v1';</code></pre>
+      <p>Rebuild / export the APK. Current live host may still be AlwaysData until you switch.</p>
+    </section>
+
+    <section id="step10">
+      <h2>Step 10 — Later code updates</h2>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo bash /var/www/dape-ma-laravel/deploy/update.sh</code></pre>
+    </section>
+
+    <section id="example">
+      <h2>Example filled in (DDB server)</h2>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo \
+  APP_DOMAIN=dapemade.ddb.gov.ph \
+  APP_URL=https://dapemade.ddb.gov.ph \
+  DB_DATABASE=dapemadb \
+  DB_USERNAME=dapemadb \
+  DB_PASSWORD='dapemadb@2026' \
+  bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh
+
+# Browser: https://dapemade.ddb.gov.ph/install/
+#       or http://203.82.35.169/install/
+
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d dapemade.ddb.gov.ph</code></pre>
+    </section>
+
+    <section id="troubleshoot">
+      <h2>Troubleshooting</h2>
+      <table>
+        <thead><tr><th>Problem</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>cache</code> table missing</td>
+            <td>Set <code>CACHE_STORE=file</code> and <code>SESSION_DRIVER=file</code>, then migrate / open <code>/install/</code></td>
+          </tr>
+          <tr>
+            <td>Access denied for user</td>
+            <td>Check <code>DB_USERNAME</code> / <code>DB_PASSWORD</code> in <code>.env</code>; recreate MySQL user (Step 5b.6)</td>
+          </tr>
+          <tr>
+            <td>Old script in <code>/tmp</code></td>
+            <td><code>rm -rf /tmp/dape-ma-laravel</code> then clone again</td>
+          </tr>
+          <tr>
+            <td>502 Bad Gateway</td>
+            <td><code>sudo systemctl status php8.3-fpm nginx</code></td>
+          </tr>
+          <tr>
+            <td>Permission errors</td>
+            <td><code>sudo chown -R www-data:www-data storage bootstrap/cache</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <h3>What the script installs (short)</h3>
+      <ul>
+        <li><strong>Always:</strong> Nginx, MySQL 8, PHP 8.3 (+ extensions), Composer, Git, Supervisor, UFW</li>
+        <li><strong>Optional:</strong> Node 20 (<code>INSTALL_NODE=1</code>), Certbot (<code>ENABLE_SSL=1</code>)</li>
+        <li><strong>Also:</strong> app clone, DB user, Nginx → <code>public/</code>, queue worker, scheduler cron</li>
+      </ul>
+    </section>
+  </main>
+
+  <p class="footer">DAPE-MA deploy guide · open this file locally or share <code>deploy/install-guide.html</code></p>
+
+  <script>
+    document.querySelectorAll('[data-copy]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const pre = btn.closest('pre');
+        const code = pre?.querySelector('code')?.innerText ?? '';
+        try {
+          await navigator.clipboard.writeText(code);
+          btn.textContent = 'Copied';
+          setTimeout(() => { btn.textContent = 'Copy'; }, 1400);
+        } catch (_) {
+          btn.textContent = 'Select & copy';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
