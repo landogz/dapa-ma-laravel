@@ -60,6 +60,10 @@ SKIP_CLONE="${SKIP_CLONE:-0}"
 WEB_INSTALLER="${WEB_INSTALLER:-1}"
 SKIP_MIGRATE="${SKIP_MIGRATE:-$WEB_INSTALLER}"
 ENABLE_SSL="${ENABLE_SSL:-0}"
+# HTTPS-only (port 443). Use when Network Admin blocks port 80 and certs are on disk.
+HTTPS_ONLY="${HTTPS_ONLY:-0}"
+SSL_CERTIFICATE="${SSL_CERTIFICATE:-}"
+SSL_CERTIFICATE_KEY="${SSL_CERTIFICATE_KEY:-}"
 INSTALL_NODE="${INSTALL_NODE:-0}"   # assets are usually pre-built in public/build/
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -157,7 +161,12 @@ systemctl enable --now mysql
 # ---------------------------------------------------------------------------
 echo "[2/8] Configuring UFW..."
 ufw allow OpenSSH >/dev/null 2>&1 || true
-ufw allow 'Nginx Full' >/dev/null 2>&1 || true
+if [[ "${HTTPS_ONLY}" == "1" ]]; then
+  ufw allow 443/tcp >/dev/null 2>&1 || true
+  ufw allow 'Nginx HTTPS' >/dev/null 2>&1 || true
+else
+  ufw allow 'Nginx Full' >/dev/null 2>&1 || true
+fi
 ufw --force enable >/dev/null 2>&1 || true
 
 # ---------------------------------------------------------------------------
@@ -298,6 +307,80 @@ echo "[7/8] Configuring Nginx..."
 PHP_SOCK="/run/php/php${PHP_VERSION}-fpm.sock"
 SERVER_NAME="${APP_DOMAIN:-_}"
 
+# Resolve SSL paths when HTTPS-only mode is requested
+if [[ "${HTTPS_ONLY}" == "1" ]]; then
+  if [[ -z "${APP_DOMAIN}" ]]; then
+    echo "[error] HTTPS_ONLY=1 requires APP_DOMAIN=your.domain" >&2
+    exit 1
+  fi
+  if [[ -z "${SSL_CERTIFICATE}" ]]; then
+    SSL_CERTIFICATE="/etc/ssl/certs/${APP_DOMAIN}.crt"
+  fi
+  if [[ -z "${SSL_CERTIFICATE_KEY}" ]]; then
+    SSL_CERTIFICATE_KEY="/etc/ssl/private/${APP_DOMAIN}.key"
+  fi
+  if [[ ! -f "${SSL_CERTIFICATE}" ]] || [[ ! -f "${SSL_CERTIFICATE_KEY}" ]]; then
+    echo "[error] SSL files missing." >&2
+    echo "  Cert: ${SSL_CERTIFICATE}" >&2
+    echo "  Key:  ${SSL_CERTIFICATE_KEY}" >&2
+    echo "  Set SSL_CERTIFICATE= and SSL_CERTIFICATE_KEY= to the uploaded paths." >&2
+    exit 1
+  fi
+  SERVER_NAME="${APP_DOMAIN}"
+  APP_URL="https://${APP_DOMAIN}"
+  set_env APP_URL "${APP_URL}"
+fi
+
+if [[ "${HTTPS_ONLY}" == "1" ]]; then
+cat >/etc/nginx/sites-available/dape-ma <<NGINX
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name ${SERVER_NAME};
+
+    ssl_certificate     ${SSL_CERTIFICATE};
+    ssl_certificate_key ${SSL_CERTIFICATE_KEY};
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    root ${APP_DIR}/public;
+    index index.php;
+
+    charset utf-8;
+    client_max_body_size 14M;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    location ~ \\.php\$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:${PHP_SOCK};
+        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 120;
+        fastcgi_param HTTP_AUTHORIZATION \$http_authorization;
+    }
+
+    location ~ /\\.(?!well-known).* {
+        deny all;
+    }
+
+    access_log /var/log/nginx/dape-ma-access.log;
+    error_log  /var/log/nginx/dape-ma-error.log;
+}
+NGINX
+else
 cat >/etc/nginx/sites-available/dape-ma <<NGINX
 server {
     listen 80;
@@ -339,6 +422,7 @@ server {
     error_log  /var/log/nginx/dape-ma-error.log;
 }
 NGINX
+fi
 
 ln -sfn /etc/nginx/sites-available/dape-ma /etc/nginx/sites-enabled/dape-ma
 rm -f /etc/nginx/sites-enabled/default

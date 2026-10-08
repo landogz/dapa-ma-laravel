@@ -7,6 +7,23 @@ Scripts + browser installer for a **fresh Ubuntu 24.04** VPS (Nginx, PHP 8.3, My
 - Markdown: [INSTALL-FROM-SCRATCH.md](INSTALL-FROM-SCRATCH.md)
 - HTML (open in browser): [install-guide.html](install-guide.html)
 
+**HTTPS-only (port 80 blocked by Network Admin):**
+
+```bash
+# On the DAPE-MA server — certs already in /etc/ssl/certs
+cd /var/www/dape-ma-laravel
+sudo git pull origin main
+sudo bash deploy/apply-nginx-ssl.sh
+
+# If filenames differ from dapemade.ddb.gov.ph.crt / .key:
+sudo \
+  SSL_CERTIFICATE=/etc/ssl/certs/YOUR_CERT.crt \
+  SSL_CERTIFICATE_KEY=/etc/ssl/private/YOUR_KEY.key \
+  bash deploy/apply-nginx-ssl.sh
+```
+
+Template: [nginx-dape-ma-ssl.conf](nginx-dape-ma-ssl.conf)
+
 ---
 
 ## Start to finish (recommended)

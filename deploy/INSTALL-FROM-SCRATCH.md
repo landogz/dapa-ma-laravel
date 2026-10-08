@@ -292,34 +292,50 @@ sudo mv /var/www/dape-ma-laravel/public/install \
 
 ---
 
-## Step 7 — Enable HTTPS (Let’s Encrypt)
+## Step 7 — Enable HTTPS
 
-Only after DNS points to this server:
+### Option A — Network Admin already uploaded SSL (port 80 blocked)
+
+When certs are in `/etc/ssl/certs` and **port 80 is not allowed**, use the HTTPS-only Nginx block (443 only — no HTTP redirect needed):
+
+```bash
+cd /var/www/dape-ma-laravel
+sudo git pull origin main
+
+# Defaults look for:
+#   /etc/ssl/certs/dapemade.ddb.gov.ph.crt
+#   /etc/ssl/private/dapemade.ddb.gov.ph.key
+sudo bash deploy/apply-nginx-ssl.sh
+```
+
+If file names differ, ask Network Admin for the exact paths, then:
+
+```bash
+sudo \
+  APP_DOMAIN=dapemade.ddb.gov.ph \
+  SSL_CERTIFICATE=/etc/ssl/certs/YOUR_FILE.crt \
+  SSL_CERTIFICATE_KEY=/etc/ssl/private/YOUR_FILE.key \
+  bash deploy/apply-nginx-ssl.sh
+```
+
+List uploaded files:
+
+```bash
+sudo ls -la /etc/ssl/certs /etc/ssl/private
+```
+
+Template config: `deploy/nginx-dape-ma-ssl.conf`
+
+### Option B — Let’s Encrypt (needs port 80 open for challenge)
+
+Only if Network Admin allows HTTP temporarily:
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d YOUR_DOMAIN
-```
-
-Then lock APP_URL to HTTPS:
-
-```bash
 cd /var/www/dape-ma-laravel
 sudo sed -i 's|^APP_URL=.*|APP_URL=https://YOUR_DOMAIN|' .env
 sudo -u www-data php artisan config:cache
-```
-
-Or re-run the stack script with SSL:
-
-```bash
-sudo \
-  APP_DOMAIN=YOUR_DOMAIN \
-  APP_URL=https://YOUR_DOMAIN \
-  ENABLE_SSL=1 \
-  DB_DATABASE=DB_NAME \
-  DB_USERNAME=DB_USER \
-  DB_PASSWORD='DB_PASS' \
-  bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh
 ```
 
 ---
