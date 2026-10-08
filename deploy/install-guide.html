@@ -408,7 +408,34 @@ https://YOUR_DOMAIN/install/</code></pre>
 
     <section id="step7">
       <h2>Step 7 — Enable HTTPS</h2>
-      <p class="lead">Only after DNS points to this server.</p>
+
+      <h3>Option A — Network Admin SSL already uploaded (port 80 blocked)</h3>
+      <p class="lead">
+        Certs in <code>/etc/ssl/certs</code>. Port 80 is <strong>not allowed</strong> —
+        use HTTPS-only Nginx on <strong>443</strong> (no HTTP listener).
+      </p>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>cd /var/www/dape-ma-laravel
+sudo git pull origin main
+
+# Defaults:
+#   /etc/ssl/certs/dapemade.ddb.gov.ph.crt
+#   /etc/ssl/private/dapemade.ddb.gov.ph.key
+sudo bash deploy/apply-nginx-ssl.sh
+
+# If filenames differ:
+sudo ls -la /etc/ssl/certs /etc/ssl/private
+sudo \
+  APP_DOMAIN=dapemade.ddb.gov.ph \
+  SSL_CERTIFICATE=/etc/ssl/certs/YOUR_FILE.crt \
+  SSL_CERTIFICATE_KEY=/etc/ssl/private/YOUR_FILE.key \
+  bash deploy/apply-nginx-ssl.sh</code></pre>
+      <div class="note">
+        Fresh install with HTTPS-only from the start:
+        <code>HTTPS_ONLY=1 APP_DOMAIN=dapemade.ddb.gov.ph SSL_CERTIFICATE=... SSL_CERTIFICATE_KEY=... bash deploy/install-ubuntu.sh</code>
+      </div>
+
+      <h3>Option B — Let’s Encrypt (needs port 80 open)</h3>
+      <p class="lead">Only if Network Admin allows HTTP temporarily for the ACME challenge.</p>
       <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d YOUR_DOMAIN
 
@@ -455,8 +482,12 @@ static const String _productionBaseUrl = 'https://YOUR_DOMAIN/api/v1';</code></p
 # Browser: https://dapemade.ddb.gov.ph/install/
 #       or http://203.82.35.169/install/
 
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d dapemade.ddb.gov.ph</code></pre>
+# Prefer Network Admin SSL (port 80 blocked):
+sudo bash deploy/apply-nginx-ssl.sh
+
+# Or Let's Encrypt only if port 80 is allowed:
+# sudo apt install -y certbot python3-certbot-nginx
+# sudo certbot --nginx -d dapemade.ddb.gov.ph</code></pre>
     </section>
 
     <section id="troubleshoot">
@@ -483,6 +514,10 @@ sudo certbot --nginx -d dapemade.ddb.gov.ph</code></pre>
           <tr>
             <td>Permission errors</td>
             <td><code>sudo chown -R www-data:www-data storage bootstrap/cache</code></td>
+          </tr>
+          <tr>
+            <td>Port 80 blocked / SSL already uploaded</td>
+            <td>Use <code>sudo bash deploy/apply-nginx-ssl.sh</code> (443 only)</td>
           </tr>
         </tbody>
       </table>
