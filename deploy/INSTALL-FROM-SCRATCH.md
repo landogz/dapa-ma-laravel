@@ -288,9 +288,10 @@ The web installer **also writes MySQL into `.env`** when you fill the Database s
 ### 6.4 Finish
 
 - Open **Admin Login**
-- If you seeded demo data:
+- If you seeded demo data, use **Quick sign-in (demo)** buttons on the page (enabled while `DAPE_SHOW_DEMO_LOGIN=true`), or:
   - Email: `superadmin@dape-ma.local`
   - Password: `password`
+- Quick login is on for DEV for now; set `DAPE_SHOW_DEMO_LOGIN=false` and `php artisan config:cache` before production go-live
 - Change that password immediately
 
 Optional security cleanup:
@@ -411,11 +412,13 @@ sudo \
   DB_PASSWORD='dapemadb@2026' \
   bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh
 
-# Step 5b — remote MySQL (DB host is NOT this machine)
-# Edit .env → DB_HOST=173.16.18.179
+# MySQL: this app host already had local mysqld working.
+# Use DB_HOST=127.0.0.1 (remote 173.16.18.179 refused connections from the app).
+# Quote password in .env: DB_PASSWORD="dapemadb@2026"
 
-# Step 6 — browser installer (HTTPS after Step 7, or temporary internal IP)
+# Step 6 — browser installer (HTTPS after Step 7)
 # https://dapemade.ddb.gov.ph/install/
+# If you see “Migration failed”, follow Troubleshooting → Migration failed recovery
 
 # Step 7 — 443-only (certs from Installer/cert)
 cd /var/www/dape-ma-laravel
@@ -429,11 +432,83 @@ sudo bash deploy/apply-nginx-ssl.sh
 | Problem | Fix |
 |---------|-----|
 | `Table '….cache' doesn't exist` during install | Use latest script; or set `CACHE_STORE=file` and `SESSION_DRIVER=file` in `.env`, then open `/install/` |
-| `Access denied for user` | Check `DB_USERNAME` / `DB_PASSWORD` in `.env`; recreate MySQL user (Step 5b.6) |
+| **Web installer: “Migration failed. Check DB credentials and logs.”** | See **[Migration failed recovery](#migration-failed-recovery)** below (credentials OK ≠ migrate OK) |
+| `Access denied for user` | Check `DB_USERNAME` / `DB_PASSWORD` in `.env`; quote passwords that contain `@` (`DB_PASSWORD="dapemadb@2026"`); recreate MySQL user (Step 5b.6) |
+| `SQLSTATE[HY000] [2002] Connection refused` to remote IP | MySQL on the DB host is not listening / not open to the app IP. Use `DB_HOST=127.0.0.1` if MySQL runs **on the app server**, or ask DBA to open `3306` from the app private IP |
+| Artisan still uses old `DB_HOST` after editing `.env` | Cached config: `rm -f bootstrap/cache/config.php` then `php artisan optimize:clear` |
 | Old script from `/tmp` | `rm -rf /tmp/dape-ma-laravel` and clone again |
 | 502 Bad Gateway | `sudo systemctl status php8.3-fpm nginx` |
 | Permission errors | `sudo chown -R www-data:www-data /var/www/dape-ma-laravel/storage /var/www/dape-ma-laravel/bootstrap/cache` |
 | Wrong APP_URL | Edit `.env`, then `php artisan config:cache` |
+
+### Migration failed recovery
+
+On DAPEMA DEV this showed up when `/install/` used `DB_HOST=127.0.0.1` but migrate still failed. Root causes and fixes:
+
+#### 1) Wrong / stale DB host in config cache
+
+Installer UI can show `127.0.0.1` while a previous `config:cache` still points at an unreachable remote host (e.g. `173.16.18.179`).
+
+```bash
+cd /var/www/dape-ma-laravel
+
+# Confirm MySQL locally (app server has mysqld)
+mysql -h 127.0.0.1 -u dapemadb -p dapemadb -e "SELECT 1;"
+
+# Align .env (quote password if it contains @)
+sudo sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+sudo sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD="YOUR_DB_PASSWORD"/' .env
+sudo sed -i 's/^CACHE_STORE=.*/CACHE_STORE=file/' .env
+sudo sed -i 's/^SESSION_DRIVER=.*/SESSION_DRIVER=file/' .env
+
+sudo rm -f bootstrap/cache/config.php
+sudo -u www-data php artisan optimize:clear
+```
+
+Use `DB_HOST=173.16.18.179` (or your DB private IP) **only** after `mysql -h THAT_IP -u … -e "SELECT 1;"` succeeds from the app server.
+
+#### 2) Migration order bug: `daily_verses` missing
+
+If logs show:
+
+```text
+Table 'dapemadb.daily_verses' doesn't exist
+alter table `daily_verses` add `kid_listo_message` ...
+```
+
+the alter migration was dated **before** the create migration. Current repo fix (already applied in `main` / local tree):
+
+| Wrong (runs too early) | Correct (after create) |
+|------------------------|-------------------------|
+| `2026_04_06_160000_add_kid_listo_fields_to_daily_verses.php` | `2026_07_01_130200_add_kid_listo_fields_to_daily_verses.php` |
+
+On a server that still has the old filename:
+
+```bash
+cd /var/www/dape-ma-laravel/database/migrations
+sudo mv 2026_04_06_160000_add_kid_listo_fields_to_daily_verses.php \
+        2026_07_01_130200_add_kid_listo_fields_to_daily_verses.php
+```
+
+Then finish install from the shell (or retry `/install/`):
+
+```bash
+cd /var/www/dape-ma-laravel
+sudo -u www-data php artisan migrate --force
+sudo -u www-data php artisan db:seed --force   # optional demo accounts
+
+sudo sed -i 's/^CACHE_STORE=.*/CACHE_STORE=database/' .env
+sudo sed -i 's/^SESSION_DRIVER=.*/SESSION_DRIVER=database/' .env
+sudo -u www-data php artisan config:cache
+
+# Mark installed (same lock the web installer creates)
+sudo bash -c 'mkdir -p storage/app; echo "{\"installed_at\":\"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'\"}" > storage/app/installed'
+sudo chown -R www-data:www-data storage bootstrap/cache
+```
+
+Default seeded admin (change after login): `superadmin@dape-ma.local` / `password`.
+
+Quick sign-in buttons on `/admin/login` require `DAPE_SHOW_DEMO_LOGIN=true` in `.env` (installer sets this when seeding; enabled on DEV for now).
 
 ---
 

@@ -403,7 +403,8 @@ https://YOUR_DOMAIN/install/</code></pre>
       <h3>6.4 Finish</h3>
       <ul>
         <li>Open Admin Login</li>
-        <li>Demo (if seeded): <code>superadmin@dape-ma.local</code> / <code>password</code> — change immediately</li>
+        <li>Demo (if seeded): use <strong>Quick sign-in</strong> on the login page, or <code>superadmin@dape-ma.local</code> / <code>password</code></li>
+        <li>Quick login stays on with <code>DAPE_SHOW_DEMO_LOGIN=true</code> (DEV for now). Set <code>false</code> before production go-live</li>
       </ul>
       <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo mv /var/www/dape-ma-laravel/public/install \
   /var/www/dape-ma-laravel/public/install.bak</code></pre>
@@ -479,14 +480,16 @@ static const String _productionBaseUrl = 'https://YOUR_DOMAIN/api/v1';</code></p
 # Stack install
 sudo bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh
 
-# Remote MySQL in .env (not localhost):
-# DB_HOST=173.16.18.179
+# MySQL on THIS app server → use localhost (remote 173.16.18.179 was refused):
+# DB_HOST=127.0.0.1
+# DB_PASSWORD="dapemadb@2026"
 
 # HTTPS-only (certs from Installer/cert):
 cd /var/www/dape-ma-laravel
 sudo bash deploy/apply-nginx-ssl.sh
 
-# Browser: https://dapemade.ddb.gov.ph/install/</code></pre>
+# Browser: https://dapemade.ddb.gov.ph/install/
+# If migrate fails, see Troubleshooting → Migration failed recovery</code></pre>
     </section>
 
     <section id="troubleshoot">
@@ -499,8 +502,20 @@ sudo bash deploy/apply-nginx-ssl.sh
             <td>Set <code>CACHE_STORE=file</code> and <code>SESSION_DRIVER=file</code>, then migrate / open <code>/install/</code></td>
           </tr>
           <tr>
+            <td><strong>Migration failed</strong> (web installer)</td>
+            <td>See <a href="#migrate-recovery">Migration failed recovery</a> below — often stale config cache or migration order, not wrong password</td>
+          </tr>
+          <tr>
             <td>Access denied for user</td>
-            <td>Check <code>DB_USERNAME</code> / <code>DB_PASSWORD</code> in <code>.env</code>; recreate MySQL user (Step 5b.6)</td>
+            <td>Check <code>DB_USERNAME</code> / <code>DB_PASSWORD</code>; quote passwords with <code>@</code> (<code>DB_PASSWORD="…"</code>); recreate MySQL user (Step 5b.6)</td>
+          </tr>
+          <tr>
+            <td>Connection refused to remote DB IP</td>
+            <td>Use <code>DB_HOST=127.0.0.1</code> if MySQL is on the app server, or ask DBA to open port 3306 from the app private IP</td>
+          </tr>
+          <tr>
+            <td>Artisan ignores new <code>DB_HOST</code></td>
+            <td><code>rm -f bootstrap/cache/config.php</code> then <code>php artisan optimize:clear</code></td>
           </tr>
           <tr>
             <td>Old script in <code>/tmp</code></td>
@@ -520,6 +535,47 @@ sudo bash deploy/apply-nginx-ssl.sh
           </tr>
         </tbody>
       </table>
+
+      <h3 id="migrate-recovery">Migration failed recovery</h3>
+      <p>On DAPEMA DEV, <code>/install/</code> showed <em>Migration failed</em> even with correct UI credentials. Two fixes were required:</p>
+
+      <h4>1) Stale config cache / wrong host</h4>
+      <p>UI said <code>127.0.0.1</code> but cached config still targeted unreachable <code>173.16.18.179</code>. Local MySQL on the app server worked.</p>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>cd /var/www/dape-ma-laravel
+mysql -h 127.0.0.1 -u dapemadb -p dapemadb -e "SELECT 1;"
+
+sudo sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+sudo sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD="YOUR_DB_PASSWORD"/' .env
+sudo sed -i 's/^CACHE_STORE=.*/CACHE_STORE=file/' .env
+sudo sed -i 's/^SESSION_DRIVER=.*/SESSION_DRIVER=file/' .env
+
+sudo rm -f bootstrap/cache/config.php
+sudo -u www-data php artisan optimize:clear</code></pre>
+      <p>Use a remote <code>DB_HOST</code> only after <code>mysql -h THAT_IP … -e "SELECT 1;"</code> succeeds from the app server.</p>
+
+      <h4>2) Migration order: <code>daily_verses</code> missing</h4>
+      <p>Error looked like: <code>Table 'dapemadb.daily_verses' doesn't exist</code> while altering for Kid Listo fields. The alter file was dated <strong>before</strong> the create table migration.</p>
+      <p><strong>Repo fix:</strong> rename to run after create:</p>
+      <ul>
+        <li>Wrong: <code>2026_04_06_160000_add_kid_listo_fields_to_daily_verses.php</code></li>
+        <li>Correct: <code>2026_07_01_130200_add_kid_listo_fields_to_daily_verses.php</code></li>
+      </ul>
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>cd /var/www/dape-ma-laravel/database/migrations
+sudo mv 2026_04_06_160000_add_kid_listo_fields_to_daily_verses.php \
+        2026_07_01_130200_add_kid_listo_fields_to_daily_verses.php
+
+cd /var/www/dape-ma-laravel
+sudo -u www-data php artisan migrate --force
+sudo -u www-data php artisan db:seed --force
+
+sudo sed -i 's/^CACHE_STORE=.*/CACHE_STORE=database/' .env
+sudo sed -i 's/^SESSION_DRIVER=.*/SESSION_DRIVER=database/' .env
+sudo -u www-data php artisan config:cache
+
+sudo bash -c 'mkdir -p storage/app; echo "{\"installed_at\":\"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'\"}" > storage/app/installed'
+sudo chown -R www-data:www-data storage bootstrap/cache</code></pre>
+      <p>Seeded admin: <code>superadmin@dape-ma.local</code> / <code>password</code> (change after first login).</p>
+
       <h3>What the script installs (short)</h3>
       <ul>
         <li><strong>Always:</strong> Nginx, MySQL 8, PHP 8.3 (+ extensions), Composer, Git, Supervisor, UFW</li>

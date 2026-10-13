@@ -19,7 +19,9 @@ sudo bash deploy/apply-nginx-ssl.sh
 # Auto-finds Installer/cert, installs into /etc/ssl, Nginx listen 443 only
 ```
 
-**Remote MySQL (split servers):** set `DB_HOST` to the DB private IP (e.g. `173.16.18.179`), not `127.0.0.1`.
+**Remote MySQL (split servers):** set `DB_HOST` to the DB private IP (e.g. `173.16.18.179`), not `127.0.0.1` — only after `mysql -h THAT_IP …` works from the app host. If MySQL runs on the app server, use `127.0.0.1`.
+
+**Web installer “Migration failed”:** clear config cache, confirm DB host, and ensure Kid Listo migration runs *after* `create_daily_verses` (`2026_07_01_130200_…`). Full steps: [INSTALL-FROM-SCRATCH.md § Migration failed recovery](INSTALL-FROM-SCRATCH.md#migration-failed-recovery).
 
 Template: [nginx-dape-ma-ssl.conf](nginx-dape-ma-ssl.conf)
 
@@ -132,11 +134,16 @@ The UI will: write `.env` → `key:generate` → `migrate` → optional `db:seed
 
 1. Confirm success message.
 2. Click **Open Admin Login**.
-3. If you seeded demo accounts, sign in with for example:
+3. If you seeded demo accounts, use **Quick sign-in (demo)** on the login page, or:
    - Email: `superadmin@dape-ma.local`
    - Password: `password`
-4. Change that password immediately.
-5. For security, remove or protect `public/install` after you verify login:
+4. Quick login stays on while `DAPE_SHOW_DEMO_LOGIN=true` in `.env` (set for DEV for now). Turn it off before production go-live:
+   ```bash
+   sudo sed -i 's/^DAPE_SHOW_DEMO_LOGIN=.*/DAPE_SHOW_DEMO_LOGIN=false/' .env
+   sudo -u www-data php artisan config:cache
+   ```
+5. Change that password immediately.
+6. For security, remove or protect `public/install` after you verify login:
    ```bash
    sudo mv /var/www/dape-ma-laravel/public/install /var/www/dape-ma-laravel/public/install.bak
    ```

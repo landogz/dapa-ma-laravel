@@ -161,7 +161,17 @@ try {
             $code = installer_run('php artisan migrate --force', $out);
             $steps[] = ['step' => 'migrate', 'code' => $code, 'output' => $out];
             if ($code !== 0) {
-                installer_json(['status' => false, 'message' => 'Migration failed. Check DB credentials and logs.', 'steps' => $steps], 500);
+                $hint = trim(preg_replace('/\s+/', ' ', $out));
+                if (strlen($hint) > 280) {
+                    $hint = substr($hint, -280);
+                }
+                installer_json([
+                    'status' => false,
+                    'message' => $hint !== ''
+                        ? 'Migration failed: '.$hint
+                        : 'Migration failed. Check DB credentials and logs.',
+                    'steps' => $steps,
+                ], 500);
             }
 
             // Switch to database drivers after tables exist.
@@ -176,6 +186,11 @@ try {
                 if ($code !== 0) {
                     installer_json(['status' => false, 'message' => 'Seeding failed.', 'steps' => $steps], 500);
                 }
+                // Temporary DEV convenience: show Quick sign-in buttons on /admin/login.
+                // Set DAPE_SHOW_DEMO_LOGIN=false before production go-live.
+                installer_write_env([
+                    'DAPE_SHOW_DEMO_LOGIN' => 'true',
+                ]);
             }
 
             $code = installer_run('php artisan storage:link', $out);
