@@ -319,19 +319,22 @@ DB_DATABASE=DB_NAME
 DB_USERNAME=DB_USER
 DB_PASSWORD=DB_PASS</code></pre>
       <ul>
-        <li>On the same server as MySQL, host is almost always <code>127.0.0.1</code> (not the public IP).</li>
+        <li>Same server as MySQL → <code>DB_HOST=127.0.0.1</code></li>
+        <li>Separate DB server (DDB) → use the DB <strong>private IP</strong>, not <code>127.0.0.1</code></li>
         <li>If the password has <code>@</code>, <code>#</code>, spaces, or quotes, wrap it in double quotes.</li>
       </ul>
 
-      <h3>3) Example (DDB server)</h3>
+      <h3>3) Example (DDB split app + DB)</h3>
+      <p class="lead">App: <code>173.16.18.178</code> (public <code>116.50.254.37</code>) · DB: <code>173.16.18.179</code></p>
       <pre><button class="copy" type="button" data-copy>Copy</button><code>DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
+DB_HOST=173.16.18.179
 DB_PORT=3306
 DB_DATABASE=dapemadb
 DB_USERNAME=dapemadb
 DB_PASSWORD="dapemadb@2026"
 
 APP_URL=https://dapemade.ddb.gov.ph</code></pre>
+      <div class="warn">DBA must allow MySQL from the app host on port 3306. Test: <code>mysql -h 173.16.18.179 -u dapemadb -p dapemadb -e "SELECT 1;"</code></div>
 
       <h3>4) Before first migrate</h3>
       <div class="warn">
@@ -409,29 +412,29 @@ https://YOUR_DOMAIN/install/</code></pre>
     <section id="step7">
       <h2>Step 7 — Enable HTTPS</h2>
 
-      <h3>Option A — Network Admin SSL already uploaded (port 80 blocked)</h3>
+      <h3>Option A — Network Admin SSL (port 80 blocked) — DDB</h3>
       <p class="lead">
-        Certs in <code>/etc/ssl/certs</code>. Port 80 is <strong>not allowed</strong> —
-        use HTTPS-only Nginx on <strong>443</strong> (no HTTP listener).
+        <code>/etc/ssl/certs</code> is usually only the <strong>system CA store</strong>.
+        On the DDB app server, site certs were in
+        <code>/home/dapemade/Installer/cert/ddb.gov.ph.crt</code> +
+        <code>.key</code> (wildcard <code>*.ddb.gov.ph</code>).
       </p>
       <pre><button class="copy" type="button" data-copy>Copy</button><code>cd /var/www/dape-ma-laravel
+sudo git config --global --add safe.directory /var/www/dape-ma-laravel
 sudo git pull origin main
 
-# Defaults:
-#   /etc/ssl/certs/dapemade.ddb.gov.ph.crt
-#   /etc/ssl/private/dapemade.ddb.gov.ph.key
+# Auto-finds Installer/cert, copies to /etc/ssl, Nginx 443-only (no port 80)
 sudo bash deploy/apply-nginx-ssl.sh
 
-# If filenames differ:
-sudo ls -la /etc/ssl/certs /etc/ssl/private
+# Manual override:
 sudo \
-  APP_DOMAIN=dapemade.ddb.gov.ph \
-  SSL_CERTIFICATE=/etc/ssl/certs/YOUR_FILE.crt \
-  SSL_CERTIFICATE_KEY=/etc/ssl/private/YOUR_FILE.key \
+  SSL_CERTIFICATE=/home/dapemade/Installer/cert/ddb.gov.ph.crt \
+  SSL_CERTIFICATE_KEY=/home/dapemade/Installer/cert/ddb.gov.ph.key \
   bash deploy/apply-nginx-ssl.sh</code></pre>
-      <div class="note">
-        Fresh install with HTTPS-only from the start:
-        <code>HTTPS_ONLY=1 APP_DOMAIN=dapemade.ddb.gov.ph SSL_CERTIFICATE=... SSL_CERTIFICATE_KEY=... bash deploy/install-ubuntu.sh</code>
+      <div class="ok">
+        Script installs certs to
+        <code>/etc/ssl/certs/dapemade.ddb.gov.ph.crt</code> and
+        <code>/etc/ssl/private/dapemade.ddb.gov.ph.key</code>, then reloads Nginx.
       </div>
 
       <h3>Option B — Let’s Encrypt (needs port 80 open)</h3>
@@ -471,23 +474,19 @@ static const String _productionBaseUrl = 'https://YOUR_DOMAIN/api/v1';</code></p
 
     <section id="example">
       <h2>Example filled in (DDB server)</h2>
-      <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo \
-  APP_DOMAIN=dapemade.ddb.gov.ph \
-  APP_URL=https://dapemade.ddb.gov.ph \
-  DB_DATABASE=dapemadb \
-  DB_USERNAME=dapemadb \
-  DB_PASSWORD='dapemadb@2026' \
-  bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>ssh dapemade@116.50.254.37
 
-# Browser: https://dapemade.ddb.gov.ph/install/
-#       or http://203.82.35.169/install/
+# Stack install
+sudo bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh
 
-# Prefer Network Admin SSL (port 80 blocked):
+# Remote MySQL in .env (not localhost):
+# DB_HOST=173.16.18.179
+
+# HTTPS-only (certs from Installer/cert):
+cd /var/www/dape-ma-laravel
 sudo bash deploy/apply-nginx-ssl.sh
 
-# Or Let's Encrypt only if port 80 is allowed:
-# sudo apt install -y certbot python3-certbot-nginx
-# sudo certbot --nginx -d dapemade.ddb.gov.ph</code></pre>
+# Browser: https://dapemade.ddb.gov.ph/install/</code></pre>
     </section>
 
     <section id="troubleshoot">

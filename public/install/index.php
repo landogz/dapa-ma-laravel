@@ -282,7 +282,10 @@ $suggestedUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'http
           <div class="grid two">
             <div>
               <label for="db_host">DB host</label>
-              <input id="db_host" type="text" value="127.0.0.1">
+              <input id="db_host" type="text" value="127.0.0.1" placeholder="127.0.0.1 or remote private IP">
+              <small style="display:block;margin-top:6px;color:#64748b;font-size:.78rem;">
+                Same server → <code>127.0.0.1</code>. Separate MySQL server (DDB) → private IP e.g. <code>173.16.18.179</code>.
+              </small>
             </div>
             <div>
               <label for="db_port">DB port</label>

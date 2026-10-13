@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Apply HTTPS-only (443) Nginx site for DAPE-MA
-# Use when Network Admin blocks port 80 and certs are already on the server.
+# Use when Network Admin blocks port 80.
+#
+# On DDB servers, site certs are often left in:
+#   /home/*/Installer/cert/ddb.gov.ph.crt + ddb.gov.ph.key  (wildcard *.ddb.gov.ph)
+# This script finds them, installs into /etc/ssl, then configures Nginx 443-only.
 #
 # Usage:
 #   sudo bash deploy/apply-nginx-ssl.sh
@@ -9,8 +13,8 @@
 # Optional overrides:
 #   APP_DOMAIN=dapemade.ddb.gov.ph
 #   APP_DIR=/var/www/dape-ma-laravel
-#   SSL_CERTIFICATE=/etc/ssl/certs/dapemade.ddb.gov.ph.crt
-#   SSL_CERTIFICATE_KEY=/etc/ssl/private/dapemade.ddb.gov.ph.key
+#   SSL_CERTIFICATE=/path/to/cert
+#   SSL_CERTIFICATE_KEY=/path/to/key
 #   PHP_VERSION=8.3
 # =============================================================================
 set -euo pipefail
@@ -25,16 +29,63 @@ APP_DIR="${APP_DIR:-/var/www/dape-ma-laravel}"
 PHP_VERSION="${PHP_VERSION:-8.3}"
 PHP_SOCK="/run/php/php${PHP_VERSION}-fpm.sock"
 
-SSL_CERTIFICATE="${SSL_CERTIFICATE:-/etc/ssl/certs/${APP_DOMAIN}.crt}"
-SSL_CERTIFICATE_KEY="${SSL_CERTIFICATE_KEY:-/etc/ssl/private/${APP_DOMAIN}.key}"
+TARGET_CERT="/etc/ssl/certs/${APP_DOMAIN}.crt"
+TARGET_KEY="/etc/ssl/private/${APP_DOMAIN}.key"
 
-# Auto-detect common filenames if defaults missing
-if [[ ! -f "${SSL_CERTIFICATE}" ]]; then
+SSL_CERTIFICATE="${SSL_CERTIFICATE:-}"
+SSL_CERTIFICATE_KEY="${SSL_CERTIFICATE_KEY:-}"
+
+find_pair() {
+  local cert="$1"
+  local key="$2"
+  if [[ -f "${cert}" && -f "${key}" ]]; then
+    SSL_CERTIFICATE="${cert}"
+    SSL_CERTIFICATE_KEY="${key}"
+    return 0
+  fi
+  return 1
+}
+
+# 1) Explicit paths already set
+# 2) Standard installed paths
+# 3) DDB Installer drop folder (real server layout)
+# 4) Other common names
+if [[ -z "${SSL_CERTIFICATE}" || -z "${SSL_CERTIFICATE_KEY}" ]]; then
+  if find_pair "${TARGET_CERT}" "${TARGET_KEY}"; then
+    :
+  elif find_pair "/home/dapemade/Installer/cert/ddb.gov.ph.crt" "/home/dapemade/Installer/cert/ddb.gov.ph.key"; then
+    :
+  else
+    shopt -s nullglob
+    for dir in /home/*/Installer/cert /root/Installer/cert /opt/ssl /etc/ssl/ddb; do
+      [[ -d "${dir}" ]] || continue
+      for cert in \
+        "${dir}/ddb.gov.ph.crt" \
+        "${dir}/${APP_DOMAIN}.crt" \
+        "${dir}"/*.crt \
+        "${dir}"/*fullchain*.pem \
+        "${dir}"/*.pem
+      do
+        [[ -f "${cert}" ]] || continue
+        base="${cert%.*}"
+        for key in "${base}.key" "${dir}/ddb.gov.ph.key" "${dir}/${APP_DOMAIN}.key" "${dir}"/*.key; do
+          if [[ -f "${key}" ]] && find_pair "${cert}" "${key}"; then
+            break 2
+          fi
+        done
+      done
+    done
+    shopt -u nullglob
+  fi
+fi
+
+# Fallbacks under /etc/ssl if still empty
+if [[ -z "${SSL_CERTIFICATE}" || ! -f "${SSL_CERTIFICATE}" ]]; then
   for candidate in \
     "/etc/ssl/certs/${APP_DOMAIN}.pem" \
     "/etc/ssl/certs/${APP_DOMAIN}.fullchain.pem" \
-    "/etc/ssl/certs/fullchain.pem" \
-    "/etc/ssl/certs/${APP_DOMAIN}.cer"
+    "/etc/ssl/certs/ddb.gov.ph.crt" \
+    "/etc/ssl/certs/fullchain.pem"
   do
     if [[ -f "${candidate}" ]]; then
       SSL_CERTIFICATE="${candidate}"
@@ -43,12 +94,13 @@ if [[ ! -f "${SSL_CERTIFICATE}" ]]; then
   done
 fi
 
-if [[ ! -f "${SSL_CERTIFICATE_KEY}" ]]; then
+if [[ -z "${SSL_CERTIFICATE_KEY}" || ! -f "${SSL_CERTIFICATE_KEY}" ]]; then
   for candidate in \
     "/etc/ssl/private/${APP_DOMAIN}.pem" \
-    "/etc/ssl/private/${APP_DOMAIN}.key.pem" \
+    "/etc/ssl/private/ddb.gov.ph.key" \
+    "/etc/ssl/private/privkey.pem" \
     "/etc/ssl/certs/${APP_DOMAIN}.key" \
-    "/etc/ssl/private/privkey.pem"
+    "/etc/ssl/certs/ddb.gov.ph.key"
   do
     if [[ -f "${candidate}" ]]; then
       SSL_CERTIFICATE_KEY="${candidate}"
@@ -59,21 +111,38 @@ fi
 
 echo "Domain:     ${APP_DOMAIN}"
 echo "App dir:    ${APP_DIR}"
-echo "Cert:       ${SSL_CERTIFICATE}"
-echo "Key:        ${SSL_CERTIFICATE_KEY}"
+echo "Cert:       ${SSL_CERTIFICATE:-"(not found)"}"
+echo "Key:        ${SSL_CERTIFICATE_KEY:-"(not found)"}"
 
-if [[ ! -f "${SSL_CERTIFICATE}" ]]; then
-  echo "[error] SSL certificate not found. List files with: ls -la /etc/ssl/certs /etc/ssl/private" >&2
-  echo "        Then re-run with SSL_CERTIFICATE=/path/to/cert SSL_CERTIFICATE_KEY=/path/to/key" >&2
+if [[ -z "${SSL_CERTIFICATE:-}" || ! -f "${SSL_CERTIFICATE}" ]]; then
+  echo "[error] Site SSL certificate not found." >&2
+  echo "  /etc/ssl/certs usually only has system CA roots — that is NOT your site cert." >&2
+  echo "  Look for files like:" >&2
+  echo "    /home/*/Installer/cert/ddb.gov.ph.crt" >&2
+  echo "    /home/*/Installer/cert/ddb.gov.ph.key" >&2
+  echo "  Then either re-run (auto-detect) or:" >&2
+  echo "    sudo SSL_CERTIFICATE=/real/cert.crt SSL_CERTIFICATE_KEY=/real/key.key bash deploy/apply-nginx-ssl.sh" >&2
   exit 1
 fi
 
-if [[ ! -f "${SSL_CERTIFICATE_KEY}" ]]; then
+if [[ -z "${SSL_CERTIFICATE_KEY:-}" || ! -f "${SSL_CERTIFICATE_KEY}" ]]; then
   echo "[error] SSL private key not found." >&2
-  echo "        Re-run with SSL_CERTIFICATE_KEY=/path/to/key" >&2
-  echo "        (Keys are often under /etc/ssl/private, not /etc/ssl/certs)" >&2
+  echo "  Private keys are often under /etc/ssl/private or next to the .crt in Installer/cert/." >&2
   exit 1
 fi
+
+# Install into standard paths for Nginx (if source is elsewhere)
+mkdir -p /etc/ssl/private
+if [[ "${SSL_CERTIFICATE}" != "${TARGET_CERT}" ]]; then
+  cp -f "${SSL_CERTIFICATE}" "${TARGET_CERT}"
+  SSL_CERTIFICATE="${TARGET_CERT}"
+fi
+if [[ "${SSL_CERTIFICATE_KEY}" != "${TARGET_KEY}" ]]; then
+  cp -f "${SSL_CERTIFICATE_KEY}" "${TARGET_KEY}"
+  SSL_CERTIFICATE_KEY="${TARGET_KEY}"
+fi
+chmod 644 "${SSL_CERTIFICATE}"
+chmod 600 "${SSL_CERTIFICATE_KEY}"
 
 if [[ ! -d "${APP_DIR}/public" ]]; then
   echo "[error] App public dir missing: ${APP_DIR}/public" >&2
@@ -157,5 +226,10 @@ fi
 
 echo
 echo "HTTPS-only Nginx applied for ${APP_DOMAIN}"
+echo "  Cert installed: ${SSL_CERTIFICATE}"
+echo "  Key installed:  ${SSL_CERTIFICATE_KEY}"
 echo "Test: https://${APP_DOMAIN}/admin/login"
 echo "API:  https://${APP_DOMAIN}/api/v1/health"
+echo
+echo "Note: port 80 is not configured (Network Admin policy)."
+echo "If the app returns 500, check DB_HOST in .env (remote MySQL is often not 127.0.0.1)."

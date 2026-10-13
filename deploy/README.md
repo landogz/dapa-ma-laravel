@@ -9,18 +9,17 @@ Scripts + browser installer for a **fresh Ubuntu 24.04** VPS (Nginx, PHP 8.3, My
 
 **HTTPS-only (port 80 blocked by Network Admin):**
 
+On DDB, certs are often in `/home/dapemade/Installer/cert/ddb.gov.ph.{crt,key}` (wildcard `*.ddb.gov.ph`), not under the system CA folder.
+
 ```bash
-# On the DAPE-MA server — certs already in /etc/ssl/certs
 cd /var/www/dape-ma-laravel
+sudo git config --global --add safe.directory /var/www/dape-ma-laravel
 sudo git pull origin main
 sudo bash deploy/apply-nginx-ssl.sh
-
-# If filenames differ from dapemade.ddb.gov.ph.crt / .key:
-sudo \
-  SSL_CERTIFICATE=/etc/ssl/certs/YOUR_CERT.crt \
-  SSL_CERTIFICATE_KEY=/etc/ssl/private/YOUR_KEY.key \
-  bash deploy/apply-nginx-ssl.sh
+# Auto-finds Installer/cert, installs into /etc/ssl, Nginx listen 443 only
 ```
+
+**Remote MySQL (split servers):** set `DB_HOST` to the DB private IP (e.g. `173.16.18.179`), not `127.0.0.1`.
 
 Template: [nginx-dape-ma-ssl.conf](nginx-dape-ma-ssl.conf)
 

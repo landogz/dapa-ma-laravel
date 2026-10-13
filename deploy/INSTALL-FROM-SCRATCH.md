@@ -150,28 +150,38 @@ DB_PASSWORD=DB_PASS
 
 **Notes**
 
-- On the same server as MySQL, host is almost always `127.0.0.1` (not the public IP).
+- If MySQL is **on the same server** as the app → `DB_HOST=127.0.0.1`
+- If MySQL is on a **separate DB server** (DDB layout) → use the DB **private IP**, not `127.0.0.1`
 - If the password contains `@`, `#`, spaces, or quotes, wrap it in double quotes:
 
 ```env
 DB_PASSWORD="dapemadb@2026"
 ```
 
-### 3) Example (DDB server)
+### 3) Example (DDB split app + DB servers)
+
+| Role | Host |
+|------|------|
+| App (Nginx/PHP) | `173.16.18.178` / public `116.50.254.37` |
+| MySQL | `173.16.18.179` / public `203.82.35.169` |
+
+On the **app** server `.env`:
 
 ```env
 DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
+DB_HOST=173.16.18.179
 DB_PORT=3306
 DB_DATABASE=dapemadb
 DB_USERNAME=dapemadb
 DB_PASSWORD="dapemadb@2026"
+
+APP_URL=https://dapemade.ddb.gov.ph
 ```
 
-Also set the public URL:
+DBA must allow MySQL from the app host (`173.16.18.178`) on port **3306**. Test:
 
-```env
-APP_URL=https://dapemade.ddb.gov.ph
+```bash
+mysql -h 173.16.18.179 -u dapemadb -p dapemadb -e "SELECT 1;"
 ```
 
 ### 4) Before first migrate (important)
@@ -294,34 +304,45 @@ sudo mv /var/www/dape-ma-laravel/public/install \
 
 ## Step 7 — Enable HTTPS
 
-### Option A — Network Admin already uploaded SSL (port 80 blocked)
+### Option A — Network Admin SSL (port 80 blocked) — recommended for DDB
 
-When certs are in `/etc/ssl/certs` and **port 80 is not allowed**, use the HTTPS-only Nginx block (443 only — no HTTP redirect needed):
+**Important:** `/etc/ssl/certs` is mostly the Ubuntu **system CA store**. Your site cert is often elsewhere.
+
+On the DDB app server the real files were found at:
+
+```text
+/home/dapemade/Installer/cert/ddb.gov.ph.crt
+/home/dapemade/Installer/cert/ddb.gov.ph.key
+```
+
+(Wildcard `*.ddb.gov.ph` — covers `dapemade.ddb.gov.ph`.)
 
 ```bash
 cd /var/www/dape-ma-laravel
+
+# Fix git ownership if needed
+sudo git config --global --add safe.directory /var/www/dape-ma-laravel
 sudo git pull origin main
 
-# Defaults look for:
-#   /etc/ssl/certs/dapemade.ddb.gov.ph.crt
-#   /etc/ssl/private/dapemade.ddb.gov.ph.key
+# Auto-finds Installer/cert, copies into /etc/ssl, applies Nginx 443-only
 sudo bash deploy/apply-nginx-ssl.sh
 ```
 
-If file names differ, ask Network Admin for the exact paths, then:
+What the script does:
+
+1. Looks for certs in `/home/*/Installer/cert/` and `/etc/ssl/...`
+2. Copies them to `/etc/ssl/certs/dapemade.ddb.gov.ph.crt` + `/etc/ssl/private/...key`
+3. Writes Nginx **listen 443 ssl** only (no port 80)
+4. Sets `APP_URL=https://dapemade.ddb.gov.ph`
+
+Manual override if needed:
 
 ```bash
 sudo \
   APP_DOMAIN=dapemade.ddb.gov.ph \
-  SSL_CERTIFICATE=/etc/ssl/certs/YOUR_FILE.crt \
-  SSL_CERTIFICATE_KEY=/etc/ssl/private/YOUR_FILE.key \
+  SSL_CERTIFICATE=/home/dapemade/Installer/cert/ddb.gov.ph.crt \
+  SSL_CERTIFICATE_KEY=/home/dapemade/Installer/cert/ddb.gov.ph.key \
   bash deploy/apply-nginx-ssl.sh
-```
-
-List uploaded files:
-
-```bash
-sudo ls -la /etc/ssl/certs /etc/ssl/private
 ```
 
 Template config: `deploy/nginx-dape-ma-ssl.conf`
@@ -375,10 +396,13 @@ That pulls `main`, runs `composer install`, migrate, and caches.
 
 ---
 
-## Example filled in (your DDB server)
+## Example filled in (DDB DEV server)
 
 ```bash
-# Step 5
+# SSH
+ssh dapemade@116.50.254.37
+
+# Step 5 — stack (app on this host)
 sudo \
   APP_DOMAIN=dapemade.ddb.gov.ph \
   APP_URL=https://dapemade.ddb.gov.ph \
@@ -387,13 +411,15 @@ sudo \
   DB_PASSWORD='dapemadb@2026' \
   bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh
 
-# Step 6 — browser
-# https://dapemade.ddb.gov.ph/install/
-# or http://203.82.35.169/install/
+# Step 5b — remote MySQL (DB host is NOT this machine)
+# Edit .env → DB_HOST=173.16.18.179
 
-# Step 7
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d dapemade.ddb.gov.ph
+# Step 6 — browser installer (HTTPS after Step 7, or temporary internal IP)
+# https://dapemade.ddb.gov.ph/install/
+
+# Step 7 — 443-only (certs from Installer/cert)
+cd /var/www/dape-ma-laravel
+sudo bash deploy/apply-nginx-ssl.sh
 ```
 
 ---
