@@ -9,6 +9,7 @@ import {
     requireAuthentication,
 } from './modules/auth';
 import { initAdminPage } from './modules/admin-dashboard';
+import { initResetPasswordPage } from './modules/password-reset/index';
 import { initPublicPostShow } from './modules/public/post-show';
 
 axios.defaults.baseURL = '/api/v1';
@@ -22,7 +23,9 @@ axios.interceptors.response.use(
         const status = error.response?.status;
         const requestUrl = error.config?.url ?? '';
         const isAuthFormRequest = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register');
-        const isPublicPage = document.body.dataset.page === 'public-post-show';
+        const isPublicPage =
+            document.body.dataset.page === 'public-post-show' ||
+            document.body.dataset.page === 'reset-password';
 
         if (status === 401 && !isAuthFormRequest && !isPublicPage) {
             Swal.fire({
@@ -61,6 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (page === 'admin-register') {
         redirectIfAuthenticated();
         bindRegisterForm();
+        return;
+    }
+
+    if (page === 'reset-password') {
+        initResetPasswordPage();
         return;
     }
 

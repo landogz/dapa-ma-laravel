@@ -5,6 +5,21 @@ declare(strict_types=1);
 require __DIR__.'/_bootstrap.php';
 
 $installed = installer_is_locked();
+
+// Already installed — skip the installer UI entirely.
+if ($installed) {
+    $target = '/admin/login';
+    if (! headers_sent()) {
+        header('Location: '.$target, true, 302);
+    }
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url='
+        .htmlspecialchars($target, ENT_QUOTES, 'UTF-8')
+        .'"><title>Redirecting…</title></head><body><p>Already installed. <a href="'
+        .htmlspecialchars($target, ENT_QUOTES, 'UTF-8')
+        .'">Continue to admin login</a>.</p></body></html>';
+    exit;
+}
+
 $suggestedUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
     .'://'.($_SERVER['HTTP_HOST'] ?? 'localhost');
 ?>
@@ -217,7 +232,7 @@ $suggestedUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'http
       </div>
     </div>
 
-    <div class="card" id="app" data-installed="<?= $installed ? '1' : '0' ?>">
+    <div class="card" id="app" data-installed="0">
       <div class="steps" id="stepTabs">
         <div class="step-tab active" data-step="1"><span>1</span>Requirements</div>
         <div class="step-tab" data-step="2"><span>2</span>App</div>
@@ -227,18 +242,6 @@ $suggestedUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'http
 
       <div class="body">
         <div id="alert" class="alert" role="alert"></div>
-
-        <?php if ($installed): ?>
-          <div class="done-box">
-            <div class="icon">✓</div>
-            <h2>Already installed</h2>
-            <p class="lead">This server has a completed install lock. Open the admin panel or API.</p>
-            <div class="links">
-              <a href="/admin/login">Go to Admin Login</a>
-              <a href="/api/v1/health">Check API health</a>
-            </div>
-          </div>
-        <?php else: ?>
 
         <section class="panel active" data-panel="1">
           <h2>Server requirements</h2>
@@ -341,13 +344,10 @@ $suggestedUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'http
             <p class="lead" style="margin-top:16px;">For security, delete or lock down <code>public/install</code> after verifying login.</p>
           </div>
         </section>
-
-        <?php endif; ?>
       </div>
     </div>
   </div>
 
-  <?php if (! $installed): ?>
   <script>
     const alertEl = document.getElementById('alert');
     let current = 1;
@@ -478,6 +478,5 @@ $suggestedUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'http
 
     loadRequirements().catch(e => showAlert('error', e.message));
   </script>
-  <?php endif; ?>
 </body>
 </html>

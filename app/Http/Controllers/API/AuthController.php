@@ -4,24 +4,27 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\UpdateOnboardingRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\PasswordResetService;
 use App\Services\ProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
     public function __construct(
         private readonly ProfileService $profileService,
         private readonly NotificationService $notificationService,
+        private readonly PasswordResetService $passwordResetService,
     ) {
     }
 
@@ -163,26 +166,36 @@ class AuthController extends Controller
         ]);
     }
 
-    public function forgotPassword(Request $request): JsonResponse
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $request->validate([
-            'email' => ['required', 'email'],
-        ]);
-
-        $status = Password::broker()->sendResetLink(
-            $request->only('email')
+        $result = $this->passwordResetService->sendResetLink(
+            (string) $request->validated('email')
         );
 
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json([
-                'status'  => true,
-                'message' => __($status),
-            ]);
+        return response()->json([
+            'status' => $result['status'],
+            'message' => $result['message'],
+            'data' => $result['data'] ?? (object) [],
+        ], $result['http']);
+    }
+
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        // `confirmed` is validated but not always returned by validated().
+        $validated['password_confirmation'] = (string) $request->input('password_confirmation');
+
+        $result = $this->passwordResetService->reset($validated);
+
+        $payload = [
+            'status' => $result['status'],
+            'message' => $result['message'],
+        ];
+
+        if (isset($result['errors'])) {
+            $payload['errors'] = $result['errors'];
         }
 
-        return response()->json([
-            'status'  => false,
-            'message' => __($status),
-        ], 422);
+        return response()->json($payload, $result['http']);
     }
 }

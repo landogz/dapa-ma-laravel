@@ -5,7 +5,10 @@ use App\Support\AdminPage;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    if (! is_file(storage_path('app/installed'))) {
+    $installed = is_file(storage_path('app/installed'))
+        || filled(config('app.key'));
+
+    if (! $installed) {
         return redirect('/install/');
     }
 
@@ -30,6 +33,13 @@ Route::get('/admin/login', function () {
         'demoAccounts' => $showDemoAccounts ? config('dape.demo_login_accounts', []) : [],
     ]);
 });
+
+Route::get('/reset-password', function () {
+    return view('auth.reset-password', [
+        'email' => request()->query('email', ''),
+        'token' => request()->query('token', ''),
+    ]);
+})->name('password.reset');
 
 Route::get('/admin/register', function () {
     if (User::query()->where('role', 'super_admin')->exists()) {

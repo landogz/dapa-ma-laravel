@@ -17,9 +17,32 @@ function installer_lock_path(): string
     return installer_base_path().'/storage/app/installed';
 }
 
+function installer_env_has_app_key(): bool
+{
+    $envPath = installer_base_path().'/.env';
+    if (! is_file($envPath)) {
+        return false;
+    }
+
+    $content = file_get_contents($envPath);
+    if ($content === false) {
+        return false;
+    }
+
+    return (bool) preg_match('/^APP_KEY=(?!null\b)(?!\s*$).+/m', $content);
+}
+
+/**
+ * Installed when the lock file exists, or when .env already has a real APP_KEY
+ * (manual / prior setup without the web installer).
+ */
 function installer_is_locked(): bool
 {
-    return is_file(installer_lock_path());
+    if (is_file(installer_lock_path())) {
+        return true;
+    }
+
+    return installer_env_has_app_key();
 }
 
 function installer_json(array $payload, int $status = 200): never
