@@ -17,8 +17,8 @@ Use this when the VPS has **nothing installed** yet (fresh Ubuntu **24.04**).
 Replace placeholders:
 
 - `YOUR_USER` — SSH username  
-- `SERVER_IP` — public IP (e.g. `203.82.35.169`)  
-- `YOUR_DOMAIN` — e.g. `dapemade.ddb.gov.ph`  
+- `SERVER_IP` — public IP (e.g. `203.0.113.10`)  
+- `YOUR_DOMAIN` — e.g. `your-domain.example`  
 - `DB_NAME` / `DB_USER` / `DB_PASS` — MySQL app credentials  
 
 ---
@@ -155,33 +155,33 @@ DB_PASSWORD=DB_PASS
 - If the password contains `@`, `#`, spaces, or quotes, wrap it in double quotes:
 
 ```env
-DB_PASSWORD="dapemadb@2026"
+DB_PASSWORD="YourPassword@here"
 ```
 
 ### 3) Example (DDB split app + DB servers)
 
 | Role | Host |
 |------|------|
-| App (Nginx/PHP) | `173.16.18.178` / public `116.50.254.37` |
-| MySQL | `173.16.18.179` / public `203.82.35.169` |
+| App (Nginx/PHP) | `10.0.0.10` / public `203.0.113.10` |
+| MySQL | `10.0.0.20` / public `203.0.113.20` |
 
-On the **app** server `.env`:
+On the **app** server `.env` (replace with your values):
 
 ```env
 DB_CONNECTION=mysql
-DB_HOST=173.16.18.179
+DB_HOST=10.0.0.20
 DB_PORT=3306
-DB_DATABASE=dapemadb
-DB_USERNAME=dapemadb
-DB_PASSWORD="dapemadb@2026"
+DB_DATABASE=your_database
+DB_USERNAME=your_db_user
+DB_PASSWORD="YourPassword@here"
 
-APP_URL=https://dapemade.ddb.gov.ph
+APP_URL=https://your-domain.example
 ```
 
-DBA must allow MySQL from the app host (`173.16.18.178`) on port **3306**. Test:
+DBA must allow MySQL from the app host (`10.0.0.10`) on port **3306**. Test:
 
 ```bash
-mysql -h 173.16.18.179 -u dapemadb -p dapemadb -e "SELECT 1;"
+mysql -h 10.0.0.20 -u your_db_user -p your_database -e "SELECT 1;"
 ```
 
 ### 4) Before first migrate (important)
@@ -229,10 +229,10 @@ If the DB does not exist yet:
 
 ```bash
 sudo mysql -e "
-CREATE DATABASE IF NOT EXISTS dapemadb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS 'dapemadb'@'localhost' IDENTIFIED BY 'dapemadb@2026';
-ALTER USER 'dapemadb'@'localhost' IDENTIFIED BY 'dapemadb@2026';
-GRANT ALL PRIVILEGES ON dapemadb.* TO 'dapemadb'@'localhost';
+CREATE DATABASE IF NOT EXISTS your_database CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'your_db_user'@'localhost' IDENTIFIED BY 'YourPassword@here';
+ALTER USER 'your_db_user'@'localhost' IDENTIFIED BY 'YourPassword@here';
+GRANT ALL PRIVILEGES ON your_database.* TO 'your_db_user'@'localhost';
 FLUSH PRIVILEGES;
 "
 ```
@@ -312,11 +312,11 @@ sudo mv /var/www/dape-ma-laravel/public/install \
 On the DDB app server the real files were found at:
 
 ```text
-/home/dapemade/Installer/cert/ddb.gov.ph.crt
-/home/dapemade/Installer/cert/ddb.gov.ph.key
+/home/YOUR_USER/Installer/cert/your-domain.crt
+/home/YOUR_USER/Installer/cert/your-domain.key
 ```
 
-(Wildcard `*.ddb.gov.ph` — covers `dapemade.ddb.gov.ph`.)
+(Or a wildcard that covers `YOUR_DOMAIN`.)
 
 ```bash
 cd /var/www/dape-ma-laravel
@@ -332,17 +332,17 @@ sudo bash deploy/apply-nginx-ssl.sh
 What the script does:
 
 1. Looks for certs in `/home/*/Installer/cert/` and `/etc/ssl/...`
-2. Copies them to `/etc/ssl/certs/dapemade.ddb.gov.ph.crt` + `/etc/ssl/private/...key`
+2. Copies them to `/etc/ssl/certs/YOUR_DOMAIN.crt` + `/etc/ssl/private/...key`
 3. Writes Nginx **listen 443 ssl** only (no port 80)
-4. Sets `APP_URL=https://dapemade.ddb.gov.ph`
+4. Sets `APP_URL=https://YOUR_DOMAIN`
 
 Manual override if needed:
 
 ```bash
 sudo \
-  APP_DOMAIN=dapemade.ddb.gov.ph \
-  SSL_CERTIFICATE=/home/dapemade/Installer/cert/ddb.gov.ph.crt \
-  SSL_CERTIFICATE_KEY=/home/dapemade/Installer/cert/ddb.gov.ph.key \
+  APP_DOMAIN=your-domain.example \
+  SSL_CERTIFICATE=/home/YOUR_USER/Installer/cert/your-domain.crt \
+  SSL_CERTIFICATE_KEY=/home/YOUR_USER/Installer/cert/your-domain.key \
   bash deploy/apply-nginx-ssl.sh
 ```
 
@@ -401,23 +401,23 @@ That pulls `main`, runs `composer install`, migrate, and caches.
 
 ```bash
 # SSH
-ssh dapemade@116.50.254.37
+ssh YOUR_USER@203.0.113.10
 
 # Step 5 — stack (app on this host)
 sudo \
-  APP_DOMAIN=dapemade.ddb.gov.ph \
-  APP_URL=https://dapemade.ddb.gov.ph \
-  DB_DATABASE=dapemadb \
-  DB_USERNAME=dapemadb \
-  DB_PASSWORD='dapemadb@2026' \
+  APP_DOMAIN=your-domain.example \
+  APP_URL=https://your-domain.example \
+  DB_DATABASE=your_database \
+  DB_USERNAME=your_db_user \
+  DB_PASSWORD='YourPassword@here' \
   bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh
 
 # MySQL: this app host already had local mysqld working.
-# Use DB_HOST=127.0.0.1 (remote 173.16.18.179 refused connections from the app).
-# Quote password in .env: DB_PASSWORD="dapemadb@2026"
+# Use DB_HOST=127.0.0.1 (remote 10.0.0.20 refused connections from the app).
+# Quote password in .env: DB_PASSWORD="YourPassword@here"
 
 # Step 6 — browser installer (HTTPS after Step 7)
-# https://dapemade.ddb.gov.ph/install/
+# https://your-domain.example/install/
 # If you see “Migration failed”, follow Troubleshooting → Migration failed recovery
 
 # Step 7 — 443-only (certs from Installer/cert)
@@ -433,7 +433,7 @@ sudo bash deploy/apply-nginx-ssl.sh
 |---------|-----|
 | `Table '….cache' doesn't exist` during install | Use latest script; or set `CACHE_STORE=file` and `SESSION_DRIVER=file` in `.env`, then open `/install/` |
 | **Web installer: “Migration failed. Check DB credentials and logs.”** | See **[Migration failed recovery](#migration-failed-recovery)** below (credentials OK ≠ migrate OK) |
-| `Access denied for user` | Check `DB_USERNAME` / `DB_PASSWORD` in `.env`; quote passwords that contain `@` (`DB_PASSWORD="dapemadb@2026"`); recreate MySQL user (Step 5b.6) |
+| `Access denied for user` | Check `DB_USERNAME` / `DB_PASSWORD` in `.env`; quote passwords that contain `@` (`DB_PASSWORD="YourPassword@here"`); recreate MySQL user (Step 5b.6) |
 | `SQLSTATE[HY000] [2002] Connection refused` to remote IP | MySQL on the DB host is not listening / not open to the app IP. Use `DB_HOST=127.0.0.1` if MySQL runs **on the app server**, or ask DBA to open `3306` from the app private IP |
 | Artisan still uses old `DB_HOST` after editing `.env` | Cached config: `rm -f bootstrap/cache/config.php` then `php artisan optimize:clear` |
 | Old script from `/tmp` | `rm -rf /tmp/dape-ma-laravel` and clone again |
@@ -447,13 +447,13 @@ On DAPEMA DEV this showed up when `/install/` used `DB_HOST=127.0.0.1` but migra
 
 #### 1) Wrong / stale DB host in config cache
 
-Installer UI can show `127.0.0.1` while a previous `config:cache` still points at an unreachable remote host (e.g. `173.16.18.179`).
+Installer UI can show `127.0.0.1` while a previous `config:cache` still points at an unreachable remote host (e.g. `10.0.0.20`).
 
 ```bash
 cd /var/www/dape-ma-laravel
 
 # Confirm MySQL locally (app server has mysqld)
-mysql -h 127.0.0.1 -u dapemadb -p dapemadb -e "SELECT 1;"
+mysql -h 127.0.0.1 -u your_db_user -p your_database -e "SELECT 1;"
 
 # Align .env (quote password if it contains @)
 sudo sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env
@@ -465,14 +465,14 @@ sudo rm -f bootstrap/cache/config.php
 sudo -u www-data php artisan optimize:clear
 ```
 
-Use `DB_HOST=173.16.18.179` (or your DB private IP) **only** after `mysql -h THAT_IP -u … -e "SELECT 1;"` succeeds from the app server.
+Use `DB_HOST=10.0.0.20` (or your DB private IP) **only** after `mysql -h THAT_IP -u … -e "SELECT 1;"` succeeds from the app server.
 
 #### 2) Migration order bug: `daily_verses` missing
 
 If logs show:
 
 ```text
-Table 'dapemadb.daily_verses' doesn't exist
+Table 'your_database.daily_verses' doesn't exist
 alter table `daily_verses` add `kid_listo_message` ...
 ```
 

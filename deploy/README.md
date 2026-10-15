@@ -19,7 +19,7 @@ sudo bash deploy/apply-nginx-ssl.sh
 # Auto-finds Installer/cert, installs into /etc/ssl, Nginx listen 443 only
 ```
 
-**Remote MySQL (split servers):** set `DB_HOST` to the DB private IP (e.g. `173.16.18.179`), not `127.0.0.1` — only after `mysql -h THAT_IP …` works from the app host. If MySQL runs on the app server, use `127.0.0.1`.
+**Remote MySQL (split servers):** set `DB_HOST` to the DB private IP (e.g. `10.0.0.20`), not `127.0.0.1` — only after `mysql -h THAT_IP …` works from the app host. If MySQL runs on the app server, use `127.0.0.1`.
 
 **Web installer “Migration failed”:** clear config cache, confirm DB host, and ensure Kid Listo migration runs *after* `create_daily_verses` (`2026_07_01_130200_…`). Full steps: [INSTALL-FROM-SCRATCH.md § Migration failed recovery](INSTALL-FROM-SCRATCH.md#migration-failed-recovery).
 
@@ -29,7 +29,7 @@ Template: [nginx-dape-ma-ssl.conf](nginx-dape-ma-ssl.conf)
 
 ## Start to finish (recommended)
 
-Use this path on a new server. Example IP: `173.16.18.178`.
+Use this path on a new server. Example IP: `203.0.113.10`.
 
 ### Step 0 — Push deploy code (on your Mac, once)
 
@@ -45,7 +45,7 @@ git push origin main
 ### Step 1 — SSH into the server
 
 ```bash
-ssh YOUR_USER@173.16.18.178
+ssh YOUR_USER@203.0.113.10
 ```
 
 Use a user that can run `sudo`.
@@ -63,7 +63,7 @@ git clone https://github.com/landogz/dapa-ma-laravel.git /tmp/dape-ma-laravel
 ```bash
 # on Mac
 scp -r /Applications/XAMPP/xamppfiles/htdocs/DAPE-MA/dape-ma-laravel/deploy \
-  YOUR_USER@173.16.18.178:/tmp/dape-deploy
+  YOUR_USER@203.0.113.10:/tmp/dape-deploy
 ```
 
 Then on the server you still need the full Laravel app — prefer cloning (or rsync the whole project).
@@ -93,7 +93,7 @@ DB password (if auto-generated): `/var/www/dape-ma-laravel/.install-credentials`
 In a browser:
 
 ```text
-http://173.16.18.178/install/
+http://203.0.113.10/install/
 ```
 
 (or `http://YOUR_DOMAIN/install/` if DNS already points here)
@@ -107,7 +107,7 @@ http://173.16.18.178/install/
 ### Step 6 — App tab
 
 1. **App name:** `DAPE-MA` (or your name).
-2. **App URL:** `http://173.16.18.178` (or `https://your-domain.com`).
+2. **App URL:** `http://203.0.113.10` (or `https://your-domain.com`).
 3. Leave **Seed demo data & accounts** checked if you want sample content + demo logins.
 4. Click **Continue**.
 
@@ -151,8 +151,8 @@ The UI will: write `.env` → `key:generate` → `migrate` → optional `db:seed
 ### Step 9 — Verify API
 
 ```text
-http://173.16.18.178/api/v1/health
-http://173.16.18.178/api/v1/posts
+http://203.0.113.10/api/v1/health
+http://203.0.113.10/api/v1/posts
 ```
 
 ### Step 10 — (Optional) Domain + HTTPS
@@ -185,7 +185,7 @@ In Flutter `lib/core/network/endpoints.dart`:
 ```dart
 static const bool useLocalApi = false;
 static const String _productionBaseUrl = 'https://YOUR_DOMAIN/api/v1';
-// or http://173.16.18.178/api/v1 for IP-only testing
+// or http://203.0.113.10/api/v1 for IP-only testing
 ```
 
 Rebuild/export the APK.

@@ -325,16 +325,16 @@ DB_PASSWORD=DB_PASS</code></pre>
       </ul>
 
       <h3>3) Example (DDB split app + DB)</h3>
-      <p class="lead">App: <code>173.16.18.178</code> (public <code>116.50.254.37</code>) · DB: <code>173.16.18.179</code></p>
+      <p class="lead">App: <code>10.0.0.10</code> (public <code>203.0.113.10</code>) · DB: <code>10.0.0.20</code> — replace with your hosts</p>
       <pre><button class="copy" type="button" data-copy>Copy</button><code>DB_CONNECTION=mysql
-DB_HOST=173.16.18.179
+DB_HOST=10.0.0.20
 DB_PORT=3306
-DB_DATABASE=dapemadb
-DB_USERNAME=dapemadb
-DB_PASSWORD="dapemadb@2026"
+DB_DATABASE=your_database
+DB_USERNAME=your_db_user
+DB_PASSWORD="YourPassword@here"
 
-APP_URL=https://dapemade.ddb.gov.ph</code></pre>
-      <div class="warn">DBA must allow MySQL from the app host on port 3306. Test: <code>mysql -h 173.16.18.179 -u dapemadb -p dapemadb -e "SELECT 1;"</code></div>
+APP_URL=https://your-domain.example</code></pre>
+      <div class="warn">DBA must allow MySQL from the app host on port 3306. Test: <code>mysql -h 10.0.0.20 -u your_db_user -p your_database -e "SELECT 1;"</code></div>
 
       <h3>4) Before first migrate</h3>
       <div class="warn">
@@ -358,10 +358,10 @@ php artisan db:show</code></pre>
 
       <h3>6) Create MySQL DB + user yourself (if needed)</h3>
       <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo mysql -e "
-CREATE DATABASE IF NOT EXISTS dapemadb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS 'dapemadb'@'localhost' IDENTIFIED BY 'dapemadb@2026';
-ALTER USER 'dapemadb'@'localhost' IDENTIFIED BY 'dapemadb@2026';
-GRANT ALL PRIVILEGES ON dapemadb.* TO 'dapemadb'@'localhost';
+CREATE DATABASE IF NOT EXISTS your_database CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'your_db_user'@'localhost' IDENTIFIED BY 'YourPassword@here';
+ALTER USER 'your_db_user'@'localhost' IDENTIFIED BY 'YourPassword@here';
+GRANT ALL PRIVILEGES ON your_database.* TO 'your_db_user'@'localhost';
 FLUSH PRIVILEGES;
 "</code></pre>
       <p>Then put the same name / user / password into <code>.env</code>.</p>
@@ -417,8 +417,8 @@ https://YOUR_DOMAIN/install/</code></pre>
       <p class="lead">
         <code>/etc/ssl/certs</code> is usually only the <strong>system CA store</strong>.
         On the DDB app server, site certs were in
-        <code>/home/dapemade/Installer/cert/ddb.gov.ph.crt</code> +
-        <code>.key</code> (wildcard <code>*.ddb.gov.ph</code>).
+        <code>/home/YOUR_USER/Installer/cert/your-domain.crt</code> +
+        <code>.key</code> (or a wildcard that covers <code>YOUR_DOMAIN</code>).
       </p>
       <pre><button class="copy" type="button" data-copy>Copy</button><code>cd /var/www/dape-ma-laravel
 sudo git config --global --add safe.directory /var/www/dape-ma-laravel
@@ -429,13 +429,13 @@ sudo bash deploy/apply-nginx-ssl.sh
 
 # Manual override:
 sudo \
-  SSL_CERTIFICATE=/home/dapemade/Installer/cert/ddb.gov.ph.crt \
-  SSL_CERTIFICATE_KEY=/home/dapemade/Installer/cert/ddb.gov.ph.key \
+  SSL_CERTIFICATE=/home/YOUR_USER/Installer/cert/your-domain.crt \
+  SSL_CERTIFICATE_KEY=/home/YOUR_USER/Installer/cert/your-domain.key \
   bash deploy/apply-nginx-ssl.sh</code></pre>
       <div class="ok">
         Script installs certs to
-        <code>/etc/ssl/certs/dapemade.ddb.gov.ph.crt</code> and
-        <code>/etc/ssl/private/dapemade.ddb.gov.ph.key</code>, then reloads Nginx.
+        <code>/etc/ssl/certs/YOUR_DOMAIN.crt</code> and
+        <code>/etc/ssl/private/YOUR_DOMAIN.key</code>, then reloads Nginx.
       </div>
 
       <h3>Option B — Let’s Encrypt (needs port 80 open)</h3>
@@ -475,20 +475,20 @@ static const String _productionBaseUrl = 'https://YOUR_DOMAIN/api/v1';</code></p
 
     <section id="example">
       <h2>Example filled in (DDB server)</h2>
-      <pre><button class="copy" type="button" data-copy>Copy</button><code>ssh dapemade@116.50.254.37
+      <pre><button class="copy" type="button" data-copy>Copy</button><code>ssh YOUR_USER@203.0.113.10
 
 # Stack install
 sudo bash /tmp/dape-ma-laravel/deploy/install-ubuntu.sh
 
-# MySQL on THIS app server → use localhost (remote 173.16.18.179 was refused):
+# MySQL on THIS app server → use localhost (remote 10.0.0.20 was refused):
 # DB_HOST=127.0.0.1
-# DB_PASSWORD="dapemadb@2026"
+# DB_PASSWORD="YourPassword@here"
 
 # HTTPS-only (certs from Installer/cert):
 cd /var/www/dape-ma-laravel
 sudo bash deploy/apply-nginx-ssl.sh
 
-# Browser: https://dapemade.ddb.gov.ph/install/
+# Browser: https://your-domain.example/install/
 # If migrate fails, see Troubleshooting → Migration failed recovery</code></pre>
     </section>
 
@@ -540,9 +540,9 @@ sudo bash deploy/apply-nginx-ssl.sh
       <p>On DAPEMA DEV, <code>/install/</code> showed <em>Migration failed</em> even with correct UI credentials. Two fixes were required:</p>
 
       <h4>1) Stale config cache / wrong host</h4>
-      <p>UI said <code>127.0.0.1</code> but cached config still targeted unreachable <code>173.16.18.179</code>. Local MySQL on the app server worked.</p>
+      <p>UI said <code>127.0.0.1</code> but cached config still targeted an unreachable remote DB host (example: <code>10.0.0.20</code>). Local MySQL on the app server worked.</p>
       <pre><button class="copy" type="button" data-copy>Copy</button><code>cd /var/www/dape-ma-laravel
-mysql -h 127.0.0.1 -u dapemadb -p dapemadb -e "SELECT 1;"
+mysql -h 127.0.0.1 -u your_db_user -p your_database -e "SELECT 1;"
 
 sudo sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env
 sudo sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD="YOUR_DB_PASSWORD"/' .env
@@ -554,7 +554,7 @@ sudo -u www-data php artisan optimize:clear</code></pre>
       <p>Use a remote <code>DB_HOST</code> only after <code>mysql -h THAT_IP … -e "SELECT 1;"</code> succeeds from the app server.</p>
 
       <h4>2) Migration order: <code>daily_verses</code> missing</h4>
-      <p>Error looked like: <code>Table 'dapemadb.daily_verses' doesn't exist</code> while altering for Kid Listo fields. The alter file was dated <strong>before</strong> the create table migration.</p>
+      <p>Error looked like: <code>Table 'your_database.daily_verses' doesn't exist</code> while altering for Kid Listo fields. The alter file was dated <strong>before</strong> the create table migration.</p>
       <p><strong>Repo fix:</strong> rename to run after create:</p>
       <ul>
         <li>Wrong: <code>2026_04_06_160000_add_kid_listo_fields_to_daily_verses.php</code></li>
