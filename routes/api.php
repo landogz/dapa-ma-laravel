@@ -74,6 +74,7 @@ Route::prefix('v1')
             Route::post('/register', [AuthController::class, 'register'])->name('register');
             Route::post('/login', [AuthController::class, 'login'])->name('login');
             Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password');
+            Route::post('/verify-reset-code', [AuthController::class, 'verifyResetCode'])->name('verify-reset-code');
             Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('reset-password');
         });
 
@@ -166,6 +167,8 @@ Route::prefix('v1')
         Route::middleware('auth:sanctum')->group(function (): void {
 
             Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+            Route::post('/auth/login-code', [AuthController::class, 'sendLoginCode'])->name('auth.login-code');
+            Route::post('/auth/verify-login-code', [AuthController::class, 'verifyLoginCode'])->name('auth.verify-login-code');
             Route::get('/auth/me', [AuthController::class, 'me'])->name('auth.me');
             Route::get('/me/profile', [ProfileStatsController::class, 'show'])->name('me.profile');
             Route::put('/auth/profile', [AuthController::class, 'updateProfile'])->name('auth.profile.update');

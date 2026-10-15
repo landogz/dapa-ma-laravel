@@ -157,10 +157,12 @@ function bindShell(appRoot) {
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
             setSidebarOpen(false);
+            closeAdminAccountMenu();
         }
     });
 
     bindNotificationsBell();
+    bindAccountMenu();
 }
 
 async function loadCurrentUser() {
@@ -276,6 +278,42 @@ function revealSidebarNavigation() {
     navigation.setAttribute('aria-hidden', 'false');
 }
 
+function closeAdminAccountMenu() {
+    const button = document.getElementById('admin-account-menu-button');
+    const menu = document.getElementById('admin-account-menu');
+
+    menu?.classList.add('hidden');
+    button?.setAttribute('aria-expanded', 'false');
+}
+
+function bindAccountMenu() {
+    const root = document.querySelector('[data-admin-account-menu]');
+    const button = document.getElementById('admin-account-menu-button');
+    const menu = document.getElementById('admin-account-menu');
+
+    if (!root || !button || !menu) {
+        return;
+    }
+
+    const setOpen = (open) => {
+        menu.classList.toggle('hidden', !open);
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const notificationsPanel = document.getElementById('admin-notifications-panel');
+        notificationsPanel?.classList.add('hidden');
+        setOpen(menu.classList.contains('hidden'));
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!root.contains(event.target)) {
+            setOpen(false);
+        }
+    });
+}
+
 function bindNotificationsBell() {
     const button = document.querySelector('[data-admin-notifications-button]');
     const panel = document.getElementById('admin-notifications-panel');
@@ -299,6 +337,7 @@ function bindNotificationsBell() {
 
     button.addEventListener('click', (event) => {
         event.stopPropagation();
+        closeAdminAccountMenu();
 
         if (isOpen) {
             closePanel();
@@ -428,9 +467,15 @@ function bindQuickActions() {
         window.Notifications?.send();
     });
 
-    document.querySelector('[data-admin-action="export-analytics"]')?.addEventListener('click', () => {
-        window.Analytics?.exportCsvWithRange?.();
-    });
+    const exportButton = document.querySelector('[data-admin-action="export-analytics"]');
+    if (exportButton && exportButton.dataset.boundExport !== '1') {
+        exportButton.dataset.boundExport = '1';
+        exportButton.addEventListener('click', () => {
+            const analytics = window.Analytics;
+            const exportCsv = analytics?.exportCsvWithRange ?? analytics?.exportCsv;
+            exportCsv?.();
+        });
+    }
 
     document.querySelector('[data-admin-action="create-user"]')?.addEventListener('click', () => {
         window.Users?.create();

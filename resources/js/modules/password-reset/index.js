@@ -11,11 +11,13 @@ export function initResetPasswordPage() {
     const submitBtn = document.getElementById('reset-password-submit');
     const messageEl = document.getElementById('reset-password-message');
 
-    const presetEmail = document.body.dataset.email || '';
+    const presetEmail = (document.body.dataset.email || '').trim();
     const token = document.body.dataset.token || '';
 
-    if (emailInput && presetEmail) {
+    if (emailInput) {
         emailInput.value = presetEmail;
+        emailInput.readOnly = true;
+        emailInput.disabled = true;
     }
 
     if (!token) {
@@ -28,7 +30,7 @@ export function initResetPasswordPage() {
         event.preventDefault();
         if (!emailInput || !passwordInput || !confirmInput || !submitBtn) return;
 
-        const email = emailInput.value.trim();
+        const email = presetEmail || emailInput.value.trim();
         const password = passwordInput.value;
         const passwordConfirmation = confirmInput.value;
 

@@ -3015,40 +3015,59 @@
     min-width: 0;
 }
 
-.admin-sidebar-footer-link,
-.admin-sidebar-footer-button {
-    display: inline-flex;
+.admin-account-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    z-index: 50;
+    width: 13.5rem;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+    padding: 0.35rem;
+}
+
+.admin-account-menu-item {
+    display: flex;
     width: 100%;
     min-height: 2.75rem;
     align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border-radius: 0.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.28);
+    gap: 0.65rem;
+    border: 0;
+    border-radius: 0.75rem;
     background: transparent;
-    padding: 0.625rem 1rem;
+    padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #fff;
+    color: #1e293b;
+    text-align: left;
     text-decoration: none;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
-
-.admin-sidebar-footer-link:hover,
-.admin-sidebar-footer-button:hover {
-    border-color: rgba(255, 255, 255, 0.45);
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
-}
-
-.admin-sidebar-footer-link-active {
-    border-color: rgba(251, 209, 22, 0.55);
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
-}
-
-.admin-sidebar-footer-button {
     cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-account-menu-item:hover,
+.admin-account-menu-item:focus-visible {
+    background: rgba(5, 84, 152, 0.08);
+    color: #055498;
+    outline: none;
+}
+
+.admin-account-menu-item-active {
+    background: rgba(5, 84, 152, 0.1);
+    color: #055498;
+}
+
+.admin-account-menu-item-danger {
+    color: #ce2028;
+}
+
+.admin-account-menu-item-danger:hover,
+.admin-account-menu-item-danger:focus-visible {
+    background: rgba(206, 32, 40, 0.08);
+    color: #ce2028;
 }
 
 .admin-range-toggle-button {

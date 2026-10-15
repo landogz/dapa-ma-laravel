@@ -45,11 +45,11 @@ class AnalyticsService
                 $row->user->email ?? '',
                 $row->platform ?? '',
                 $row->session_id ?? '',
-                $row->created_at->toIso8601String(),
+                optional($row->created_at)?->toIso8601String() ?? '',
             ]);
         }
 
-        return implode("\n", $lines);
+        return "\u{FEFF}" . implode("\n", $lines);
     }
 
     private function csvRow(array $columns): string

@@ -126,16 +126,6 @@
                     </a>
                 </div>
             </nav>
-
-            <div class="mt-4 shrink-0 space-y-2 border-t border-white/20 pt-4">
-                <a href="/admin/profile" class="admin-sidebar-footer-link {{ ($activePage ?? '') === 'profile' ? 'admin-sidebar-footer-link-active' : '' }}">
-                    <i class="fas fa-user-pen text-[#FBD116]"></i>
-                    <span>Edit Profile</span>
-                </a>
-                <button id="logout-button" type="button" class="admin-sidebar-footer-button">
-                    Sign Out
-                </button>
-            </div>
         </aside>
 
         <div class="md:pl-72">
@@ -150,23 +140,47 @@
                             <h1 class="truncate text-lg font-semibold text-slate-800 sm:text-xl">{{ $headerTitle ?? 'Dashboard' }}</h1>
                         </div>
                     </div>
-                    <div class="relative flex w-full items-center justify-end gap-2 sm:w-auto">
+                    <div class="relative flex shrink-0 items-center justify-end gap-2">
                         <button type="button" class="admin-secondary-button admin-icon-button relative hidden lg:inline-flex" aria-label="Notifications" data-admin-notifications-button>
                             <span class="relative inline-flex items-center justify-center">
                                 <i class="fas fa-bell text-slate-500"></i>
                                 <span class="admin-notification-dot hidden" data-admin-notifications-dot></span>
                             </span>
                         </button>
-                        <a href="/admin/profile" class="hidden items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 transition hover:border-[#055498]/30 hover:bg-[#055498]/5 lg:flex">
-                            <span data-admin-avatar class="relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#123a60]">
-                                <img data-admin-avatar-img class="hidden h-full w-full object-cover" alt="Profile photo">
-                                <span data-admin-initials class="text-xs font-bold text-white">DM</span>
-                            </span>
-                            <div class="text-left">
-                                <p data-admin-name class="text-sm font-semibold text-slate-800">Loading...</p>
-                                <p data-admin-role class="text-xs text-slate-500">Loading role...</p>
+                        <div class="relative" data-admin-account-menu>
+                            <button
+                                id="admin-account-menu-button"
+                                type="button"
+                                class="flex min-h-11 max-w-[min(100%,18rem)] items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2 py-1.5 transition hover:border-[#055498]/30 hover:bg-[#055498]/5 sm:gap-3 sm:px-3 sm:py-2"
+                                aria-haspopup="menu"
+                                aria-expanded="false"
+                                aria-controls="admin-account-menu"
+                            >
+                                <span data-admin-avatar class="relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#123a60]">
+                                    <img data-admin-avatar-img class="hidden h-full w-full object-cover" alt="Profile photo">
+                                    <span data-admin-initials class="text-xs font-bold text-white">DM</span>
+                                </span>
+                                <div class="hidden min-w-0 text-left sm:block">
+                                    <p data-admin-name class="truncate text-sm font-semibold text-slate-800">Loading...</p>
+                                    <p data-admin-role class="truncate text-xs text-slate-500">Loading role...</p>
+                                </div>
+                                <i class="fas fa-chevron-down shrink-0 pr-1 text-[10px] text-slate-400" aria-hidden="true"></i>
+                            </button>
+                            <div id="admin-account-menu" class="admin-account-menu hidden" role="menu" aria-labelledby="admin-account-menu-button">
+                                <a
+                                    href="/admin/profile"
+                                    role="menuitem"
+                                    class="admin-account-menu-item {{ ($activePage ?? '') === 'profile' ? 'admin-account-menu-item-active' : '' }}"
+                                >
+                                    <i class="fas fa-user-pen w-4 text-[#055498]" aria-hidden="true"></i>
+                                    <span>Edit Profile</span>
+                                </a>
+                                <button id="logout-button" type="button" role="menuitem" class="admin-account-menu-item admin-account-menu-item-danger">
+                                    <i class="fas fa-right-from-bracket w-4" aria-hidden="true"></i>
+                                    <span>Sign Out</span>
+                                </button>
                             </div>
-                        </a>
+                        </div>
                         <div id="admin-notifications-panel" class="admin-notifications-panel hidden"></div>
                     </div>
                 </div>

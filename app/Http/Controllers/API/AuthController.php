@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
+use App\Http\Requests\Auth\VerifyLoginCodeRequest;
+use App\Http\Requests\Auth\VerifyResetCodeRequest;
 use App\Http\Requests\Auth\UpdateOnboardingRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Services\LoginVerificationService;
 use App\Services\NotificationService;
 use App\Services\PasswordResetService;
 use App\Services\ProfileService;
@@ -25,6 +28,7 @@ class AuthController extends Controller
         private readonly ProfileService $profileService,
         private readonly NotificationService $notificationService,
         private readonly PasswordResetService $passwordResetService,
+        private readonly LoginVerificationService $loginVerificationService,
     ) {
     }
 
@@ -74,16 +78,42 @@ class AuthController extends Controller
         $user  = $request->user();
         $user->forceFill(['last_login_at' => now()])->save();
 
+        $this->loginVerificationService->sendCode($user);
+
         $token = $user->createToken('api-token', ['*'], now()->addDays(30))->plainTextToken;
 
         return response()->json([
             'status'  => true,
-            'message' => 'Login successful.',
+            'message' => 'Login successful. Check your email for a 6-digit verification code.',
             'data'    => [
                 'token' => $token,
                 'user'  => $this->profileService->formatUser($user),
+                'requires_verification' => true,
             ],
         ]);
+    }
+
+    public function sendLoginCode(Request $request): JsonResponse
+    {
+        $result = $this->loginVerificationService->sendCode($request->user());
+
+        return response()->json([
+            'status' => $result['status'],
+            'message' => $result['message'],
+        ], $result['http']);
+    }
+
+    public function verifyLoginCode(VerifyLoginCodeRequest $request): JsonResponse
+    {
+        $result = $this->loginVerificationService->verifyCode(
+            $request->user(),
+            (string) $request->validated('code')
+        );
+
+        return response()->json([
+            'status' => $result['status'],
+            'message' => $result['message'],
+        ], $result['http']);
     }
 
     public function logout(Request $request): JsonResponse
@@ -170,6 +200,20 @@ class AuthController extends Controller
     {
         $result = $this->passwordResetService->sendResetLink(
             (string) $request->validated('email')
+        );
+
+        return response()->json([
+            'status' => $result['status'],
+            'message' => $result['message'],
+            'data' => $result['data'] ?? (object) [],
+        ], $result['http']);
+    }
+
+    public function verifyResetCode(VerifyResetCodeRequest $request): JsonResponse
+    {
+        $result = $this->passwordResetService->verifyCode(
+            (string) $request->validated('email'),
+            (string) $request->validated('code')
         );
 
         return response()->json([

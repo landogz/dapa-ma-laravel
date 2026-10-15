@@ -23,7 +23,20 @@ let topPostsSearchBound = false;
 
 export function initAnalyticsModule() {
     initializeAnalyticsRange();
+    bindAnalyticsExport();
     loadAnalytics();
+}
+
+function bindAnalyticsExport() {
+    const button = document.querySelector('[data-admin-action="export-analytics"]');
+    if (!button || button.dataset.boundExport === '1') {
+        return;
+    }
+
+    button.dataset.boundExport = '1';
+    button.addEventListener('click', () => {
+        exportAnalyticsCsvWithRange();
+    });
 }
 
 export function loadAnalytics() {
@@ -266,6 +279,8 @@ export function exportAnalyticsCsvWithRange() {
         }
 
         const range = result.value || '30';
+        const exportButton = document.querySelector('[data-admin-action="export-analytics"]');
+        exportButton?.setAttribute('disabled', 'true');
 
         try {
             const response = await axios.get('/admin/analytics/export', {
@@ -273,19 +288,36 @@ export function exportAnalyticsCsvWithRange() {
                 responseType: 'blob',
             });
 
-            const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+            const payload = response.data;
+            const contentType = String(response.headers?.['content-type'] ?? '');
+            if (contentType.includes('application/json') || (payload instanceof Blob && payload.type.includes('application/json'))) {
+                const text = payload instanceof Blob ? await payload.text() : String(payload);
+                let message = 'Failed to export analytics data.';
+                try {
+                    message = JSON.parse(text)?.message ?? message;
+                } catch (_) {
+                    // Keep the default message when the body is not JSON.
+                }
+                showErrorToast(message, 'Export failed');
+                return;
+            }
+
+            const blob = payload instanceof Blob
+                ? payload
+                : new Blob([payload], { type: 'text/csv;charset=utf-8;' });
             const downloadUrl = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
             anchor.href = downloadUrl;
             anchor.download = `dape-ma-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(anchor);
             anchor.click();
+            anchor.remove();
             window.URL.revokeObjectURL(downloadUrl);
             showSuccessToast('Analytics CSV downloaded.', 'Export ready');
         } catch (error) {
-            showErrorToast(
-                error.response?.data?.message ?? 'Failed to export analytics data.',
-                'Export failed',
-            );
+            showErrorToast(await messageFromExportError(error), 'Export failed');
+        } finally {
+            exportButton?.removeAttribute('disabled');
         }
     });
 }
@@ -1011,4 +1043,22 @@ function escapeHtml(value) {
         .replaceAll("'", '&#39;');
 }
 
-window.Analytics = { load: loadAnalytics, exportCsv: exportAnalyticsCsvWithRange };
+async function messageFromExportError(error) {
+    const data = error.response?.data;
+    if (data instanceof Blob) {
+        try {
+            const parsed = JSON.parse(await data.text());
+            return parsed?.message ?? 'Failed to export analytics data.';
+        } catch (_) {
+            return 'Failed to export analytics data.';
+        }
+    }
+
+    return data?.message ?? 'Failed to export analytics data.';
+}
+
+window.Analytics = {
+    load: loadAnalytics,
+    exportCsv: exportAnalyticsCsvWithRange,
+    exportCsvWithRange: exportAnalyticsCsvWithRange,
+};
