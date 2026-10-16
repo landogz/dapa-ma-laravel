@@ -11,6 +11,13 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class SharePageService
 {
+    private const EVENT_BANNERS = [
+        'assets/hope/hope_banner_caravan.png',
+        'assets/hope/hope_banner_celebration.png',
+        'assets/hope/hope_banner_scout_run.png',
+        'assets/hope/hope_banner_workshop.png',
+    ];
+
     public function post(int $id): ShareCard
     {
         $post = Post::query()->with(['category', 'author'])->findOrFail($id);
@@ -18,9 +25,12 @@ class SharePageService
             throw new NotFoundHttpException('Post not found.');
         }
 
-        $image = $this->absoluteUrl($post->media_url)
-            ?? $this->youtubeThumb($post->youtube_url)
-            ?? $this->fallbackImage();
+        $image = $this->resolveImage(
+            $this->absoluteUrl($post->media_url)
+                ?? $this->youtubeThumb($post->youtube_url)
+                ?? $this->firstBodyImage($post->body),
+            'assets/home/banner_whatsnew_art.png',
+        );
 
         $meta = collect([
             $post->author?->name,
@@ -34,7 +44,8 @@ class SharePageService
             typeLabel: 'Post',
             title: $post->title,
             description: $this->excerpt($post->body),
-            imageUrl: $image,
+            imageUrl: $image['url'],
+            imageSrc: $image['src'],
             meta: $meta !== '' ? $meta : null,
             canonicalUrl: $this->canonical('posts', $post->id),
             appPath: 'posts/'.$post->id,
@@ -57,13 +68,19 @@ class SharePageService
             $place,
         ])->filter()->implode(' · ');
 
+        $image = $this->resolveImage(
+            $this->absoluteUrl($event->coverUrl()),
+            $this->eventBannerPath($event->id),
+        );
+
         return new ShareCard(
             type: 'event',
             id: $event->id,
             typeLabel: 'Event',
             title: $event->title,
             description: $this->excerpt($event->about_text ?: $event->details_text),
-            imageUrl: $this->absoluteUrl($event->coverUrl()) ?? $this->fallbackImage(),
+            imageUrl: $image['url'],
+            imageSrc: $image['src'],
             meta: $meta !== '' ? $meta : null,
             canonicalUrl: $this->canonical('events', $event->id),
             appPath: 'events/'.$event->id,
@@ -83,13 +100,19 @@ class SharePageService
             $contest->contest_year ? (string) $contest->contest_year : null,
         ])->filter()->implode(' · ');
 
+        $image = $this->resolveImage(
+            $this->absoluteUrl($contest->cover_image_url),
+            'assets/hope/hope_banner_workshop.png',
+        );
+
         return new ShareCard(
             type: 'contest',
             id: $contest->id,
             typeLabel: 'Contest',
             title: $contest->title,
             description: $this->excerpt($contest->description ?: $contest->theme),
-            imageUrl: $this->absoluteUrl($contest->cover_image_url) ?? $this->fallbackImage(),
+            imageUrl: $image['url'],
+            imageSrc: $image['src'],
             meta: $meta !== '' ? $meta : null,
             canonicalUrl: $this->canonical('contests', $contest->id),
             appPath: 'contests/'.$contest->id,
@@ -126,12 +149,73 @@ class SharePageService
 
     private function canonical(string $type, int $id): string
     {
-        return rtrim((string) config('app.url'), '/').'/'.$type.'/'.$id;
+        return $this->origin().'/'.$type.'/'.$id;
     }
 
-    private function fallbackImage(): string
+    /**
+     * @return array{url: string, src: string}
+     */
+    private function resolveImage(?string $uploaded, string $fallbackRelative): array
     {
-        return rtrim((string) config('app.url'), '/').'/ddb.svg';
+        if ($uploaded) {
+            $src = $this->toPageSrc($uploaded);
+
+            return [
+                'url' => $this->toAbsolute($uploaded),
+                'src' => $src,
+            ];
+        }
+
+        return [
+            'url' => $this->origin().'/'.$fallbackRelative,
+            'src' => '/'.$fallbackRelative,
+        ];
+    }
+
+    private function eventBannerPath(int $id): string
+    {
+        $index = $id <= 0 ? 0 : ($id - 1) % count(self::EVENT_BANNERS);
+
+        return self::EVENT_BANNERS[$index];
+    }
+
+    private function origin(): string
+    {
+        return rtrim(request()->getSchemeAndHttpHost(), '/');
+    }
+
+    private function toAbsolute(string $path): string
+    {
+        $trimmed = trim($path);
+        if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
+            return $trimmed;
+        }
+
+        if (str_starts_with($trimmed, '/')) {
+            return $this->origin().$trimmed;
+        }
+
+        return $this->origin().'/'.$trimmed;
+    }
+
+    private function toPageSrc(string $path): string
+    {
+        $trimmed = trim($path);
+        $parsed = parse_url($trimmed);
+        if (isset($parsed['scheme'], $parsed['path']) && in_array($parsed['scheme'], ['http', 'https'], true)) {
+            return $parsed['path'].(isset($parsed['query']) ? '?'.$parsed['query'] : '');
+        }
+
+        return str_starts_with($trimmed, '/') ? $trimmed : '/'.$trimmed;
+    }
+
+    private function firstBodyImage(?string $html): ?string
+    {
+        if (! $html || ! preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $html, $matches)) {
+            return null;
+        }
+
+        return $matches[1];
     }
 
     private function absoluteUrl(?string $path): ?string
@@ -150,7 +234,7 @@ class SharePageService
         }
 
         if (str_starts_with($trimmed, '/')) {
-            return rtrim((string) config('app.url'), '/').$trimmed;
+            return $this->origin().$trimmed;
         }
 
         $stored = Storage::disk('public')->url($trimmed);
@@ -158,7 +242,7 @@ class SharePageService
             return $stored;
         }
 
-        return rtrim((string) config('app.url'), '/').'/'.ltrim($stored, '/');
+        return $this->origin().'/'.ltrim($stored, '/');
     }
 
     private function youtubeThumb(?string $url): ?string

@@ -47,8 +47,8 @@
             <article class="overflow-hidden rounded-[24px] bg-white shadow-2xl shadow-black/30">
                 <div class="relative aspect-video bg-gradient-to-br from-[#055498] to-[#123a60]">
                     <img
-                        src="{{ $card->imageUrl }}"
-                        alt=""
+                        src="{{ $card->imageSrc }}"
+                        alt="{{ $card->title }}"
                         class="h-full w-full object-cover"
                     >
                     <span class="absolute left-3 top-3 rounded-full bg-[#FBD116] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[#123a60]">

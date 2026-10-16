@@ -11,6 +11,7 @@ final class ShareCard
         public readonly string $title,
         public readonly string $description,
         public readonly string $imageUrl,
+        public readonly string $imageSrc,
         public readonly ?string $meta,
         public readonly string $canonicalUrl,
         public readonly string $appPath,
