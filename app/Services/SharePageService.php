@@ -20,7 +20,7 @@ class SharePageService
 
     public function post(string $key): ShareCard
     {
-        $post = Post::query()->with(['category', 'author'])->findByPublicKey($key);
+        $post = Post::findByPublicKey($key)->load(['category', 'author']);
         if ($post->status !== 'published') {
             throw new NotFoundHttpException('Post not found.');
         }
