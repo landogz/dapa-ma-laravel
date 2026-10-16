@@ -1,10 +1,10 @@
 export function initPublicSharePage() {
-    const openButton = document.getElementById('share-open-app');
-    if (!openButton) {
+    const openButtons = document.querySelectorAll('[data-share-open-app]');
+    if (!openButtons.length) {
         return;
     }
 
-    openButton.addEventListener('click', () => {
+    const openApp = () => {
         const path = document.body.dataset.appPath;
         const pkg = document.body.dataset.appPackage || 'com.example.dape_ma_mobile';
         if (!path) {
@@ -20,5 +20,9 @@ export function initPublicSharePage() {
         }
 
         window.location.href = `dapema://${path}`;
+    };
+
+    openButtons.forEach((button) => {
+        button.addEventListener('click', openApp);
     });
 }

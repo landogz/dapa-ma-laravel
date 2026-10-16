@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="overflow-x-hidden">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -33,76 +33,56 @@
     data-page="public-share"
     data-app-path="{{ $card->appPath }}"
     data-app-package="com.example.dape_ma_mobile"
-    class="min-h-dvh bg-[#123a60] text-white"
+    class="min-h-dvh overflow-x-hidden bg-[#123a60] font-sans text-white antialiased"
 >
     <div class="relative isolate flex min-h-dvh flex-col bg-gradient-to-br from-[#055498] via-[#123a60] to-[#055498]">
-        <div class="pointer-events-none absolute inset-0 opacity-10">
-            <img src="{{ asset('ddb.svg') }}" alt="" class="absolute -right-10 top-16 h-64 w-64 object-contain sm:h-80 sm:w-80">
+        <div class="pointer-events-none absolute inset-0 overflow-hidden opacity-10">
+            <img src="{{ asset('ddb.svg') }}" alt="" class="absolute -right-10 top-16 h-40 w-40 object-contain sm:h-64 sm:w-64 lg:h-80 lg:w-80">
         </div>
 
-        <header class="relative z-10 flex items-center gap-3 px-5 pt-6 sm:px-6">
-            <img src="{{ asset('ddb.svg') }}" alt="DDB" class="h-10 w-10 rounded-xl bg-white object-contain p-1 shadow-lg">
-            <div>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#FBD116]">DAPE-MA</p>
-                <p class="text-sm font-semibold text-white/90">Dangerous Drugs Board</p>
+        <header class="relative z-10 shrink-0">
+            <div class="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 sm:px-6 sm:pt-6 lg:px-8">
+                <img src="{{ asset('ddb.svg') }}" alt="DDB" class="h-9 w-9 shrink-0 rounded-xl bg-white object-contain p-1 shadow-lg sm:h-10 sm:w-10">
+                <div class="min-w-0">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#FBD116]">DAPE-MA</p>
+                    <p class="truncate text-sm font-semibold text-white/90">Dangerous Drugs Board</p>
+                </div>
             </div>
         </header>
 
-        <main class="relative z-10 mx-auto flex w-full max-w-[420px] flex-1 flex-col px-4 pb-[17.5rem] pt-6 sm:max-w-[480px] sm:px-5 sm:pb-56">
-            <article class="overflow-hidden rounded-[24px] bg-white shadow-2xl shadow-black/30">
-                <div class="relative aspect-video bg-gradient-to-br from-[#055498] to-[#123a60]">
+        <main class="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-10 max-lg:pb-[13.75rem] min-[380px]:max-lg:pb-[11.25rem] [@media(max-height:500px)]:max-lg:pb-[7.25rem]">
+            <article class="overflow-hidden rounded-2xl bg-white shadow-2xl shadow-black/30 sm:rounded-3xl lg:grid lg:grid-cols-2 lg:items-stretch [&>*]:min-w-0">
+                <div class="relative aspect-[2/1] min-h-[9.5rem] bg-gradient-to-br from-[#055498] to-[#123a60] sm:aspect-[16/7] sm:min-h-[12rem] lg:aspect-auto lg:min-h-[22rem]">
                     <img
                         src="{{ $card->imageSrc }}"
                         alt="{{ $card->title }}"
-                        class="h-full w-full object-cover"
+                        class="h-full w-full object-cover object-center"
                     >
                     <span class="absolute left-3 top-3 rounded-full bg-[#FBD116] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[#123a60]">
                         {{ $card->typeLabel }}
                     </span>
                 </div>
-                <div class="px-5 py-5 sm:px-6">
-                    <h1 class="text-[22px] font-bold leading-tight text-[#0A0A0A] sm:text-2xl">{{ $card->title }}</h1>
+                <div class="flex min-w-0 flex-col justify-center px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
+                    <h1 class="text-xl font-bold leading-tight break-words text-[#0A0A0A] sm:text-2xl lg:text-[28px] lg:leading-snug">
+                        {{ $card->title }}
+                    </h1>
                     @if ($card->meta)
-                        <p class="mt-2 text-xs font-semibold text-[#055498]">{{ $card->meta }}</p>
+                        <p class="mt-2 text-xs font-semibold leading-5 break-words text-[#055498] sm:text-sm">{{ $card->meta }}</p>
                     @endif
-                    <p class="mt-3 text-sm leading-relaxed text-slate-600">{{ $card->description }}</p>
-                    <p class="mt-4 text-sm font-semibold text-[#123a60]">Open in the DAPE-MA app to read the full {{ strtolower($card->typeLabel) }}.</p>
+                    <p class="mt-3 text-sm leading-relaxed break-words text-slate-600 sm:text-[15px]">{{ $card->description }}</p>
+                    <p class="mt-4 text-sm font-semibold text-[#123a60]">
+                        Open in the DAPE-MA app to read the full {{ strtolower($card->typeLabel) }}.
+                    </p>
+                    <div class="mt-6 hidden lg:block">
+                        @include('share.actions', ['onLight' => true])
+                    </div>
                 </div>
             </article>
         </main>
 
-        <div class="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#123a60]/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md sm:px-6">
-            <div class="mx-auto flex w-full max-w-[480px] flex-col gap-2.5">
-                <button
-                    id="share-open-app"
-                    type="button"
-                    class="flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#055498] to-[#123a60] px-4 text-sm font-bold text-white shadow-lg ring-1 ring-white/20"
-                >
-                    Open in DAPE-MA
-                </button>
-                <a
-                    href="{{ url('/download/dape-ma.apk') }}"
-                    class="flex min-h-11 w-full items-center justify-center rounded-xl bg-[#FBD116] px-4 text-sm font-bold text-[#123a60]"
-                >
-                    Get the app (Android)
-                </a>
-                <div class="grid grid-cols-2 gap-2">
-                    <span
-                        class="flex min-h-11 cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-black/40 px-2 text-xs font-semibold text-white/70 opacity-70"
-                        aria-disabled="true"
-                    >
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.42 2.2-1.2 3.02-.86.9-2.28 1.6-3.5 1.5-.14-1.1.4-2.26 1.2-3.1.86-.92 2.34-1.6 3.5-1.42zM20.5 17.2c-.72 1.66-1.6 3.2-2.86 3.22-1.24.04-1.64-.74-3.06-.74s-1.86.72-3.04.78c-1.22.06-2.16-1.48-2.9-3.12-1.5-3.3-.4-8.18 2.1-8.28 1.16-.04 2.02.78 2.72.78.68 0 1.74-.96 2.94-.82.5.02 1.9.2 2.8 1.52-2.4 1.32-2.02 4.76.3 5.66z"/></svg>
-                        App Store · Soon
-                    </span>
-                    <span
-                        class="flex min-h-11 cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-black/40 px-2 text-xs font-semibold text-white/70 opacity-70"
-                        aria-disabled="true"
-                    >
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.6 2.4 13.2 12 3.6 21.6A2.4 2.4 0 0 1 3 19.8V4.2c0-.7.22-1.34.6-1.8zm11.1 11.1 2.18 2.18-8.4 4.86 6.22-7.04zm2.9-2.9 2.54 1.46c.86.5.86 1.74 0 2.24l-2.54 1.46L14.4 12l3.2-1.4zM8.48 3.46l8.4 4.86-2.18 2.18L8.48 3.46z"/></svg>
-                        Google Play · Soon
-                    </span>
-                </div>
-                <p class="pb-1 text-center text-[11px] text-white/60">DAPE-MA · Dangerous Drugs Board</p>
+        <div class="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#123a60]/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md sm:px-6 lg:hidden [@media(max-height:500px)]:[&_[data-share-extra]]:hidden">
+            <div class="mx-auto w-full max-w-3xl">
+                @include('share.actions', ['showCredit' => true])
             </div>
         </div>
     </div>
