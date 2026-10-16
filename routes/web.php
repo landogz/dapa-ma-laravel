@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SharePageController;
 use App\Models\User;
 use App\Support\AdminPage;
 use Illuminate\Support\Facades\Route;
@@ -17,9 +18,17 @@ Route::get('/', function () {
 
 Route::view('/chat', 'chat.tawk');
 
-Route::get('/posts/{id}', function (int $id) {
-    return view('posts.show', ['postId' => $id]);
-})->whereNumber('id');
+Route::get('/posts/{id}', [SharePageController::class, 'post'])
+    ->whereNumber('id')
+    ->name('share.posts');
+Route::get('/events/{id}', [SharePageController::class, 'event'])
+    ->whereNumber('id')
+    ->name('share.events');
+Route::get('/contests/{id}', [SharePageController::class, 'contest'])
+    ->whereNumber('id')
+    ->name('share.contests');
+Route::get('/download/dape-ma.apk', [SharePageController::class, 'apk'])
+    ->name('share.apk');
 
 Route::get('/admin', function () {
     return redirect('/admin/dashboard');

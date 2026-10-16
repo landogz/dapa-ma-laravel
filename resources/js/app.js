@@ -11,6 +11,7 @@ import {
 import { initAdminPage } from './modules/admin-dashboard';
 import { initResetPasswordPage } from './modules/password-reset/index';
 import { initPublicPostShow } from './modules/public/post-show';
+import { initPublicSharePage } from './modules/public/share-page';
 
 axios.defaults.baseURL = '/api/v1';
 axios.defaults.headers.common.Accept = 'application/json';
@@ -25,6 +26,7 @@ axios.interceptors.response.use(
         const isAuthFormRequest = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register');
         const isPublicPage =
             document.body.dataset.page === 'public-post-show' ||
+            document.body.dataset.page === 'public-share' ||
             document.body.dataset.page === 'reset-password';
 
         if (status === 401 && !isAuthFormRequest && !isPublicPage) {
@@ -74,6 +76,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (page === 'public-post-show') {
         initPublicPostShow();
+        return;
+    }
+
+    if (page === 'public-share') {
+        initPublicSharePage();
         return;
     }
 
