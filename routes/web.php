@@ -29,6 +29,10 @@ Route::get('/contests/{id}', [SharePageController::class, 'contest'])
     ->name('share.contests');
 Route::get('/download/dape-ma.apk', [SharePageController::class, 'apk'])
     ->name('share.apk');
+Route::get('/og-image/{type}/{id}.jpg', [SharePageController::class, 'ogImage'])
+    ->whereIn('type', ['posts', 'events', 'contests'])
+    ->whereNumber('id')
+    ->name('share.og-image');
 
 Route::get('/admin', function () {
     return redirect('/admin/dashboard');

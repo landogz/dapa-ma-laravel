@@ -44,7 +44,7 @@ class SharePageService
             typeLabel: 'Post',
             title: $post->title,
             description: $this->excerpt($post->body),
-            imageUrl: $image['url'],
+            imageUrl: $this->ogImageUrl('posts', $post->id),
             imageSrc: $image['src'],
             meta: $meta !== '' ? $meta : null,
             canonicalUrl: $this->canonical('posts', $post->id),
@@ -79,7 +79,7 @@ class SharePageService
             typeLabel: 'Event',
             title: $event->title,
             description: $this->excerpt($event->about_text ?: $event->details_text),
-            imageUrl: $image['url'],
+            imageUrl: $this->ogImageUrl('events', $event->id),
             imageSrc: $image['src'],
             meta: $meta !== '' ? $meta : null,
             canonicalUrl: $this->canonical('events', $event->id),
@@ -111,7 +111,7 @@ class SharePageService
             typeLabel: 'Contest',
             title: $contest->title,
             description: $this->excerpt($contest->description ?: $contest->theme),
-            imageUrl: $image['url'],
+            imageUrl: $this->ogImageUrl('contests', $contest->id),
             imageSrc: $image['src'],
             meta: $meta !== '' ? $meta : null,
             canonicalUrl: $this->canonical('contests', $contest->id),
@@ -150,6 +150,11 @@ class SharePageService
     private function canonical(string $type, int $id): string
     {
         return $this->origin().'/'.$type.'/'.$id;
+    }
+
+    private function ogImageUrl(string $type, int $id): string
+    {
+        return $this->origin().'/og-image/'.$type.'/'.$id.'.jpg';
     }
 
     /**

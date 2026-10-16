@@ -14,6 +14,11 @@
     <meta property="og:description" content="{{ $card->description }}">
     <meta property="og:url" content="{{ $card->canonicalUrl }}">
     <meta property="og:image" content="{{ $card->imageUrl }}">
+    <meta property="og:image:secure_url" content="{{ $card->imageUrl }}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="{{ $card->title }}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $card->title }}">
     <meta name="twitter:description" content="{{ $card->description }}">
