@@ -13,15 +13,9 @@ class ShareOgImageService
 
     private const VERSION = 'v2';
 
-    public function __construct(
-        private readonly SharePageService $sharePageService,
-    ) {
-    }
-
-    public function pathFor(string $type, int $id): string
+    public function pathFor(string $type, ShareCard $card): string
     {
-        $card = $this->card($type, $id);
-        $dest = $this->cachePath($type, $id, $card->imageSrc);
+        $dest = $this->cachePath($type, $card->uuid !== '' ? $card->uuid : (string) $card->id, $card->imageSrc);
         if (! is_file($dest)) {
             $this->renderToFile($card->imageSrc, $dest);
         }
@@ -50,17 +44,7 @@ class ShareOgImageService
         imagedestroy($canvas);
     }
 
-    private function card(string $type, int $id): ShareCard
-    {
-        return match ($type) {
-            'posts' => $this->sharePageService->post($id),
-            'events' => $this->sharePageService->event($id),
-            'contests' => $this->sharePageService->contest($id),
-            default => abort(404),
-        };
-    }
-
-    private function cachePath(string $type, int $id, string $sourceSrc): string
+    private function cachePath(string $type, string $key, string $sourceSrc): string
     {
         $stamp = '0';
         $local = $this->localPath($sourceSrc);

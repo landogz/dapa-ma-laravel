@@ -24,9 +24,9 @@ class HopeEventService
         return $this->repository->paginate($perPage, $search, $audience, $activeOnly);
     }
 
-    public function show(int $id): HopeEvent
+    public function show(int|string $id): HopeEvent
     {
-        return $this->repository->findOrFail($id);
+        return HopeEvent::findByPublicKey((string) $id);
     }
 
     public function create(array $data): HopeEvent

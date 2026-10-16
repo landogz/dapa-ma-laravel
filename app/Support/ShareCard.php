@@ -7,6 +7,7 @@ final class ShareCard
     public function __construct(
         public readonly string $type,
         public readonly int $id,
+        public readonly string $uuid,
         public readonly string $typeLabel,
         public readonly string $title,
         public readonly string $description,

@@ -18,9 +18,9 @@ class SharePageService
         'assets/hope/hope_banner_workshop.png',
     ];
 
-    public function post(int $id): ShareCard
+    public function post(string $key): ShareCard
     {
-        $post = Post::query()->with(['category', 'author'])->findOrFail($id);
+        $post = Post::query()->with(['category', 'author'])->findByPublicKey($key);
         if ($post->status !== 'published') {
             throw new NotFoundHttpException('Post not found.');
         }
@@ -41,20 +41,21 @@ class SharePageService
         return new ShareCard(
             type: 'post',
             id: $post->id,
+            uuid: (string) $post->uuid,
             typeLabel: 'Post',
             title: $post->title,
             description: $this->excerpt($post->body),
-            imageUrl: $this->ogImageUrl('posts', $post->id),
+            imageUrl: $this->ogImageUrl('posts', (string) $post->uuid),
             imageSrc: $image['src'],
             meta: $meta !== '' ? $meta : null,
-            canonicalUrl: $this->canonical('posts', $post->id),
+            canonicalUrl: $this->canonical('posts', (string) $post->uuid),
             appPath: 'posts/'.$post->id,
         );
     }
 
-    public function event(int $id): ShareCard
+    public function event(string $key): ShareCard
     {
-        $event = HopeEvent::query()->findOrFail($id);
+        $event = HopeEvent::findByPublicKey($key);
         if (! $event->is_active) {
             throw new NotFoundHttpException('Event not found.');
         }
@@ -76,20 +77,21 @@ class SharePageService
         return new ShareCard(
             type: 'event',
             id: $event->id,
+            uuid: (string) $event->uuid,
             typeLabel: 'Event',
             title: $event->title,
             description: $this->excerpt($event->about_text ?: $event->details_text),
-            imageUrl: $this->ogImageUrl('events', $event->id),
+            imageUrl: $this->ogImageUrl('events', (string) $event->uuid),
             imageSrc: $image['src'],
             meta: $meta !== '' ? $meta : null,
-            canonicalUrl: $this->canonical('events', $event->id),
+            canonicalUrl: $this->canonical('events', (string) $event->uuid),
             appPath: 'events/'.$event->id,
         );
     }
 
-    public function contest(int $id): ShareCard
+    public function contest(string $key): ShareCard
     {
-        $contest = Contest::query()->findOrFail($id);
+        $contest = Contest::findByPublicKey($key);
         if (! $contest->is_active || ! in_array($contest->status, ['open', 'closed', 'completed'], true)) {
             throw new NotFoundHttpException('Contest not found.');
         }
@@ -108,13 +110,14 @@ class SharePageService
         return new ShareCard(
             type: 'contest',
             id: $contest->id,
+            uuid: (string) $contest->uuid,
             typeLabel: 'Contest',
             title: $contest->title,
             description: $this->excerpt($contest->description ?: $contest->theme),
-            imageUrl: $this->ogImageUrl('contests', $contest->id),
+            imageUrl: $this->ogImageUrl('contests', (string) $contest->uuid),
             imageSrc: $image['src'],
             meta: $meta !== '' ? $meta : null,
-            canonicalUrl: $this->canonical('contests', $contest->id),
+            canonicalUrl: $this->canonical('contests', (string) $contest->uuid),
             appPath: 'contests/'.$contest->id,
         );
     }
@@ -147,14 +150,14 @@ class SharePageService
         return rtrim(mb_substr($text, 0, 157)).'…';
     }
 
-    private function canonical(string $type, int $id): string
+    private function canonical(string $type, string $uuid): string
     {
-        return $this->origin().'/'.$type.'/'.$id;
+        return $this->origin().'/'.$type.'/'.$uuid;
     }
 
-    private function ogImageUrl(string $type, int $id): string
+    private function ogImageUrl(string $type, string $uuid): string
     {
-        return $this->origin().'/og-image/'.$type.'/'.$id.'.jpg';
+        return $this->origin().'/og-image/'.$type.'/'.$uuid.'.jpg';
     }
 
     /**

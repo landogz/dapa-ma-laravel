@@ -48,6 +48,11 @@ class PostService
         return $this->postRepository->findOrFail($id);
     }
 
+    public function findPublic(string $key): Post
+    {
+        return Post::findByPublicKey($key);
+    }
+
     public function findAdminDetail(int $id): Post
     {
         return $this->postRepository->findAdminDetail($id);

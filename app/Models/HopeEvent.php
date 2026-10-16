@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 class HopeEvent extends Model
 {
+    use HasPublicUuid;
+
     public const AUDIENCES = ['youth', 'parents', 'community'];
 
     public const STATUSES = ['upcoming', 'ongoing', 'ended'];
@@ -103,6 +106,7 @@ class HopeEvent extends Model
     {
         $base = [
             'id'               => $this->id,
+            'uuid'             => $this->uuid,
             'title'            => $this->title,
             'audience'         => $this->audience,
             'cover_url'        => $this->coverUrl(),

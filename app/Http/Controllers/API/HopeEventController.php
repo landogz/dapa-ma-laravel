@@ -33,7 +33,7 @@ class HopeEventController extends Controller
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(string $id): JsonResponse
     {
         $event = $this->hopeEventService->show($id);
 

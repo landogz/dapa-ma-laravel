@@ -36,9 +36,9 @@ class PostController extends Controller
         ]);
     }
 
-    public function show(Request $request, int $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $post = $this->postService->find($id);
+        $post = $this->postService->findPublic($id);
 
         if ($post->status !== 'published') {
             return response()->json([

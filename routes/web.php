@@ -18,20 +18,20 @@ Route::get('/', function () {
 
 Route::view('/chat', 'chat.tawk');
 
-Route::get('/posts/{id}', [SharePageController::class, 'post'])
-    ->whereNumber('id')
+Route::get('/posts/{key}', [SharePageController::class, 'post'])
+    ->where('key', '[0-9]+|[0-9a-fA-F-]{36}')
     ->name('share.posts');
-Route::get('/events/{id}', [SharePageController::class, 'event'])
-    ->whereNumber('id')
+Route::get('/events/{key}', [SharePageController::class, 'event'])
+    ->where('key', '[0-9]+|[0-9a-fA-F-]{36}')
     ->name('share.events');
-Route::get('/contests/{id}', [SharePageController::class, 'contest'])
-    ->whereNumber('id')
+Route::get('/contests/{key}', [SharePageController::class, 'contest'])
+    ->where('key', '[0-9]+|[0-9a-fA-F-]{36}')
     ->name('share.contests');
 Route::get('/download/dape-ma.apk', [SharePageController::class, 'apk'])
     ->name('share.apk');
-Route::get('/og-image/{type}/{id}.jpg', [SharePageController::class, 'ogImage'])
+Route::get('/og-image/{type}/{key}.jpg', [SharePageController::class, 'ogImage'])
     ->whereIn('type', ['posts', 'events', 'contests'])
-    ->whereNumber('id')
+    ->where('key', '[0-9]+|[0-9a-fA-F-]{36}')
     ->name('share.og-image');
 
 Route::get('/admin', function () {

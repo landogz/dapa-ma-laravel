@@ -91,7 +91,7 @@ Route::prefix('v1')
                 ->whereNumber('id')
                 ->name('reviews.index');
             Route::get('/{id}', [PostController::class, 'show'])
-                ->whereNumber('id')
+                ->where('id', '[0-9]+|[0-9a-fA-F-]{36}')
                 ->name('show');
         });
 
@@ -112,7 +112,7 @@ Route::prefix('v1')
         Route::get('/hope-events', [HopeEventController::class, 'index'])
             ->name('hope-events.index');
         Route::get('/hope-events/{id}', [HopeEventController::class, 'show'])
-            ->whereNumber('id')
+            ->where('id', '[0-9]+|[0-9a-fA-F-]{36}')
             ->name('hope-events.show');
 
         // ── Public DDB trainings directory ───────────────────────────────
@@ -126,7 +126,7 @@ Route::prefix('v1')
         Route::get('/contests', [ContestController::class, 'index'])
             ->name('contests.index');
         Route::get('/contests/{contest}', [ContestController::class, 'show'])
-            ->whereNumber('contest')
+            ->where('contest', '[0-9]+|[0-9a-fA-F-]{36}')
             ->name('contests.show');
 
         Route::get('/iec-materials', [IecMaterialController::class, 'index'])
