@@ -66,7 +66,11 @@ class SharePageController extends Controller
         return response()->download(
             $path,
             'dape-ma.apk',
-            ['Content-Type' => 'application/vnd.android.package-archive'],
+            [
+                'Content-Type' => 'application/vnd.android.package-archive',
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+            ],
         );
     }
 

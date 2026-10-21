@@ -23,6 +23,11 @@ function isApplePhoneOrTablet() {
 }
 
 function apkUrl() {
+    const link = document.querySelector('a[href*="/download/dape-ma.apk"]');
+    if (link?.href) {
+        return link.href;
+    }
+
     return new URL('/download/dape-ma.apk', window.location.origin).href;
 }
 

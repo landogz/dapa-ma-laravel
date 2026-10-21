@@ -136,6 +136,14 @@ class SharePageService
         return null;
     }
 
+    public function apkDownloadUrl(): string
+    {
+        $url = url('/download/dape-ma.apk');
+        $path = $this->apkPath();
+
+        return $path ? $url.'?v='.filemtime($path) : $url;
+    }
+
     private function excerpt(?string $html): string
     {
         $text = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) $html), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? '');

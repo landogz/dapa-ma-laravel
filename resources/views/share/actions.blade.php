@@ -10,7 +10,7 @@
             </button>
         @endif
         <a
-            href="{{ url('/download/dape-ma.apk') }}"
+            href="{{ app(\App\Services\SharePageService::class)->apkDownloadUrl() }}"
             class="flex min-h-11 w-full items-center justify-center rounded-xl bg-[#FBD116] px-3 text-sm font-bold text-[#123a60] sm:min-h-12"
         >
             Get the app (Android)
