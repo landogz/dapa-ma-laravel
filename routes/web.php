@@ -29,6 +29,10 @@ Route::get('/contests/{key}', [SharePageController::class, 'contest'])
     ->name('share.contests');
 Route::get('/download/dape-ma.apk', [SharePageController::class, 'apk'])
     ->name('share.apk');
+Route::get('/download/dape-ma.ipa', [SharePageController::class, 'ipa'])
+    ->name('share.ipa');
+Route::get('/download/ios', [SharePageController::class, 'iosInstall'])
+    ->name('share.ios');
 Route::get('/og-image/{type}/{key}.jpg', [SharePageController::class, 'ogImage'])
     ->whereIn('type', ['posts', 'events', 'contests'])
     ->where('key', '[0-9]+|[0-9a-fA-F-]{36}')

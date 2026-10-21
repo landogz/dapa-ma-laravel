@@ -1,22 +1,28 @@
 <div class="flex flex-col gap-2">
-    <div class="grid grid-cols-1 gap-2 {{ ($showOpenApp ?? true) ? 'min-[380px]:grid-cols-2' : '' }}">
-        @if ($showOpenApp ?? true)
-            <button
-                type="button"
-                data-share-open-app
-                class="flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#055498] to-[#123a60] px-3 text-sm font-bold text-white shadow-lg ring-1 ring-white/20 sm:min-h-12"
-            >
-                Open in DAPE-MA
-            </button>
-        @endif
+    @if ($showOpenApp ?? true)
+        <button
+            type="button"
+            data-share-open-app
+            class="flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#055498] to-[#123a60] px-3 text-sm font-bold text-white shadow-lg ring-1 ring-white/20 sm:min-h-12"
+        >
+            Open in DAPE-MA
+        </button>
+    @endif
+    <div class="grid grid-cols-2 gap-2">
         <a
             href="{{ app(\App\Services\SharePageService::class)->apkDownloadUrl() }}"
-            class="flex min-h-11 w-full items-center justify-center rounded-xl bg-[#FBD116] px-3 text-sm font-bold text-[#123a60] sm:min-h-12"
+            class="flex min-h-11 w-full items-center justify-center rounded-xl bg-[#FBD116] px-2 text-center text-sm font-bold leading-tight text-[#123a60] sm:min-h-12 sm:px-3"
         >
             Get the app (Android)
         </a>
+        <a
+            href="{{ route('share.ios') }}"
+            class="flex min-h-11 w-full items-center justify-center rounded-xl px-2 text-center text-sm font-bold leading-tight sm:min-h-12 sm:px-3 {{ !empty($onLight) ? 'bg-[#055498] text-white' : 'bg-white text-[#123a60]' }}"
+        >
+            Get the app (iPhone)
+        </a>
     </div>
-    <div class="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2" data-share-extra>
+    <div class="grid grid-cols-2 gap-2" data-share-extra>
         <span
             class="flex min-h-11 cursor-not-allowed items-center justify-center gap-1.5 rounded-xl px-2 text-center text-[11px] font-semibold opacity-70 sm:min-h-12 sm:text-xs {{ !empty($onLight) ? 'bg-slate-100 text-slate-500' : 'bg-black/40 text-white/70' }}"
             aria-disabled="true"

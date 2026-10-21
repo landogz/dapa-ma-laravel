@@ -124,9 +124,30 @@ class SharePageService
 
     public function apkPath(): ?string
     {
+        return $this->downloadPath('dape-ma.apk');
+    }
+
+    public function apkDownloadUrl(): string
+    {
+        return $this->downloadUrl('dape-ma.apk', $this->apkPath());
+    }
+
+    public function ipaPath(): ?string
+    {
+        return $this->downloadPath('dape-ma-ios.bin')
+            ?? $this->downloadPath('dape-ma.ipa');
+    }
+
+    public function ipaDownloadUrl(): string
+    {
+        return $this->downloadUrl('dape-ma.ipa', $this->ipaPath());
+    }
+
+    private function downloadPath(string $filename): ?string
+    {
         foreach ([
-            public_path('download/dape-ma.apk'),
-            storage_path('app/public/downloads/dape-ma.apk'),
+            public_path('download/'.$filename),
+            storage_path('app/public/downloads/'.$filename),
         ] as $path) {
             if (is_file($path)) {
                 return $path;
@@ -136,10 +157,9 @@ class SharePageService
         return null;
     }
 
-    public function apkDownloadUrl(): string
+    private function downloadUrl(string $filename, ?string $path): string
     {
-        $url = url('/download/dape-ma.apk');
-        $path = $this->apkPath();
+        $url = url('/download/'.$filename);
 
         return $path ? $url.'?v='.filemtime($path) : $url;
     }

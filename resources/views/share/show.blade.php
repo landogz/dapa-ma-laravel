@@ -50,7 +50,7 @@
             </div>
         </header>
 
-        <main class="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-10 max-lg:pb-[13.75rem] min-[380px]:max-lg:pb-[11.25rem] [@media(max-height:500px)]:max-lg:pb-[7.25rem]">
+        <main class="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-10 max-lg:pb-[12.5rem] [@media(max-height:500px)]:max-lg:pb-[7.25rem]">
             <article class="overflow-hidden rounded-2xl bg-white shadow-2xl shadow-black/30 sm:rounded-3xl lg:grid lg:grid-cols-2 lg:items-stretch [&>*]:min-w-0">
                 <div class="relative aspect-[2/1] min-h-[9.5rem] bg-gradient-to-br from-[#055498] to-[#123a60] sm:aspect-[16/7] sm:min-h-[12rem] lg:aspect-auto lg:min-h-[22rem]">
                     <img

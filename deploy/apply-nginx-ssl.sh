@@ -186,6 +186,10 @@ server {
         try_files \$uri =404;
     }
 
+    location = /download/dape-ma.ipa {
+        rewrite ^ /index.php last;
+    }
+
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
     }

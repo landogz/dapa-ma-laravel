@@ -74,6 +74,39 @@ class SharePageController extends Controller
         );
     }
 
+    public function ipa(): BinaryFileResponse|Response
+    {
+        $path = $this->sharePageService->ipaPath();
+        if (! $path) {
+            abort(404, 'iPhone IPA is not available yet.');
+        }
+
+        $response = response()->download(
+            $path,
+            'dape-ma.ipa',
+            [
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'X-Content-Type-Options' => 'nosniff',
+            ],
+        );
+        $response->headers->set('Content-Type', 'application/octet-stream');
+        $response->headers->set(
+            'Content-Disposition',
+            'attachment; filename="dape-ma.ipa"; filename*=UTF-8\'\'dape-ma.ipa'
+        );
+
+        return $response;
+    }
+
+    public function iosInstall()
+    {
+        return view('share.ios-install', [
+            'ipaUrl' => $this->sharePageService->ipaDownloadUrl(),
+            'ipaReady' => $this->sharePageService->ipaPath() !== null,
+        ]);
+    }
+
     private function show(string $routeType, $card, string $key)
     {
         if (! Str::isUuid($key) && $card->uuid !== '') {
