@@ -18,7 +18,7 @@
     <div class="relative isolate min-h-screen overflow-hidden">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(5,84,152,0.18),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(18,58,96,0.14),_transparent_28%)]"></div>
         <div class="relative mx-auto flex min-h-screen max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
-            <div class="grid w-full gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
+            <div class="grid w-full items-start gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
                 <section class="relative hidden overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#055498] to-[#123a60] p-9 pt-12 text-white shadow-[0_30px_80px_rgba(5,84,152,0.22)] lg:flex lg:min-h-[620px] lg:flex-col lg:justify-between">
                     <div class="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.12)_1px,transparent_1px)] [background-size:32px_32px]"></div>
                     <div class="relative">
@@ -34,27 +34,33 @@
                         </p>
                     </div>
 
-                    <div class="relative grid gap-4 sm:grid-cols-3">
-                        <div class="rounded-2xl border border-[#FBD116]/30 bg-white/10 p-4 backdrop-blur">
-                            <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#FBD116]/20 text-[#FBD116]">
-                                <i class="fas fa-file-lines"></i>
-                            </span>
-                            <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-[#FBD116]">Content</p>
-                            <p class="mt-2 text-sm text-white">Posts and publishing</p>
+                    <div class="relative mt-8">
+                        <div class="grid gap-4 sm:grid-cols-3">
+                            <div class="rounded-2xl border border-[#FBD116]/30 bg-white/10 p-4 backdrop-blur">
+                                <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#FBD116]/20 text-[#FBD116]">
+                                    <i class="fas fa-file-lines"></i>
+                                </span>
+                                <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-[#FBD116]">Content</p>
+                                <p class="mt-2 text-sm text-white">Posts and publishing</p>
+                            </div>
+                            <div class="rounded-2xl border border-emerald-300/25 bg-white/10 p-4 backdrop-blur">
+                                <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300/15 text-emerald-200">
+                                    <i class="fas fa-hospital-user"></i>
+                                </span>
+                                <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-emerald-200">Directory</p>
+                                <p class="mt-2 text-sm text-white">Rehab center listings</p>
+                            </div>
+                            <div class="rounded-2xl border border-[#f97316]/30 bg-white/10 p-4 backdrop-blur">
+                                <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#f97316]/15 text-[#fed7aa]">
+                                    <i class="fas fa-user-shield"></i>
+                                </span>
+                                <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-[#fed7aa]">Access</p>
+                                <p class="mt-2 text-sm text-white">Protected admin roles</p>
+                            </div>
                         </div>
-                        <div class="rounded-2xl border border-emerald-300/25 bg-white/10 p-4 backdrop-blur">
-                            <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300/15 text-emerald-200">
-                                <i class="fas fa-hospital-user"></i>
-                            </span>
-                            <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-emerald-200">Directory</p>
-                            <p class="mt-2 text-sm text-white">Rehab center listings</p>
-                        </div>
-                        <div class="rounded-2xl border border-[#f97316]/30 bg-white/10 p-4 backdrop-blur">
-                            <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#f97316]/15 text-[#fed7aa]">
-                                <i class="fas fa-user-shield"></i>
-                            </span>
-                            <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-[#fed7aa]">Access</p>
-                            <p class="mt-2 text-sm text-white">Protected admin roles</p>
+                        <div class="mt-6">
+                            <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#FBD116]">Get the mobile app</p>
+                            @include('share.actions', ['showOpenApp' => false])
                         </div>
                     </div>
                 </section>
@@ -103,7 +109,7 @@
                         <span>Restricted admin area. Authorized personnel only.</span>
                     </div>
 
-                    <div class="mt-6">
+                    <div class="mt-6 lg:hidden">
                         <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#055498]">Get the mobile app</p>
                         @include('share.actions', ['onLight' => true, 'showOpenApp' => false])
                     </div>
