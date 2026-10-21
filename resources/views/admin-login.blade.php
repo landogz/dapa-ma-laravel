@@ -103,6 +103,11 @@
                         <span>Restricted admin area. Authorized personnel only.</span>
                     </div>
 
+                    <div class="mt-6">
+                        <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#055498]">Get the mobile app</p>
+                        @include('share.actions', ['onLight' => true, 'showOpenApp' => false])
+                    </div>
+
                     @unless($hasSuperAdmin)
                         <div class="mt-6 rounded-2xl border border-[#055498]/15 bg-[#055498]/5 p-4">
                             <p class="text-sm font-semibold text-[#123a60]">First-time setup</p>

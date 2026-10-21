@@ -1,12 +1,14 @@
 <div class="flex flex-col gap-2">
-    <div class="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2">
-        <button
-            type="button"
-            data-share-open-app
-            class="flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#055498] to-[#123a60] px-3 text-sm font-bold text-white shadow-lg ring-1 ring-white/20 sm:min-h-12"
-        >
-            Open in DAPE-MA
-        </button>
+    <div class="grid grid-cols-1 gap-2 {{ ($showOpenApp ?? true) ? 'min-[380px]:grid-cols-2' : '' }}">
+        @if ($showOpenApp ?? true)
+            <button
+                type="button"
+                data-share-open-app
+                class="flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#055498] to-[#123a60] px-3 text-sm font-bold text-white shadow-lg ring-1 ring-white/20 sm:min-h-12"
+            >
+                Open in DAPE-MA
+            </button>
+        @endif
         <a
             href="{{ url('/download/dape-ma.apk') }}"
             class="flex min-h-11 w-full items-center justify-center rounded-xl bg-[#FBD116] px-3 text-sm font-bold text-[#123a60] sm:min-h-12"
@@ -14,7 +16,7 @@
             Get the app (Android)
         </a>
     </div>
-    <div class="grid grid-cols-2 gap-2" data-share-extra>
+    <div class="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2" data-share-extra>
         <span
             class="flex min-h-11 cursor-not-allowed items-center justify-center gap-1.5 rounded-xl px-2 text-center text-[11px] font-semibold opacity-70 sm:min-h-12 sm:text-xs {{ !empty($onLight) ? 'bg-slate-100 text-slate-500' : 'bg-black/40 text-white/70' }}"
             aria-disabled="true"
