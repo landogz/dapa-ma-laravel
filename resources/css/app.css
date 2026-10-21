@@ -206,7 +206,82 @@
         @apply border-[#CE2028] ring-2 ring-[#CE2028]/15;
     }
 
-    .admin-login-demo-accounts {
+    .admin-login-label {
+        @apply mb-1.5 block text-sm font-semibold text-slate-900;
+    }
+
+    .admin-auth-input.admin-login-field {
+        height: 3rem;
+        min-height: 3rem;
+        padding-top: 0;
+        padding-bottom: 0;
+        border-radius: 0.75rem;
+        font-size: 15px;
+    }
+
+    .admin-auth-input.admin-login-field::placeholder {
+        color: #64748b;
+    }
+
+    .admin-auth-input.admin-login-field:focus {
+        border-color: #055498;
+        outline: 2px solid #055498 !important;
+        outline-offset: 2px;
+        box-shadow: none;
+    }
+
+    .admin-auth-input.admin-login-field.is-invalid:focus {
+        border-color: #ce2028;
+        outline-color: #ce2028;
+    }
+
+    .admin-login-submit {
+        height: 3rem;
+        min-height: 3rem;
+    }
+
+    .admin-login-submit:focus-visible {
+        outline: 2px solid #fbd116;
+        outline-offset: 2px;
+    }
+
+    .admin-login-submit:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .admin-reset-code {
+        height: 3rem;
+        width: 100%;
+        min-width: 0;
+        border-radius: 0.75rem;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        text-align: center;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .admin-reset-code:focus {
+        border-color: #055498;
+        outline: 2px solid #055498;
+        outline-offset: 2px;
+    }
+
+    .admin-login-demo-accounts:not([open]) > :not(summary) {
+        display: none;
+    }
+
+    .admin-login-demo-accounts summary {
+        list-style: none;
+    }
+
+    .admin-login-demo-accounts summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .admin-login-demo-accounts[open] {
         @apply rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4;
     }
 
@@ -223,7 +298,7 @@
     }
 
     .admin-login-demo-account {
-        @apply flex w-full flex-col items-start gap-0.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-[#055498] hover:bg-[#055498]/5 focus:outline-none focus:ring-2 focus:ring-[#055498]/25 disabled:cursor-not-allowed disabled:opacity-60;
+        @apply flex h-full w-full flex-col items-start gap-1 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-[#055498] hover:bg-[#055498]/5 focus:outline-none focus:ring-2 focus:ring-[#055498] disabled:cursor-not-allowed disabled:opacity-60;
     }
 
     .admin-login-demo-account-label {
@@ -231,7 +306,7 @@
     }
 
     .admin-login-demo-account-email {
-        @apply text-xs text-slate-500 break-all;
+        @apply w-full truncate text-[11px] leading-4 text-slate-500;
     }
 
     .admin-nav-link {

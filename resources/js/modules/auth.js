@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { showErrorToast, showSuccessToast } from './shared/toast';
+import { showSuccessToast } from './shared/toast';
 import { bindPasswordToggles } from './shared/password-toggle';
 
 const TOKEN_KEY = 'dape_ma_admin_token';
@@ -91,24 +91,9 @@ export function bindLoginForm() {
                 password: formData.get('password'),
             });
 
-            await Swal.fire({
-                icon: 'success',
-                title: 'Welcome back',
-                text: 'Login successful.',
-                confirmButtonColor: '#055498',
-            });
-
             window.location.href = '/admin';
         } catch (error) {
-            applyFieldErrors(form, error.response?.data?.errors ?? {});
-
-            await Swal.fire({
-                icon: 'error',
-                title: 'Login failed',
-                text: buildErrorPrompt(error.response?.data?.errors, error.response?.data?.message, 'Unable to sign in right now.'),
-                confirmButtonColor: '#CE2028',
-            });
-        } finally {
+            showLoginFailure(form, error);
             setBusy(submitButton, false, 'Sign In');
         }
     });
@@ -147,11 +132,7 @@ function bindDemoLoginAccounts(form) {
                 showSuccessToast(`Signed in as ${label}`, 'Welcome');
                 window.location.href = '/admin';
             } catch (error) {
-                applyFieldErrors(form, error.response?.data?.errors ?? {});
-                showErrorToast(
-                    buildErrorPrompt(error.response?.data?.errors, error.response?.data?.message, 'Unable to sign in with this demo account.'),
-                    'Login failed',
-                );
+                showLoginFailure(form, error);
             } finally {
                 setBusy(submitButton, false, 'Sign In');
                 button.disabled = false;
@@ -228,10 +209,46 @@ function setBusy(button, isBusy, label) {
     }
 
     button.disabled = isBusy;
-    button.textContent = label;
     button.setAttribute('aria-busy', isBusy ? 'true' : 'false');
     button.classList.toggle('opacity-80', isBusy);
     button.classList.toggle('cursor-not-allowed', isBusy);
+    button.classList.toggle('gap-2', isBusy);
+
+    if (button.dataset.busySpinner === 'true') {
+        button.replaceChildren();
+        if (isBusy) {
+            const spinner = document.createElement('span');
+            spinner.className = 'inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white';
+            spinner.setAttribute('aria-hidden', 'true');
+            button.append(spinner);
+        }
+        button.append(document.createTextNode(label));
+        return;
+    }
+
+    button.textContent = label;
+}
+
+function showLoginFailure(form, error) {
+    const errors = error.response?.data?.errors ?? {};
+
+    if (Object.keys(errors).length > 0) {
+        applyFieldErrors(form, errors);
+        return;
+    }
+
+    const message = error.response?.data?.message || 'Unable to sign in right now.';
+    ['email', 'password'].forEach((field) => {
+        form.querySelector(`[name="${field}"]`)?.classList.add('is-invalid');
+    });
+
+    const errorLabel = form.querySelector('#password-error');
+    if (!errorLabel) {
+        return;
+    }
+
+    errorLabel.textContent = message;
+    errorLabel.classList.add('is-visible');
 }
 
 function clearFieldErrors(form) {

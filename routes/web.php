@@ -43,7 +43,8 @@ Route::get('/admin', function () {
 });
 
 Route::get('/admin/login', function () {
-    $showDemoAccounts = config('dape.show_demo_login') || app()->environment('local');
+    $showDemoAccounts = ! app()->environment('production')
+        && filter_var(config('dape.show_demo_login'), FILTER_VALIDATE_BOOL);
 
     return view('admin-login', [
         'hasSuperAdmin' => User::query()->where('role', 'super_admin')->exists(),

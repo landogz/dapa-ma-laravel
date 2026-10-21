@@ -8,20 +8,28 @@ export function bindPasswordToggles(scope = document) {
 
         toggleButton.dataset.passwordToggleBound = 'true';
 
+        const targetId = toggleButton.getAttribute('data-password-toggle');
+        const input = root.querySelector(`#${CSS.escape(targetId)}`) ?? document.getElementById(targetId);
+        const icon = toggleButton.querySelector('i');
+
+        if (!input || !icon) {
+            return;
+        }
+
+        const syncPasswordToggle = () => {
+            const hidden = input.type === 'password';
+            icon.classList.toggle('fa-eye', hidden);
+            icon.classList.toggle('fa-eye-slash', !hidden);
+            const label = hidden ? 'Show password' : 'Hide password';
+            toggleButton.setAttribute('aria-label', label);
+            toggleButton.setAttribute('title', label);
+        };
+
+        syncPasswordToggle();
+
         toggleButton.addEventListener('click', () => {
-            const targetId = toggleButton.getAttribute('data-password-toggle');
-            const input = root.querySelector(`#${CSS.escape(targetId)}`) ?? document.getElementById(targetId);
-            const icon = toggleButton.querySelector('i');
-
-            if (!input || !icon) {
-                return;
-            }
-
-            const shouldShow = input.type === 'password';
-
-            input.type = shouldShow ? 'text' : 'password';
-            icon.classList.toggle('fa-eye', shouldShow);
-            icon.classList.toggle('fa-eye-slash', !shouldShow);
+            input.type = input.type === 'password' ? 'text' : 'password';
+            syncPasswordToggle();
         });
     });
 }

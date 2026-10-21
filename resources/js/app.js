@@ -10,6 +10,7 @@ import {
 } from './modules/auth';
 import { initAdminPage } from './modules/admin-dashboard';
 import { initResetPasswordPage } from './modules/password-reset/index';
+import { bindForgotPasswordFlow } from './modules/password-reset/forgot-flow';
 import { initPublicPostShow } from './modules/public/post-show';
 import { initPublicSharePage } from './modules/public/share-page';
 
@@ -23,7 +24,11 @@ axios.interceptors.response.use(
     (error) => {
         const status = error.response?.status;
         const requestUrl = error.config?.url ?? '';
-        const isAuthFormRequest = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register');
+        const isAuthFormRequest = requestUrl.includes('/auth/login')
+            || requestUrl.includes('/auth/register')
+            || requestUrl.includes('/auth/forgot-password')
+            || requestUrl.includes('/auth/verify-reset-code')
+            || requestUrl.includes('/auth/reset-password');
         const isPublicPage =
             document.body.dataset.page === 'public-post-show' ||
             document.body.dataset.page === 'public-share' ||
@@ -60,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (page === 'admin-login') {
         redirectIfAuthenticated();
         bindLoginForm();
+        bindForgotPasswordFlow();
         return;
     }
 
