@@ -121,13 +121,13 @@
                         </div>
                     @endunless
 
-                    @if (! app()->environment('production') && !empty($demoAccounts))
+                    @if (!empty($demoAccounts))
                         <details class="admin-login-demo-accounts mt-4">
                             <summary class="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl px-1 text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#055498]">
                                 <span>Show demo accounts</span>
                                 <span class="rounded-full bg-[#FBD116] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#123a60]">Demo</span>
                             </summary>
-                            <p class="admin-login-demo-hint">Tap an account to fill the form and sign in. These accounts are hidden on production.</p>
+                            <p class="admin-login-demo-hint">Tap an account to fill the form and sign in.</p>
                             <div class="admin-login-demo-grid">
                                 @foreach ($demoAccounts as $account)
                                     <button
