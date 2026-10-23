@@ -730,7 +730,7 @@ function bindPostTableActions(tableEl) {
 
     bindAdminActionTooltipSuppression(tableEl);
 
-    tableEl.addEventListener('click', (event) => {
+    const handlePostActionClick = (event) => {
         const actionTrigger = event.target.closest('[data-post-action]');
         if (actionTrigger) {
             event.preventDefault();
@@ -753,6 +753,13 @@ function bindPostTableActions(tableEl) {
         const postId = viewTrigger.getAttribute('data-post-view');
         if (postId) {
             viewPost(postId);
+        }
+    };
+
+    tableEl.addEventListener('click', handlePostActionClick);
+    document.addEventListener('click', (event) => {
+        if (event.target.closest('.admin-action-overflow-menu [data-post-action]')) {
+            handlePostActionClick(event);
         }
     });
 

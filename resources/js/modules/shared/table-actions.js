@@ -22,6 +22,7 @@ export function escapeActionHtml(value = '') {
  * @param {string} [options.attrs] Extra HTML attributes (onclick, data-*, etc.)
  * @param {boolean} [options.isMobile]
  * @param {string} [options.label] Visible label for mobile; defaults to tooltip
+ * @param {boolean} [options.hideTooltip]
  */
 export function buildAdminActionButton({
     tooltip,
@@ -30,6 +31,7 @@ export function buildAdminActionButton({
     attrs = '',
     isMobile = false,
     label = null,
+    hideTooltip = false,
 } = {}) {
     const tip = escapeActionHtml(tooltip || label || 'Action');
     const visibleLabel = escapeActionHtml(label || tooltip || 'Action');
@@ -46,7 +48,7 @@ export function buildAdminActionButton({
         </button>
     `;
 
-    if (isMobile) {
+    if (isMobile || hideTooltip) {
         return button;
     }
 
@@ -122,6 +124,7 @@ function buildAdminActionOverflow(actions = []) {
             ${buildAdminActionButton({
                 tooltip: 'More actions',
                 icon: 'fas fa-ellipsis',
+                hideTooltip: true,
                 attrs: 'data-admin-overflow-toggle="true" aria-haspopup="menu" aria-expanded="false"',
             })}
             <div class="admin-action-overflow-menu" role="menu" hidden>
@@ -129,6 +132,31 @@ function buildAdminActionOverflow(actions = []) {
             </div>
         </div>
     `;
+}
+
+function getOverflowMenu(wrap) {
+    return wrap._overflowMenu
+        || wrap.querySelector('.admin-action-overflow-menu')
+        || document.querySelector(`.admin-action-overflow-menu[data-overflow-owner="${wrap.dataset.overflowId}"]`);
+}
+
+function restoreOverflowMenu(wrap) {
+    const menu = getOverflowMenu(wrap);
+    if (!menu) {
+        return;
+    }
+
+    menu.setAttribute('hidden', 'hidden');
+    menu.style.top = '';
+    menu.style.right = '';
+    menu.style.bottom = '';
+    menu.style.left = '';
+
+    if (menu.parentElement !== wrap) {
+        wrap.appendChild(menu);
+    }
+
+    wrap._overflowMenu = null;
 }
 
 function closeAllActionOverflows(exceptWrap = null) {
@@ -139,26 +167,39 @@ function closeAllActionOverflows(exceptWrap = null) {
 
         wrap.classList.remove('is-open');
         wrap.querySelector('[data-admin-overflow-toggle]')?.setAttribute('aria-expanded', 'false');
-        wrap.querySelector('.admin-action-overflow-menu')?.setAttribute('hidden', 'hidden');
+        restoreOverflowMenu(wrap);
     });
 }
 
 function positionActionOverflowMenu(wrap) {
     const toggle = wrap.querySelector('[data-admin-overflow-toggle]');
-    const menu = wrap.querySelector('.admin-action-overflow-menu');
+    const menu = getOverflowMenu(wrap);
     if (!toggle || !menu) {
         return;
     }
 
+    if (!wrap.dataset.overflowId) {
+        wrap.dataset.overflowId = `overflow-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    menu.dataset.overflowOwner = wrap.dataset.overflowId;
+    wrap._overflowMenu = menu;
+    document.body.appendChild(menu);
     menu.removeAttribute('hidden');
+
     const toggleRect = toggle.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
     const openUp = toggleRect.bottom + 8 + menuRect.height > window.innerHeight
         && toggleRect.top > menuRect.height + 8;
+    const left = Math.min(
+        toggleRect.right - menuRect.width,
+        window.innerWidth - menuRect.width - 8,
+    );
 
     menu.style.position = 'fixed';
-    menu.style.left = 'auto';
-    menu.style.right = `${Math.max(8, window.innerWidth - toggleRect.right)}px`;
+    menu.style.zIndex = '200';
+    menu.style.left = `${Math.max(8, left)}px`;
+    menu.style.right = 'auto';
 
     if (openUp) {
         menu.style.top = 'auto';
@@ -177,7 +218,14 @@ function bindOverflowDocumentListeners() {
     overflowDocumentBound = true;
 
     document.addEventListener('click', (event) => {
-        if (!event.target.closest?.('.admin-action-overflow')) {
+        const item = event.target.closest?.('.admin-action-overflow-item');
+        if (item) {
+            closeAllActionOverflows();
+            return;
+        }
+
+        if (!event.target.closest?.('.admin-action-overflow')
+            && !event.target.closest?.('.admin-action-overflow-menu')) {
             closeAllActionOverflows();
         }
     });
@@ -188,7 +236,13 @@ function bindOverflowDocumentListeners() {
         }
     });
 
-    window.addEventListener('scroll', () => closeAllActionOverflows(), true);
+    window.addEventListener('scroll', (event) => {
+        if (event.target?.closest?.('.admin-action-overflow-menu')) {
+            return;
+        }
+
+        closeAllActionOverflows();
+    }, true);
     window.addEventListener('resize', () => closeAllActionOverflows());
 }
 
