@@ -332,7 +332,7 @@ https://sweetalert2.github.io/#ajax-request`),WR(d),typeof d.title=="string"&&(d
             ${ie}
             <span class="admin-action-tooltip" role="tooltip">${p}</span>
         </span>
-    `}function Di(d=[],{isMobile:g=!1,nowrap:C=!0,className:M="",overflowAfter:O=2}={}){const K=!g&&Number.isFinite(O)&&O>=1&&d.length>O,B=K?d.slice(0,O):d,p=K?d.slice(O):[];return`
+    `}function Di(d=[],{isMobile:g=!1,nowrap:C=!0,className:M="",overflowAfter:O=2}={}){const K=!g&&Number.isFinite(O)&&O>=1&&d.length>O+1,B=K?d.slice(0,O):d,p=K?d.slice(O):[];return`
         <div class="${["admin-table-actions",g?"admin-table-actions-mobile":"",C?"admin-table-actions-nowrap":"",p.length?"admin-table-actions-tiered":"",M].filter(Boolean).join(" ")}">
             ${B.map(ae=>iD({...ae,isMobile:g})).join("")}
             ${p.length?QN(p):""}

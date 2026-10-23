@@ -73,7 +73,7 @@ export function buildAdminActionButtons(actions = [], {
     const useOverflow = !isMobile
         && Number.isFinite(overflowAfter)
         && overflowAfter >= 1
-        && actions.length > overflowAfter;
+        && actions.length > overflowAfter + 1;
     const visible = useOverflow ? actions.slice(0, overflowAfter) : actions;
     const extra = useOverflow ? actions.slice(overflowAfter) : [];
 
