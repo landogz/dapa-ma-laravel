@@ -3,6 +3,8 @@
  * Every desktop action button must include a custom hover tooltip.
  */
 
+let overflowDocumentBound = false;
+
 export function escapeActionHtml(value = '') {
     return String(value)
         .replaceAll('&', '&amp;')
@@ -28,28 +30,23 @@ export function buildAdminActionButton({
     attrs = '',
     isMobile = false,
     label = null,
-    showLabel = false,
-    variant = '',
 } = {}) {
     const tip = escapeActionHtml(tooltip || label || 'Action');
     const visibleLabel = escapeActionHtml(label || tooltip || 'Action');
-    const isGhost = variant === 'ghost';
-    const isLabeled = showLabel || isMobile;
     const classes = [
         'admin-table-action',
-        isGhost ? 'admin-table-action-ghost' : '',
-        isLabeled ? 'admin-table-action-label' : 'admin-table-action-icon',
+        isMobile ? '' : 'admin-table-action-icon',
         className,
     ].filter(Boolean).join(' ');
 
     const button = `
         <button type="button" class="${classes}" title="${tip}" aria-label="${tip}" ${attrs}>
-            <i class="${escapeActionHtml(icon)}" aria-hidden="true"></i>
-            <span class="${isLabeled ? '' : 'sr-only'}">${visibleLabel}</span>
+            <i class="${escapeActionHtml(icon)}"></i>
+            <span class="${isMobile ? '' : 'sr-only'}">${visibleLabel}</span>
         </button>
     `;
 
-    if (isMobile || isLabeled) {
+    if (isMobile) {
         return button;
     }
 
@@ -61,58 +58,82 @@ export function buildAdminActionButton({
     `;
 }
 
-export function buildAdminActionSlot() {
-    return '<span class="admin-table-action-slot" aria-hidden="true"></span>';
+/**
+ * @param {Array<object>} actions
+ * @param {{ isMobile?: boolean, nowrap?: boolean, className?: string, overflowAfter?: number|null }} [options]
+ */
+export function buildAdminActionButtons(actions = [], {
+    isMobile = false,
+    nowrap = true,
+    className = '',
+    overflowAfter = 2,
+} = {}) {
+    const useOverflow = !isMobile
+        && Number.isFinite(overflowAfter)
+        && overflowAfter >= 1
+        && actions.length > overflowAfter;
+    const visible = useOverflow ? actions.slice(0, overflowAfter) : actions;
+    const extra = useOverflow ? actions.slice(overflowAfter) : [];
+
+    const rowClass = [
+        'admin-table-actions',
+        isMobile ? 'admin-table-actions-mobile' : '',
+        nowrap ? 'admin-table-actions-nowrap' : '',
+        extra.length ? 'admin-table-actions-tiered' : '',
+        className,
+    ].filter(Boolean).join(' ');
+
+    return `
+        <div class="${rowClass}">
+            ${visible.map((action) => buildAdminActionButton({
+                ...action,
+                isMobile,
+            })).join('')}
+            ${extra.length ? buildAdminActionOverflow(extra) : ''}
+        </div>
+    `;
 }
 
-export function buildAdminActionOverflow(items = [], { isMobile = false } = {}) {
-    if (!items.length) {
-        return buildAdminActionSlot();
-    }
+function isDangerAction(action = {}) {
+    return String(action.className ?? '').includes('danger')
+        || String(action.iconClass ?? '').includes('CE2028');
+}
 
-    const menuItems = items.map((item, index) => {
-        const tip = escapeActionHtml(item.tooltip || item.label || 'Action');
-        const label = escapeActionHtml(item.label || item.tooltip || 'Action');
-        const icon = escapeActionHtml(item.icon || 'fa-regular fa-circle');
-        const divider = item.danger && index > 0 && !items[index - 1]?.danger
-            ? '<div class="admin-action-overflow-divider" role="separator"></div>'
-            : '';
+function buildAdminActionOverflow(actions = []) {
+    const items = actions.map((action) => {
+        const tip = escapeActionHtml(action.tooltip || action.label || 'Action');
+        const label = escapeActionHtml(action.label || action.tooltip || 'Action');
+        const icon = escapeActionHtml([action.icon, action.iconClass].filter(Boolean).join(' '));
         const itemClass = [
             'admin-action-overflow-item',
-            item.danger ? 'admin-action-overflow-item-danger' : '',
-            item.className ?? '',
+            isDangerAction(action) ? 'admin-action-overflow-item-danger' : '',
         ].filter(Boolean).join(' ');
 
         return `
-            ${divider}
-            <button type="button" class="${itemClass}" role="menuitem" title="${tip}" aria-label="${tip}" ${item.attrs ?? ''}>
+            <button type="button" class="${itemClass}" role="menuitem" title="${tip}" aria-label="${tip}" ${action.attrs || ''}>
                 <i class="${icon}" aria-hidden="true"></i>
                 <span>${label}</span>
             </button>
         `;
     }).join('');
 
-    const toggle = buildAdminActionButton({
-        tooltip: 'More actions',
-        icon: 'fa-regular fa-ellipsis',
-        variant: 'ghost',
-        isMobile,
-        attrs: 'data-admin-overflow-toggle aria-haspopup="menu" aria-expanded="false"',
-    });
-
     return `
         <div class="admin-action-overflow">
-            ${toggle}
+            ${buildAdminActionButton({
+                tooltip: 'More actions',
+                icon: 'fas fa-ellipsis',
+                attrs: 'data-admin-overflow-toggle="true" aria-haspopup="menu" aria-expanded="false"',
+            })}
             <div class="admin-action-overflow-menu" role="menu" hidden>
-                ${menuItems}
+                ${items}
             </div>
         </div>
     `;
 }
 
-export function closeAdminActionOverflows(except = null) {
+function closeAllActionOverflows(exceptWrap = null) {
     document.querySelectorAll('.admin-action-overflow.is-open').forEach((wrap) => {
-        if (except && wrap === except) {
+        if (exceptWrap && wrap === exceptWrap) {
             return;
         }
 
@@ -122,33 +143,54 @@ export function closeAdminActionOverflows(except = null) {
     });
 }
 
-/**
- * @param {Array<object>} actions
- * @param {{ isMobile?: boolean, nowrap?: boolean, className?: string }} [options]
- */
-export function buildAdminActionButtons(actions = [], {
-    isMobile = false,
-    nowrap = true,
-    className = '',
-} = {}) {
-    const rowClass = [
-        'admin-table-actions',
-        isMobile ? 'admin-table-actions-mobile' : '',
-        nowrap ? 'admin-table-actions-nowrap' : '',
-        className,
-    ].filter(Boolean).join(' ');
+function positionActionOverflowMenu(wrap) {
+    const toggle = wrap.querySelector('[data-admin-overflow-toggle]');
+    const menu = wrap.querySelector('.admin-action-overflow-menu');
+    if (!toggle || !menu) {
+        return;
+    }
 
-    return `
-        <div class="${rowClass}">
-            ${actions.map((action) => buildAdminActionButton({
-                ...action,
-                isMobile,
-            })).join('')}
-        </div>
-    `;
+    menu.removeAttribute('hidden');
+    const toggleRect = toggle.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const openUp = toggleRect.bottom + 8 + menuRect.height > window.innerHeight
+        && toggleRect.top > menuRect.height + 8;
+
+    menu.style.position = 'fixed';
+    menu.style.left = 'auto';
+    menu.style.right = `${Math.max(8, window.innerWidth - toggleRect.right)}px`;
+
+    if (openUp) {
+        menu.style.top = 'auto';
+        menu.style.bottom = `${Math.max(8, window.innerHeight - toggleRect.top + 6)}px`;
+    } else {
+        menu.style.top = `${toggleRect.bottom + 6}px`;
+        menu.style.bottom = 'auto';
+    }
 }
 
-let documentOverflowListenersBound = false;
+function bindOverflowDocumentListeners() {
+    if (overflowDocumentBound) {
+        return;
+    }
+
+    overflowDocumentBound = true;
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest?.('.admin-action-overflow')) {
+            closeAllActionOverflows();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeAllActionOverflows();
+        }
+    });
+
+    window.addEventListener('scroll', () => closeAllActionOverflows(), true);
+    window.addEventListener('resize', () => closeAllActionOverflows());
+}
 
 /**
  * Suppress sticky hover tooltips after click (desktop).
@@ -159,8 +201,34 @@ export function bindAdminActionTooltipSuppression(rootEl) {
     }
 
     rootEl.dataset.actionTooltipsBound = 'true';
+    bindOverflowDocumentListeners();
 
     rootEl.addEventListener('click', (event) => {
+        const overflowToggle = event.target.closest('[data-admin-overflow-toggle]');
+        if (overflowToggle) {
+            event.preventDefault();
+            event.stopPropagation();
+            const overflow = overflowToggle.closest('.admin-action-overflow');
+            const willOpen = !overflow?.classList.contains('is-open');
+            closeAllActionOverflows(overflow);
+            if (!overflow) {
+                return;
+            }
+
+            overflow.classList.toggle('is-open', willOpen);
+            overflowToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            if (willOpen) {
+                positionActionOverflowMenu(overflow);
+            } else {
+                overflow.querySelector('.admin-action-overflow-menu')?.setAttribute('hidden', 'hidden');
+            }
+            return;
+        }
+
+        if (event.target.closest('.admin-action-overflow-item')) {
+            closeAllActionOverflows();
+        }
+
         const wrap = event.target.closest('.admin-action-tooltip-wrap');
         if (!wrap) return;
         wrap.classList.add('admin-action-tooltip-wrap--suppressed');
@@ -178,55 +246,4 @@ export function bindAdminActionTooltipSuppression(rootEl) {
         if (!wrap) return;
         wrap.classList.remove('admin-action-tooltip-wrap--suppressed');
     }, true);
-
-    bindAdminActionOverflow(rootEl);
-}
-
-export function bindAdminActionOverflow(rootEl) {
-    if (!rootEl || rootEl.dataset.actionOverflowBound === 'true') {
-        return;
-    }
-
-    rootEl.dataset.actionOverflowBound = 'true';
-
-    rootEl.addEventListener('click', (event) => {
-        const toggle = event.target.closest('[data-admin-overflow-toggle]');
-        if (toggle) {
-            event.preventDefault();
-            event.stopPropagation();
-            const wrap = toggle.closest('.admin-action-overflow');
-            const willOpen = !wrap?.classList.contains('is-open');
-            closeAdminActionOverflows(wrap);
-            if (!wrap) {
-                return;
-            }
-
-            wrap.classList.toggle('is-open', willOpen);
-            toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-            wrap.querySelector('.admin-action-overflow-menu')?.toggleAttribute('hidden', !willOpen);
-            return;
-        }
-
-        if (!event.target.closest('.admin-action-overflow')) {
-            closeAdminActionOverflows();
-        }
-    });
-
-    if (documentOverflowListenersBound) {
-        return;
-    }
-
-    documentOverflowListenersBound = true;
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            closeAdminActionOverflows();
-        }
-    });
-
-    document.addEventListener('click', (event) => {
-        if (!event.target.closest('.admin-action-overflow')) {
-            closeAdminActionOverflows();
-        }
-    });
 }

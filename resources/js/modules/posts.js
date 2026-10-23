@@ -5,12 +5,7 @@ import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
 import { buildSwalForm, buildSwalOptions, confirmWithSwal, formatApiValidationMessage } from './shared/swal-forms';
 import { renderRatingBadge, renderStars } from './shared/ratings';
-import {
-    bindAdminActionTooltipSuppression,
-    buildAdminActionButton,
-    buildAdminActionOverflow,
-    buildAdminActionSlot,
-} from './shared/table-actions';
+import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
 import { showSuccessToast, showErrorToast } from './shared/toast';
 
 let postsTable;
@@ -676,8 +671,8 @@ export function archivePost(postId) {
 export function deletePost(postId) {
     confirmWithSwal({
         icon: 'warning',
-        title: 'Delete this post?',
-        text: "This can't be undone.",
+        title: 'Delete Post Permanently?',
+        text: 'This action cannot be undone.',
         confirmButtonText: 'Delete',
         danger: true,
     }).then(({ isConfirmed }) => {
@@ -694,195 +689,38 @@ export function deletePost(postId) {
 }
 
 function statusBadge(status) {
-    const labels = {
-        draft: 'Draft',
-        pending_review: 'Pending',
-        scheduled: 'Scheduled',
-        published: 'Published',
-        archived: 'Archived',
+    const colors = {
+        draft:          'bg-slate-100 text-slate-700',
+        pending_review: 'bg-[#FBD116]/20 text-[#123a60]',
+        scheduled:      'bg-[#055498]/10 text-[#055498]',
+        published:      'bg-emerald-100 text-emerald-700',
+        archived:       'bg-[#CE2028]/10 text-[#CE2028]',
     };
-    const tones = {
-        draft: 'admin-status-badge-draft',
-        pending_review: 'admin-status-badge-pending',
-        scheduled: 'admin-status-badge-scheduled',
-        published: 'admin-status-badge-published',
-        archived: 'admin-status-badge-archived',
-    };
-    const label = labels[status] ?? String(status).replaceAll('_', ' ');
-    const tone = tones[status] ?? '';
-
-    return `<span class="admin-status-badge admin-status-badge-dot ${tone}"><span class="admin-status-dot" aria-hidden="true"></span>${escapeHtml(label)}</span>`;
-}
-
-function formatCategoryName(name) {
-    const raw = String(name ?? '').trim();
-    if (!raw) {
-        return '—';
-    }
-
-    const isIec = /information,\s*education,\s*and\s*communication/i.test(raw)
-        || raw.toUpperCase() === 'IEC';
-    const label = isIec ? 'IEC' : raw;
-    const title = isIec && raw.toUpperCase() !== 'IEC' ? escapeHtml(raw) : escapeHtml(label);
-
-    return `<span class="admin-table-category" title="${title}">${escapeHtml(label)}</span>`;
+    const cls = colors[status] ?? 'bg-gray-100 text-gray-700';
+    return `<span class="admin-status-badge ${cls}">${status.replace('_', ' ')}</span>`;
 }
 
 function actionButtons(post) {
     return renderPostActions(post, false);
 }
 
-function postActionAttrs(handler, postId) {
-    return `data-post-action="${handler}" data-post-id="${postId}"`;
-}
-
-function getPrimaryAction(post) {
-    if (canSubmitPost(post)) {
-        return {
-            handler: 'submitForReview',
-            label: 'Submit',
-            tooltip: 'Submit for review',
-            icon: 'fa-regular fa-paper-plane',
-        };
-    }
-
-    if (canSchedulePost(post)) {
-        return {
-            handler: 'publishNow',
-            label: 'Approve',
-            tooltip: 'Approve and publish now',
-            icon: 'fa-regular fa-circle-check',
-        };
-    }
-
-    if ((currentUserRole === 'publisher' || currentUserRole === 'super_admin') && post.status === 'scheduled') {
-        return {
-            handler: 'publishNow',
-            label: 'Publish',
-            tooltip: 'Publish immediately',
-            icon: 'fa-regular fa-circle-check',
-        };
-    }
-
-    if (canArchivePost(post)) {
-        return {
-            handler: 'archivePost',
-            label: 'Unpublish',
-            tooltip: 'Unpublish this post',
-            icon: 'fa-regular fa-eye-slash',
-        };
-    }
-
-    return null;
-}
-
-function getOverflowActions(post, primaryHandler) {
-    const actions = [];
-    const commentsOn = isPostCommentsEnabled(post);
-
-    if (canEditPost(post)) {
-        actions.push({
-            handler: 'toggleComments',
-            label: commentsOn ? 'Hide comments' : 'Show comments',
-            tooltip: commentsOn ? 'Disable comments' : 'Enable comments',
-            icon: commentsOn ? 'fa-regular fa-comment-dots' : 'fa-regular fa-comment',
-        });
-    }
-
-    if (canRejectPost(post)) {
-        actions.push({
-            handler: 'rejectPost',
-            label: 'Reject',
-            tooltip: 'Reject and return to draft',
-            icon: 'fa-regular fa-rotate-left',
-        });
-    }
-
-    if (canSchedulePost(post) && primaryHandler !== 'schedulePost') {
-        actions.push({
-            handler: 'schedulePost',
-            label: 'Schedule',
-            tooltip: 'Approve and schedule publish date',
-            icon: 'fa-regular fa-calendar-check',
-        });
-    }
-
-    if (canArchivePost(post) && primaryHandler !== 'archivePost') {
-        actions.push({
-            handler: 'archivePost',
-            label: 'Archive',
-            tooltip: 'Archive post',
-            icon: 'fa-regular fa-box-archive',
-        });
-    }
-
-    if (canDeletePost(post)) {
-        actions.push({
-            handler: 'deletePost',
-            label: 'Delete',
-            tooltip: 'Delete permanently',
-            icon: 'fa-regular fa-trash-can',
-            danger: true,
-        });
-    }
-
-    return actions;
-}
-
 function renderPostActions(post, isMobile = false) {
-    const primary = getPrimaryAction(post);
-    const overflow = getOverflowActions(post, primary?.handler);
+    const actions = getAvailableActions(post);
 
-    const primaryHtml = primary
-        ? buildAdminActionButton({
-            tooltip: primary.tooltip,
-            label: primary.label,
-            icon: primary.icon,
-            showLabel: true,
-            className: 'admin-table-action-cta',
-            attrs: postActionAttrs(primary.handler, post.id),
-            isMobile,
-        })
-        : buildAdminActionSlot();
+    if (actions.length === 0) {
+        return '<span class="admin-empty-badge">No actions</span>';
+    }
 
-    const viewHtml = buildAdminActionButton({
-        tooltip: 'View',
-        label: 'View',
-        icon: 'fa-regular fa-eye',
-        variant: 'ghost',
-        className: 'admin-table-action-secondary',
-        attrs: postActionAttrs('viewPost', post.id),
-        isMobile,
-    });
-
-    const editHtml = canEditPost(post)
-        ? buildAdminActionButton({
-            tooltip: 'Edit',
-            label: 'Edit',
-            icon: 'fa-regular fa-pen-to-square',
-            variant: 'ghost',
-            className: 'admin-table-action-secondary',
-            attrs: postActionAttrs('editPost', post.id),
-            isMobile,
-        })
-        : buildAdminActionSlot();
-
-    const overflowHtml = buildAdminActionOverflow(
-        overflow.map((action) => ({
-            ...action,
-            attrs: postActionAttrs(action.handler, post.id),
+    return buildAdminActionButtons(
+        actions.map((action) => ({
+            tooltip: action.tooltip ?? action.label,
+            label: action.label,
+            icon: [action.icon, action.iconClass].filter(Boolean).join(' '),
+            className: action.className ?? '',
+            attrs: `data-post-action="${action.handler}" data-post-id="${post.id}"`,
         })),
-        { isMobile },
+        { isMobile, nowrap: true, overflowAfter: isMobile ? null : 2 },
     );
-
-    return `
-        <div class="admin-table-actions admin-table-actions-tiered ${isMobile ? 'admin-table-actions-mobile' : 'admin-table-actions-nowrap'}">
-            ${primaryHtml}
-            ${viewHtml}
-            ${editHtml}
-            ${overflowHtml}
-        </div>
-    `;
 }
 
 function bindPostTableActions(tableEl) {
@@ -1094,7 +932,7 @@ function bindPostsViewportListener(tableEl) {
 
 function buildPostRowData(post) {
     const titleLink = `
-        <button type="button" class="admin-table-title-link" data-post-view="${post.id}" title="${escapeHtml(post.title)}">
+        <button type="button" class="admin-table-link-chip text-left" data-post-view="${post.id}" title="View post details">
             ${escapeHtml(post.title)}
         </button>
     `;
@@ -1112,7 +950,7 @@ function buildPostRowData(post) {
                     ${statusBadge(post.status)}
                 </div>
                 <div class="admin-table-mobile-details">
-                    <p><span>Category:</span> ${formatCategoryName(post.category?.name)}</p>
+                    <p><span>Category:</span> ${escapeHtml(post.category?.name ?? 'Uncategorized')}</p>
                     <p><span>Author:</span> ${escapeHtml(post.author?.name ?? 'N/A')}</p>
                     <p><span>Publish Date:</span> ${escapeHtml(formatDateTime(post.publish_date) || 'Not scheduled')}</p>
                     <p><span>Comments:</span> ${isPostCommentsEnabled(post) ? 'Enabled' : 'Disabled'}</p>
@@ -1127,7 +965,7 @@ function buildPostRowData(post) {
     return [
         post.id,
         titleLink,
-        formatCategoryName(post.category?.name),
+        escapeHtml(post.category?.name ?? '—'),
         statusBadge(post.status),
         escapeHtml(post.author?.name ?? '—'),
         escapeHtml(formatDateTime(post.publish_date) || '—'),
