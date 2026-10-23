@@ -2492,14 +2492,24 @@
         justify-content: flex-start;
     }
 
-    .dt-container .dt-search input {
-        min-width: 0;
-        width: 100%;
+    .dt-container > .row,
+    .dt-container .dt-layout-row {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
     }
 
+    .dt-container > .row > *,
     .dt-container .dt-layout-cell,
-    .dt-container .dt-layout-end {
-        width: 100%;
+    .dt-container .dt-layout-start,
+    .dt-container .dt-layout-end,
+    .dt-container .ms-auto,
+    .dt-container .col-md-auto {
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
         justify-content: flex-start;
         flex-wrap: wrap;
     }
@@ -2509,18 +2519,26 @@
     }
 
     .dt-container .dt-search,
+    .dt-container .dt-search label,
     .dt-container .dt-search label:has(input),
     .dt-container .dt-length,
     .dt-container .dt-length label {
         width: 100%;
+        max-width: 100%;
+        justify-content: flex-start;
     }
 
     .dt-container .dt-layout-end.admin-dt-toolbar-filters-host .dt-search,
     .dt-container .dt-layout-end.admin-dt-toolbar-filters-host .admin-dt-filters,
     .dt-container .dt-layout-end.admin-dt-toolbar-filters-host .admin-filter-select-inline,
-    .dt-container .dt-layout-end.admin-dt-toolbar-filters-host .admin-choice-select {
+    .dt-container .dt-layout-end.admin-dt-toolbar-filters-host .admin-choice-select,
+    .admin-dt-filters,
+    .admin-filter-select,
+    .admin-filter-select-inline,
+    .admin-choice-select {
         width: 100%;
         min-width: 0;
+        max-width: 100%;
     }
 
     .dt-container .dt-length label {
@@ -2529,82 +2547,117 @@
     }
 
     .dt-container .dt-search input,
+    .dt-container .dt-search input.form-control,
+    .dt-container .dt-search input.form-control-sm,
     .dt-container .dt-length select {
+        display: block;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0;
+        min-height: 44px;
+        box-sizing: border-box;
+    }
+
+    .admin-table-shell .dt-container .dt-table,
+    .admin-table-shell .dt-container table.dataTable {
+        border: 0 !important;
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .admin-table-shell .dt-container table.dataTable thead {
+        display: none;
+    }
+
+    .admin-table-shell .dt-container table.dataTable tbody tr {
+        display: block;
+        margin: 0 0 0.75rem;
+        overflow: hidden;
+        border: 1px solid #dbe3ef;
+        border-radius: 0.95rem;
+        background: #ffffff;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .admin-table-shell .dt-container table.dataTable tbody tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .admin-table-shell .dt-container table.dataTable tbody td,
+    .admin-table-shell .dt-container table.dataTable tbody td.dt-col-mobile-summary,
+    .admin-table-shell .dt-container table.dataTable tbody td.dt-col-actions {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        padding: 0.95rem 0.9rem;
+        border: 0 !important;
+        white-space: normal;
+        vertical-align: top;
+        overflow-wrap: break-word;
+        word-break: normal;
+    }
+
+    .admin-table-shell .dt-container table.dataTable tbody td.dt-col-actions {
+        padding-top: 0.15rem;
+        padding-bottom: 0.9rem;
+    }
+
+    .admin-table-shell .dt-container table.dataTable tbody td.dt-col-actions:not(:first-child) {
+        padding-top: 0.75rem;
+        border-top: 1px solid #e2e8f0 !important;
+    }
+
+    .admin-table-actions-mobile {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.4rem;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .admin-table-actions-mobile .admin-table-action {
+        flex: 1 1 auto;
+        justify-content: flex-start;
         width: 100%;
         min-height: 44px;
+        padding-inline: 0.85rem;
+        white-space: nowrap;
     }
 
-    .dt-container .dt-table {
-        border-radius: 0.9rem;
-        box-shadow: none;
+    .admin-table-actions-mobile.admin-table-actions-nowrap {
+        flex-wrap: wrap;
     }
 
-.dt-container .dt-table thead th.dt-col-mobile-summary,
-.dt-container .dt-table tbody td.dt-col-mobile-summary,
-.dt-container table.dataTable thead th.dt-col-mobile-summary,
-.dt-container table.dataTable tbody td.dt-col-mobile-summary {
-    min-width: 0 !important;
-    width: 99% !important;
-}
+    .admin-table-actions-mobile.admin-table-actions-nowrap .admin-table-action {
+        flex: 1 1 auto;
+        width: 100%;
+    }
 
-.dt-container .dt-table thead th.dt-col-actions,
-.dt-container .dt-table tbody td.dt-col-actions,
-.dt-container table.dataTable thead th.dt-col-actions,
-.dt-container table.dataTable tbody td.dt-col-actions {
-    min-width: 0 !important;
-    width: 1% !important;
-    white-space: nowrap;
-    vertical-align: top;
-}
+    .rehab-table-action-icon {
+        min-width: 100%;
+    }
 
-.dt-container .dt-table tbody td {
-    padding: 0.9rem 0.65rem;
-}
+    .admin-table-mobile-title-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 
-.admin-table-actions-mobile {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.4rem;
-    min-width: 5.75rem;
-}
+    .admin-table-mobile-badge {
+        min-height: 2rem;
+    }
 
-.admin-table-actions-mobile .admin-table-action {
-    flex: 1 1 auto;
-    justify-content: flex-start;
-    min-height: 44px;
-    padding-inline: 0.65rem;
-    white-space: nowrap;
-}
+    .dt-container .dt-paging .dt-paging-button {
+        margin-top: 0.35rem !important;
+        min-height: 44px;
+        min-width: 44px;
+    }
 
-.admin-table-actions-mobile.admin-table-actions-nowrap {
-    flex-wrap: nowrap;
-}
-
-.admin-table-actions-mobile.admin-table-actions-nowrap .admin-table-action {
-    flex: 0 0 auto;
-    width: 100%;
-}
-
-.rehab-table-action-icon {
-    min-width: 100%;
-}
-
-.admin-table-mobile-title-row {
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.admin-table-mobile-badge {
-    min-height: 2rem;
-}
-
-.dt-container .dt-paging .dt-paging-button {
-    margin-top: 0.35rem !important;
-}
-
-.dt-container .dt-col-actions .admin-table-actions {
-    justify-content: flex-start;
-}
+    .dt-container .dt-col-actions .admin-table-actions {
+        justify-content: flex-start;
+        width: 100%;
+    }
 }
 
 @media (min-width: 768px) {
