@@ -45,6 +45,7 @@ class SharePageService
             meta: $meta !== '' ? $meta : null,
             canonicalUrl: $this->canonical('posts', (string) $post->uuid),
             appPath: 'posts/'.$post->id,
+            imageIsLogo: $image['is_logo'],
         );
     }
 
@@ -81,6 +82,7 @@ class SharePageService
             meta: $meta !== '' ? $meta : null,
             canonicalUrl: $this->canonical('events', (string) $event->uuid),
             appPath: 'events/'.$event->id,
+            imageIsLogo: $image['is_logo'],
         );
     }
 
@@ -114,6 +116,7 @@ class SharePageService
             meta: $meta !== '' ? $meta : null,
             canonicalUrl: $this->canonical('contests', (string) $contest->uuid),
             appPath: 'contests/'.$contest->id,
+            imageIsLogo: $image['is_logo'],
         );
     }
 
@@ -184,22 +187,22 @@ class SharePageService
     }
 
     /**
-     * @return array{url: string, src: string}
+     * @return array{url: string, src: string, is_logo: bool}
      */
     private function resolveImage(?string $uploaded, string $fallbackRelative): array
     {
         if ($uploaded) {
-            $src = $this->toPageSrc($uploaded);
-
             return [
                 'url' => $this->toAbsolute($uploaded),
-                'src' => $src,
+                'src' => $this->toPageSrc($uploaded),
+                'is_logo' => false,
             ];
         }
 
         return [
             'url' => $this->origin().'/'.$fallbackRelative,
             'src' => '/'.$fallbackRelative,
+            'is_logo' => true,
         ];
     }
 

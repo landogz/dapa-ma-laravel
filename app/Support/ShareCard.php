@@ -16,6 +16,7 @@ final class ShareCard
         public readonly ?string $meta,
         public readonly string $canonicalUrl,
         public readonly string $appPath,
+        public readonly bool $imageIsLogo = false,
     ) {
     }
 }

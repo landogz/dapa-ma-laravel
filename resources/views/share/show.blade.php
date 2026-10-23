@@ -53,11 +53,21 @@
         <main class="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-10 max-lg:pb-[12.5rem] [@media(max-height:500px)]:max-lg:pb-[7.25rem]">
             <article class="overflow-hidden rounded-2xl bg-white shadow-2xl shadow-black/30 sm:rounded-3xl lg:grid lg:grid-cols-2 lg:items-stretch [&>*]:min-w-0">
                 <div class="relative aspect-[2/1] min-h-[9.5rem] bg-gradient-to-br from-[#055498] to-[#123a60] sm:aspect-[16/7] sm:min-h-[12rem] lg:aspect-auto lg:min-h-[22rem]">
-                    <img
-                        src="{{ $card->imageSrc }}"
-                        alt="{{ $card->title }}"
-                        class="h-full w-full object-cover object-center"
-                    >
+                    @if ($card->imageIsLogo)
+                        <div class="flex h-full w-full items-center justify-center p-6 sm:p-8">
+                            <img
+                                src="{{ $card->imageSrc }}"
+                                alt="Dangerous Drugs Board"
+                                class="h-24 w-24 rounded-full bg-white object-contain p-1 shadow-xl sm:h-32 sm:w-32 lg:h-40 lg:w-40"
+                            >
+                        </div>
+                    @else
+                        <img
+                            src="{{ $card->imageSrc }}"
+                            alt="{{ $card->title }}"
+                            class="h-full w-full object-cover object-center"
+                        >
+                    @endif
                     <span class="absolute left-3 top-3 rounded-full bg-[#FBD116] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[#123a60]">
                         {{ $card->typeLabel }}
                     </span>

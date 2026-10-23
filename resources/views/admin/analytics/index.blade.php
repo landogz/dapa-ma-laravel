@@ -13,9 +13,9 @@
                 </div>
             </div>
             <div class="admin-page-actions admin-page-actions-centered">
-                <div class="flex items-center gap-2 text-xs text-slate-500">
+                <div class="flex min-w-0 flex-wrap items-center gap-2 text-xs text-slate-500">
                     <span>Range:</span>
-                    <div class="admin-range-toggle inline-flex overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">
+                    <div class="admin-range-toggle inline-flex min-h-11 overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">
                         <button type="button" class="admin-range-toggle-button is-active" data-analytics-range="7">7 days</button>
                         <button type="button" class="admin-range-toggle-button" data-analytics-range="30">30 days</button>
                     </div>

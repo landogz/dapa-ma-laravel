@@ -3,7 +3,7 @@ let dataTablesLibraryPromise;
 export function getAdminDataTableOptions({
     columns,
     columnDefs = [],
-    searchLabel = 'Search:',
+    searchLabel = 'Search',
     searchPlaceholder,
     infoLabel,
     pageLength = 10,
@@ -16,6 +16,8 @@ export function getAdminDataTableOptions({
     language = {},
     hidePagingWhenSinglePage = true,
 }) {
+    const placeholder = searchPlaceholder || 'Search…';
+
     return {
         searching: true,
         paging: true,
@@ -36,8 +38,6 @@ export function getAdminDataTableOptions({
             bottomEnd: ['pageLength', 'paging'],
         },
         language: {
-            search: searchLabel,
-            searchPlaceholder,
             lengthMenu: '_MENU_ per page',
             info: infoLabel,
             infoEmpty: 'No records available',
@@ -48,7 +48,10 @@ export function getAdminDataTableOptions({
                 next: 'Next',
             },
             ...language,
+            search: '',
+            searchPlaceholder: placeholder,
         },
+        ariaSearchLabel: searchLabel || placeholder,
         columns,
         columnDefs,
         drawCallback,
@@ -66,8 +69,15 @@ export function loadAdminDataTableLibrary() {
 
 export async function createAdminDataTable(tableElement, options) {
     const DataTable = await loadAdminDataTableLibrary();
-    const { hidePagingWhenSinglePage = true, ...tableOptions } = options;
+    const {
+        hidePagingWhenSinglePage = true,
+        ariaSearchLabel,
+        ...tableOptions
+    } = options;
     const table = new DataTable(tableElement, tableOptions);
+    bindAdminTableSearchField(table, ariaSearchLabel
+        || tableOptions.language?.searchPlaceholder
+        || 'Search');
 
     if (hidePagingWhenSinglePage) {
         const syncPagingVisibility = () => {
@@ -82,4 +92,24 @@ export async function createAdminDataTable(tableElement, options) {
     }
 
     return table;
+}
+
+function bindAdminTableSearchField(table, ariaLabel) {
+    const container = table.table().container();
+    if (!container) {
+        return;
+    }
+
+    container.querySelectorAll('.dt-search > label').forEach((label) => {
+        if (!label.querySelector('input')) {
+            label.classList.add('sr-only');
+        }
+    });
+
+    const input = container.querySelector('.dt-search input');
+    if (input) {
+        input.setAttribute('aria-label', ariaLabel);
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('enterkeyhint', 'search');
+    }
 }
