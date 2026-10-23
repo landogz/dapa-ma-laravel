@@ -83,6 +83,7 @@ export async function createAdminDataTable(tableElement, options) {
     bindAdminTableSearchField(table, ariaSearchLabel
         || tableOptions.language?.searchPlaceholder
         || 'Search');
+    bindAdminTableShellScroll(tableElement);
 
     if (hidePagingWhenSinglePage) {
         const syncPagingVisibility = () => {
@@ -97,6 +98,21 @@ export async function createAdminDataTable(tableElement, options) {
     }
 
     return table;
+}
+
+function bindAdminTableShellScroll(tableElement) {
+    const shell = tableElement.closest('.admin-table-shell');
+    if (!shell || shell.dataset.hScrollBound === '1') {
+        return;
+    }
+
+    shell.dataset.hScrollBound = '1';
+    const sync = () => {
+        shell.classList.toggle('is-h-scrolled', shell.scrollLeft > 8);
+    };
+
+    shell.addEventListener('scroll', sync, { passive: true });
+    sync();
 }
 
 function bindAdminTableSearchField(table, ariaLabel) {
