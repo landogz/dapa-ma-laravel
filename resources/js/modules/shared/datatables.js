@@ -74,6 +74,11 @@ export async function createAdminDataTable(tableElement, options) {
         ariaSearchLabel,
         ...tableOptions
     } = options;
+    // DataTables scrollX wraps the table in a nested scroller that prevents
+    // position:sticky on the Actions column. Horizontal overflow lives on
+    // .admin-table-shell instead so dt-col-actions can stay pinned.
+    tableOptions.scrollX = false;
+    tableOptions.scrollCollapse = false;
     const table = new DataTable(tableElement, tableOptions);
     bindAdminTableSearchField(table, ariaSearchLabel
         || tableOptions.language?.searchPlaceholder

@@ -2690,23 +2690,32 @@ select.admin-filter-select:not(.admin-choice-select-native),
         max-width: none;
     }
 
-    .admin-table-shell .dt-scroll-head table.dataTable thead th.dt-col-actions,
-    .admin-table-shell .dt-scroll-body table.dataTable thead th.dt-col-actions,
-    .admin-table-shell table.dataTable thead th.dt-col-actions {
-        position: sticky;
-        right: 0;
-        z-index: 4;
-        background: #f8fafc;
-        box-shadow: -10px 0 16px -12px rgba(18, 58, 96, 0.45);
+    .admin-table-shell {
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
     }
 
-    .admin-table-shell .dt-scroll-body table.dataTable tbody td.dt-col-actions,
+    .admin-table-shell .dt-container .dt-table,
+    .admin-table-shell .dt-container table.dataTable {
+        overflow: visible !important;
+    }
+
+    .admin-table-shell table.dataTable thead th.dt-col-actions,
     .admin-table-shell table.dataTable tbody td.dt-col-actions {
-        position: sticky;
-        right: 0;
-        z-index: 3;
+        position: sticky !important;
+        right: 0 !important;
+        z-index: 5;
+        box-shadow: -12px 0 18px -10px rgba(18, 58, 96, 0.35);
+    }
+
+    .admin-table-shell table.dataTable thead th.dt-col-actions {
+        background: #f8fafc;
+        z-index: 6;
+    }
+
+    .admin-table-shell table.dataTable tbody td.dt-col-actions {
         background: #ffffff;
-        box-shadow: -10px 0 16px -12px rgba(18, 58, 96, 0.35);
         overflow: visible;
     }
 
