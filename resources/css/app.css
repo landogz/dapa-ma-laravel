@@ -2689,6 +2689,38 @@ select.admin-filter-select:not(.admin-choice-select-native),
     .dt-container .dt-layout-end.admin-dt-toolbar-filters-host .dt-search {
         max-width: none;
     }
+
+    .admin-table-shell .dt-scroll-head table.dataTable thead th.dt-col-actions,
+    .admin-table-shell .dt-scroll-body table.dataTable thead th.dt-col-actions,
+    .admin-table-shell table.dataTable thead th.dt-col-actions {
+        position: sticky;
+        right: 0;
+        z-index: 4;
+        background: #f8fafc;
+        box-shadow: -10px 0 16px -12px rgba(18, 58, 96, 0.45);
+    }
+
+    .admin-table-shell .dt-scroll-body table.dataTable tbody td.dt-col-actions,
+    .admin-table-shell table.dataTable tbody td.dt-col-actions {
+        position: sticky;
+        right: 0;
+        z-index: 3;
+        background: #ffffff;
+        box-shadow: -10px 0 16px -12px rgba(18, 58, 96, 0.35);
+        overflow: visible;
+    }
+
+    .admin-table-shell table.dataTable tbody tr:nth-child(even) td.dt-col-actions {
+        background: #f8fafc;
+    }
+
+    .admin-table-shell table.dataTable tbody tr:hover td.dt-col-actions {
+        background: #e8f2fb;
+    }
+
+    .admin-table-shell .dt-col-actions .admin-table-actions {
+        overflow: visible;
+    }
 }
 
 /* CKEditor default height inside modals/forms */
