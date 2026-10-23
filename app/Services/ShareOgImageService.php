@@ -11,7 +11,9 @@ class ShareOgImageService
 
     public const HEIGHT = 630;
 
-    private const VERSION = 'v2';
+    public const VERSION = 'v3';
+
+    public const LOGO_SRC = '/email/ddb-seal.png';
 
     public function pathFor(string $type, ShareCard $card): string
     {
@@ -35,6 +37,9 @@ class ShareOgImageService
         $this->fillBrandGradient($canvas);
 
         $source = $this->loadSource($sourceSrc);
+        if (! $source instanceof \GdImage) {
+            $source = $this->loadSource(self::LOGO_SRC);
+        }
         if ($source instanceof \GdImage) {
             $this->paintContained($canvas, $source);
             imagedestroy($source);
@@ -52,7 +57,7 @@ class ShareOgImageService
             $stamp = (string) filemtime($local);
         }
 
-        return storage_path('app/og/'.self::VERSION.'-'.$type.'-'.$id.'-'.$stamp.'.jpg');
+        return storage_path('app/og/'.self::VERSION.'-'.$type.'-'.$key.'-'.$stamp.'.jpg');
     }
 
     private function fillBrandGradient(\GdImage $canvas): void
@@ -77,8 +82,9 @@ class ShareOgImageService
             return;
         }
 
-        $padX = 56;
-        $padY = 48;
+        $isLogo = $sw <= 512 && $sh <= 512;
+        $padX = $isLogo ? 360 : 56;
+        $padY = $isLogo ? 140 : 48;
         $innerW = self::WIDTH - ($padX * 2);
         $innerH = self::HEIGHT - ($padY * 2);
         $scale = min($innerW / $sw, $innerH / $sh);

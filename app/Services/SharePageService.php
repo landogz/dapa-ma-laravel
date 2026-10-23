@@ -11,12 +11,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class SharePageService
 {
-    private const EVENT_BANNERS = [
-        'assets/hope/hope_banner_caravan.png',
-        'assets/hope/hope_banner_celebration.png',
-        'assets/hope/hope_banner_scout_run.png',
-        'assets/hope/hope_banner_workshop.png',
-    ];
+    private const LOGO_PATH = 'email/ddb-seal.png';
 
     public function post(string $key): ShareCard
     {
@@ -29,7 +24,7 @@ class SharePageService
             $this->absoluteUrl($post->media_url)
                 ?? $this->youtubeThumb($post->youtube_url)
                 ?? $this->firstBodyImage($post->body),
-            'assets/home/banner_whatsnew_art.png',
+            self::LOGO_PATH,
         );
 
         $meta = collect([
@@ -71,7 +66,7 @@ class SharePageService
 
         $image = $this->resolveImage(
             $this->absoluteUrl($event->coverUrl()),
-            $this->eventBannerPath($event->id),
+            self::LOGO_PATH,
         );
 
         return new ShareCard(
@@ -104,7 +99,7 @@ class SharePageService
 
         $image = $this->resolveImage(
             $this->absoluteUrl($contest->cover_image_url),
-            'assets/hope/hope_banner_workshop.png',
+            self::LOGO_PATH,
         );
 
         return new ShareCard(
@@ -185,7 +180,7 @@ class SharePageService
 
     private function ogImageUrl(string $type, string $uuid): string
     {
-        return $this->origin().'/og-image/'.$type.'/'.$uuid.'.jpg';
+        return $this->origin().'/og-image/'.$type.'/'.$uuid.'.jpg?v='.ShareOgImageService::VERSION;
     }
 
     /**
@@ -208,15 +203,13 @@ class SharePageService
         ];
     }
 
-    private function eventBannerPath(int $id): string
-    {
-        $index = $id <= 0 ? 0 : ($id - 1) % count(self::EVENT_BANNERS);
-
-        return self::EVENT_BANNERS[$index];
-    }
-
     private function origin(): string
     {
+        $configured = rtrim((string) config('app.url'), '/');
+        if ($configured !== '' && preg_match('#^https?://#i', $configured) === 1) {
+            return $configured;
+        }
+
         return rtrim(request()->getSchemeAndHttpHost(), '/');
     }
 

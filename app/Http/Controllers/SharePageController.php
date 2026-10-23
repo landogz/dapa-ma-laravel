@@ -32,7 +32,7 @@ class SharePageController extends Controller
         return $this->show('contests', $this->sharePageService->contest($key), $key);
     }
 
-    public function ogImage(string $type, string $key): BinaryFileResponse|RedirectResponse
+    public function ogImage(string $type, string $key): BinaryFileResponse
     {
         $card = match ($type) {
             'posts' => $this->sharePageService->post($key),
@@ -40,13 +40,6 @@ class SharePageController extends Controller
             'contests' => $this->sharePageService->contest($key),
             default => abort(404),
         };
-
-        if (! Str::isUuid($key) && $card->uuid !== '') {
-            return redirect()->route('share.og-image', [
-                'type' => $type,
-                'key' => $card->uuid,
-            ], 301);
-        }
 
         $path = $this->shareOgImageService->pathFor($type, $card);
 
