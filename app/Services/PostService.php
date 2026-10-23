@@ -103,9 +103,13 @@ class PostService
         unset($payload['media_file']);
 
         if ($actor?->role !== 'super_admin') {
-            unset($payload['status']);
+            unset($payload['status'], $payload['publish_date']);
         } elseif ($this->payloadTouchesPostContent($payload)) {
             $payload = $this->applySuperAdminPublishDefaults($payload, $post);
+        }
+
+        if (($payload['status'] ?? $post->status) === 'scheduled' && ! empty($data['publish_date'])) {
+            $payload['publish_date'] = Carbon::parse($data['publish_date']);
         }
 
         if (array_key_exists('comments_enabled', $payload)) {
@@ -242,7 +246,7 @@ class PostService
 
     private function payloadTouchesPostContent(array $payload): bool
     {
-        foreach (['title', 'body', 'category_id', 'media_url', 'youtube_url', 'status', 'media_file'] as $key) {
+        foreach (['title', 'body', 'category_id', 'media_url', 'youtube_url', 'status', 'media_file', 'publish_date'] as $key) {
             if (array_key_exists($key, $payload)) {
                 return true;
             }

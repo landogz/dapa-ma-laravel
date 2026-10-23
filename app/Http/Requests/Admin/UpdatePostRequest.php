@@ -24,6 +24,7 @@ class UpdatePostRequest extends FormRequest
 
         if ($this->user()?->role === 'super_admin') {
             $rules['status'] = ['sometimes', 'string', 'in:draft,pending_review,scheduled,published,archived'];
+            $rules['publish_date'] = ['required_if:status,scheduled', 'nullable', 'date'];
         }
 
         return $rules;

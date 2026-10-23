@@ -1007,6 +1007,46 @@ function escapeHtml(value) {
         .replaceAll("'", '&#39;');
 }
 
+function bindScheduledPublishDateField() {
+    const statusEl = document.getElementById('post-status');
+    const dateField = document.getElementById('post-publish-date')?.closest('.admin-swal-field');
+
+    if (!statusEl || !dateField) {
+        return;
+    }
+
+    const sync = () => {
+        const scheduled = statusEl.value === 'scheduled';
+        dateField.hidden = !scheduled;
+        const input = dateField.querySelector('input');
+        if (input) {
+            input.required = scheduled;
+        }
+    };
+
+    statusEl.addEventListener('change', sync);
+    sync();
+}
+
+function toDatetimeLocalValue(value) {
+    if (!value) {
+        return '';
+    }
+
+    const normalized = typeof value === 'string' && value.includes(' ')
+        ? value.replace(' ', 'T')
+        : value;
+    const date = new Date(normalized);
+
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const pad = (part) => String(part).padStart(2, '0');
+
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function formatDateTime(value) {
     if (!value) {
         return '';
@@ -1069,6 +1109,12 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
                 { value: 'published', label: 'Published' },
                 { value: 'archived', label: 'Archived' },
             ],
+        }, {
+            id: 'post-publish-date',
+            label: 'Go live date & time *',
+            type: 'datetime-local',
+            value: toDatetimeLocalValue(post?.publish_date),
+            hint: 'Required for Scheduled. The server publishes automatically at this time (Asia/Manila).',
         });
     }
 
@@ -1110,6 +1156,8 @@ async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonT
         confirmButtonText,
         focusConfirm: false,
         didOpen: async () => {
+            bindScheduledPublishDateField();
+
             const textarea = document.getElementById('post-body');
 
             if (!textarea) {
@@ -1155,6 +1203,15 @@ async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonT
             const statusValue = document.getElementById('post-status')?.value;
             if (statusValue) {
                 payload.status = statusValue;
+            }
+
+            if (payload.status === 'scheduled') {
+                const publishDate = document.getElementById('post-publish-date')?.value;
+                if (!publishDate) {
+                    Swal.showValidationMessage('Pick a go-live date and time for a scheduled post.');
+                    return false;
+                }
+                payload.publish_date = publishDate;
             }
 
             const commentsEnabledValue = document.getElementById('post-comments-enabled')?.value;
@@ -1259,6 +1316,10 @@ function buildMultipartPayload(formData, { method = 'POST' } = {}) {
 
     if (formData.status) {
         payload.append('status', formData.status);
+    }
+
+    if (formData.publish_date) {
+        payload.append('publish_date', formData.publish_date);
     }
 
     if (typeof formData.comments_enabled === 'boolean') {
