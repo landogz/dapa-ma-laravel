@@ -26,7 +26,7 @@ class AppTranslationAdminController extends Controller
         return response()->json([
             'status' => true,
             'data' => $this->appTranslationService->list(
-                (int) $request->integer('per_page', 200),
+                min(2000, max(1, (int) $request->integer('per_page', 200))),
                 $request->string('search')->toString() ?: null,
                 $request->string('group')->toString() ?: null,
                 $active,

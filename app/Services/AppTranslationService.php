@@ -86,15 +86,22 @@ class AppTranslationService
             return 0;
         }
 
+        $this->appTranslationRepository->deleteBibleCatalog();
+
         $rows = [];
         foreach ($decoded as $item) {
             if (empty($item['key']) || ! isset($item['en'], $item['tl'])) {
                 continue;
             }
 
+            $group = $item['group'] ?? null;
+            if ($group === 'bible') {
+                continue;
+            }
+
             $rows[] = [
                 'key' => (string) $item['key'],
-                'group' => $item['group'] ?? null,
+                'group' => $group,
                 'description' => $item['description'] ?? null,
                 'value_en' => (string) $item['en'],
                 'value_tl' => (string) $item['tl'],
@@ -102,13 +109,13 @@ class AppTranslationService
             ];
         }
 
-        return $this->appTranslationRepository->upsertMany($rows);
+        return $this->appTranslationRepository->syncMany($rows);
     }
 
     private function normalize(array $data, ?AppTranslation $existing = null): array
     {
         $payload = [
-            'group' => filled($data['group'] ?? null) ? trim((string) $data['group']) : null,
+            'group' => $this->normalizeGroup($data['group'] ?? null),
             'description' => filled($data['description'] ?? null) ? trim((string) $data['description']) : null,
             'value_en' => trim((string) ($data['value_en'] ?? '')),
             'value_tl' => trim((string) ($data['value_tl'] ?? '')),
@@ -122,5 +129,16 @@ class AppTranslationService
         }
 
         return $payload;
+    }
+
+    private function normalizeGroup(mixed $group): ?string
+    {
+        $value = filled($group) ? trim((string) $group) : null;
+
+        if ($value === 'bible') {
+            return 'kid_listo';
+        }
+
+        return $value;
     }
 }

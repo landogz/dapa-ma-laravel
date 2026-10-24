@@ -1,8 +1,9 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
-import { buildSwalOptions } from '../shared/swal-forms';
+import { buildSwalOptions, confirmWithSwal } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
+import { bindAdminFilterTabs, countByKey, renderAdminFilterTabs, setAdminFilterTab } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let translationsTable;
@@ -11,6 +12,7 @@ let translationsTableMode;
 let hasBoundViewportListener = false;
 let translationsGroupFilter = '';
 let translationGroups = [];
+let translationGroupCounts = null;
 
 export function initAppTranslationsModule() {
     const tableEl = document.getElementById('app-translations-table');
@@ -21,6 +23,10 @@ export function initAppTranslationsModule() {
         await initializeTranslationsTable(tableEl);
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        bindAdminFilterTabs(document.getElementById('app-translations-group-tabs'), (value) => {
+            translationsGroupFilter = value;
+            loadAppTranslations();
+        });
         loadAppTranslations();
     });
 }
@@ -31,14 +37,20 @@ export function loadAppTranslations(search = '') {
     axios.get('/admin/app-translations', {
         params: {
             search,
-            per_page: 500,
+            per_page: 2000,
             ...(translationsGroupFilter ? { group: translationsGroupFilter } : {}),
         },
     })
         .then(({ data }) => {
-            translationGroups = data.meta?.groups ?? [];
-            mountTranslationsToolbarFilters(document.getElementById('app-translations-table'));
+            translationGroups = (data.meta?.groups ?? []).filter((group) => group && group !== 'bible');
+            if (translationsGroupFilter && !translationGroups.includes(translationsGroupFilter)) {
+                translationsGroupFilter = '';
+            }
             const rows = data.data?.data ?? [];
+            if (!translationsGroupFilter && !search) {
+                translationGroupCounts = countByKey(rows, (row) => row.group || '');
+            }
+            renderTranslationGroupTabs();
             translationsTable.clear();
             rows.forEach((item) => {
                 translationsTable.row.add(buildRowData(item));
@@ -63,13 +75,13 @@ export function editAppTranslation(id) {
 }
 
 export function removeAppTranslation(id) {
-    Swal.fire(buildSwalOptions({
+    confirmWithSwal({
         icon: 'warning',
         title: 'Delete translation?',
-        html: '<p class="admin-swal-description">This removes the string key from the mobile catalog.</p>',
+        text: 'This removes the string key from the mobile catalog.',
         confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel',
-    }, { danger: true, size: 'sm' })).then(({ isConfirmed }) => {
+        danger: true,
+    }).then(({ isConfirmed }) => {
         if (!isConfirmed) return;
         axios.delete(`/admin/app-translations/${id}`)
             .then(({ data }) => {
@@ -82,59 +94,41 @@ export function removeAppTranslation(id) {
     });
 }
 
-function mountTranslationsToolbarFilters(tableEl) {
-    if (!tableEl) return;
-
-    const container = tableEl.closest('.dt-container');
-    if (!container) return;
-
-    const layoutEnd = [...container.querySelectorAll('.dt-layout-end')]
-        .find((el) => el.querySelector('.dt-search'));
-
-    if (!layoutEnd) return;
-
-    layoutEnd.querySelector('#app-translations-toolbar-filters')?.remove();
-    layoutEnd.classList.add('admin-dt-toolbar-filters-host');
-
-    const groupOptions = [
-        `<option value="">All groups</option>`,
-        ...translationGroups.map((group) => `
-            <option value="${escapeHtml(group)}" ${translationsGroupFilter === group ? 'selected' : ''}>
-                ${escapeHtml(formatGroupLabel(group))}
-            </option>
-        `),
-    ].join('');
-
-    const filters = document.createElement('div');
-    filters.id = 'app-translations-toolbar-filters';
-    filters.className = 'admin-dt-filters';
-    filters.innerHTML = `
-        <label class="sr-only" for="app-translations-group-filter">Filter by group</label>
-        <select id="app-translations-group-filter" class="admin-filter-select admin-filter-select-inline" aria-label="Filter by group">
-            ${groupOptions}
-        </select>
-    `;
-
-    const search = layoutEnd.querySelector('.dt-search');
-    if (search) {
-        layoutEnd.insertBefore(filters, search);
-    } else {
-        layoutEnd.prepend(filters);
+function renderTranslationGroupTabs() {
+    const tabs = document.getElementById('app-translations-group-tabs');
+    if (!tabs) {
+        return;
     }
 
-    const groupFilterEl = document.getElementById('app-translations-group-filter');
-    if (groupFilterEl && !groupFilterEl.dataset.bound) {
-        groupFilterEl.dataset.bound = '1';
-        groupFilterEl.addEventListener('change', () => {
-            translationsGroupFilter = groupFilterEl.value || '';
-            loadAppTranslations();
-        });
+    const counts = translationGroupCounts || {};
+    const signature = `${translationGroups.join('|')}:${JSON.stringify(counts)}`;
+    if (tabs.dataset.filled === signature) {
+        setAdminFilterTab(tabs, translationsGroupFilter);
+        return;
     }
+
+    renderAdminFilterTabs(tabs, [
+        { value: '', label: 'All labels', icon: 'fas fa-mobile-screen', count: counts[''] ?? 0 },
+        ...translationGroups.map((group) => ({
+            value: group,
+            label: formatGroupLabel(group),
+            icon: 'fas fa-language',
+            count: counts[group] ?? 0,
+        })),
+    ]);
+    tabs.dataset.filled = signature;
+    setAdminFilterTab(tabs, translationsGroupFilter);
 }
 
 function buildFormHtml(existing) {
     const statusValue = existing?.is_active === false ? '0' : '1';
-    const groupOptions = ['', ...new Set([...translationGroups, existing?.group].filter(Boolean))]
+    const suggestedGroups = [
+        'navigation', 'splash', 'home', 'care', 'hope', 'journal', 'kid_listo',
+        'ddb_services', 'account', 'auth', 'registration', 'categories',
+        'post_engagement', 'post_detail', 'comments', 'reviews', 'bookmarks',
+        'rehab', 'errors',
+    ];
+    const groupOptions = ['', ...new Set([...suggestedGroups, ...translationGroups, existing?.group].filter((group) => group && group !== 'bible'))]
         .map((group) => {
             const selected = (existing?.group ?? '') === group ? 'selected' : '';
             const label = group ? formatGroupLabel(group) : 'Select group';
@@ -242,7 +236,6 @@ async function initializeTranslationsTable(tableEl) {
     }
 
     if (translationsTable && translationsTableMode === nextMode) {
-        mountTranslationsToolbarFilters(tableEl);
         return;
     }
 
@@ -261,7 +254,6 @@ async function initializeTranslationsTable(tableEl) {
         scrollX: nextMode !== 'mobile',
         scrollCollapse: nextMode !== 'mobile',
     }));
-    mountTranslationsToolbarFilters(tableEl);
     bindAdminActionTooltipSuppression(tableEl);
 }
 

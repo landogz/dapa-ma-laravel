@@ -20,8 +20,8 @@
   {
     "key": "navDiary",
     "group": "navigation",
-    "en": "Diary",
-    "tl": "Talaarawan"
+    "en": "Journal",
+    "tl": "Journal"
   },
   {
     "key": "navBible",
@@ -30,10 +30,34 @@
     "tl": "Kid Listo"
   },
   {
+    "key": "navKidListo",
+    "group": "navigation",
+    "en": "Kid Listo",
+    "tl": "Kid Listo"
+  },
+  {
     "key": "navAccount",
     "group": "navigation",
-    "en": "Account",
-    "tl": "Account"
+    "en": "Profile",
+    "tl": "Profile"
+  },
+  {
+    "key": "splashAppName",
+    "group": "navigation",
+    "en": "DAPE-MA",
+    "tl": "DAPE-MA"
+  },
+  {
+    "key": "splashFullName",
+    "group": "navigation",
+    "en": "Drug Abuse Prevention\nEducation Mobile Application",
+    "tl": "Drug Abuse Prevention\nEducation Mobile Application"
+  },
+  {
+    "key": "splashFooter",
+    "group": "navigation",
+    "en": "Dangerous Drugs Board · Office of the President",
+    "tl": "Dangerous Drugs Board · Office of the President"
   },
   {
     "key": "ddbServicesTitle",
@@ -624,14 +648,1358 @@
     "tl": "Maligayang pagbabalik,"
   },
   {
-    "key": "guest",
+    "key": "welcomeBackExclaim",
     "group": "home",
+    "en": "Welcome back!",
+    "tl": "Maligayang pagbabalik!"
+  },
+  {
+    "key": "homeHiName",
+    "group": "home",
+    "en": "Hi, {name}!",
+    "tl": "Kumusta, {name}!"
+  },
+  {
+    "key": "homeGoodMorning",
+    "group": "home",
+    "en": "Good morning, {name}",
+    "tl": "Magandang umaga, {name}"
+  },
+  {
+    "key": "homeGoodAfternoon",
+    "group": "home",
+    "en": "Good afternoon, {name}",
+    "tl": "Magandang hapon, {name}"
+  },
+  {
+    "key": "homeGoodEvening",
+    "group": "home",
+    "en": "Good evening, {name}",
+    "tl": "Magandang gabi, {name}"
+  },
+  {
+    "key": "homeExploreSubtitle",
+    "group": "home",
+    "en": "What do you like to explore today?",
+    "tl": "Ano ang gusto mong tuklasin ngayon?"
+  },
+  {
+    "key": "homeSearchTopicsHint",
+    "group": "home",
+    "en": "Search topics, services",
+    "tl": "Maghanap ng topics, serbisyo"
+  },
+  {
+    "key": "homeWhatsNew",
+    "group": "home",
+    "en": "What's New?",
+    "tl": "Ano'ng Bago?"
+  },
+  {
+    "key": "homeWhatsNewEmpty",
+    "group": "home",
+    "en": "Check back soon for new courses and events.",
+    "tl": "Bumalik mamaya para sa mga bagong kursong event."
+  },
+  {
+    "key": "homeNewCoursePrefix",
+    "group": "home",
+    "en": "New course:",
+    "tl": "Bagong kurso:"
+  },
+  {
+    "key": "homeNewCourseTitle",
+    "group": "home",
+    "en": "Goals, Dreams, and You",
+    "tl": "Goals, Dreams, and You"
+  },
+  {
+    "key": "homeUpcomingWebinarPrefix",
+    "group": "home",
+    "en": "Upcoming webinar:",
+    "tl": "Paparating na webinar:"
+  },
+  {
+    "key": "homeUpcomingWebinarTitle",
+    "group": "home",
+    "en": "The Science of Prevention",
+    "tl": "The Science of Prevention"
+  },
+  {
+    "key": "homeThoughtOfDay",
+    "group": "home",
+    "en": "Thought of the Day",
+    "tl": "Isipin Ngayon"
+  },
+  {
+    "key": "homeThoughtFallback",
+    "group": "home",
+    "en": "Small steps every day lead to a better you.",
+    "tl": "Ang maliliit na hakbang araw-araw ay patungo sa mas magandang ikaw."
+  },
+  {
+    "key": "homeFeaturedForYou",
+    "group": "home",
+    "en": "Featured for You",
+    "tl": "Itinatampok Para sa Iyo"
+  },
+  {
+    "key": "postsPageTitle",
+    "group": "home",
+    "en": "Posts",
+    "tl": "Mga Post"
+  },
+  {
+    "key": "postsBrowseSubtitle",
+    "group": "home",
+    "en": "Browse featured stories and more from DAPE-MA.",
+    "tl": "Tingnan ang mga featured stories at iba pa mula sa DAPE-MA."
+  },
+  {
+    "key": "homeTaraExplore",
+    "group": "home",
+    "en": "Tara, #BeTheDAPE!",
+    "tl": "Tara, #BeTheDAPE!"
+  },
+  {
+    "key": "homeDapeProgress",
+    "group": "home",
+    "en": "Your DAPE Progress",
+    "tl": "Iyong DAPE Progress"
+  },
+  {
+    "key": "homeProgressCourses",
+    "group": "home",
+    "en": "Courses",
+    "tl": "Mga Kurso"
+  },
+  {
+    "key": "homeProgressLessons",
+    "group": "home",
+    "en": "Lessons",
+    "tl": "Mga Aralin"
+  },
+  {
+    "key": "homeProgressStreak",
+    "group": "home",
+    "en": "Streak",
+    "tl": "Streak"
+  },
+  {
+    "key": "bidaLearnTitle",
+    "group": "home",
+    "en": "DAPE Learn",
+    "tl": "DAPE Learn"
+  },
+  {
+    "key": "bidaHopeTitle",
+    "group": "home",
+    "en": "DAPE Hope",
+    "tl": "DAPE Hope"
+  },
+  {
+    "key": "bidaCareTitle",
+    "group": "home",
+    "en": "DAPE Care",
+    "tl": "DAPE Care"
+  },
+  {
+    "key": "homeExploreLearnDesc",
+    "group": "home",
+    "en": "Lessons & modules",
+    "tl": "Mga aralin at modules"
+  },
+  {
+    "key": "homeExploreHopeDesc",
+    "group": "home",
+    "en": "Peer support",
+    "tl": "Suporta ng kapwa"
+  },
+  {
+    "key": "homeExploreCareDesc",
+    "group": "home",
+    "en": "Counseling & help",
+    "tl": "Counseling at tulong"
+  },
+  {
+    "key": "homeContinueLearning",
+    "group": "home",
+    "en": "Continue Learning",
+    "tl": "Ipagpatuloy ang Pag-aaral"
+  },
+  {
+    "key": "homeContinueLearningTitle",
+    "group": "home",
+    "en": "Living Drug-Free, Living Strong",
+    "tl": "Drug-Free at Matatag na Buhay"
+  },
+  {
+    "key": "homeStartExploring",
+    "group": "home",
+    "en": "Start exploring",
+    "tl": "Magsimulang tumuklas"
+  },
+  {
+    "key": "startLesson",
+    "group": "home",
+    "en": "Start",
+    "tl": "Simulan"
+  },
+  {
+    "key": "resumeLesson",
+    "group": "home",
+    "en": "Resume",
+    "tl": "Ipagpatuloy"
+  },
+  {
+    "key": "homeLessonProgress",
+    "group": "home",
+    "en": "Lesson {done} of {total}",
+    "tl": "Aralin {done} sa {total}"
+  },
+  {
+    "key": "homeRecentActivity",
+    "group": "home",
+    "en": "Recent Activity",
+    "tl": "Kamakailang Aktibidad"
+  },
+  {
+    "key": "homeActivityEmptyTitle",
+    "group": "home",
+    "en": "No activity yet",
+    "tl": "Wala pang aktibidad"
+  },
+  {
+    "key": "homeActivityEmptyBody",
+    "group": "home",
+    "en": "Read a lesson or article and it will show up here.",
+    "tl": "Magbasa ng aralin o artikulo at lilitaw ito dito."
+  },
+  {
+    "key": "homeMoreForYou",
+    "group": "home",
+    "en": "More for you",
+    "tl": "Higit pa para sa iyo"
+  },
+  {
+    "key": "homeYouCompleted",
+    "group": "home",
+    "en": "You completed {title}",
+    "tl": "Natapos mo ang {title}"
+  },
+  {
+    "key": "homeYouRead",
+    "group": "home",
+    "en": "You read {title}",
+    "tl": "Binasa mo ang {title}"
+  },
+  {
+    "key": "homeDiscover",
+    "group": "home",
+    "en": "Discover",
+    "tl": "Tuklasin"
+  },
+  {
+    "key": "homeNoPostsFound",
+    "group": "home",
+    "en": "No posts found",
+    "tl": "Walang nahanap na post"
+  },
+  {
+    "key": "homeNeedToTalk",
+    "group": "home",
+    "en": "Need to talk to someone?",
+    "tl": "Kailangan mong may kausapin?"
+  },
+  {
+    "key": "homeNeedToTalkCta",
+    "group": "home",
+    "en": "Get support",
+    "tl": "Humingi ng tulong"
+  },
+  {
+    "key": "askKidListoTooltip",
+    "group": "home",
+    "en": "Ask Kid Listo",
+    "tl": "Magtanong kay Kid Listo"
+  },
+  {
+    "key": "navLearn",
+    "group": "home",
+    "en": "Learn",
+    "tl": "Learn"
+  },
+  {
+    "key": "navHope",
+    "group": "home",
+    "en": "Hope",
+    "tl": "Hope"
+  },
+  {
+    "key": "navFaq",
+    "group": "home",
+    "en": "FAQ",
+    "tl": "FAQ"
+  },
+  {
+    "key": "navCare",
+    "group": "care",
+    "en": "Care",
+    "tl": "Care"
+  },
+  {
+    "key": "careTitle",
+    "group": "care",
+    "en": "DAPE Care",
+    "tl": "DAPE Care"
+  },
+  {
+    "key": "careSubtitle",
+    "group": "care",
+    "en": "Your well-being matters to us.",
+    "tl": "Mahalaga sa amin ang iyong well-being."
+  },
+  {
+    "key": "careSearchHint",
+    "group": "care",
+    "en": "Search resources, tips, exercises...",
+    "tl": "Maghanap ng resources, tips, exercises..."
+  },
+  {
+    "key": "careHowFeeling",
+    "group": "care",
+    "en": "How are you feeling today?",
+    "tl": "Kumusta ang pakiramdam mo ngayon?"
+  },
+  {
+    "key": "careDailyReflection",
+    "group": "care",
+    "en": "Daily Reflection",
+    "tl": "Daily Reflection"
+  },
+  {
+    "key": "careDailyReflectionPrompt",
+    "group": "care",
+    "en": "What are you grateful for in your recovery journey?",
+    "tl": "Ano ang iyong pinagpapasalamat sa iyong recovery journey?"
+  },
+  {
+    "key": "careStartWriting",
+    "group": "care",
+    "en": "Start Writing",
+    "tl": "Magsulat"
+  },
+  {
+    "key": "careCheckInNow",
+    "group": "care",
+    "en": "Your feelings matter. Check in now.",
+    "tl": "Mahalaga ang damdamin mo. Mag-check in ngayon."
+  },
+  {
+    "key": "careCheckedInToday",
+    "group": "care",
+    "en": "Thanks for checking in today.",
+    "tl": "Salamat sa pag-check in ngayon."
+  },
+  {
+    "key": "careSelectMoodFirst",
+    "group": "care",
+    "en": "Please select how you feel first.",
+    "tl": "Pumili muna kung ano ang pakiramdam mo."
+  },
+  {
+    "key": "careMoodSaved",
+    "group": "care",
+    "en": "Mood check-in saved.",
+    "tl": "Nai-save ang mood check-in."
+  },
+  {
+    "key": "careMoodSaveFailed",
+    "group": "care",
+    "en": "Could not save mood check-in.",
+    "tl": "Hindi mai-save ang mood check-in."
+  },
+  {
+    "key": "careSpeedDial",
+    "group": "care",
+    "en": "Your Toolkit",
+    "tl": "Iyong Toolkit"
+  },
+  {
+    "key": "careSpeedDialEyebrow",
+    "group": "care",
+    "en": "Quick access",
+    "tl": "Mabilisang access"
+  },
+  {
+    "key": "careSpeedJournal",
+    "group": "care",
+    "en": "My Journal",
+    "tl": "Aking Journal"
+  },
+  {
+    "key": "careSpeedJournalBody",
+    "group": "care",
+    "en": "Write freely. This is your safe space.",
+    "tl": "Sumulat nang malaya. Ito ang iyong safe space."
+  },
+  {
+    "key": "careSpeedToolkit",
+    "group": "care",
+    "en": "Self-Care Toolkit",
+    "tl": "Self-Care Toolkit"
+  },
+  {
+    "key": "careSpeedToolkitBody",
+    "group": "care",
+    "en": "Take care of yourself every day.",
+    "tl": "Alagaan ang sarili araw-araw."
+  },
+  {
+    "key": "careSpeedSupport",
+    "group": "care",
+    "en": "Get Support",
+    "tl": "Kumuha ng Suporta"
+  },
+  {
+    "key": "careSpeedSupportBody",
+    "group": "care",
+    "en": "Find the right help for you.",
+    "tl": "Hanapin ang tamang tulong para sa iyo."
+  },
+  {
+    "key": "careCalmCorner",
+    "group": "care",
+    "en": "Calm Corner",
+    "tl": "Calm Corner"
+  },
+  {
+    "key": "careCalmCornerBody",
+    "group": "care",
+    "en": "Take a moment for yourself. You deserve it.",
+    "tl": "Maglaan ng sandali para sa sarili. Deserve mo ito."
+  },
+  {
+    "key": "careKidListo",
+    "group": "care",
+    "en": "Kid Listo",
+    "tl": "Kid Listo"
+  },
+  {
+    "key": "careKidListoBody",
+    "group": "care",
+    "en": "A daily motivational quote for a drug-free youth.",
+    "tl": "Araw-araw na motivational quote para sa drug-free youth."
+  },
+  {
+    "key": "careBreathingExercise",
+    "group": "care",
+    "en": "Breathing Exercise",
+    "tl": "Breathing Exercise"
+  },
+  {
+    "key": "careBreathingExerciseBody",
+    "group": "care",
+    "en": "Simple guided breathing exercise to calm your mind",
+    "tl": "Simpleng guided breathing para pakalmahin ang isip"
+  },
+  {
+    "key": "careRelaxingAudio",
+    "group": "care",
+    "en": "Relaxing Audio",
+    "tl": "Relaxing Audio"
+  },
+  {
+    "key": "careRelaxingAudioBody",
+    "group": "care",
+    "en": "Listen to soothing sounds to help you relax.",
+    "tl": "Makinig sa soothing sounds para makapag-relax."
+  },
+  {
+    "key": "careGuidedMeditation",
+    "group": "care",
+    "en": "Guided Meditation",
+    "tl": "Guided Meditation"
+  },
+  {
+    "key": "careGuidedMeditationBody",
+    "group": "care",
+    "en": "Follow meditations for focus, calm, and balance.",
+    "tl": "Sundan ang meditation para sa focus, calm, at balance."
+  },
+  {
+    "key": "careVisualizationExercises",
+    "group": "care",
+    "en": "Visualization Exercises",
+    "tl": "Visualization Exercises"
+  },
+  {
+    "key": "careVisualizationExercisesBody",
+    "group": "care",
+    "en": "Use your imagination to reduce stress.",
+    "tl": "Gamitin ang imahinasyon para mabawasan ang stress."
+  },
+  {
+    "key": "careColorFun",
+    "group": "care",
+    "en": "Color Fun",
+    "tl": "Color Fun"
+  },
+  {
+    "key": "careColorFunBody",
+    "group": "care",
+    "en": "Print and color cute worksheets!",
+    "tl": "I-print at kulayan ang worksheets!"
+  },
+  {
+    "key": "careStretchBreaks",
+    "group": "care",
+    "en": "Stretch Breaks",
+    "tl": "Stretch Breaks"
+  },
+  {
+    "key": "careStretchBreaksBody",
+    "group": "care",
+    "en": "Do short posture resets to ease tension.",
+    "tl": "Maikling stretch para mabawasan ang tension."
+  },
+  {
+    "key": "careGuidedBreathing",
+    "group": "care",
+    "en": "Guided Breathing",
+    "tl": "Guided Breathing"
+  },
+  {
+    "key": "careStayCalmBreath",
+    "group": "care",
+    "en": "Stay calm and take a deep breath.",
+    "tl": "Manatiling kalmado at huminga nang malalim."
+  },
+  {
+    "key": "careStayCalmMusic",
+    "group": "care",
+    "en": "Stay calm and enjoy the music.",
+    "tl": "Manatiling kalmado at i-enjoy ang musika."
+  },
+  {
+    "key": "careListen",
+    "group": "care",
+    "en": "Listen.",
+    "tl": "Makinig."
+  },
+  {
+    "key": "careEndSession",
+    "group": "care",
+    "en": "End",
+    "tl": "Tapusin"
+  },
+  {
+    "key": "carePause",
+    "group": "care",
+    "en": "Pause",
+    "tl": "I-pause"
+  },
+  {
+    "key": "careResume",
+    "group": "care",
+    "en": "Resume",
+    "tl": "Ipagpatuloy"
+  },
+  {
+    "key": "careCalmMind",
+    "group": "care",
+    "en": "Calm Mind",
+    "tl": "Calm Mind"
+  },
+  {
+    "key": "careCalmMindBody",
+    "group": "care",
+    "en": "A short meditation to help you relax, release tension, and feel at peace.",
+    "tl": "Maikling meditation para makapag-relax, mag-release ng tension, at makaramdam ng kapayapaan."
+  },
+  {
+    "key": "careWhatYoullGet",
+    "group": "care",
+    "en": "What you'll get",
+    "tl": "Makukuha mo"
+  },
+  {
+    "key": "careBenefitReduceStress",
+    "group": "care",
+    "en": "Reduce stress and anxiety",
+    "tl": "Bawasan ang stress at anxiety"
+  },
+  {
+    "key": "careBenefitImproveFocus",
+    "group": "care",
+    "en": "Improve focus and clarity",
+    "tl": "Pagbutihin ang focus at clarity"
+  },
+  {
+    "key": "careBenefitFeelCalm",
+    "group": "care",
+    "en": "Feel calm and relaxed",
+    "tl": "Makaramdam ng kalmado at relax"
+  },
+  {
+    "key": "carePlayMeditation",
+    "group": "care",
+    "en": "Play Meditation",
+    "tl": "I-play ang Meditation"
+  },
+  {
+    "key": "carePeacefulPlace",
+    "group": "care",
+    "en": "Peaceful Place",
+    "tl": "Peaceful Place"
+  },
+  {
+    "key": "careVisualizationTitle",
+    "group": "care",
+    "en": "Visualization",
+    "tl": "Visualization"
+  },
+  {
+    "key": "careMeditationTitle",
+    "group": "care",
+    "en": "Meditation",
+    "tl": "Meditation"
+  },
+  {
+    "key": "carePeacefulPlaceBody",
+    "group": "care",
+    "en": "Use your imagination to create a safe and peaceful place in your mind.",
+    "tl": "Gamitin ang imahinasyon para gumawa ng ligtas at mapayapang lugar sa isip."
+  },
+  {
+    "key": "careInThisExercise",
+    "group": "care",
+    "en": "In this exercise, you will",
+    "tl": "Sa exercise na ito, ikaw ay"
+  },
+  {
+    "key": "careVizImagine",
+    "group": "care",
+    "en": "Imagine your safe space",
+    "tl": "Isipin ang iyong safe space"
+  },
+  {
+    "key": "careVizSenses",
+    "group": "care",
+    "en": "Engage your senses",
+    "tl": "Gamitin ang iyong mga pandama"
+  },
+  {
+    "key": "careVizFeelRelaxed",
+    "group": "care",
+    "en": "Feel relaxed and refreshed",
+    "tl": "Makaramdam ng relax at refreshed"
+  },
+  {
+    "key": "carePlayExercise",
+    "group": "care",
+    "en": "Play Exercise",
+    "tl": "I-play ang Exercise"
+  },
+  {
+    "key": "careColorFunIntro",
+    "group": "care",
+    "en": "Take a creative break. Download and print fun coloring worksheets to relax and express yourself. You can do this with a friend or family member!",
+    "tl": "Mag-creative break. I-download at i-print ang coloring worksheets para mag-relax. Pwede kasama ang kaibigan o pamilya!"
+  },
+  {
+    "key": "careColorFilterAll",
+    "group": "care",
+    "en": "All",
+    "tl": "Lahat"
+  },
+  {
+    "key": "careColorFilterNature",
+    "group": "care",
+    "en": "Nature",
+    "tl": "Kalikasan"
+  },
+  {
+    "key": "careColorFilterPeople",
+    "group": "care",
+    "en": "People",
+    "tl": "Tao"
+  },
+  {
+    "key": "careColorFilterMessages",
+    "group": "care",
+    "en": "Messages",
+    "tl": "Mensahe"
+  },
+  {
+    "key": "careWorksheetDownloaded",
+    "group": "care",
+    "en": "Worksheet ready. Open it to print or color.",
+    "tl": "Handa na ang worksheet. Buksan para i-print o kulayan."
+  },
+  {
+    "key": "careChooseYourBreak",
+    "group": "care",
+    "en": "Choose Your Break",
+    "tl": "Piliin ang Break"
+  },
+  {
+    "key": "careQuickStretch",
+    "group": "care",
+    "en": "Quick Stretch",
+    "tl": "Quick Stretch"
+  },
+  {
+    "key": "careQuickStretchBody",
+    "group": "care",
+    "en": "Perfect for a short break",
+    "tl": "Para sa maikling break"
+  },
+  {
+    "key": "careDeskStretch",
+    "group": "care",
+    "en": "Desk Stretch",
+    "tl": "Desk Stretch"
+  },
+  {
+    "key": "careDeskStretchBody",
+    "group": "care",
+    "en": "Great for work or study breaks",
+    "tl": "Para sa work o study breaks"
+  },
+  {
+    "key": "careFullBodyStretch",
+    "group": "care",
+    "en": "Full Body Stretch",
+    "tl": "Full Body Stretch"
+  },
+  {
+    "key": "careFullBodyStretchBody",
+    "group": "care",
+    "en": "Feel refreshed and recharged",
+    "tl": "Makaramdam ng refreshed"
+  },
+  {
+    "key": "careMorningEnergizer",
+    "group": "care",
+    "en": "Morning Energizer",
+    "tl": "Morning Energizer"
+  },
+  {
+    "key": "careMorningEnergizerBody",
+    "group": "care",
+    "en": "Start your day right",
+    "tl": "Simulan nang tama ang araw"
+  },
+  {
+    "key": "careSetTodaysReminder",
+    "group": "care",
+    "en": "Set Today's Reminder",
+    "tl": "I-set ang Reminder Ngayon"
+  },
+  {
+    "key": "careStretchReminderTitle",
+    "group": "care",
+    "en": "Time for a stretch break!",
+    "tl": "Oras na para mag-stretch!"
+  },
+  {
+    "key": "careStretchReminderBody",
+    "group": "care",
+    "en": "Moving your body boosts your mood and energy!",
+    "tl": "Ang paggalaw ay nagpapalakas ng mood at energy!"
+  },
+  {
+    "key": "careStretchSessionHint",
+    "group": "care",
+    "en": "Follow along at your own pace. Stop if anything hurts.",
+    "tl": "Sundan sa sariling bilis. Huminto kung may sakit."
+  },
+  {
+    "key": "careStartStretch",
+    "group": "care",
+    "en": "Start Stretch",
+    "tl": "Simulan ang Stretch"
+  },
+  {
+    "key": "careSessionComplete",
+    "group": "care",
+    "en": "Nice work. Take a slow breath.",
+    "tl": "Magaling. Huminga nang dahan-dahan."
+  },
+  {
+    "key": "careCalmInfoTitle",
+    "group": "care",
+    "en": "About this activity",
+    "tl": "Tungkol dito"
+  },
+  {
+    "key": "careCalmInfoBody",
+    "group": "care",
+    "en": "These tools support wellbeing. They are not a substitute for professional care.",
+    "tl": "Para sa wellbeing ang mga tool na ito. Hindi kapalit ng propesyonal na tulong."
+  },
+  {
+    "key": "careStartBreathing",
+    "group": "care",
+    "en": "Start breathing",
+    "tl": "Magsimulang huminga"
+  },
+  {
+    "key": "careStopBreathing",
+    "group": "care",
+    "en": "Stop",
+    "tl": "Itigil"
+  },
+  {
+    "key": "careBreatheIn",
+    "group": "care",
+    "en": "Breathe In",
+    "tl": "Huminga"
+  },
+  {
+    "key": "careBreatheOut",
+    "group": "care",
+    "en": "Breathe Out",
+    "tl": "Ihininga"
+  },
+  {
+    "key": "careBreatheHold",
+    "group": "care",
+    "en": "Hold",
+    "tl": "Pigilin"
+  },
+  {
+    "key": "careBreatheReady",
+    "group": "care",
+    "en": "Ready when you are",
+    "tl": "Handa ka na ba?"
+  },
+  {
+    "key": "careToolkitTitle",
+    "group": "care",
+    "en": "Self-care Toolkit",
+    "tl": "Self-care Toolkit"
+  },
+  {
+    "key": "careToolkitHero",
+    "group": "care",
+    "en": "Tools to help you understand how you feel, build healthy habits, and know when to reach out.",
+    "tl": "Mga tool para unawain ang damdamin, bumuo ng healthy habits, at malaman kung kailan humingi ng tulong."
+  },
+  {
+    "key": "careStressCheck",
+    "group": "care",
+    "en": "Stress Check",
+    "tl": "Stress Check"
+  },
+  {
+    "key": "careStressCheckBody",
+    "group": "care",
+    "en": "Understand your stress level",
+    "tl": "Unawain ang antas ng stress mo"
+  },
+  {
+    "key": "careAnxietyCheck",
+    "group": "care",
+    "en": "Anxiety Check",
+    "tl": "Anxiety Check"
+  },
+  {
+    "key": "careAnxietyCheckBody",
+    "group": "care",
+    "en": "Check symptoms of anxiety",
+    "tl": "Suriin ang sintomas ng anxiety"
+  },
+  {
+    "key": "careSleepQuality",
+    "group": "care",
+    "en": "Sleep Quality",
+    "tl": "Kalidad ng Tulog"
+  },
+  {
+    "key": "careSleepQualityBody",
+    "group": "care",
+    "en": "Evaluate your sleep habits",
+    "tl": "Suriin ang iyong tulog"
+  },
+  {
+    "key": "careMoodTracker",
+    "group": "care",
+    "en": "Mood Tracker",
+    "tl": "Mood Tracker"
+  },
+  {
+    "key": "careMoodTrackerBody",
+    "group": "care",
+    "en": "Track your mood over time",
+    "tl": "Subaybayan ang iyong mood"
+  },
+  {
+    "key": "careToolkitDisclaimer",
+    "group": "care",
+    "en": "Stress, anxiety, mood, and sleep checks are tools for self-reflection, not medical diagnosis.",
+    "tl": "Ang stress, anxiety, mood, at sleep checks ay para sa self-reflection, hindi medikal na diagnosis."
+  },
+  {
+    "key": "careBitsTitle",
+    "group": "care",
+    "en": "Care Bits",
+    "tl": "Care Bits"
+  },
+  {
+    "key": "careBitsSwipeHint",
+    "group": "care",
+    "en": "Swipe right for more",
+    "tl": "I-swipe pakanan para sa iba"
+  },
+  {
+    "key": "careRemember",
+    "group": "care",
+    "en": "Remember",
+    "tl": "Tandaan"
+  },
+  {
+    "key": "careRememberHonest",
+    "group": "care",
+    "en": "Answer honestly",
+    "tl": "Sumagot nang tapat"
+  },
+  {
+    "key": "careRememberNoWrong",
+    "group": "care",
+    "en": "No right or wrong responses",
+    "tl": "Walang tama o mali"
+  },
+  {
+    "key": "careQuestionProgress",
+    "group": "care",
+    "en": "{current} of {total} questions",
+    "tl": "{current} sa {total} na tanong"
+  },
+  {
+    "key": "careNoToolkitQuestions",
+    "group": "care",
+    "en": "No questions available yet. Please check back soon.",
+    "tl": "Wala pang tanong. Balikan mamaya."
+  },
+  {
+    "key": "careStressIntro",
+    "group": "care",
+    "en": "Stress is a universal human experience. Recognizing how you feel is the first step toward helping yourself.",
+    "tl": "Universal ang stress. Ang pagkilala sa pakiramdam mo ang unang hakbang para tulungan ang sarili."
+  },
+  {
+    "key": "careAnxietyIntro",
+    "group": "care",
+    "en": "Anxiety is a common human experience. Recognizing your worry and tension is the first step toward managing it.",
+    "tl": "Karaniwan ang anxiety. Ang pagkilala sa worry at tension ang unang hakbang para harapin ito."
+  },
+  {
+    "key": "careAnxietyPrompt",
+    "group": "care",
+    "en": "Over the last two weeks, how often have you been bothered by the following problems?",
+    "tl": "Sa nakaraang dalawang linggo, gaano kadalas kang nababagabag ng mga sumusunod?"
+  },
+  {
+    "key": "careSleepIntro",
+    "group": "care",
+    "en": "Sleep is essential for health and learning. Recognizing your sleep patterns is the first step toward improving rest.",
+    "tl": "Mahalaga ang tulog para sa kalusugan at pag-aaral. Ang pagkilala sa pattern ng tulog ang unang hakbang para mapabuti ito."
+  },
+  {
+    "key": "careInputTimeHint",
+    "group": "care",
+    "en": "Input the time.",
+    "tl": "Ilagay ang oras."
+  },
+  {
+    "key": "careScaleAlmostNever",
+    "group": "care",
+    "en": "Almost Never",
+    "tl": "Halos hindi"
+  },
+  {
+    "key": "careScaleFairlyOften",
+    "group": "care",
+    "en": "Fairly Often",
+    "tl": "Medyo madalas"
+  },
+  {
+    "key": "careScaleVeryOften",
+    "group": "care",
+    "en": "Very Often",
+    "tl": "Napakadalas"
+  },
+  {
+    "key": "careMoodOverview",
+    "group": "care",
+    "en": "Mood Overview",
+    "tl": "Mood Overview"
+  },
+  {
+    "key": "careThisMonth",
+    "group": "care",
+    "en": "This Month",
+    "tl": "Buwan na ito"
+  },
+  {
+    "key": "careCheckInTodayCta",
+    "group": "care",
+    "en": "Check In Today!",
+    "tl": "Mag-check in ngayon!"
+  },
+  {
+    "key": "careMoodInsightSteady",
+    "group": "care",
+    "en": "Your mood has been steady and generally okay. Keep up your healthy habits!",
+    "tl": "Stable at okay ang mood mo. Ituloy ang healthy habits!"
+  },
+  {
+    "key": "careMoodInsightLow",
+    "group": "care",
+    "en": "Some tougher days showed up this month. Be gentle with yourself — support is available.",
+    "tl": "May mabibigat na araw ngayong buwan. Maging mahinahon sa sarili — may available na support."
+  },
+  {
+    "key": "careMoodInsightGreat",
+    "group": "care",
+    "en": "You have had many good days this month. Keep nurturing what helps you feel well.",
+    "tl": "Maraming magagandang araw ngayong buwan. Ituloy ang nakakatulong sa’yo."
+  },
+  {
+    "key": "careMoodVeryBad",
+    "group": "care",
+    "en": "Very Bad",
+    "tl": "Sobrang hirap"
+  },
+  {
+    "key": "careMoodBad",
+    "group": "care",
+    "en": "Bad",
+    "tl": "Mahirap"
+  },
+  {
+    "key": "careMoodOkay",
+    "group": "care",
+    "en": "Okay",
+    "tl": "Okay"
+  },
+  {
+    "key": "careGetSupportTitle",
+    "group": "care",
+    "en": "Get Support",
+    "tl": "Kumuha ng Suporta"
+  },
+  {
+    "key": "careGetSupportHero1",
+    "group": "care",
+    "en": "You do not have to go through it alone.",
+    "tl": "Hindi mo kailangang mag-isa."
+  },
+  {
+    "key": "careGetSupportHero2",
+    "group": "care",
+    "en": "If worries feel overwhelming, health professionals can provide care.",
+    "tl": "Kung sobrang bigat ng alalahanin, may mga propesyonal na makakatulong."
+  },
+  {
+    "key": "careHotlines",
+    "group": "care",
+    "en": "24/7 Hotlines",
+    "tl": "24/7 Hotlines"
+  },
+  {
+    "key": "careHotlinesBody",
+    "group": "care",
+    "en": "Access immediate support any time",
+    "tl": "Tumawag para sa agarang tulong"
+  },
+  {
+    "key": "careHotlinesSubtitle",
+    "group": "care",
+    "en": "Help is available anytime, anywhere.",
+    "tl": "May tulong anumang oras, saan man."
+  },
+  {
+    "key": "careCounseling",
+    "group": "care",
+    "en": "Counseling",
+    "tl": "Counseling"
+  },
+  {
+    "key": "careCounselingBody",
+    "group": "care",
+    "en": "Talk to a trained professional",
+    "tl": "Makipag-usap sa trained professional"
+  },
+  {
+    "key": "careCrisis",
+    "group": "care",
+    "en": "Crisis Support",
+    "tl": "Crisis Support"
+  },
+  {
+    "key": "careCrisisBody",
+    "group": "care",
+    "en": "Get help in an emergency",
+    "tl": "Kumuha ng tulong sa emergency"
+  },
+  {
+    "key": "careCrisisSubtitle",
+    "group": "care",
+    "en": "If you or someone you know is in crisis, please reach out for help.",
+    "tl": "Kung ikaw o may kilala kang nasa crisis, humingi ng tulong."
+  },
+  {
+    "key": "careCrisisUnsure",
+    "group": "care",
+    "en": "Unsure? These might help.",
+    "tl": "Hindi sigurado? Maaaring makatulong ito."
+  },
+  {
+    "key": "careGoToHotlines",
+    "group": "care",
+    "en": "Go to 24/7 Hotlines",
+    "tl": "Pumunta sa 24/7 Hotlines"
+  },
+  {
+    "key": "careGoToCalmCorner",
+    "group": "care",
+    "en": "Go to Calm Corner",
+    "tl": "Pumunta sa Calm Corner"
+  },
+  {
+    "key": "careSupportFooter",
+    "group": "care",
+    "en": "You are not alone. Everyone faces challenges; reaching out is a sign of strength.",
+    "tl": "Hindi ka nag-iisa. Ang paghingi ng tulong ay senyales ng lakas."
+  },
+  {
+    "key": "careBrowseRehabServices",
+    "group": "care",
+    "en": "Browse rehab & services",
+    "tl": "Tingnan ang rehab at serbisyo"
+  },
+  {
+    "key": "careAnswerAll",
+    "group": "care",
+    "en": "Please answer all questions.",
+    "tl": "Sagutin ang lahat ng tanong."
+  },
+  {
+    "key": "careSaveCheck",
+    "group": "care",
+    "en": "Save check-in",
+    "tl": "I-save ang check-in"
+  },
+  {
+    "key": "careCheckSaved",
+    "group": "care",
+    "en": "Saved. Your score: {score}",
+    "tl": "Nai-save. Score mo: {score}"
+  },
+  {
+    "key": "careScaleNever",
+    "group": "care",
+    "en": "Never",
+    "tl": "Hindi kailanman"
+  },
+  {
+    "key": "careScaleRarely",
+    "group": "care",
+    "en": "Rarely",
+    "tl": "Bihira"
+  },
+  {
+    "key": "careScaleSometimes",
+    "group": "care",
+    "en": "Sometimes",
+    "tl": "Minsan"
+  },
+  {
+    "key": "careScaleOften",
+    "group": "care",
+    "en": "Often",
+    "tl": "Madalas"
+  },
+  {
+    "key": "careScaleAlways",
+    "group": "care",
+    "en": "Always",
+    "tl": "Palagi"
+  },
+  {
+    "key": "careQStress1",
+    "group": "care",
+    "en": "I feel overwhelmed by daily tasks.",
+    "tl": "Nalulula ako sa pang-araw-araw na gawain."
+  },
+  {
+    "key": "careQStress2",
+    "group": "care",
+    "en": "I have trouble relaxing.",
+    "tl": "Hirap akong magpahinga."
+  },
+  {
+    "key": "careQStress3",
+    "group": "care",
+    "en": "I feel tense or on edge.",
+    "tl": "Pakiramdam ko ay tense o balisa."
+  },
+  {
+    "key": "careQAnxiety1",
+    "group": "care",
+    "en": "I worry a lot about many things.",
+    "tl": "Marami akong inaalala."
+  },
+  {
+    "key": "careQAnxiety2",
+    "group": "care",
+    "en": "I feel nervous or restless.",
+    "tl": "Nababalisa o hindi mapakali."
+  },
+  {
+    "key": "careQAnxiety3",
+    "group": "care",
+    "en": "I avoid situations that make me anxious.",
+    "tl": "Iniiwasan ko ang sitwasyong nagpapabalisa."
+  },
+  {
+    "key": "careQSleep1",
+    "group": "care",
+    "en": "I get enough restful sleep.",
+    "tl": "Sapat at mapayapa ang tulog ko."
+  },
+  {
+    "key": "careQSleep2",
+    "group": "care",
+    "en": "I fall asleep easily.",
+    "tl": "Madali akong makatulog."
+  },
+  {
+    "key": "careQSleep3",
+    "group": "care",
+    "en": "I wake up feeling refreshed.",
+    "tl": "Gising akong refreshed."
+  },
+  {
+    "key": "careMoodHistory",
+    "group": "care",
+    "en": "Mood history",
+    "tl": "Kasaysayan ng mood"
+  },
+  {
+    "key": "careNoMoodHistory",
+    "group": "care",
+    "en": "No check-ins yet. Log how you feel above.",
+    "tl": "Wala pang check-in. Mag-log muna sa itaas."
+  },
+  {
+    "key": "careScore",
+    "group": "care",
+    "en": "Score",
+    "tl": "Score"
+  },
+  {
+    "key": "loginJourneySubtitle",
+    "group": "care",
+    "en": "Sign in to continue your DAPE-MA journey!",
+    "tl": "Mag-sign in para ituloy ang iyong DAPE-MA journey!"
+  },
+  {
+    "key": "enterEmailHint",
+    "group": "care",
+    "en": "Enter your email",
+    "tl": "Ilagay ang iyong email"
+  },
+  {
+    "key": "enterPasswordHint",
+    "group": "care",
+    "en": "Enter your password",
+    "tl": "Ilagay ang iyong password"
+  },
+  {
+    "key": "orDivider",
+    "group": "care",
+    "en": "or",
+    "tl": "o"
+  },
+  {
+    "key": "socialLoginComingSoon",
+    "group": "care",
+    "en": "Social login coming soon",
+    "tl": "Social login, malapit na"
+  },
+  {
+    "key": "enterVerificationCode",
+    "group": "care",
+    "en": "Enter Verification Code",
+    "tl": "Ilagay ang Verification Code"
+  },
+  {
+    "key": "verificationCodeSentTo",
+    "group": "care",
+    "en": "We've sent a six-digit code to {destination}.",
+    "tl": "Nagpadala kami ng anim na digit na code sa {destination}."
+  },
+  {
+    "key": "verifyCode",
+    "group": "care",
+    "en": "Verify Code",
+    "tl": "I-verify ang Code"
+  },
+  {
+    "key": "didntReceiveCode",
+    "group": "care",
+    "en": "Didn't receive a code?",
+    "tl": "Hindi nakatanggap ng code?"
+  },
+  {
+    "key": "resendIn",
+    "group": "care",
+    "en": "Resend in {time}",
+    "tl": "Mag-resend sa {time}"
+  },
+  {
+    "key": "resendCode",
+    "group": "care",
+    "en": "Resend",
+    "tl": "Mag-resend"
+  },
+  {
+    "key": "verificationPreviewNote",
+    "group": "care",
+    "en": "Open your email, then enter the 6-digit code to finish signing in.",
+    "tl": "Buksan ang email, tapos ilagay ang 6-digit na code para tapusin ang pag-sign in."
+  },
+  {
+    "key": "loginCodeInvalid",
+    "group": "care",
+    "en": "That code does not match. Check your email and try again.",
+    "tl": "Hindi tumugma ang code. Tingnan ang email at subukan muli."
+  },
+  {
+    "key": "verificationSuccessful",
+    "group": "care",
+    "en": "Verification Successful!",
+    "tl": "Matagumpay ang Verification!"
+  },
+  {
+    "key": "verificationSuccessfulBody",
+    "group": "care",
+    "en": "Your account has been verified successfully. You are all set!",
+    "tl": "Matagumpay na na-verify ang iyong account. Handang-handa ka na!"
+  },
+  {
+    "key": "guest",
+    "group": "care",
     "en": "Guest",
     "tl": "Bisita"
   },
   {
     "key": "searchHint",
-    "group": "home",
+    "group": "care",
     "en": "Search information, rehab, news...",
     "tl": "Maghanap ng impormasyon, rehab, balita..."
   },
@@ -690,6 +2058,18 @@
     "tl": "Komento"
   },
   {
+    "key": "likesCount",
+    "group": "post_engagement",
+    "en": "{count} ${count == 1 ? 'like' : 'likes'}",
+    "tl": "{count} ${count == 1 ? 'like' : 'likes'}"
+  },
+  {
+    "key": "commentsCount",
+    "group": "post_engagement",
+    "en": "{count} ${count == 1 ? 'comment' : 'comments'}",
+    "tl": "{count} ${count == 1 ? 'komento' : 'mga komento'}"
+  },
+  {
     "key": "savedToBookmarks",
     "group": "post_engagement",
     "en": "Saved to bookmarks",
@@ -712,6 +2092,378 @@
     "group": "account",
     "en": "Account",
     "tl": "Account"
+  },
+  {
+    "key": "myProfileTitle",
+    "group": "account",
+    "en": "My Profile",
+    "tl": "Aking Profile"
+  },
+  {
+    "key": "myStats",
+    "group": "account",
+    "en": "My Stats",
+    "tl": "Aking Stats"
+  },
+  {
+    "key": "lessonsCompleted",
+    "group": "account",
+    "en": "Lessons",
+    "tl": "Aralin"
+  },
+  {
+    "key": "articlesRead",
+    "group": "account",
+    "en": "Articles",
+    "tl": "Artikulo"
+  },
+  {
+    "key": "eventsJoined",
+    "group": "account",
+    "en": "Events",
+    "tl": "Events"
+  },
+  {
+    "key": "dayStreak",
+    "group": "account",
+    "en": "Streak",
+    "tl": "Streak"
+  },
+  {
+    "key": "myBadges",
+    "group": "account",
+    "en": "My Badges",
+    "tl": "Aking Mga Badge"
+  },
+  {
+    "key": "seeAll",
+    "group": "account",
+    "en": "See all",
+    "tl": "Tingnan lahat"
+  },
+  {
+    "key": "badgesUnlockedProgress",
+    "group": "account",
+    "en": "{earned}/{total} unlocked",
+    "tl": "{earned}/{total} nakuha"
+  },
+  {
+    "key": "badgesPhase2Subtitle",
+    "group": "account",
+    "en": "Coming in Phase 2",
+    "tl": "Darating sa Phase 2"
+  },
+  {
+    "key": "badgesPhase2Body",
+    "group": "account",
+    "en": "Badges are locked for now and will be available in Phase 2.",
+    "tl": "Naka-lock ang badges sa ngayon at available sa Phase 2."
+  },
+  {
+    "key": "badgeHealthyDecision",
+    "group": "account",
+    "en": "Healthy Decision Maker",
+    "tl": "Healthy Decision Maker"
+  },
+  {
+    "key": "badgeEmpoweredPeer",
+    "group": "account",
+    "en": "Empowered Peer",
+    "tl": "Empowered Peer"
+  },
+  {
+    "key": "badgeStressBuster",
+    "group": "account",
+    "en": "Stress Buster",
+    "tl": "Stress Buster"
+  },
+  {
+    "key": "quickLinks",
+    "group": "account",
+    "en": "Quick Links",
+    "tl": "Mga Shortcut"
+  },
+  {
+    "key": "savedArticles",
+    "group": "account",
+    "en": "Saved Articles",
+    "tl": "Mga Naka-save"
+  },
+  {
+    "key": "myCertificates",
+    "group": "account",
+    "en": "My Certificates",
+    "tl": "Aking Mga Sertipiko"
+  },
+  {
+    "key": "myGains",
+    "group": "account",
+    "en": "My Gains",
+    "tl": "Aking Mga Gain"
+  },
+  {
+    "key": "featureUnavailableNow",
+    "group": "account",
+    "en": "This feature is unavailable right now.",
+    "tl": "Hindi available ang feature na ito sa ngayon."
+  },
+  {
+    "key": "gotIt",
+    "group": "account",
+    "en": "Got it",
+    "tl": "OK"
+  },
+  {
+    "key": "dapeSettings",
+    "group": "account",
+    "en": "DAPE-MA Settings",
+    "tl": "Mga Setting ng DAPE-MA"
+  },
+  {
+    "key": "championBadge",
+    "group": "account",
+    "en": "DAPE Champion",
+    "tl": "DAPE Champion"
+  },
+  {
+    "key": "badgeEarned",
+    "group": "account",
+    "en": "Earned",
+    "tl": "Nakuha"
+  },
+  {
+    "key": "badgeLocked",
+    "group": "account",
+    "en": "Locked",
+    "tl": "Naka-lock"
+  },
+  {
+    "key": "badgeHowToEarn",
+    "group": "account",
+    "en": "How to earn",
+    "tl": "Paano makuha"
+  },
+  {
+    "key": "earnMoreBadgesFooter",
+    "group": "account",
+    "en": "Earn more badges by continuing your DAPE-MA journey!",
+    "tl": "Kumita ng mas maraming badge sa iyong DAPE-MA journey!"
+  },
+  {
+    "key": "certificateOfCompletion",
+    "group": "account",
+    "en": "Certificate of Completion",
+    "tl": "Certificate of Completion"
+  },
+  {
+    "key": "completedOn",
+    "group": "account",
+    "en": "Completed on",
+    "tl": "Natapos noong"
+  },
+  {
+    "key": "certificatePresentedTo",
+    "group": "account",
+    "en": "This certifies that",
+    "tl": "Pinatutunayan nito na si"
+  },
+  {
+    "key": "certificateForCompleting",
+    "group": "account",
+    "en": "has successfully completed",
+    "tl": "ay matagumpay na nakatapos ng"
+  },
+  {
+    "key": "earnedBadgesSection",
+    "group": "account",
+    "en": "Earned Badges",
+    "tl": "Mga Nakuha na Badge"
+  },
+  {
+    "key": "lockedBadgesSection",
+    "group": "account",
+    "en": "Locked Badges",
+    "tl": "Mga Naka-lock na Badge"
+  },
+  {
+    "key": "contestEntriesSection",
+    "group": "account",
+    "en": "Contest Entries",
+    "tl": "Mga Contest Entry"
+  },
+  {
+    "key": "levelBeginner",
+    "group": "account",
+    "en": "Beginner",
+    "tl": "Beginner"
+  },
+  {
+    "key": "levelExplorer",
+    "group": "account",
+    "en": "Explorer",
+    "tl": "Explorer"
+  },
+  {
+    "key": "levelChampion",
+    "group": "account",
+    "en": "Champion",
+    "tl": "Champion"
+  },
+  {
+    "key": "levelLabel",
+    "group": "account",
+    "en": "Level {level}",
+    "tl": "Level {level}"
+  },
+  {
+    "key": "xpLabel",
+    "group": "account",
+    "en": "{xp} XP",
+    "tl": "{xp} XP"
+  },
+  {
+    "key": "xpToNextLevel",
+    "group": "account",
+    "en": "{xp} XP to next level",
+    "tl": "{xp} XP papunta sa next level"
+  },
+  {
+    "key": "minReadLabel",
+    "group": "account",
+    "en": "{minutes} min read",
+    "tl": "{minutes} min read"
+  },
+  {
+    "key": "featuredBadge",
+    "group": "account",
+    "en": "Featured",
+    "tl": "Featured"
+  },
+  {
+    "key": "sharePost",
+    "group": "account",
+    "en": "Share",
+    "tl": "I-share"
+  },
+  {
+    "key": "linkCopied",
+    "group": "account",
+    "en": "Copied to clipboard",
+    "tl": "Nakopya sa clipboard"
+  },
+  {
+    "key": "profileCompleteLabel",
+    "group": "account",
+    "en": "Profile complete",
+    "tl": "Kumpleto ang profile"
+  },
+  {
+    "key": "profilePercentComplete",
+    "group": "account",
+    "en": "{percent}% complete",
+    "tl": "{percent}% kumpleto"
+  },
+  {
+    "key": "profileFinishSetup",
+    "group": "account",
+    "en": "Finish setup",
+    "tl": "Tapusin ang setup"
+  },
+  {
+    "key": "profileSetupBeforeKidListo",
+    "group": "account",
+    "en": "Add a photo to finish your profile. Kid Listo is next.",
+    "tl": "Magdagdag ng litrato para makumpleto ang profile. Si Kid Listo ang susunod."
+  },
+  {
+    "key": "learnerStatus",
+    "group": "account",
+    "en": "Learner",
+    "tl": "Learner"
+  },
+  {
+    "key": "streakCalendarHint",
+    "group": "account",
+    "en": "Keep journaling to grow your streak.",
+    "tl": "Mag-journal araw-araw para tumaas ang streak."
+  },
+  {
+    "key": "noCertificatesYet",
+    "group": "account",
+    "en": "No certificates yet",
+    "tl": "Wala pang sertipiko"
+  },
+  {
+    "key": "noCertificatesBody",
+    "group": "account",
+    "en": "Win a contest to earn certificates here.",
+    "tl": "Manalo sa contest para makakuha ng sertipiko."
+  },
+  {
+    "key": "noGainsYet",
+    "group": "account",
+    "en": "No gains yet",
+    "tl": "Wala pang gains"
+  },
+  {
+    "key": "noGainsBody",
+    "group": "account",
+    "en": "Submit contest entries to track your gains.",
+    "tl": "Mag-submit ng contest entries para makita ang iyong gains."
+  },
+  {
+    "key": "noActivityYet",
+    "group": "account",
+    "en": "Nothing here yet",
+    "tl": "Wala pa rito"
+  },
+  {
+    "key": "noLessonsBody",
+    "group": "account",
+    "en": "Open prevention and recovery lessons to track progress.",
+    "tl": "Magbasa ng prevention at recovery lessons para masubaybayan ang progreso."
+  },
+  {
+    "key": "noArticlesBody",
+    "group": "account",
+    "en": "Read posts in the app to build your reading history.",
+    "tl": "Magbasa ng posts sa app para mabuo ang reading history."
+  },
+  {
+    "key": "noEventsBody",
+    "group": "account",
+    "en": "Join trainings or submit contest entries to track events.",
+    "tl": "Sumali sa trainings o mag-submit ng contest entries."
+  },
+  {
+    "key": "comingSoon",
+    "group": "account",
+    "en": "Coming soon",
+    "tl": "Malapit na"
+  },
+  {
+    "key": "comingSoonBody",
+    "group": "account",
+    "en": "This feature will be available in a future update.",
+    "tl": "Available ang feature na ito sa susunod na update."
+  },
+  {
+    "key": "guestProfileHint",
+    "group": "account",
+    "en": "Sign in to track your progress and unlock profile features.",
+    "tl": "Mag-sign in para masubaybayan ang progreso at ma-unlock ang profile."
+  },
+  {
+    "key": "settingsTitle",
+    "group": "account",
+    "en": "Settings",
+    "tl": "Mga Setting"
+  },
+  {
+    "key": "settingsSubtitle",
+    "group": "account",
+    "en": "Manage your account, preferences, and privacy.",
+    "tl": "Pamahalaan ang account, preferences, at privacy."
   },
   {
     "key": "languageTitle",
@@ -740,8 +2492,74 @@
   {
     "key": "editProfile",
     "group": "account",
-    "en": "Edit profile",
-    "tl": "I-edit ang profile"
+    "en": "Edit Profile",
+    "tl": "I-edit ang Profile"
+  },
+  {
+    "key": "editProfileSubtitle",
+    "group": "account",
+    "en": "Update your personal information",
+    "tl": "I-update ang iyong personal na impormasyon"
+  },
+  {
+    "key": "notificationsMenu",
+    "group": "account",
+    "en": "Notifications",
+    "tl": "Mga Notification"
+  },
+  {
+    "key": "notificationsMenuSubtitle",
+    "group": "account",
+    "en": "Manage your notification preferences",
+    "tl": "Pamahalaan ang mga preference sa notification"
+  },
+  {
+    "key": "privacyPolicy",
+    "group": "account",
+    "en": "Privacy Policy",
+    "tl": "Patakaran sa Privacy"
+  },
+  {
+    "key": "privacyPolicySubtitle",
+    "group": "account",
+    "en": "Learn how we protect your data",
+    "tl": "Alamin kung paano namin pinoprotektahan ang data"
+  },
+  {
+    "key": "termsOfUse",
+    "group": "account",
+    "en": "Terms of Use",
+    "tl": "Mga Tuntunin ng Paggamit"
+  },
+  {
+    "key": "termsOfUseSubtitle",
+    "group": "account",
+    "en": "Read the terms and conditions",
+    "tl": "Basahin ang mga tuntunin at kundisyon"
+  },
+  {
+    "key": "accessibility",
+    "group": "account",
+    "en": "Accessibility",
+    "tl": "Accessibility"
+  },
+  {
+    "key": "accessibilitySubtitle",
+    "group": "account",
+    "en": "Explore options for ease of access",
+    "tl": "Tuklasin ang mga opsyon para sa madaling paggamit"
+  },
+  {
+    "key": "aboutApp",
+    "group": "account",
+    "en": "About DAPE-MA",
+    "tl": "Tungkol sa DAPE-MA"
+  },
+  {
+    "key": "aboutAppSubtitle",
+    "group": "account",
+    "en": "App version and more",
+    "tl": "Bersyon ng app at iba pa"
   },
   {
     "key": "changePassword",
@@ -752,8 +2570,512 @@
   {
     "key": "logOut",
     "group": "account",
-    "en": "Log out",
+    "en": "Log Out",
     "tl": "Mag-log out"
+  },
+  {
+    "key": "logOutSubtitle",
+    "group": "account",
+    "en": "Sign out of your account",
+    "tl": "Mag-sign out sa iyong account"
+  },
+  {
+    "key": "logoutConfirmTitle",
+    "group": "account",
+    "en": "Log Out of DAPE-MA?",
+    "tl": "Mag-log out sa DAPE-MA?"
+  },
+  {
+    "key": "logoutConfirmBody",
+    "group": "account",
+    "en": "You will need to log in again to access your account.",
+    "tl": "Kailangan mong mag-log in muli para ma-access ang account."
+  },
+  {
+    "key": "memberSince",
+    "group": "account",
+    "en": "Member since",
+    "tl": "Miyembro mula"
+  },
+  {
+    "key": "fullNameLabel",
+    "group": "account",
+    "en": "Full Name",
+    "tl": "Buong Pangalan"
+  },
+  {
+    "key": "emailAddressLabel",
+    "group": "account",
+    "en": "Email Address",
+    "tl": "Email Address"
+  },
+  {
+    "key": "aboutMeLabel",
+    "group": "account",
+    "en": "About Me",
+    "tl": "Tungkol sa Akin"
+  },
+  {
+    "key": "aboutMeHint",
+    "group": "account",
+    "en": "Tell others a little about yourself",
+    "tl": "Magbahagi ng kaunti tungkol sa iyong sarili"
+  },
+  {
+    "key": "interestsLabel",
+    "group": "account",
+    "en": "Interests",
+    "tl": "Mga Interes"
+  },
+  {
+    "key": "interestsHint",
+    "group": "account",
+    "en": "Select your interests",
+    "tl": "Piliin ang iyong mga interes"
+  },
+  {
+    "key": "interestsPickerHint",
+    "group": "account",
+    "en": "You can select more than one. Add Other if yours is not listed.",
+    "tl": "Puwedeng pumili ng higit sa isa. Magdagdag ng Other kung wala sa listahan."
+  },
+  {
+    "key": "interestsOther",
+    "group": "account",
+    "en": "Other",
+    "tl": "Iba pa"
+  },
+  {
+    "key": "interestsOtherHint",
+    "group": "account",
+    "en": "Describe your interest",
+    "tl": "Ilarawan ang iyong interes"
+  },
+  {
+    "key": "interestsOtherPlaceholder",
+    "group": "account",
+    "en": "e.g. Sports, Music, Art",
+    "tl": "hal. Sports, Music, Art"
+  },
+  {
+    "key": "interestsOtherRequired",
+    "group": "account",
+    "en": "Please type your custom interest.",
+    "tl": "Ilagay ang iyong custom interest."
+  },
+  {
+    "key": "notificationSettingsTitle",
+    "group": "account",
+    "en": "Notification Settings",
+    "tl": "Mga Setting ng Notification"
+  },
+  {
+    "key": "allowNotifications",
+    "group": "account",
+    "en": "Allow Notifications",
+    "tl": "Payagan ang Mga Notification"
+  },
+  {
+    "key": "allowNotificationsBody",
+    "group": "account",
+    "en": "Get updates and reminders from your DAPE-MA application.",
+    "tl": "Makatanggap ng updates at paalala mula sa DAPE-MA."
+  },
+  {
+    "key": "notificationTypes",
+    "group": "account",
+    "en": "NOTIFICATION TYPES",
+    "tl": "MGA URI NG NOTIFICATION"
+  },
+  {
+    "key": "notifyArticles",
+    "group": "account",
+    "en": "New articles and lessons",
+    "tl": "Mga bagong artikulo at aralin"
+  },
+  {
+    "key": "notifyArticlesBody",
+    "group": "account",
+    "en": "When new resources are published",
+    "tl": "Kapag may bagong nilathalang resources"
+  },
+  {
+    "key": "notifyAchievements",
+    "group": "account",
+    "en": "Achievements",
+    "tl": "Mga Achievement"
+  },
+  {
+    "key": "notifyAchievementsBody",
+    "group": "account",
+    "en": "Badges, completed lessons, goals",
+    "tl": "Mga badge, natapos na aralin, goals"
+  },
+  {
+    "key": "notifyEvents",
+    "group": "account",
+    "en": "Events and seminars",
+    "tl": "Mga event at seminar"
+  },
+  {
+    "key": "notifyEventsBody",
+    "group": "account",
+    "en": "Upcoming events and reminders",
+    "tl": "Mga paparating na event at paalala"
+  },
+  {
+    "key": "notifyUpdates",
+    "group": "account",
+    "en": "Application updates",
+    "tl": "Mga update ng application"
+  },
+  {
+    "key": "notifyUpdatesBody",
+    "group": "account",
+    "en": "When it's time for you to do an update",
+    "tl": "Kapag oras nang mag-update"
+  },
+  {
+    "key": "quietHours",
+    "group": "account",
+    "en": "QUIET HOURS (optional)",
+    "tl": "QUIET HOURS (opsyonal)"
+  },
+  {
+    "key": "quietHoursLabel",
+    "group": "account",
+    "en": "Don't send between",
+    "tl": "Huwag magpadala sa pagitan ng"
+  },
+  {
+    "key": "quietHoursRange",
+    "group": "account",
+    "en": "10:00 PM - 7:00 AM",
+    "tl": "10:00 PM - 7:00 AM"
+  },
+  {
+    "key": "changeAnytime",
+    "group": "account",
+    "en": "You can change these anytime.",
+    "tl": "Maaari mong baguhin ang mga ito anumang oras."
+  },
+  {
+    "key": "notificationsTitle",
+    "group": "account",
+    "en": "Notifications",
+    "tl": "Mga Notification"
+  },
+  {
+    "key": "notificationsToday",
+    "group": "account",
+    "en": "Today",
+    "tl": "Ngayon"
+  },
+  {
+    "key": "notificationsEarlier",
+    "group": "account",
+    "en": "Earlier",
+    "tl": "Mas Maaga"
+  },
+  {
+    "key": "markAllRead",
+    "group": "account",
+    "en": "Mark all as read",
+    "tl": "Markahan lahat bilang nabasa"
+  },
+  {
+    "key": "notificationsLoadFailed",
+    "group": "account",
+    "en": "Failed to load notifications.",
+    "tl": "Hindi ma-load ang mga notification."
+  },
+  {
+    "key": "notificationsMarkAllFailed",
+    "group": "account",
+    "en": "Could not mark all as read.",
+    "tl": "Hindi ma-markahan ang lahat bilang nabasa."
+  },
+  {
+    "key": "notificationsOpenFailed",
+    "group": "account",
+    "en": "Could not open this notification.",
+    "tl": "Hindi mabuksan ang notification na ito."
+  },
+  {
+    "key": "notificationsEmptyTitle",
+    "group": "account",
+    "en": "No notifications yet",
+    "tl": "Wala pang notification"
+  },
+  {
+    "key": "notificationsEmptyBody",
+    "group": "account",
+    "en": "Replies, likes, lessons, and new posts will appear here.",
+    "tl": "Ang mga reply, like, aralin, at bagong post ay lilitaw dito."
+  },
+  {
+    "key": "notifTypeNewLesson",
+    "group": "account",
+    "en": "New lesson published",
+    "tl": "May bagong aralin"
+  },
+  {
+    "key": "notifTypeCompletedLesson",
+    "group": "account",
+    "en": "Completed a lesson",
+    "tl": "Natapos ang isang aralin"
+  },
+  {
+    "key": "notifTypeSeminar",
+    "group": "account",
+    "en": "Seminar invitation",
+    "tl": "Imbitasyon sa seminar"
+  },
+  {
+    "key": "notifTypeGoals",
+    "group": "account",
+    "en": "Goals progress",
+    "tl": "Progreso ng goals"
+  },
+  {
+    "key": "notifTypeBadges",
+    "group": "account",
+    "en": "Badges unlocked",
+    "tl": "May bagong badge"
+  },
+  {
+    "key": "notifTypeReply",
+    "group": "account",
+    "en": "New reply",
+    "tl": "May bagong reply"
+  },
+  {
+    "key": "notifTypeComment",
+    "group": "account",
+    "en": "New comment",
+    "tl": "May bagong komento"
+  },
+  {
+    "key": "notifTypeLiked",
+    "group": "account",
+    "en": "Post liked",
+    "tl": "May nag-like sa post"
+  },
+  {
+    "key": "notifTypeAdminPush",
+    "group": "account",
+    "en": "Announcement",
+    "tl": "Anunsyo"
+  },
+  {
+    "key": "notifTypeGeneral",
+    "group": "account",
+    "en": "Notification",
+    "tl": "Notification"
+  },
+  {
+    "key": "privacyIntro",
+    "group": "account",
+    "en": "Your privacy matters to us. Read our Privacy Policy to learn how we protect your information.",
+    "tl": "Mahalaga sa amin ang iyong privacy. Basahin ang aming Patakaran sa Privacy."
+  },
+  {
+    "key": "privacyBody",
+    "group": "account",
+    "en": "DAPE-MA may collect account details, learning activity, bookmarks, device information, and feedback you submit so we can deliver content, improve services, and support your recovery journey.\n\nWe use this information to personalize your experience, send relevant updates, and keep the platform secure. We do not sell your personal data.\n\nYou may request access, correction, or deletion of your information, and you may withdraw consent where applicable. Educational content is intended for guidance and should be used with appropriate professional or parental support when needed.\n\nFor privacy concerns, contact info@ddb.gov.ph.",
+    "tl": "Maaaring mangolekta ang DAPE-MA ng detalye ng account, aktibidad sa pag-aaral, bookmark, impormasyon ng device, at feedback upang makapaghatid ng nilalaman at mapabuti ang serbisyo.\n\nGinagamit namin ang impormasyong ito para sa mas angkop na karanasan, mga update, at seguridad. Hindi namin ibinebenta ang iyong personal na data.\n\nMaaari kang humiling ng access, pagwawasto, o pagbura ng iyong impormasyon. Para sa mga concern sa privacy, makipag-ugnayan sa info@ddb.gov.ph."
+  },
+  {
+    "key": "termsIntro",
+    "group": "account",
+    "en": "Be informed.",
+    "tl": "Maging may kaalaman."
+  },
+  {
+    "key": "termsSubtitle",
+    "group": "account",
+    "en": "Read the terms and conditions for using the DAPE-MA application.",
+    "tl": "Basahin ang mga tuntunin at kundisyon sa paggamit ng DAPE-MA."
+  },
+  {
+    "key": "termsBody",
+    "group": "account",
+    "en": "By using DAPE-MA, you agree to use the app responsibly and lawfully. Do not misuse content, attempt unauthorized access, copy or modify the application, or submit harmful or false information.\n\nContent is provided for information and education. It does not replace professional medical, legal, or counseling advice.\n\nWe may update these Terms of Use from time to time. Continued use of the app after updates means you accept the revised terms.\n\nFor questions or concerns regarding these Terms of Use, please contact us at info@ddb.gov.ph.",
+    "tl": "Sa paggamit ng DAPE-MA, sumasang-ayon kang gamitin ang app nang responsable at ayon sa batas. Huwag abusuhin ang nilalaman o subukang mag-access nang walang pahintulot.\n\nAng nilalaman ay para sa impormasyon at edukasyon. Hindi ito kapalit ng propesyonal na payo.\n\nMaaaring i-update ang mga Tuntunin. Ang patuloy na paggamit ay nangangahulugang tinatanggap mo ang mga pagbabago.\n\nPara sa katanungan, makipag-ugnayan sa info@ddb.gov.ph."
+  },
+  {
+    "key": "privacyNotice",
+    "group": "account",
+    "en": "Privacy Notice",
+    "tl": "Abiso sa Privacy"
+  },
+  {
+    "key": "privacyNoticeSubtitle",
+    "group": "account",
+    "en": "Agreement for access to classified and sensitive information",
+    "tl": "Kasunduan para sa access sa classified at sensitibong impormasyon"
+  },
+  {
+    "key": "privacyNoticeIntro",
+    "group": "account",
+    "en": "Please read the herein stated Agreement carefully and evidence your acceptance of its terms by clicking on the Agree button below:",
+    "tl": "Pakibasa nang mabuti ang Kasunduang nakasaad dito at patunayan ang iyong pagtanggap sa mga tuntunin nito sa pamamagitan ng pag-click sa pindutang Agree sa ibaba:"
+  },
+  {
+    "key": "privacyNoticeBody",
+    "group": "account",
+    "en": "I hereby accept the obligations contained in this Agreement in consideration of my being granted access to classified and/or sensitive information under the Drug Abuse Prevention and Education Mobile Application (DAPE-MA). As used in this Agreement, classified information is referred to confidential information, including oral communications.\n\nI understand and accept that by being granted access to classified information to the herein referred online system, the confidence and trust are placed in me by the Dangerous Drugs Board.\n\nI understand that the DDB is the responsible agency in collecting all information submitted to the DAPE-MA by end-users.\n\nI am fully aware that the data collection is for analysis and monitoring of reports and that the information gathered shall be used as basis for the development and improvement of policies and drug abuse prevention programs.\n\nI acknowledge that the information generated from the DAPE-MA may be shared to other authorized organizations, partner agencies, local government units and other stakeholders for research, policy formulation and program development.\n\nI agree that DDB shall immediately be notified if there are errors or discrepancies in the data being reported.\n\nWhen notifying the DDB for possible security breaches, I shall include the following:\n• Name and User ID\n• Name of Agency/Organization/Facility\n• Contact details\n• Date and time of unauthorized access\n• Description of security breach or fraud\n• Description of error that has occurred.\n\nI have been informed that unauthorized disclosure, unauthorized retention, or negligent handling of classified information by me could cause damage or irreparable injury to the Board and/or Government of the Philippines or could be used to advantage by other nation or people.\n\nI hereby agree that I shall not divulge classified information to anyone unless:\n\n• Officially verified that the recipient has been properly authorized by the Dangerous Drugs Board or by the government of the Philippines to receive it;\n• I have been given prior written notice of authorization from the Dangerous Drugs Board responsible for the classified information, or granting me clearance that such disclosure is permitted;\n• I have confirmed from an authorized official that the information is unclassified before I may disclose it.\n\nI am obligated to comply with laws and regulations that prohibit the unauthorized disclosure of classified information.\n\nBy my (i) use and/or continued use of this Website, or (ii) access and use of the service provided through this Website, I signify my agreement to indemnify and to keep the DDB, its directors, employees fully and effectively indemnified against all actions, liabilities, costs, claims, losses, damages, proceedings and/or expenses (including all legal costs on an indemnity basis) without prejudice to the filing of any criminal case for violation of any statute or law.\n\nViolation of any of the provisions of this agreement shall constitute breach and shall terminate this agreement immediately without need of notice, without prejudice to criminal prosecution for violation of RA 10173 otherwise known as the “Data Privacy Act of 2012,” as well as other pertinent laws.\n\nUnless and until I am released in writing that all conditions and obligations imposed upon me by this Agreement applies during the time I am granted access to classified information and at all times thereafter.\n\nPlease accept to continue",
+    "tl": "Tinatanggap ko ang mga obligasyong nakapaloob sa Kasunduang ito bilang kapalit ng pagkakaloob sa akin ng access sa classified at/o sensitibong impormasyon sa ilalim ng Drug Abuse Prevention and Education Mobile Application (DAPE-MA). Sa Kasunduang ito, ang classified information ay tumutukoy sa kumpidensyal na impormasyon, kabilang ang mga oral na komunikasyon.\n\nNauunawaan at tinatanggap ko na sa pagkakaloob sa akin ng access sa classified information sa nabanggit na online system, inilalagak sa akin ng Dangerous Drugs Board ang kanilang tiwala.\n\nNauunawaan ko na ang DDB ang ahensyang responsable sa pagkolekta ng lahat ng impormasyong isinusumite sa DAPE-MA ng mga end-user.\n\nBatid ko na ang pagkolekta ng datos ay para sa pagsusuri at pagsubaybay ng mga ulat, at gagamitin ang nakalap na impormasyon bilang batayan sa pagpapaunlad at pagpapabuti ng mga polisiya at programa sa pag-iwas sa pag-abuso sa droga.\n\nKinikilala ko na ang impormasyong nalilikha mula sa DAPE-MA ay maaaring ibahagi sa iba pang awtorisadong organisasyon, kasosyong ahensya, local government units, at iba pang stakeholder para sa pananaliksik, pagbuo ng polisiya, at pagpapaunlad ng programa.\n\nSumasang-ayon ako na agad na aabisuhan ang DDB kung may mga mali o hindi pagkakatugma sa datos na nire-report.\n\nKapag aabisuhan ang DDB ukol sa posibleng security breach, isasama ko ang mga sumusunod:\n• Pangalan at User ID\n• Pangalan ng Ahensya/Organisasyon/Pasilidad\n• Detalye ng pakikipag-ugnayan\n• Petsa at oras ng hindi awtorisadong pag-access\n• Paglalarawan ng security breach o panloloko\n• Paglalarawan ng naganap na error.\n\nNaipaalam sa akin na ang hindi awtorisadong pagbunyag, hindi awtorisadong pagtatago, o pabayaang paghawak ko sa classified information ay maaaring magdulot ng pinsala o hindi na mababawi na injury sa Board at/o sa Pamahalaan ng Pilipinas, o magamit nang pabor ng ibang bansa o tao.\n\nSumasang-ayon ako na hindi ko ibubunyag ang classified information kaninuman maliban kung:\n\n• Opisyal na napatunayan na ang tatanggap ay wastong pinahintulutan ng Dangerous Drugs Board o ng pamahalaan ng Pilipinas na tumanggap nito;\n• Binigyan ako ng paunang nakasulat na paunawa ng awtorisasyon mula sa Dangerous Drugs Board na responsable sa classified information, o ng clearance na pinahihintulutan ang naturang pagbunyag;\n• Nakumpirma ko mula sa awtorisadong opisyal na unclassified ang impormasyon bago ko ito maibunyag.\n\nObligado akong sumunod sa mga batas at regulasyong nagbabawal sa hindi awtorisadong pagbunyag ng classified information.\n\nSa aking (i) paggamit at/o patuloy na paggamit ng Website na ito, o (ii) access at paggamit ng serbisyong ibinibigay sa pamamagitan ng Website na ito, ipinapahayag ko ang aking pagsang-ayon na indemnify at panatilihing fully at effectively indemnified ang DDB, ang mga direktor, at empleyado nito laban sa lahat ng aksyon, pananagutan, gastos, claim, pagkawala, pinsala, proceedings, at/o gastusin (kabilang ang lahat ng legal na gastos on an indemnity basis), nang hindi isinasakripisyo ang paghahain ng anumang criminal case para sa paglabag sa anumang batas.\n\nAng paglabag sa alinmang probisyon ng kasunduang ito ay ituturing na breach at agad na magwawakas ang kasunduang ito nang hindi na kailangan ng paunawa, nang hindi isinasakripisyo ang criminal prosecution para sa paglabag sa RA 10173 na kilala rin bilang “Data Privacy Act of 2012,” at iba pang naaangkop na batas.\n\nHangga’t hindi ako pinalalaya sa pamamagitan ng sulat, ang lahat ng kundisyon at obligasyong ipinapataw sa akin ng Kasunduang ito ay nalalapat habang ako ay pinagkalooban ng access sa classified information at sa lahat ng panahon pagkatapos nito.\n\nPakitanggap upang magpatuloy"
+  },
+  {
+    "key": "consentAgreePrefix",
+    "group": "account",
+    "en": "I have read and agree to the ",
+    "tl": "Nabasa ko at sumasang-ayon ako sa "
+  },
+  {
+    "key": "consentAcceptPrefix",
+    "group": "account",
+    "en": "I have read and accept the ",
+    "tl": "Nabasa ko at tinatanggap ko ang "
+  },
+  {
+    "key": "consentRequired",
+    "group": "account",
+    "en": "Please accept the Terms of Use, Privacy Policy, and Privacy Notice to continue.",
+    "tl": "Pakitanggap ang Mga Tuntunin ng Paggamit, Patakaran sa Privacy, at Abiso sa Privacy upang magpatuloy."
+  },
+  {
+    "key": "accessibilityIntro",
+    "group": "account",
+    "en": "We are here to make learning inclusive for everyone.",
+    "tl": "Nandito kami para gawing inklusibo ang pag-aaral para sa lahat."
+  },
+  {
+    "key": "textSize",
+    "group": "account",
+    "en": "Text Size",
+    "tl": "Laki ng Teksto"
+  },
+  {
+    "key": "textSizeBody",
+    "group": "account",
+    "en": "Adjust the size of text",
+    "tl": "Ayusin ang laki ng teksto"
+  },
+  {
+    "key": "darkMode",
+    "group": "account",
+    "en": "Dark Mode",
+    "tl": "Dark Mode"
+  },
+  {
+    "key": "darkModeBody",
+    "group": "account",
+    "en": "Reduce eye strain in low light",
+    "tl": "Bawasan ang strain ng mata sa madilim"
+  },
+  {
+    "key": "reduceMotion",
+    "group": "account",
+    "en": "Reduce Motion",
+    "tl": "Bawasan ang Motion"
+  },
+  {
+    "key": "reduceMotionBody",
+    "group": "account",
+    "en": "Minimize animation and motion effects",
+    "tl": "Bawasan ang animation at motion effects"
+  },
+  {
+    "key": "highContrast",
+    "group": "account",
+    "en": "High Contrast",
+    "tl": "High Contrast"
+  },
+  {
+    "key": "highContrastBody",
+    "group": "account",
+    "en": "Increase contrast for better visibility",
+    "tl": "Dagdagan ang contrast para mas madaling makita"
+  },
+  {
+    "key": "readAloud",
+    "group": "account",
+    "en": "Read Articles Aloud",
+    "tl": "Basahin nang Malakas"
+  },
+  {
+    "key": "readAloudBody",
+    "group": "account",
+    "en": "Listen to articles and lessons",
+    "tl": "Makinig sa mga artikulo at aralin"
+  },
+  {
+    "key": "listenToArticle",
+    "group": "account",
+    "en": "Listen",
+    "tl": "Makinig"
+  },
+  {
+    "key": "stopListening",
+    "group": "account",
+    "en": "Stop",
+    "tl": "Ihinto"
+  },
+  {
+    "key": "captions",
+    "group": "account",
+    "en": "Captions",
+    "tl": "Mga Caption"
+  },
+  {
+    "key": "captionsBody",
+    "group": "account",
+    "en": "Enable captions for videos",
+    "tl": "I-enable ang captions para sa video"
+  },
+  {
+    "key": "accessibilityFooter",
+    "group": "account",
+    "en": "Accessibility is about inclusion. These settings help make DAPE-MA comfortable, easy to use, and supportive for everyone.",
+    "tl": "Ang accessibility ay tungkol sa inklusyon. Tinutulungan ng mga setting na ito na gawing komportable at madaling gamitin ang DAPE-MA."
+  },
+  {
+    "key": "aboutTagline",
+    "group": "account",
+    "en": "Dangerous Drugs Board Advocacy and Prevention Education Mobile App",
+    "tl": "Dangerous Drugs Board Advocacy and Prevention Education Mobile App"
+  },
+  {
+    "key": "versionLabel",
+    "group": "account",
+    "en": "Version",
+    "tl": "Bersyon"
+  },
+  {
+    "key": "buildLabel",
+    "group": "account",
+    "en": "Build",
+    "tl": "Build"
+  },
+  {
+    "key": "developersLabel",
+    "group": "account",
+    "en": "Developers",
+    "tl": "Mga Developer"
+  },
+  {
+    "key": "contactUsLabel",
+    "group": "account",
+    "en": "Contact Us",
+    "tl": "Makipag-ugnayan"
+  },
+  {
+    "key": "aboutCopyright",
+    "group": "account",
+    "en": "2026. DAPE-MA. All rights reserved.",
+    "tl": "2026. DAPE-MA. All rights reserved."
   },
   {
     "key": "welcomeTitle",
@@ -914,8 +3236,8 @@
   {
     "key": "noAccount",
     "group": "auth",
-    "en": "t have an account? \", ",
-    "tl": ""
+    "en": "Don't have an account? ",
+    "tl": "Wala pang account? "
   },
   {
     "key": "fullName",
@@ -936,52 +3258,418 @@
     "tl": "Gumawa ng account"
   },
   {
+    "key": "continueLabel",
+    "group": "auth",
+    "en": "Continue",
+    "tl": "Magpatuloy"
+  },
+  {
     "key": "alreadyHaveAccount",
     "group": "auth",
     "en": "Already have an account? ",
     "tl": "May account na? "
   },
   {
+    "key": "regGetStartedTitle",
+    "group": "registration",
+    "en": "Get Started",
+    "tl": "Magsimula"
+  },
+  {
+    "key": "regGetStartedSubtitle",
+    "group": "registration",
+    "en": "Create an account to start your DAPE-MA journey!",
+    "tl": "Gumawa ng account para simulan ang iyong DAPE-MA journey!"
+  },
+  {
+    "key": "regContinueGoogle",
+    "group": "registration",
+    "en": "Continue with Google",
+    "tl": "Magpatuloy gamit ang Google"
+  },
+  {
+    "key": "regContinueFacebook",
+    "group": "registration",
+    "en": "Continue with Facebook",
+    "tl": "Magpatuloy gamit ang Facebook"
+  },
+  {
+    "key": "regContinueApple",
+    "group": "registration",
+    "en": "Continue with Apple",
+    "tl": "Magpatuloy gamit ang Apple"
+  },
+  {
+    "key": "regNicknameTitlePrefix",
+    "group": "registration",
+    "en": "What should we call ",
+    "tl": "Ano ang itatawag namin sa "
+  },
+  {
+    "key": "regNicknameTitleHighlight",
+    "group": "registration",
+    "en": "you",
+    "tl": "iyo"
+  },
+  {
+    "key": "regNicknameTitleSuffix",
+    "group": "registration",
+    "en": "?",
+    "tl": "?"
+  },
+  {
+    "key": "regNicknameSubtitle",
+    "group": "registration",
+    "en": "We’ll use this to personalize your experience.",
+    "tl": "Gagamitin namin ito para i-personalize ang iyong karanasan."
+  },
+  {
+    "key": "regNicknameHint",
+    "group": "registration",
+    "en": "Type your nickname",
+    "tl": "I-type ang iyong palayaw"
+  },
+  {
+    "key": "regNicknameHelper",
+    "group": "registration",
+    "en": "You can change this anytime.",
+    "tl": "Maaari mong baguhin ito anytime."
+  },
+  {
+    "key": "regNicknameRequired",
+    "group": "registration",
+    "en": "Please enter a nickname.",
+    "tl": "Maglagay ng palayaw."
+  },
+  {
+    "key": "regOptionalLabel",
+    "group": "registration",
+    "en": "OPTIONAL",
+    "tl": "OPSYONAL"
+  },
+  {
+    "key": "regPronounsTitle",
+    "group": "registration",
+    "en": "What are your pronouns?",
+    "tl": "Ano ang iyong mga panghalip?"
+  },
+  {
+    "key": "regPronounsSubtitle",
+    "group": "registration",
+    "en": "This helps us create a respectful and inclusive experience.",
+    "tl": "Nakakatulong ito para sa magalang at inklusibong karanasan."
+  },
+  {
+    "key": "regBirthdayTitle",
+    "group": "registration",
+    "en": "When's your birthday?",
+    "tl": "Kailan ang iyong kaarawan?"
+  },
+  {
+    "key": "regBirthdaySubtitle",
+    "group": "registration",
+    "en": "We use your age to recommend appropriate content and programs.",
+    "tl": "Ginagamit ang edad para magrekomenda ng angkop na content at programa."
+  },
+  {
+    "key": "regBirthdayHint",
+    "group": "registration",
+    "en": "MM / DD / YYYY",
+    "tl": "MM / DD / YYYY"
+  },
+  {
+    "key": "regBirthdayRequired",
+    "group": "registration",
+    "en": "Please select your birthday.",
+    "tl": "Piliin ang iyong kaarawan."
+  },
+  {
+    "key": "regPersonaTitle",
+    "group": "registration",
+    "en": "Which best describes you?",
+    "tl": "Alin ang pinakakatugma sa iyo?"
+  },
+  {
+    "key": "regPersonaSubtitle",
+    "group": "registration",
+    "en": "Select all that apply. This helps us tailor the DAPE-MA app to your needs.",
+    "tl": "Pumili ng lahat ng naaangkop. Nakakatulong ito para iangkop ang DAPE-MA app sa iyong pangangailangan."
+  },
+  {
+    "key": "regPersonaRequired",
+    "group": "registration",
+    "en": "Please select at least one option.",
+    "tl": "Pumili ng kahit isang opsyon."
+  },
+  {
+    "key": "regInterestsTitle",
+    "group": "registration",
+    "en": "What matters most to you?",
+    "tl": "Ano ang pinakamahalaga sa iyo?"
+  },
+  {
+    "key": "regInterestsSubtitle",
+    "group": "registration",
+    "en": "Choose among these interests. We’ll personalize your feed.",
+    "tl": "Pumili mula sa mga interes na ito. Ipa-personalize namin ang iyong feed."
+  },
+  {
+    "key": "regInterestsRequired",
+    "group": "registration",
+    "en": "Select at least one interest.",
+    "tl": "Pumili ng kahit isang interes."
+  },
+  {
+    "key": "regSuccessTitlePrefix",
+    "group": "registration",
+    "en": "You’re all set to ",
+    "tl": "Handa ka na sa "
+  },
+  {
+    "key": "regSuccessTitleHighlight",
+    "group": "registration",
+    "en": "DAPE-MA",
+    "tl": "DAPE-MA"
+  },
+  {
+    "key": "regSuccessTitleSuffix",
+    "group": "registration",
+    "en": " best you can be!",
+    "tl": " nang buong-buo!"
+  },
+  {
+    "key": "regFeatureLearnTitle",
+    "group": "registration",
+    "en": "DAPE Learn",
+    "tl": "DAPE Learn"
+  },
+  {
+    "key": "regFeatureLearnBody",
+    "group": "registration",
+    "en": "Discover knowledge and build skills!",
+    "tl": "Matuto at magpaunlad ng skills!"
+  },
+  {
+    "key": "regFeatureHopeTitle",
+    "group": "registration",
+    "en": "DAPE Hope",
+    "tl": "DAPE Hope"
+  },
+  {
+    "key": "regFeatureHopeBody",
+    "group": "registration",
+    "en": "Connect with others and aspire together!",
+    "tl": "Makipag-ugnayan at maghangad nang sama-sama!"
+  },
+  {
+    "key": "regFeatureCareTitle",
+    "group": "registration",
+    "en": "DAPE Care",
+    "tl": "DAPE Care"
+  },
+  {
+    "key": "regFeatureCareBody",
+    "group": "registration",
+    "en": "Take care of your mind and well-being!",
+    "tl": "Alagaan ang isip at well-being mo!"
+  },
+  {
+    "key": "regSuccessReady",
+    "group": "registration",
+    "en": "Your personalized experience is ready!",
+    "tl": "Handa na ang iyong personalized na karanasan!"
+  },
+  {
+    "key": "regSuccessCtaLearn",
+    "group": "registration",
+    "en": "Learn",
+    "tl": "Learn"
+  },
+  {
+    "key": "regSuccessCtaMid",
+    "group": "registration",
+    "en": ", ",
+    "tl": ", "
+  },
+  {
+    "key": "regSuccessCtaHope",
+    "group": "registration",
+    "en": "hope",
+    "tl": "hope"
+  },
+  {
+    "key": "regSuccessCtaAnd",
+    "group": "registration",
+    "en": ", and ",
+    "tl": ", at "
+  },
+  {
+    "key": "regSuccessCtaCare",
+    "group": "registration",
+    "en": "care",
+    "tl": "care"
+  },
+  {
+    "key": "regSuccessCtaEnd",
+    "group": "registration",
+    "en": " now!",
+    "tl": " ngayon!"
+  },
+  {
+    "key": "regOnboardingFailed",
+    "group": "registration",
+    "en": "Could not save your preferences. Please try again.",
+    "tl": "Hindi ma-save ang iyong preferences. Subukan muli."
+  },
+  {
     "key": "resetPassword",
-    "group": "auth",
+    "group": "registration",
     "en": "Reset password",
     "tl": "I-reset ang password"
   },
   {
     "key": "sendResetLink",
-    "group": "auth",
-    "en": "Send reset link",
-    "tl": "Ipadala ang reset link"
+    "group": "registration",
+    "en": "Send reset code",
+    "tl": "Ipadala ang reset code"
   },
   {
     "key": "resetInstructions",
-    "group": "auth",
-    "en": "Enter your email and we will send password reset instructions.",
-    "tl": "Ilagay ang email at padadalhan ka namin ng mga tagubilin sa pag-reset ng password."
+    "group": "registration",
+    "en": "Enter your email. We will send a 6-digit code — check that inbox before you can set a new password.",
+    "tl": "Ilagay ang email. Magpapadala kami ng 6-digit na code — tingnan muna ang inbox bago magtakda ng bagong password."
   },
   {
     "key": "resetSuccess",
-    "group": "auth",
-    "en": "Password reset instructions have been sent to your email.",
-    "tl": "Naipadala na ang mga tagubilin sa pag-reset ng password sa iyong email."
+    "group": "registration",
+    "en": "Check your email for a 6-digit code, then continue here.",
+    "tl": "Tingnan ang email para sa 6-digit na code, tapos magpatuloy dito."
+  },
+  {
+    "key": "resetCodeInvalid",
+    "group": "registration",
+    "en": "That code does not match. Check your email and try again.",
+    "tl": "Hindi tumugma ang code. Tingnan ang email at subukan muli."
+  },
+  {
+    "key": "checkEmailTitle",
+    "group": "registration",
+    "en": "Check your email",
+    "tl": "Tingnan ang iyong email"
   },
   {
     "key": "resetFailed",
-    "group": "auth",
+    "group": "registration",
     "en": "Unable to send reset link. Please try again.",
     "tl": "Hindi maipadala ang reset link. Subukan muli."
   },
   {
+    "key": "resetPasswordSubtitle",
+    "group": "registration",
+    "en": "Enter a new password for your account.",
+    "tl": "Maglagay ng bagong password para sa iyong account."
+  },
+  {
+    "key": "newPasswordHint",
+    "group": "registration",
+    "en": "New password",
+    "tl": "Bagong password"
+  },
+  {
+    "key": "confirmPasswordHint",
+    "group": "registration",
+    "en": "Confirm new password",
+    "tl": "Kumpirmahin ang bagong password"
+  },
+  {
+    "key": "passwordMinEight",
+    "group": "registration",
+    "en": "Password must be at least 8 characters",
+    "tl": "Ang password ay dapat hindi bababa sa 8 character"
+  },
+  {
+    "key": "saveNewPassword",
+    "group": "registration",
+    "en": "Save new password",
+    "tl": "I-save ang bagong password"
+  },
+  {
+    "key": "passwordResetSuccess",
+    "group": "registration",
+    "en": "Password has been reset. You can sign in now.",
+    "tl": "Na-reset na ang password. Maaari ka nang mag-sign in."
+  },
+  {
+    "key": "passwordResetFailed",
+    "group": "registration",
+    "en": "Unable to reset password. The link may have expired.",
+    "tl": "Hindi ma-reset ang password. Maaaring expired na ang link."
+  },
+  {
     "key": "backToLogin",
-    "group": "auth",
+    "group": "registration",
     "en": "Back to Login",
     "tl": "Bumalik sa Login"
+  },
+  {
+    "key": "authAgreePrefix",
+    "group": "registration",
+    "en": "By continuing, you agree to our ",
+    "tl": "Sa pagpapatuloy, sumasang-ayon ka sa aming "
+  },
+  {
+    "key": "authAgreeAnd",
+    "group": "registration",
+    "en": " and ",
+    "tl": " at "
   },
   {
     "key": "bookmarksTitle",
     "group": "bookmarks",
     "en": "Bookmarks",
     "tl": "Mga Bookmark"
+  },
+  {
+    "key": "bookmarksCountLabel",
+    "group": "bookmarks",
+    "en": "{count} saved",
+    "tl": "{count} naka-save"
+  },
+  {
+    "key": "searchBookmarksHint",
+    "group": "bookmarks",
+    "en": "Search bookmarks...",
+    "tl": "Maghanap sa bookmarks..."
+  },
+  {
+    "key": "noBookmarksYet",
+    "group": "bookmarks",
+    "en": "No saved posts yet",
+    "tl": "Wala pang naka-save na post"
+  },
+  {
+    "key": "noBookmarksBody",
+    "group": "bookmarks",
+    "en": "Tap the bookmark icon on any post to save it here for later.",
+    "tl": "Pindutin ang bookmark icon sa post para i-save dito."
+  },
+  {
+    "key": "noSearchResults",
+    "group": "bookmarks",
+    "en": "No matches found",
+    "tl": "Walang nahanap"
+  },
+  {
+    "key": "noSearchResultsBody",
+    "group": "bookmarks",
+    "en": "Try a different title or category.",
+    "tl": "Subukan ang ibang pamagat o category."
+  },
+  {
+    "key": "activityItemsCount",
+    "group": "bookmarks",
+    "en": "{count} ${count == 1 ? 'item' : 'items'}",
+    "tl": "{count} ${count == 1 ? 'item' : 'mga item'}"
   },
   {
     "key": "rehabCentersTitle",
@@ -1018,6 +3706,12 @@
     "group": "reviews",
     "en": "No ratings yet",
     "tl": "Wala pang rating"
+  },
+  {
+    "key": "ratingsCount",
+    "group": "reviews",
+    "en": "{count} ${count == 1 ? 'rating' : 'ratings'}",
+    "tl": "{count} ${count == 1 ? 'rating' : 'mga rating'}"
   },
   {
     "key": "ratingSubmitted",
@@ -1074,6 +3768,12 @@
     "tl": "Burahin"
   },
   {
+    "key": "loginRequired",
+    "group": "comments",
+    "en": "Please log in to {action}.",
+    "tl": "Mag-log in muna para {action}."
+  },
+  {
     "key": "registrationFailed",
     "group": "registration",
     "en": "Registration failed. Please check your details.",
@@ -1082,48 +3782,42 @@
   {
     "key": "passwordMinSix",
     "group": "registration",
-    "en": "Password must be at least 6 characters",
-    "tl": "Ang password ay dapat hindi bababa sa 6 character"
+    "en": "Password must be at least 8 characters",
+    "tl": "Ang password ay dapat hindi bababa sa 8 character"
   },
   {
     "key": "bookmarkRemoveFailed",
-    "group": "bookmarks_extras",
+    "group": "bookmarks",
     "en": "Could not remove bookmark. Try again.",
     "tl": "Hindi matanggal ang bookmark. Subukan muli."
   },
   {
-    "key": "noBookmarksYet",
-    "group": "bookmarks_extras",
-    "en": "No saved posts yet",
-    "tl": "Wala pang naka-save na post"
-  },
-  {
     "key": "searchRehabByHint",
-    "group": "rehab_extras",
+    "group": "rehab",
     "en": "Search by name, address, or province",
     "tl": "Maghanap ayon sa pangalan, address, o lalawigan"
   },
   {
     "key": "noRehabFound",
-    "group": "rehab_extras",
+    "group": "rehab",
     "en": "No rehab centers found",
     "tl": "Walang nahanap na rehab center"
   },
   {
     "key": "tryDifferentSearch",
-    "group": "rehab_extras",
+    "group": "rehab",
     "en": "Try a different region or search",
     "tl": "Subukan ang ibang rehiyon o paghahanap"
   },
   {
     "key": "checkBackLater",
-    "group": "rehab_extras",
+    "group": "rehab",
     "en": "Check back later for listings",
     "tl": "Bumalik muli mamaya para sa mga listahan"
   },
   {
     "key": "regionLabel",
-    "group": "rehab_extras",
+    "group": "rehab",
     "en": "Region",
     "tl": "Rehiyon"
   },
@@ -1176,6 +3870,18 @@
     "tl": "Mga Komento"
   },
   {
+    "key": "commentsDisabledTitle",
+    "group": "post_detail",
+    "en": "Comments are turned off",
+    "tl": "Naka-off ang mga komento"
+  },
+  {
+    "key": "commentsDisabledBody",
+    "group": "post_detail",
+    "en": "The author has disabled comments on this post.",
+    "tl": "Naka-disable ang mga komento sa post na ito."
+  },
+  {
     "key": "loadPreviousComments",
     "group": "post_detail",
     "en": "Load previous comments...",
@@ -1194,243 +3900,951 @@
     "tl": "Wala pang komento. Ikaw ang unang magkomento."
   },
   {
+    "key": "noCommentsEmptyTitle",
+    "group": "post_detail",
+    "en": "No comments yet",
+    "tl": "Wala pang komento"
+  },
+  {
+    "key": "noCommentsEmptyBody",
+    "group": "post_detail",
+    "en": "Be the first to share your thoughts.",
+    "tl": "Ikaw ang unang magbahagi ng iyong saloobin."
+  },
+  {
+    "key": "tapStarsToRate",
+    "group": "post_detail",
+    "en": "Tap a star to rate",
+    "tl": "Mag-tap ng bituin para mag-rate"
+  },
+  {
     "key": "writeReply",
     "group": "post_detail",
     "en": "Write a reply...",
     "tl": "Sumulat ng tugon..."
   },
   {
+    "key": "youRatedStars",
+    "group": "post_detail",
+    "en": "You rated this {rating} star${rating == 1 ? '' : 's'}",
+    "tl": "Ni-rate mo ito ng {rating} bituin"
+  },
+  {
     "key": "rateThisContent",
-    "group": "review_sheet",
+    "group": "reviews",
     "en": "Rate this content",
     "tl": "I-rate ang nilalamang ito"
   },
   {
     "key": "editComment",
-    "group": "comment_edit",
+    "group": "comments",
     "en": "Edit comment",
     "tl": "I-edit ang komento"
   },
   {
     "key": "commentCannotBeEmpty",
-    "group": "comment_edit",
+    "group": "comments",
     "en": "Comment cannot be empty",
     "tl": "Hindi maaaring walang laman ang komento"
   },
   {
     "key": "updateCommentHint",
-    "group": "comment_edit",
+    "group": "comments",
     "en": "Update your comment...",
     "tl": "I-update ang iyong komento..."
   },
   {
     "key": "saveChanges",
-    "group": "comment_edit",
+    "group": "comments",
     "en": "Save changes",
     "tl": "I-save ang mga pagbabago"
   },
   {
     "key": "commentUpdateFailed",
-    "group": "comment_edit",
+    "group": "comments",
     "en": "Could not update comment. Try again.",
     "tl": "Hindi ma-update ang komento. Subukan muli."
   },
   {
     "key": "serverUpdateRequired",
-    "group": "errors_engagement",
+    "group": "errors",
     "en": "Likes and comments need the latest server update. Deploy Laravel and run php artisan migrate.",
     "tl": "Kailangan ng pinakabagong server update ang likes at komento."
   },
   {
     "key": "ownCommentsOnly",
-    "group": "errors_engagement",
+    "group": "errors",
     "en": "You can only manage your own comments.",
     "tl": "Maaari mo lang pamahalaan ang sarili mong komento."
   },
   {
     "key": "noInternet",
-    "group": "errors_engagement",
+    "group": "errors",
     "en": "No internet connection. Check your network and try again.",
     "tl": "Walang internet. Suriin ang network at subukan muli."
   },
   {
+    "key": "underMaintenanceTitle",
+    "group": "errors",
+    "en": "We’ll be right back",
+    "tl": "Babalik kami agad"
+  },
+  {
+    "key": "underMaintenanceBadge",
+    "group": "errors",
+    "en": "Connection issue",
+    "tl": "May problema sa koneksyon"
+  },
+  {
+    "key": "underMaintenanceMessage",
+    "group": "errors",
+    "en": "We’re having trouble connecting right now. Please check back in a few minutes.",
+    "tl": "Hindi kami makakonekta sa ngayon. Subukan ulit sa ilang minuto."
+  },
+  {
+    "key": "underMaintenanceLastChecked",
+    "group": "errors",
+    "en": "Last checked {time}",
+    "tl": "Huling tiningnan {time}"
+  },
+  {
+    "key": "underMaintenanceStillUnavailable",
+    "group": "errors",
+    "en": "Still unavailable. Try again shortly.",
+    "tl": "Hindi pa available. Subukan ulit saglit."
+  },
+  {
+    "key": "underMaintenanceChecking",
+    "group": "errors",
+    "en": "Checking…",
+    "tl": "Tinitingnan…"
+  },
+  {
+    "key": "contactSupport",
+    "group": "errors",
+    "en": "Contact support",
+    "tl": "Makipag-ugnayan sa support"
+  },
+  {
+    "key": "actionFailed",
+    "group": "errors",
+    "en": "Could not {action}. Try again.",
+    "tl": "Hindi ma-{action}. Subukan muli."
+  },
+  {
     "key": "justNow",
-    "group": "errors_engagement",
+    "group": "errors",
     "en": "Just now",
     "tl": "Ngayon lang"
   },
   {
+    "key": "authorPost",
+    "group": "errors",
+    "en": "{name}'s Post",
+    "tl": "Post ni {name}"
+  },
+  {
     "key": "dailyVerseTitle",
-    "group": "daily_verse_kid_listo_says",
+    "group": "kid_listo",
     "en": "Kid Listo Says",
     "tl": "Kid Listo Says"
   },
   {
     "key": "kidListoSaysTitle",
-    "group": "daily_verse_kid_listo_says",
+    "group": "kid_listo",
     "en": "Kid Listo Says",
     "tl": "Kid Listo Says"
   },
   {
+    "key": "kidListoMotivationalTagline",
+    "group": "kid_listo",
+    "en": "A daily motivational quote for a drug-free youth",
+    "tl": "Araw-araw na motivational quote para sa drug-free youth"
+  },
+  {
+    "key": "kidListoMotivationalBadge",
+    "group": "kid_listo",
+    "en": "Motivational Quote",
+    "tl": "Motivational Quote"
+  },
+  {
+    "key": "anotherKidListoQuote",
+    "group": "kid_listo",
+    "en": "Another Kid Listo Quote",
+    "tl": "Ibang Quote ni Kid Listo"
+  },
+  {
+    "key": "kidListoQuoteFallback",
+    "group": "kid_listo",
+    "en": "Choose courage over comfort. A drug-free life starts with one brave decision today.",
+    "tl": "Piliin ang tapang kaysa ginhawa. Nagsisimula ang drug-free life sa isang matapang na desisyon ngayon."
+  },
+  {
     "key": "todaysScripture",
-    "group": "daily_verse_kid_listo_says",
-    "en": "s scripture\", ",
-    "tl": ""
+    "group": "kid_listo",
+    "en": "Today's quote",
+    "tl": "Quote ngayon"
+  },
+  {
+    "key": "kidListoDayLabel",
+    "group": "kid_listo",
+    "en": "Day {day} of {total}",
+    "tl": "Araw {day} sa {total}"
   },
   {
     "key": "skip",
-    "group": "daily_verse_kid_listo_says",
+    "group": "kid_listo",
     "en": "Skip",
     "tl": "Laktawan"
   },
   {
+    "key": "close",
+    "group": "kid_listo",
+    "en": "Close",
+    "tl": "Isara"
+  },
+  {
+    "key": "done",
+    "group": "kid_listo",
+    "en": "Done",
+    "tl": "Tapos"
+  },
+  {
     "key": "continueToApp",
-    "group": "daily_verse_kid_listo_says",
-    "en": "Continue to app",
-    "tl": "Magpatuloy sa app"
+    "group": "kid_listo",
+    "en": "Continue to DAPE-MA",
+    "tl": "Magpatuloy sa DAPE-MA"
   },
   {
     "key": "openBible",
-    "group": "daily_verse_kid_listo_says",
-    "en": "Open Bible",
-    "tl": "Buksan ang Bibliya"
+    "group": "kid_listo",
+    "en": "Open Kid Listo",
+    "tl": "Buksan ang Kid Listo"
   },
   {
     "key": "openKidListoBible",
-    "group": "daily_verse_kid_listo_says",
-    "en": "Open Kid Listo Bible",
-    "tl": "Buksan ang Kid Listo Bible"
+    "group": "kid_listo",
+    "en": "Open Kid Listo",
+    "tl": "Buksan ang Kid Listo"
   },
   {
     "key": "dailyVerseFallback",
-    "group": "daily_verse_kid_listo_says",
-    "en": "Trust in the Lord with all your heart.",
-    "tl": "Manalig ka sa Panginoon ng buong puso mo."
+    "group": "kid_listo",
+    "en": "Choose courage over comfort. A drug-free life starts with one brave decision today.",
+    "tl": "Piliin ang tapang kaysa ginhawa. Nagsisimula ang drug-free life sa isang matapang na desisyon ngayon."
   },
   {
     "key": "dailyVerseReferenceFallback",
-    "group": "daily_verse_kid_listo_says",
-    "en": "Proverbs 3:5",
-    "tl": "Kawikaan 3:5"
-  },
-  {
-    "key": "bibleTitle",
-    "group": "bible",
-    "en": "Kid Listo Says · Bible",
-    "tl": "Kid Listo Says · Bibliya"
-  },
-  {
-    "key": "searchBibleBooks",
-    "group": "bible",
-    "en": "Search books...",
-    "tl": "Maghanap ng aklat..."
-  },
-  {
-    "key": "oldTestament",
-    "group": "bible",
-    "en": "Old Testament",
-    "tl": "Lumang Tipan"
-  },
-  {
-    "key": "newTestament",
-    "group": "bible",
-    "en": "New Testament",
-    "tl": "Bagong Tipan"
-  },
-  {
-    "key": "noBibleBooksFound",
-    "group": "bible",
-    "en": "No books found",
-    "tl": "Walang nahanap na aklat"
-  },
-  {
-    "key": "bibleLoadFailed",
-    "group": "bible",
-    "en": "Could not load passage. Try again.",
-    "tl": "Hindi ma-load ang talata. Subukan muli."
-  },
-  {
-    "key": "bibleLanguageNote",
-    "group": "bible",
-    "en": "Kid Listo Bible text follows your app language (English or Tagalog).",
-    "tl": "Sinusunod ng Kid Listo Bible ang wika ng app (English o Tagalog)."
+    "group": "kid_listo",
+    "en": "Kid Listo",
+    "tl": "Kid Listo"
   },
   {
     "key": "diaryTitle",
-    "group": "diary",
-    "en": "My Diary",
-    "tl": "Aking Talaarawan"
+    "group": "journal",
+    "en": "Journal",
+    "tl": "Journal"
   },
   {
     "key": "writeToday",
-    "group": "diary",
-    "en": "s note\", ",
-    "tl": ""
+    "group": "journal",
+    "en": "Start Writing",
+    "tl": "Magsimulang sumulat"
   },
   {
     "key": "diaryLoginRequired",
-    "group": "diary",
+    "group": "journal",
     "en": "Sign in to keep your private daily journal.",
-    "tl": "Mag-sign in para sa iyong pribadong talaarawan."
+    "tl": "Mag-sign in para sa iyong pribadong journal."
   },
   {
     "key": "diaryEmpty",
-    "group": "diary",
-    "en": "No diary entries yet. Tap Write today to begin.",
-    "tl": "Wala pang tala. Pindutin ang Sumulat ngayong araw para magsimula."
+    "group": "journal",
+    "en": "No journal entries yet. Start writing to begin.",
+    "tl": "Wala pang journal entry. Magsimulang sumulat para magsimula."
   },
   {
     "key": "diaryEditorTitle",
-    "group": "diary",
-    "en": "Diary entry",
-    "tl": "Tala sa talaarawan"
+    "group": "journal",
+    "en": "Journal entry",
+    "tl": "Journal entry"
   },
   {
     "key": "diaryTitleHint",
-    "group": "diary",
+    "group": "journal",
     "en": "Title (optional)",
     "tl": "Pamagat (opsyonal)"
   },
   {
     "key": "diaryBodyHint",
-    "group": "diary",
+    "group": "journal",
     "en": "What happened today?",
     "tl": "Ano ang nangyari ngayon?"
   },
   {
     "key": "diaryBodyRequired",
-    "group": "diary",
-    "en": "Please write something in your diary.",
-    "tl": "Magsulat muna sa iyong talaarawan."
+    "group": "journal",
+    "en": "Add at least one reflection field before saving.",
+    "tl": "Magdagdag muna ng kahit isang refleksiyon bago i-save."
   },
   {
     "key": "diarySaved",
-    "group": "diary",
-    "en": "Diary entry saved",
-    "tl": "Nai-save ang tala"
+    "group": "journal",
+    "en": "Journal entry saved",
+    "tl": "Nai-save ang journal entry"
   },
   {
     "key": "diarySaveFailed",
-    "group": "diary",
-    "en": "Could not save diary entry.",
-    "tl": "Hindi mai-save ang tala."
+    "group": "journal",
+    "en": "Could not save journal entry.",
+    "tl": "Hindi mai-save ang journal entry."
   },
   {
     "key": "deleteDiaryTitle",
-    "group": "diary",
-    "en": "Delete diary entry?",
-    "tl": "Burahin ang tala?"
+    "group": "journal",
+    "en": "Delete journal entry?",
+    "tl": "Burahin ang journal entry?"
   },
   {
     "key": "deleteDiaryBody",
-    "group": "diary",
+    "group": "journal",
     "en": "This entry will be removed permanently.",
-    "tl": "Permanenteng mabubura ang talang ito."
+    "tl": "Permanenteng mabubura ang entry na ito."
   },
   {
     "key": "diaryDeleteFailed",
-    "group": "diary",
-    "en": "Could not delete diary entry.",
-    "tl": "Hindi mabura ang tala."
+    "group": "journal",
+    "en": "Could not delete journal entry.",
+    "tl": "Hindi mabura ang journal entry."
+  },
+  {
+    "key": "journalYourEntries",
+    "group": "journal",
+    "en": "Your Entries",
+    "tl": "Mga Entry Mo"
+  },
+  {
+    "key": "journalDailyReflection",
+    "group": "journal",
+    "en": "Daily Reflection",
+    "tl": "Araw-araw na Refleksiyon"
+  },
+  {
+    "key": "journalNoWrittenNotes",
+    "group": "journal",
+    "en": "(No written notes)",
+    "tl": "(Walang nakasulat na notes)"
+  },
+  {
+    "key": "journalWritingThroughSky",
+    "group": "journal",
+    "en": "Writing through today's {sky}",
+    "tl": "Sumusulat sa {sky} ngayon"
+  },
+  {
+    "key": "journalStepOf",
+    "group": "journal",
+    "en": "{current} OF {total}",
+    "tl": "{current} SA {total}"
+  },
+  {
+    "key": "journalNext",
+    "group": "journal",
+    "en": "Next",
+    "tl": "Susunod"
+  },
+  {
+    "key": "journalSaveEntry",
+    "group": "journal",
+    "en": "Save Entry",
+    "tl": "I-save ang Entry"
+  },
+  {
+    "key": "journalSkyTitle",
+    "group": "journal",
+    "en": "How's your sky today?",
+    "tl": "Kumusta ang langit mo ngayon?"
+  },
+  {
+    "key": "journalSkySubtitle",
+    "group": "journal",
+    "en": "Pick the weather that matches your inner world.",
+    "tl": "Piliin ang panahon na tumutugma sa iyong loob."
+  },
+  {
+    "key": "journalFeelingsTitle",
+    "group": "journal",
+    "en": "What are you feeling?",
+    "tl": "Ano ang nararamdaman mo?"
+  },
+  {
+    "key": "journalFeelingsSubtitle",
+    "group": "journal",
+    "en": "Select all that apply — or add your own.",
+    "tl": "Piliin ang lahat na angkop — o magdagdag ng sarili."
+  },
+  {
+    "key": "journalAddYourOwn",
+    "group": "journal",
+    "en": "Add your own",
+    "tl": "Idagdag ang sa iyo"
+  },
+  {
+    "key": "journalImpactTitle",
+    "group": "journal",
+    "en": "What shaped your day?",
+    "tl": "Ano ang humubog sa araw mo?"
+  },
+  {
+    "key": "journalImpactSubtitle",
+    "group": "journal",
+    "en": "Choose the area that mattered most today.",
+    "tl": "Piliin ang bahagi na pinakamahalaga ngayon."
+  },
+  {
+    "key": "journalNotesTitle",
+    "group": "journal",
+    "en": "Anything else to note?",
+    "tl": "May iba pa bang nais isulat?"
+  },
+  {
+    "key": "journalNotesSubtitle",
+    "group": "journal",
+    "en": "Optional free notes — write as much or as little as you need.",
+    "tl": "Opsyonal na notes — magkano man ang isulat mo."
+  },
+  {
+    "key": "journalGratitudeLabel",
+    "group": "journal",
+    "en": "Gratitude (optional)",
+    "tl": "Pasasalamat (opsyonal)"
+  },
+  {
+    "key": "journalGratitudeHint",
+    "group": "journal",
+    "en": "Today I'm grateful for…",
+    "tl": "Ngayong araw, nagpapasalamat ako sa…"
+  },
+  {
+    "key": "journalGratitudeHintNamed",
+    "group": "journal",
+    "en": "{name}, what are you grateful for today?",
+    "tl": "{name}, ano ang pinapasalamatan mo ngayon?"
+  },
+  {
+    "key": "journalSummaryTitle",
+    "group": "journal",
+    "en": "Your reflection so far",
+    "tl": "Ang iyong refleksiyon sa ngayon"
+  },
+  {
+    "key": "journalSummarySky",
+    "group": "journal",
+    "en": "Sky",
+    "tl": "Langit"
+  },
+  {
+    "key": "journalSummaryFeelings",
+    "group": "journal",
+    "en": "Feelings",
+    "tl": "Damdamin"
+  },
+  {
+    "key": "journalSummaryImpact",
+    "group": "journal",
+    "en": "Impact",
+    "tl": "Epekto"
+  },
+  {
+    "key": "journalSummaryEmpty",
+    "group": "journal",
+    "en": "Not set",
+    "tl": "Walang napili"
+  },
+  {
+    "key": "journalNotesShort",
+    "group": "journal",
+    "en": "Notes",
+    "tl": "Tala"
+  },
+  {
+    "key": "journalPhotoLabel",
+    "group": "journal",
+    "en": "Add a photo (optional)",
+    "tl": "Magdagdag ng larawan (opsyonal)"
+  },
+  {
+    "key": "journalPhotoHint",
+    "group": "journal",
+    "en": "Take a photo or choose from your library. We’ll optimize it before upload.",
+    "tl": "Kumuha ng litrato o pumili mula sa gallery. Io-optimize bago i-upload."
+  },
+  {
+    "key": "journalPhotoAdd",
+    "group": "journal",
+    "en": "Add photo",
+    "tl": "Magdagdag ng larawan"
+  },
+  {
+    "key": "journalPhotoChange",
+    "group": "journal",
+    "en": "Change photo",
+    "tl": "Palitan ang larawan"
+  },
+  {
+    "key": "journalPhotoRemove",
+    "group": "journal",
+    "en": "Remove",
+    "tl": "Alisin"
+  },
+  {
+    "key": "journalPhotoSourceTitle",
+    "group": "journal",
+    "en": "Add a journal photo",
+    "tl": "Magdagdag ng larawan sa journal"
+  },
+  {
+    "key": "journalPhotoCamera",
+    "group": "journal",
+    "en": "Take photo",
+    "tl": "Kumuha ng litrato"
+  },
+  {
+    "key": "journalPhotoGallery",
+    "group": "journal",
+    "en": "Choose from library",
+    "tl": "Pumili mula sa gallery"
+  },
+  {
+    "key": "journalPhotoFailed",
+    "group": "journal",
+    "en": "Could not prepare that photo. Please try another.",
+    "tl": "Hindi ma-prepare ang larawan. Subukan ang iba."
+  },
+  {
+    "key": "hopeTitle",
+    "group": "hope",
+    "en": "DAPE Hope",
+    "tl": "DAPE Hope"
+  },
+  {
+    "key": "hopeTagline",
+    "group": "hope",
+    "en": "Together for a drug-free and hopeful future.",
+    "tl": "Sama-sama para sa drug-free at may pag-asang kinabukasan."
+  },
+  {
+    "key": "hopeSearchHint",
+    "group": "hope",
+    "en": "Search communities, events, and campaigns!",
+    "tl": "Maghanap ng communities, events, at campaigns!"
+  },
+  {
+    "key": "hopeMovementTitle",
+    "group": "hope",
+    "en": "Be part of the movement!",
+    "tl": "Maging bahagi ng kilusan!"
+  },
+  {
+    "key": "hopeFeaturedTitle",
+    "group": "hope",
+    "en": "Featured",
+    "tl": "Tampok"
+  },
+  {
+    "key": "hopeSpeedDialTitle",
+    "group": "hope",
+    "en": "Quick Access",
+    "tl": "Mabilisang Access"
+  },
+  {
+    "key": "hopeEventsTile",
+    "group": "hope",
+    "en": "Events & Seminars",
+    "tl": "Events at Seminars"
+  },
+  {
+    "key": "hopeEventsTileBody",
+    "group": "hope",
+    "en": "Discover official events",
+    "tl": "Tuklasin ang opisyal na events"
+  },
+  {
+    "key": "hopeDirectoryTile",
+    "group": "hope",
+    "en": "Official Directory",
+    "tl": "Opisyal na Directory"
+  },
+  {
+    "key": "hopeDirectoryTileBody",
+    "group": "hope",
+    "en": "Check recognized offices",
+    "tl": "Tingnan ang kinikilalang opisina"
+  },
+  {
+    "key": "hopeContestsTile",
+    "group": "hope",
+    "en": "Contests",
+    "tl": "Mga Contest"
+  },
+  {
+    "key": "hopeContestsTileBody",
+    "group": "hope",
+    "en": "Join creative contests",
+    "tl": "Sumali sa creative contests"
+  },
+  {
+    "key": "hopeIecTile",
+    "group": "hope",
+    "en": "IEC Materials",
+    "tl": "IEC Materials"
+  },
+  {
+    "key": "hopeIecTileBody",
+    "group": "hope",
+    "en": "Browse prevention materials",
+    "tl": "Tingnan ang prevention materials"
+  },
+  {
+    "key": "hopeRehabTile",
+    "group": "hope",
+    "en": "Rehab Centers",
+    "tl": "Rehab Centers"
+  },
+  {
+    "key": "hopeRehabTileBody",
+    "group": "hope",
+    "en": "Find rehab facilities",
+    "tl": "Hanapin ang rehab facilities"
+  },
+  {
+    "key": "hopeLearnPhase2",
+    "group": "hope",
+    "en": "DAPE Learn is coming in Phase 2.",
+    "tl": "Darating ang DAPE Learn sa Phase 2."
+  },
+  {
+    "key": "hopeDirectoryTitle",
+    "group": "hope",
+    "en": "Directory",
+    "tl": "Directory"
+  },
+  {
+    "key": "hopeDirectorySearchHint",
+    "group": "hope",
+    "en": "Search institution/organization",
+    "tl": "Maghanap ng institution/organization"
+  },
+  {
+    "key": "hopeDirectoryAll",
+    "group": "hope",
+    "en": "All",
+    "tl": "Lahat"
+  },
+  {
+    "key": "hopeDirectoryGov",
+    "group": "hope",
+    "en": "Gov't",
+    "tl": "Gobyerno"
+  },
+  {
+    "key": "hopeDirectoryNgo",
+    "group": "hope",
+    "en": "NGOs",
+    "tl": "NGOs"
+  },
+  {
+    "key": "hopeDirectorySchools",
+    "group": "hope",
+    "en": "Schools",
+    "tl": "Mga Paaralan"
+  },
+  {
+    "key": "hopeDirectoryEmpty",
+    "group": "hope",
+    "en": "No organizations found.",
+    "tl": "Walang nahanap na organisasyon."
+  },
+  {
+    "key": "hopeEventsTitle",
+    "group": "hope",
+    "en": "Events",
+    "tl": "Events"
+  },
+  {
+    "key": "hopeEventsSearchHint",
+    "group": "hope",
+    "en": "Search programs/events/webinars",
+    "tl": "Maghanap ng programs/events/webinars"
+  },
+  {
+    "key": "hopeEventsAll",
+    "group": "hope",
+    "en": "All",
+    "tl": "Lahat"
+  },
+  {
+    "key": "hopeEventsYouth",
+    "group": "hope",
+    "en": "Youth",
+    "tl": "Kabataan"
+  },
+  {
+    "key": "hopeEventsParents",
+    "group": "hope",
+    "en": "Parents",
+    "tl": "Mga Magulang"
+  },
+  {
+    "key": "hopeEventsCommunity",
+    "group": "hope",
+    "en": "Community",
+    "tl": "Komunidad"
+  },
+  {
+    "key": "hopeEventsEmpty",
+    "group": "hope",
+    "en": "No events found.",
+    "tl": "Walang nahanap na event."
+  },
+  {
+    "key": "hopeEventsRegister",
+    "group": "hope",
+    "en": "Register",
+    "tl": "Magparehistro"
+  },
+  {
+    "key": "hopeEventsRegisterNow",
+    "group": "hope",
+    "en": "Register Now",
+    "tl": "Magparehistro Ngayon"
+  },
+  {
+    "key": "hopeEventsSlotsLeft",
+    "group": "hope",
+    "en": "{n} slots left",
+    "tl": "{n} slots ang natitira"
+  },
+  {
+    "key": "hopeEventAbout",
+    "group": "hope",
+    "en": "About",
+    "tl": "Tungkol"
+  },
+  {
+    "key": "hopeEventDetails",
+    "group": "hope",
+    "en": "Details",
+    "tl": "Detalye"
+  },
+  {
+    "key": "hopeEventSpeakers",
+    "group": "hope",
+    "en": "Speakers",
+    "tl": "Mga Speaker"
+  },
+  {
+    "key": "hopeEventFaqs",
+    "group": "hope",
+    "en": "FAQs",
+    "tl": "FAQs"
+  },
+  {
+    "key": "hopeEventAboutHeading",
+    "group": "hope",
+    "en": "About the event",
+    "tl": "Tungkol sa event"
+  },
+  {
+    "key": "hopeEventForYouHeading",
+    "group": "hope",
+    "en": "This is for you if you want to:",
+    "tl": "Para sa iyo kung gusto mong:"
+  },
+  {
+    "key": "hopeEventWhoCanJoin",
+    "group": "hope",
+    "en": "Who can join?",
+    "tl": "Sino ang pwede sumali?"
+  },
+  {
+    "key": "hopeEventHighlights",
+    "group": "hope",
+    "en": "Highlights",
+    "tl": "Mga Highlight"
+  },
+  {
+    "key": "hopeEventUpcoming",
+    "group": "hope",
+    "en": "Upcoming",
+    "tl": "Paparating"
+  },
+  {
+    "key": "regPronoun_she_her",
+    "group": "registration",
+    "en": "She/Her",
+    "tl": "She/Her"
+  },
+  {
+    "key": "regPronoun_he_him",
+    "group": "registration",
+    "en": "He/Him",
+    "tl": "He/Him"
+  },
+  {
+    "key": "regPronoun_they_them",
+    "group": "registration",
+    "en": "They/Them",
+    "tl": "They/Them"
+  },
+  {
+    "key": "regPronoun_ze_hir",
+    "group": "registration",
+    "en": "Ze/Hir",
+    "tl": "Ze/Hir"
+  },
+  {
+    "key": "regPronoun_prefer_not",
+    "group": "registration",
+    "en": "Prefer not to say",
+    "tl": "Ayaw sabihin"
+  },
+  {
+    "key": "regPronoun_others",
+    "group": "registration",
+    "en": "Others",
+    "tl": "Iba pa"
+  },
+  {
+    "key": "regPersona_student",
+    "group": "registration",
+    "en": "Student",
+    "tl": "Estudyante"
+  },
+  {
+    "key": "regPersona_parent",
+    "group": "registration",
+    "en": "Parent",
+    "tl": "Magulang"
+  },
+  {
+    "key": "regPersona_teacher",
+    "group": "registration",
+    "en": "Teacher",
+    "tl": "Guro"
+  },
+  {
+    "key": "regPersona_youth_leader",
+    "group": "registration",
+    "en": "Youth Leader",
+    "tl": "Youth Leader"
+  },
+  {
+    "key": "regPersona_health_worker",
+    "group": "registration",
+    "en": "Health Worker",
+    "tl": "Health Worker"
+  },
+  {
+    "key": "regPersona_concerned_citizen",
+    "group": "registration",
+    "en": "Concerned Citizen",
+    "tl": "Concerned Citizen"
+  },
+  {
+    "key": "regInterest_knowledge",
+    "group": "registration",
+    "en": "Knowledge",
+    "tl": "Kaalaman"
+  },
+  {
+    "key": "regInterest_community",
+    "group": "registration",
+    "en": "Community",
+    "tl": "Komunidad"
+  },
+  {
+    "key": "regInterest_wellness",
+    "group": "registration",
+    "en": "Wellness",
+    "tl": "Wellness"
+  },
+  {
+    "key": "regInterest_stories",
+    "group": "registration",
+    "en": "Stories",
+    "tl": "Mga Kwento"
+  },
+  {
+    "key": "regInterest_support",
+    "group": "registration",
+    "en": "Support",
+    "tl": "Suporta"
+  },
+  {
+    "key": "regInterest_events",
+    "group": "registration",
+    "en": "Events",
+    "tl": "Mga Event"
+  },
+  {
+    "key": "regInterest_opportunities",
+    "group": "registration",
+    "en": "Opportunities",
+    "tl": "Mga Oportunidad"
+  },
+  {
+    "key": "regInterest_advocacy",
+    "group": "registration",
+    "en": "Advocacy",
+    "tl": "Advocacy"
+  },
+  {
+    "key": "regInterestBody_knowledge",
+    "group": "registration",
+    "en": "Learn about drugs, life skills, and making informed decisions.",
+    "tl": "Matuto tungkol sa drugs, life skills, at matalinong desisyon."
+  },
+  {
+    "key": "regInterestBody_community",
+    "group": "registration",
+    "en": "Connect, share, and support one another!",
+    "tl": "Makipag-ugnayan, magbahagi, at suportahan ang isa’t isa!"
+  },
+  {
+    "key": "regInterestBody_wellness",
+    "group": "registration",
+    "en": "Take care of your well-being and mental health.",
+    "tl": "Alagaan ang iyong well-being at mental health."
+  },
+  {
+    "key": "regInterestBody_stories",
+    "group": "registration",
+    "en": "Read inspiring stories and inspire others with yours.",
+    "tl": "Magbasa ng inspirasyon at magbahagi ng iyong kwento."
+  },
+  {
+    "key": "regInterestBody_support",
+    "group": "registration",
+    "en": "Find help and resources when you or someone needs it.",
+    "tl": "Maghanap ng tulong at resources kung kailangan."
+  },
+  {
+    "key": "regInterestBody_events",
+    "group": "registration",
+    "en": "Join events and activities in your community.",
+    "tl": "Sumali sa mga event at aktibidad sa komunidad."
+  },
+  {
+    "key": "regInterestBody_opportunities",
+    "group": "registration",
+    "en": "Explore scholarships and career opportunities.",
+    "tl": "Tuklasin ang scholarships at career opportunities."
+  },
+  {
+    "key": "regInterestBody_advocacy",
+    "group": "registration",
+    "en": "Be a voice for change through your own ways.",
+    "tl": "Maging boses ng pagbabago sa iyong sariling paraan."
   }
 ]

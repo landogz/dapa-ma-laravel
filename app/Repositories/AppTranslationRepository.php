@@ -15,6 +15,9 @@ class AppTranslationRepository
         ?bool $activeOnly = null,
     ): LengthAwarePaginator {
         return AppTranslation::query()
+            ->where(function ($query): void {
+                $query->whereNull('group')->orWhere('group', '!=', 'bible');
+            })
             ->when($activeOnly === true, fn ($q) => $q->where('is_active', true))
             ->when($group, fn ($q) => $q->where('group', $group))
             ->when($search, function ($q) use ($search): void {
@@ -58,15 +61,83 @@ class AppTranslationRepository
         return AppTranslation::query()
             ->whereNotNull('group')
             ->where('group', '!=', '')
+            ->where('group', '!=', 'bible')
             ->distinct()
             ->orderBy('group')
             ->pluck('group');
+    }
+
+    public function deleteBibleCatalog(): int
+    {
+        return AppTranslation::query()
+            ->where(function ($query): void {
+                $query->where('group', 'bible')
+                    ->orWhereIn('key', [
+                        'bibleTitle',
+                        'searchBibleBooks',
+                        'oldTestament',
+                        'newTestament',
+                        'noBibleBooksFound',
+                        'bibleLoadFailed',
+                        'bibleLanguageNote',
+                        'chaptersLabel',
+                    ]);
+            })
+            ->delete();
+    }
+
+    public function syncMany(array $rows): int
+    {
+        $count = 0;
+
+        foreach ($rows as $row) {
+            $existing = AppTranslation::query()->where('key', $row['key'])->first();
+
+            if (! $existing) {
+                AppTranslation::create($row);
+                $count++;
+                continue;
+            }
+
+            $update = [
+                'group' => $row['group'] ?? $existing->group,
+            ];
+
+            if (! filled($existing->value_en) || $this->looksBroken($existing->value_en)) {
+                $update['value_en'] = $row['value_en'];
+            }
+
+            if (! filled($existing->value_tl) || $this->looksBroken($existing->value_tl)) {
+                $update['value_tl'] = $row['value_tl'];
+            }
+
+            if ($update !== ['group' => $existing->group]) {
+                $existing->update($update);
+            }
+
+            $count++;
+        }
+
+        return $count;
     }
 
     public function activeBundle(?string $locale = null): Collection
     {
         return AppTranslation::query()
             ->where('is_active', true)
+            ->where(function ($query): void {
+                $query->whereNull('group')->orWhere('group', '!=', 'bible');
+            })
+            ->whereNotIn('key', [
+                'bibleTitle',
+                'searchBibleBooks',
+                'oldTestament',
+                'newTestament',
+                'noBibleBooksFound',
+                'bibleLoadFailed',
+                'bibleLanguageNote',
+                'chaptersLabel',
+            ])
             ->orderBy('key')
             ->get(['key', 'value_en', 'value_tl', 'updated_at']);
     }
@@ -76,6 +147,15 @@ class AppTranslationRepository
         $value = AppTranslation::query()->where('is_active', true)->max('updated_at');
 
         return $value ? (string) $value : null;
+    }
+
+    private function looksBroken(?string $value): bool
+    {
+        $text = trim((string) $value);
+
+        return $text === ''
+            || str_contains($text, 's scripture')
+            || str_contains($text, 's note');
     }
 
     public function upsertMany(array $rows): int
