@@ -2,8 +2,9 @@
 
 namespace App\Http\Requests\Diary;
 
+use App\Models\AppOption;
+use App\Support\AppOptionGroup;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreDiaryEntryRequest extends FormRequest
@@ -54,10 +55,10 @@ class StoreDiaryEntryRequest extends FormRequest
         return [
             'entry_date'   => ['required', 'date'],
             'title'        => ['nullable', 'string', 'max:255'],
-            'sky'          => ['nullable', 'string', Rule::in(self::SKY_VALUES)],
+            'sky'          => ['nullable', 'string', 'max:80'],
             'feelings'     => ['nullable', 'array', 'max:20'],
             'feelings.*'   => ['string', 'max:80'],
-            'impact'       => ['nullable', 'string', Rule::in(self::IMPACT_VALUES)],
+            'impact'       => ['nullable', 'string', 'max:80'],
             'gratitude'    => ['nullable', 'string', 'max:5000'],
             'body_html'    => ['nullable', 'string', 'max:50000'],
             'image'        => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
@@ -76,6 +77,14 @@ class StoreDiaryEntryRequest extends FormRequest
             $hasImage = $this->hasFile('image');
 
             $hasFeelings = is_array($feelings) && count(array_filter($feelings, fn ($f) => trim((string) $f) !== '')) > 0;
+
+            if ($sky && ! AppOption::isAllowed(AppOptionGroup::JOURNAL_SKY, $sky, self::SKY_VALUES)) {
+                $validator->errors()->add('sky', 'The selected sky is invalid.');
+            }
+
+            if ($impact && ! AppOption::isAllowed(AppOptionGroup::JOURNAL_IMPACT, $impact, self::IMPACT_VALUES)) {
+                $validator->errors()->add('impact', 'The selected impact is invalid.');
+            }
 
             if (!$sky && !$hasFeelings && !$impact && $gratitude === '' && $body === '' && !$hasImage) {
                 $validator->errors()->add(

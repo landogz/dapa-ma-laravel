@@ -124,6 +124,10 @@
                         <i class="fas fa-gear w-5 text-[#FBD116]"></i>
                         <span>Settings</span>
                     </a>
+                    <a href="/admin/app-options" class="admin-nav-link {{ ($activePage ?? '') === 'app-options' ? 'admin-nav-link-active' : '' }}" data-nav-section="app-options">
+                        <i class="fas fa-sliders w-5 text-[#FBD116]"></i>
+                        <span>Admin Settings</span>
+                    </a>
                 </div>
             </nav>
         </aside>

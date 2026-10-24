@@ -13,6 +13,7 @@ import { initContestsModule } from './contests/index';
 import { initIecMaterialsModule } from './iec-materials/index';
 import { initAppTranslationsModule } from './app-translations/index';
 import { initSettingsModule } from './settings/index';
+import { initAppOptionsModule } from './app-options/index';
 import { initCareToolkitModule } from './care-toolkit/index';
 import { initCareSupportModule } from './care-support/index';
 import { initHopeDirectoryModule } from './hope-directory/index';
@@ -20,9 +21,9 @@ import { initHopeEventsModule } from './hope-events/index';
 import { initUsersModule } from './users';
 
 const ADMIN_ROLE_SECTIONS = {
-    super_admin: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'analytics', 'users', 'diary', 'care-toolkit', 'care-support', 'hope-directory', 'hope-events', 'settings'],
+    super_admin: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'analytics', 'users', 'diary', 'care-toolkit', 'care-support', 'hope-directory', 'hope-events', 'settings', 'app-options'],
     editor: ['posts'],
-    publisher: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'care-toolkit', 'care-support', 'hope-directory', 'hope-events', 'settings'],
+    publisher: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'care-toolkit', 'care-support', 'hope-directory', 'hope-events', 'settings', 'app-options'],
     analytics_viewer: ['analytics'],
 };
 
@@ -42,6 +43,7 @@ const PAGE_SECTION_REQUIREMENTS = {
     'admin-hope-directory': 'hope-directory',
     'admin-hope-events': 'hope-events',
     'admin-settings': 'settings',
+    'admin-app-options': 'app-options',
 };
 
 const SECTION_PATHS = {
@@ -60,6 +62,7 @@ const SECTION_PATHS = {
     'hope-directory': '/admin/hope-directory',
     'hope-events': '/admin/hope-events',
     settings: '/admin/settings',
+    'app-options': '/admin/app-options',
 };
 
 let inboxFilter = 'unread';
@@ -432,6 +435,9 @@ function initializePageContent(pageName, allowedSections) {
             break;
         case 'admin-settings':
             initSettingsModule();
+            break;
+        case 'admin-app-options':
+            initAppOptionsModule();
             break;
         default:
             break;

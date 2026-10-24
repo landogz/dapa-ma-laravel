@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             IecMaterialSeeder::class,
             AppTranslationSeeder::class,
             LegalPageSeeder::class,
+            AppOptionSeeder::class,
             KidListoQuoteSeeder::class,
             CareToolkitQuestionSeeder::class,
             CareSupportResourceSeeder::class,

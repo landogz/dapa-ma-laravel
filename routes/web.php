@@ -98,4 +98,6 @@ Route::get('/admin/hope-events', fn () => AdminPage::render('admin.hope-events.i
 
 Route::get('/admin/settings', fn () => AdminPage::render('admin.settings.index', 'settings', 'Settings'));
 
+Route::get('/admin/app-options', fn () => AdminPage::render('admin.app-options.index', 'app-options', 'Admin Settings'));
+
 Route::get('/admin/profile', fn () => AdminPage::render('admin.profile.index', 'profile', 'Edit Profile'));

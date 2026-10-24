@@ -21,6 +21,7 @@ class ProfileService
             'pronouns' => $user->pronouns,
             'birthday' => $user->birthday?->toDateString(),
             'persona' => $user->persona,
+            'personas' => $this->personasOf($user),
             'interests' => $user->interests ?? [],
             'onboarding_completed_at' => $user->onboarding_completed_at?->toIso8601String(),
             'email' => $user->email,
@@ -106,9 +107,10 @@ class ProfileService
             $payload['birthday'] = $data['birthday'] ?: null;
         }
 
-        if (array_key_exists('persona', $data)) {
-            $persona = $data['persona'];
-            $payload['persona'] = ($persona === null || $persona === '') ? null : $persona;
+        if (array_key_exists('personas', $data) || array_key_exists('persona', $data)) {
+            $personas = $this->normalizePersonas($data);
+            $payload['personas'] = $personas;
+            $payload['persona'] = $personas[0] ?? null;
         }
 
         if (array_key_exists('interests', $data)) {
@@ -143,6 +145,49 @@ class ProfileService
         }
 
         return Storage::disk('public')->url($user->profile_image_url);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function personasOf(User $user): array
+    {
+        if (is_array($user->personas) && $user->personas !== []) {
+            return array_values(array_filter(array_map('strval', $user->personas)));
+        }
+
+        return $user->persona ? [$user->persona] : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<string>|null
+     */
+    private function normalizePersonas(array $data): ?array
+    {
+        if (array_key_exists('personas', $data)) {
+            $raw = $data['personas'];
+            if (! is_array($raw)) {
+                return null;
+            }
+
+            $list = [];
+            foreach ($raw as $value) {
+                $key = trim((string) $value);
+                if ($key !== '' && ! in_array($key, $list, true)) {
+                    $list[] = $key;
+                }
+            }
+
+            return $list === [] ? null : $list;
+        }
+
+        $persona = $data['persona'] ?? null;
+        if ($persona === null || $persona === '') {
+            return null;
+        }
+
+        return [trim((string) $persona)];
     }
 
     private function deleteStoredImage(?string $path): void

@@ -2,8 +2,9 @@
 
 namespace App\Http\Requests\Diary;
 
+use App\Models\AppOption;
+use App\Support\AppOptionGroup;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateDiaryEntryRequest extends FormRequest
@@ -38,10 +39,10 @@ class UpdateDiaryEntryRequest extends FormRequest
     {
         return [
             'title'      => ['sometimes', 'nullable', 'string', 'max:255'],
-            'sky'        => ['sometimes', 'nullable', 'string', Rule::in(StoreDiaryEntryRequest::SKY_VALUES)],
+            'sky'        => ['sometimes', 'nullable', 'string', 'max:80'],
             'feelings'   => ['sometimes', 'nullable', 'array', 'max:20'],
             'feelings.*' => ['string', 'max:80'],
-            'impact'     => ['sometimes', 'nullable', 'string', Rule::in(StoreDiaryEntryRequest::IMPACT_VALUES)],
+            'impact'     => ['sometimes', 'nullable', 'string', 'max:80'],
             'gratitude'    => ['sometimes', 'nullable', 'string', 'max:5000'],
             'body_html'    => ['sometimes', 'nullable', 'string', 'max:50000'],
             'image'        => ['sometimes', 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
@@ -70,6 +71,22 @@ class UpdateDiaryEntryRequest extends FormRequest
             if ($sky === '__keep__' || $feelings === '__keep__' || $impact === '__keep__'
                 || $gratitude === '__keep__' || $body === '__keep__') {
                 return;
+            }
+
+            if ($sky !== '__keep__' && $sky && ! AppOption::isAllowed(
+                AppOptionGroup::JOURNAL_SKY,
+                is_string($sky) ? $sky : null,
+                StoreDiaryEntryRequest::SKY_VALUES,
+            )) {
+                $validator->errors()->add('sky', 'The selected sky is invalid.');
+            }
+
+            if ($impact !== '__keep__' && $impact && ! AppOption::isAllowed(
+                AppOptionGroup::JOURNAL_IMPACT,
+                is_string($impact) ? $impact : null,
+                StoreDiaryEntryRequest::IMPACT_VALUES,
+            )) {
+                $validator->errors()->add('impact', 'The selected impact is invalid.');
             }
 
             $hasFeelings = is_array($feelings)

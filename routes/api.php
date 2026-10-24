@@ -25,6 +25,8 @@ use App\Http\Controllers\API\ContestController;
 use App\Http\Controllers\API\IecMaterialController;
 use App\Http\Controllers\API\AppTranslationController;
 use App\Http\Controllers\API\LegalPageController;
+use App\Http\Controllers\API\AppOptionController;
+use App\Http\Controllers\API\Admin\AppOptionAdminController;
 use App\Http\Controllers\API\KidListoQuoteController;
 use App\Http\Controllers\API\MoodCheckinController;
 use App\Http\Controllers\API\Admin\LegalPageAdminController;
@@ -148,6 +150,9 @@ Route::prefix('v1')
         Route::get('/legal-pages/{slug}', [LegalPageController::class, 'show'])
             ->where('slug', 'privacy_policy|terms_of_use|privacy_notice')
             ->name('legal-pages.show');
+
+        Route::get('/app-options', [AppOptionController::class, 'index'])
+            ->name('app-options.index');
 
         // ── Public Kid Listo motivational quotes ─────────────────────────
         Route::get('/kid-listo/random', [KidListoQuoteController::class, 'random'])
@@ -294,6 +299,12 @@ Route::prefix('v1')
                     Route::get('/kid-listo-quotes/{kidListoQuote}', [KidListoQuoteAdminController::class, 'show'])->name('kid-listo-quotes.show');
                     Route::put('/kid-listo-quotes/{kidListoQuote}', [KidListoQuoteAdminController::class, 'update'])->name('kid-listo-quotes.update');
                     Route::delete('/kid-listo-quotes/{kidListoQuote}', [KidListoQuoteAdminController::class, 'destroy'])->name('kid-listo-quotes.destroy');
+
+                    Route::get('/app-options', [AppOptionAdminController::class, 'index'])->name('app-options.index');
+                    Route::post('/app-options', [AppOptionAdminController::class, 'store'])->name('app-options.store');
+                    Route::get('/app-options/{appOption}', [AppOptionAdminController::class, 'show'])->name('app-options.show');
+                    Route::put('/app-options/{appOption}', [AppOptionAdminController::class, 'update'])->name('app-options.update');
+                    Route::delete('/app-options/{appOption}', [AppOptionAdminController::class, 'destroy'])->name('app-options.destroy');
 
                     Route::get('/care-toolkit-questions', [CareToolkitQuestionAdminController::class, 'index'])->name('care-toolkit-questions.index');
                     Route::post('/care-toolkit-questions', [CareToolkitQuestionAdminController::class, 'store'])->name('care-toolkit-questions.store');
