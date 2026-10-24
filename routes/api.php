@@ -142,11 +142,11 @@ Route::prefix('v1')
             ->where('locale', 'en|tl|fil')
             ->name('translations.show');
 
-        // ── Public legal pages (Privacy Policy / Terms of Use) ───────────
+        // ── Public legal pages (Privacy Policy / Terms of Use / Privacy Notice) ─
         Route::get('/legal-pages', [LegalPageController::class, 'index'])
             ->name('legal-pages.index');
         Route::get('/legal-pages/{slug}', [LegalPageController::class, 'show'])
-            ->where('slug', 'privacy_policy|terms_of_use')
+            ->where('slug', 'privacy_policy|terms_of_use|privacy_notice')
             ->name('legal-pages.show');
 
         // ── Public Kid Listo motivational quotes ─────────────────────────
@@ -283,10 +283,10 @@ Route::prefix('v1')
 
                     Route::get('/legal-pages', [LegalPageAdminController::class, 'index'])->name('legal-pages.index');
                     Route::get('/legal-pages/{slug}', [LegalPageAdminController::class, 'show'])
-                        ->where('slug', 'privacy_policy|terms_of_use')
+                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice')
                         ->name('legal-pages.show');
                     Route::put('/legal-pages/{slug}', [LegalPageAdminController::class, 'update'])
-                        ->where('slug', 'privacy_policy|terms_of_use')
+                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice')
                         ->name('legal-pages.update');
 
                     Route::get('/kid-listo-quotes', [KidListoQuoteAdminController::class, 'index'])->name('kid-listo-quotes.index');

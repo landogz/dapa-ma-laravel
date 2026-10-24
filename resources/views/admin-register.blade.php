@@ -65,7 +65,35 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="admin-primary-button w-full">
+                        <fieldset class="admin-consent-list">
+                            <legend class="admin-consent-legend">Required agreements</legend>
+                            <label class="admin-consent-row" for="accepted_terms_of_use">
+                                <input id="accepted_terms_of_use" name="accepted_terms_of_use" type="checkbox" value="1" class="admin-consent-checkbox" required>
+                                <span class="admin-consent-copy">
+                                    I have read and agree to the
+                                    <button type="button" class="admin-consent-link" data-legal-preview="terms_of_use">Terms of Use</button>
+                                </span>
+                            </label>
+                            <label class="admin-consent-row" for="accepted_privacy_policy">
+                                <input id="accepted_privacy_policy" name="accepted_privacy_policy" type="checkbox" value="1" class="admin-consent-checkbox" required>
+                                <span class="admin-consent-copy">
+                                    I have read and agree to the
+                                    <button type="button" class="admin-consent-link" data-legal-preview="privacy_policy">Privacy Policy</button>
+                                </span>
+                            </label>
+                            <label class="admin-consent-row" for="accepted_privacy_notice">
+                                <input id="accepted_privacy_notice" name="accepted_privacy_notice" type="checkbox" value="1" class="admin-consent-checkbox" required>
+                                <span class="admin-consent-copy">
+                                    I have read and accept the
+                                    <button type="button" class="admin-consent-link" data-legal-preview="privacy_notice">Privacy Notice</button>
+                                </span>
+                            </label>
+                            <span id="accepted_terms_of_use-error" class="admin-auth-error"></span>
+                            <span id="accepted_privacy_policy-error" class="admin-auth-error"></span>
+                            <span id="accepted_privacy_notice-error" class="admin-auth-error"></span>
+                        </fieldset>
+
+                        <button type="submit" class="admin-primary-button w-full" disabled>
                             Create Administrator
                         </button>
                     </form>

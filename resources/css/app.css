@@ -144,7 +144,7 @@
     }
 
     .admin-primary-button {
-        @apply inline-flex min-h-11 items-center justify-center rounded-lg bg-[#055498] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#123a60] focus:outline-none focus:ring-2 focus:ring-[#055498] focus:ring-offset-2;
+        @apply inline-flex min-h-11 items-center justify-center rounded-lg bg-[#055498] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#123a60] focus:outline-none focus:ring-2 focus:ring-[#055498] focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:hover:bg-[#055498];
     }
 
     .admin-secondary-button {
@@ -201,6 +201,30 @@
 
     .admin-auth-error.is-visible {
         @apply block;
+    }
+
+    .admin-consent-list {
+        @apply space-y-1 rounded-xl border border-slate-200 bg-white p-3 sm:p-4;
+    }
+
+    .admin-consent-legend {
+        @apply mb-2 text-sm font-semibold text-slate-800;
+    }
+
+    .admin-consent-row {
+        @apply flex min-h-11 cursor-pointer items-start gap-3 py-1;
+    }
+
+    .admin-consent-checkbox {
+        @apply mt-1.5 h-5 w-5 shrink-0 rounded border-slate-300 text-[#055498] accent-[#055498] focus:ring-[#055498];
+    }
+
+    .admin-consent-copy {
+        @apply pt-0.5 text-sm leading-5 text-slate-700;
+    }
+
+    .admin-consent-link {
+        @apply font-semibold text-[#055498] underline-offset-2 hover:text-[#123a60] hover:underline;
     }
 
     .admin-auth-input.is-invalid {
@@ -3771,6 +3795,11 @@ button.admin-table-mobile-title:hover,
 .admin-settings-tile-icon-terms {
     background: #e0f2fe;
     color: #055498;
+}
+
+.admin-settings-tile-icon-notice {
+    background: #fef9c3;
+    color: #123a60;
 }
 
 .admin-settings-tile-copy {

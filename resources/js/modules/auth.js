@@ -150,12 +150,52 @@ export function bindRegisterForm() {
 
     bindPasswordToggles(form);
 
+    const submitButton = form.querySelector('[type="submit"]');
+    const consentFields = [
+        'accepted_terms_of_use',
+        'accepted_privacy_policy',
+        'accepted_privacy_notice',
+    ];
+
+    const syncConsent = () => {
+        const allAccepted = consentFields.every((name) => form.querySelector(`[name="${name}"]`)?.checked);
+        if (submitButton) {
+            submitButton.disabled = !allAccepted;
+        }
+    };
+
+    consentFields.forEach((name) => {
+        form.querySelector(`[name="${name}"]`)?.addEventListener('change', syncConsent);
+    });
+    syncConsent();
+
+    form.querySelectorAll('[data-legal-preview]').forEach((button) => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            showLegalPreview(button.getAttribute('data-legal-preview'));
+        });
+    });
+
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
-        const submitButton = form.querySelector('[type="submit"]');
         const formData = new FormData(form);
         clearFieldErrors(form);
+
+        const acceptedTerms = Boolean(form.querySelector('[name="accepted_terms_of_use"]')?.checked);
+        const acceptedPrivacyPolicy = Boolean(form.querySelector('[name="accepted_privacy_policy"]')?.checked);
+        const acceptedPrivacyNotice = Boolean(form.querySelector('[name="accepted_privacy_notice"]')?.checked);
+
+        if (!acceptedTerms || !acceptedPrivacyPolicy || !acceptedPrivacyNotice) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Agreements required',
+                text: 'Please accept the Terms of Use, Privacy Policy, and Privacy Notice before continuing.',
+                confirmButtonColor: '#055498',
+            });
+            return;
+        }
 
         setBusy(submitButton, true, 'Creating account...');
 
@@ -165,6 +205,9 @@ export function bindRegisterForm() {
                 email: formData.get('email'),
                 password: formData.get('password'),
                 password_confirmation: formData.get('password_confirmation'),
+                accepted_terms_of_use: acceptedTerms,
+                accepted_privacy_policy: acceptedPrivacyPolicy,
+                accepted_privacy_notice: acceptedPrivacyNotice,
             });
 
             persistAuth(response.data.data);
@@ -188,6 +231,7 @@ export function bindRegisterForm() {
             });
         } finally {
             setBusy(submitButton, false, 'Create Administrator');
+            syncConsent();
         }
     });
 }
@@ -276,6 +320,44 @@ function applyFieldErrors(form, errors) {
             errorLabel.classList.add('is-visible');
         }
     });
+}
+
+async function showLegalPreview(slug) {
+    if (!slug) {
+        return;
+    }
+
+    try {
+        const { data } = await axios.get(`/legal-pages/${slug}`, { params: { locale: 'en' } });
+        const page = data.data ?? {};
+        const intro = String(page.intro ?? '').trim();
+        const body = String(page.body ?? '').trim();
+        const html = [intro, body].filter(Boolean).map(escapeHtml).join('\n\n');
+
+        await Swal.fire({
+            title: page.title || 'Legal document',
+            html: `<div class="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-left text-sm leading-6 text-slate-700">${html}</div>`,
+            confirmButtonText: 'Close',
+            confirmButtonColor: '#055498',
+            width: '36rem',
+        });
+    } catch (error) {
+        await Swal.fire({
+            icon: 'error',
+            title: 'Unable to load document',
+            text: error.response?.data?.message ?? 'Please try again.',
+            confirmButtonColor: '#CE2028',
+        });
+    }
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }
 
 function buildErrorPrompt(errors, message, fallback) {

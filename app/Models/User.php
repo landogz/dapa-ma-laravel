@@ -28,6 +28,9 @@ class User extends Authenticatable
         'persona',
         'interests',
         'onboarding_completed_at',
+        'accepted_terms_of_use_at',
+        'accepted_privacy_policy_at',
+        'accepted_privacy_notice_at',
         'email',
         'password',
         'role',
@@ -59,6 +62,9 @@ class User extends Authenticatable
             'birthday' => 'date',
             'interests' => 'array',
             'onboarding_completed_at' => 'datetime',
+            'accepted_terms_of_use_at' => 'datetime',
+            'accepted_privacy_policy_at' => 'datetime',
+            'accepted_privacy_notice_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

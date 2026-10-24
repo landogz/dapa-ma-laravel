@@ -18,6 +18,12 @@ const LEGAL_META = {
         fallbackTitle: 'Terms of Use',
         fallbackSubtitle: 'Read the terms and conditions',
     },
+    privacy_notice: {
+        icon: 'fa-file-shield',
+        iconWrapClass: 'admin-settings-tile-icon admin-settings-tile-icon-notice',
+        fallbackTitle: 'Privacy Notice',
+        fallbackSubtitle: 'Agreement for access to classified and sensitive information',
+    },
 };
 
 let quotesTable;

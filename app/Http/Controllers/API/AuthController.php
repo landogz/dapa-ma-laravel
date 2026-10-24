@@ -46,6 +46,9 @@ class AuthController extends Controller
             'password' => Hash::make($request->validated('password')),
             'role' => $isFirstAdmin ? 'super_admin' : 'app_user',
             'last_login_at' => now(),
+            'accepted_terms_of_use_at' => now(),
+            'accepted_privacy_policy_at' => now(),
+            'accepted_privacy_notice_at' => now(),
         ]);
 
         $token = $user->createToken(

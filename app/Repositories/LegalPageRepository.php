@@ -7,19 +7,29 @@ use Illuminate\Support\Collection;
 
 class LegalPageRepository
 {
+    private const DISPLAY_ORDER = [
+        'terms_of_use' => 1,
+        'privacy_policy' => 2,
+        'privacy_notice' => 3,
+    ];
+
     public function all(): Collection
     {
-        return LegalPage::query()
-            ->orderBy('slug')
-            ->get();
+        return $this->sorted(LegalPage::query()->get());
     }
 
     public function activeAll(): Collection
     {
-        return LegalPage::query()
-            ->where('is_active', true)
-            ->orderBy('slug')
-            ->get();
+        return $this->sorted(
+            LegalPage::query()->where('is_active', true)->get(),
+        );
+    }
+
+    private function sorted(Collection $pages): Collection
+    {
+        return $pages
+            ->sortBy(fn (LegalPage $page) => self::DISPLAY_ORDER[$page->slug] ?? 99)
+            ->values();
     }
 
     public function findBySlug(string $slug): ?LegalPage

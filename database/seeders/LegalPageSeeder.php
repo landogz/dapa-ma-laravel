@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\LegalPage;
+use App\Support\PrivacyNoticeContent;
 use Illuminate\Database\Seeder;
 
 class LegalPageSeeder extends Seeder
@@ -34,6 +35,7 @@ class LegalPageSeeder extends Seeder
                 'body_tl' => "Sa paggamit ng DAPE-MA, sumasang-ayon kang gamitin ang app nang responsable at ayon sa batas. Huwag abusuhin ang nilalaman o subukang mag-access nang walang pahintulot.\n\nAng nilalaman ay para sa impormasyon at edukasyon. Hindi ito kapalit ng propesyonal na payo.\n\nMaaaring i-update ang mga Tuntunin. Ang patuloy na paggamit ay nangangahulugang tinatanggap mo ang mga pagbabago.\n\nPara sa katanungan, makipag-ugnayan sa info@ddb.gov.ph.",
                 'is_active' => true,
             ],
+            PrivacyNoticeContent::page(),
         ];
 
         foreach ($pages as $page) {
