@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Post\SetPostReactionRequest;
 use App\Http\Requests\Post\StorePostCommentRequest;
 use App\Http\Requests\Post\UpdatePostCommentRequest;
+use App\Models\PostComment;
 use App\Models\PostLike;
 use App\Services\PostEngagementService;
 use Illuminate\Http\JsonResponse;
@@ -66,6 +67,7 @@ class PostEngagementController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Comments fetched successfully.',
+            'comments_count' => PostComment::query()->where('post_id', $id)->count(),
             'data'    => $comments,
         ]);
     }

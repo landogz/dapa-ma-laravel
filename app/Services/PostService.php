@@ -50,7 +50,7 @@ class PostService
 
     public function findPublic(string $key): Post
     {
-        return Post::findByPublicKey($key);
+        return $this->postRepository->findPublic($key);
     }
 
     public function findAdminDetail(int $id): Post

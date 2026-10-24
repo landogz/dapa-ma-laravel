@@ -4,8 +4,11 @@ namespace App\Repositories;
 
 use App\Models\Post;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class PostRepository
 {
@@ -71,10 +74,30 @@ class PostRepository
 
     public function findOrFail(int $id): Post
     {
-        return Post::with(['category', 'author'])
+        return $this->publicQuery()->findOrFail($id);
+    }
+
+    public function findPublic(string $key): Post
+    {
+        $query = $this->publicQuery();
+
+        if (Str::isUuid($key)) {
+            return $query->where('uuid', $key)->firstOrFail();
+        }
+
+        if (! ctype_digit($key)) {
+            throw (new ModelNotFoundException)->setModel(Post::class);
+        }
+
+        return $query->findOrFail((int) $key);
+    }
+
+    private function publicQuery(): Builder
+    {
+        return Post::query()
+            ->with(['category', 'author'])
             ->withCount(['likes', 'comments', 'reviews'])
-            ->withAvg('reviews', 'rating')
-            ->findOrFail($id);
+            ->withAvg('reviews', 'rating');
     }
 
     public function create(array $data): Post
