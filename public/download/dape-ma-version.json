@@ -1,6 +1,6 @@
 {
     "version": "1.0.1",
-    "build": 2,
+    "build": 3,
     "mandatory": false,
     "message": "There is a new update with the app. Please update."
 }
