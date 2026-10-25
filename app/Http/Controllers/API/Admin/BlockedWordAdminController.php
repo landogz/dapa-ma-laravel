@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\API\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\IndexBlockedWordRequest;
 use App\Http\Requests\Admin\StoreBlockedWordRequest;
 use App\Http\Requests\Admin\UpdateBlockedWordRequest;
 use App\Models\BlockedWord;
 use App\Services\BlockedWord\BlockedWordService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class BlockedWordAdminController extends Controller
 {
@@ -17,13 +17,9 @@ class BlockedWordAdminController extends Controller
     ) {
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(IndexBlockedWordRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'per_page' => ['sometimes', 'integer', 'min:1', 'max:500'],
-            'search' => ['sometimes', 'nullable', 'string', 'max:80'],
-            'is_active' => ['sometimes', 'nullable', 'boolean'],
-        ]);
+        $validated = $request->validated();
 
         $filters = [
             'search' => $validated['search'] ?? null,

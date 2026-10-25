@@ -95,7 +95,7 @@ export function loadBlockedWords() {
 
     const params = { per_page: 500 };
     if (currentStatusFilter !== '') {
-        params.is_active = currentStatusFilter === '1';
+        params.is_active = currentStatusFilter;
     }
 
     axios.get('/admin/blocked-words', { params })
@@ -231,7 +231,7 @@ function showWordForm(existing) {
             }
             return {
                 word,
-                is_active: document.getElementById('blocked-word-active')?.value === '1',
+                is_active: document.getElementById('blocked-word-active')?.value === '1' ? '1' : '0',
             };
         },
     }, { size: 'md' })).then(({ isConfirmed, value }) => {

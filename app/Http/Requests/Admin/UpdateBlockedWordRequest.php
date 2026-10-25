@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\BooleanValue\Cast;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,10 +25,18 @@ class UpdateBlockedWordRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $payload = [];
+
         if ($this->has('word')) {
-            $this->merge([
-                'word' => mb_strtolower(trim((string) $this->input('word'))),
-            ]);
+            $payload['word'] = mb_strtolower(trim((string) $this->input('word')));
+        }
+
+        if ($this->exists('is_active')) {
+            $payload['is_active'] = Cast::from($this->input('is_active'));
+        }
+
+        if ($payload !== []) {
+            $this->merge($payload);
         }
     }
 }

@@ -60,6 +60,10 @@ class BlockedWordApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.data.0.word', 'badword');
 
+        $this->getJson('/api/v1/admin/blocked-words?is_active=true')
+            ->assertOk()
+            ->assertJsonPath('data.data', []);
+
         $this->deleteJson("/api/v1/admin/blocked-words/{$id}")
             ->assertOk();
 
