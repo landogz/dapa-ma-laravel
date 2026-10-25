@@ -90,6 +90,8 @@ Route::get('/admin/diary', fn () => AdminPage::render('admin.diary.index', 'diar
 
 Route::get('/admin/care-toolkit', fn () => AdminPage::render('admin.care-toolkit.index', 'care-toolkit', 'Care Toolkit'));
 
+Route::get('/admin/care-checks', fn () => AdminPage::render('admin.care-checks.index', 'care-checks', 'Care Checks'));
+
 Route::get('/admin/care-support', fn () => AdminPage::render('admin.care-support.index', 'care-support', 'Care Support'));
 
 Route::get('/admin/hope-directory', fn () => AdminPage::render('admin.hope-directory.index', 'hope-directory', 'Hope Directory'));
@@ -98,6 +100,9 @@ Route::get('/admin/hope-events', fn () => AdminPage::render('admin.hope-events.i
 
 Route::get('/admin/settings', fn () => AdminPage::render('admin.settings.index', 'settings', 'Settings'));
 
-Route::get('/admin/app-options', fn () => AdminPage::render('admin.app-options.index', 'app-options', 'Admin Settings'));
+Route::get('/admin/lookups', fn () => AdminPage::render('admin.app-options.index', 'lookups', 'Lookups'));
+Route::get('/admin/word-blocking', fn () => AdminPage::render('admin.word-blocking.index', 'word-blocking', 'Word Blocking'));
+
+Route::get('/admin/app-options', fn () => redirect('/admin/lookups', 301));
 
 Route::get('/admin/profile', fn () => AdminPage::render('admin.profile.index', 'profile', 'Edit Profile'));

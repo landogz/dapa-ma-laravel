@@ -3,12 +3,14 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
+import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let directoryTable;
 let directoryTableMode;
 let hasBoundViewportListener = false;
 let categoryFilter = '';
+let categoryCounts = null;
 
 const CATEGORY_LABELS = {
     government: "Gov't",
@@ -23,11 +25,10 @@ export function initHopeDirectoryModule() {
     document.querySelector('[data-admin-action="create-hope-directory"]')
         ?.addEventListener('click', () => showForm(null));
 
-    document.getElementById('hope-directory-category-filter')
-        ?.addEventListener('change', (event) => {
-            categoryFilter = event.target.value || '';
-            loadRows();
-        });
+    bindAdminFilterTabs(document.getElementById('hope-directory-category-tabs'), (value) => {
+        categoryFilter = value;
+        loadRows();
+    });
 
     initializeTable(tableEl).then(() => {
         bindViewportListener(tableEl);
@@ -123,6 +124,10 @@ function loadRows() {
             directoryTable.clear();
             rows.forEach((row) => directoryTable.row.add(buildRow(row)));
             directoryTable.draw();
+            if (!categoryFilter) {
+                categoryCounts = countByKey(rows, (row) => row.category || '');
+            }
+            applyAdminFilterTabCounts(document.getElementById('hope-directory-category-tabs'), categoryCounts || {});
         })
         .catch(({ response }) => {
             showErrorToast(response?.data?.message ?? 'Failed to load Hope Directory.');

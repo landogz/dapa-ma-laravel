@@ -89,11 +89,14 @@ class AppOptionService
      */
     public function adminMeta(): array
     {
+        $counts = $this->repository->groupCounts();
+
         return [
             'groups' => collect(AppOptionGroup::meta())
                 ->map(fn (array $meta, string $key) => [
                     'key' => $key,
                     ...$meta,
+                    'count' => $counts[$key] ?? 0,
                 ])
                 ->values()
                 ->all(),

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\AppOption;
+use App\Services\AppOptionService;
 use Database\Seeders\AppOptionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -31,5 +33,48 @@ class AppOptionApiTest extends TestCase
         $keys = collect($impact['options'] ?? [])->pluck('key');
         $this->assertTrue($keys->contains('connection_circle'));
         $this->assertTrue($keys->contains('cravings_urges'));
+    }
+
+    public function test_public_sky_option_includes_accent(): void
+    {
+        $this->seed(AppOptionSeeder::class);
+
+        $response = $this->getJson('/api/v1/app-options');
+        $sky = collect($response->json('data'))->firstWhere('key', 'journal_sky');
+        $clear = collect($sky['options'] ?? [])->firstWhere('key', 'clear_skies');
+
+        $this->assertSame('#FBD116', $clear['accent'] ?? null);
+    }
+
+    public function test_admin_lookups_page_is_labeled_lookups(): void
+    {
+        $this->get('/admin/lookups')
+            ->assertOk()
+            ->assertSee('Lookups')
+            ->assertDontSee('Admin Settings');
+    }
+
+    public function test_legacy_admin_settings_url_redirects_to_lookups(): void
+    {
+        $this->get('/admin/app-options')
+            ->assertRedirect('/admin/lookups');
+    }
+
+    public function test_accent_color_is_normalized_to_hex(): void
+    {
+        $this->seed(AppOptionSeeder::class);
+
+        $option = AppOption::query()
+            ->where('group', 'journal_sky')
+            ->where('key', 'clear_skies')
+            ->firstOrFail();
+
+        $updated = app(AppOptionService::class)->update($option, [
+            'label_en' => $option->label_en,
+            'label_tl' => $option->label_tl,
+            'accent_color' => 'ce2028',
+        ]);
+
+        $this->assertSame('#CE2028', $updated->accent_color);
     }
 }

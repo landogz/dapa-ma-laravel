@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
-import { enhanceAdminFilterSelects } from './shared/filter-select';
+import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey, renderAdminFilterTabs, setAdminFilterTab } from './shared/filter-tabs';
 import { buildSwalOptions, confirmWithSwal } from './shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
 import { showErrorToast, showSuccessToast } from './shared/toast';
@@ -16,6 +16,7 @@ const diaryCache = new Map();
 
 let userFilter = '';
 let skyFilter = '';
+let skyCounts = null;
 
 const SKY_LABELS = {
     clear_skies: 'Clear skies',
@@ -54,47 +55,42 @@ function bindDiaryFilters() {
 
     hasBoundFilters = true;
 
-    document.getElementById('diary-user-filter')?.addEventListener('change', (event) => {
-        userFilter = event.target.value || '';
+    bindAdminFilterTabs(document.getElementById('diary-user-tabs'), (value) => {
+        userFilter = value;
         loadDiaryEntries();
     });
 
-    document.getElementById('diary-sky-filter')?.addEventListener('change', (event) => {
-        skyFilter = event.target.value || '';
+    bindAdminFilterTabs(document.getElementById('diary-sky-tabs'), (value) => {
+        skyFilter = value;
         loadDiaryEntries();
     });
-
-    enhanceAdminFilterSelects(document.querySelector('.admin-shell-card') || document);
 }
 
 async function loadDiaryUsers() {
-    const select = document.getElementById('diary-user-filter');
-    if (!select) {
+    const tabs = document.getElementById('diary-user-tabs');
+    if (!tabs) {
         return;
     }
 
     try {
         const { data } = await axios.get('/admin/diary-users');
         const users = data.data ?? [];
-        const previous = userFilter || select.value || '';
-
-        select.innerHTML = [
-            '<option value="">All users</option>',
-            ...users.map((user) => {
-                const label = `${escapeHtml(user.name || 'User')}${user.entries_count ? ` (${user.entries_count})` : ''}`;
-                return `<option value="${escapeHtml(String(user.id))}">${label}</option>`;
-            }),
-        ].join('');
-
-        if (previous && Array.from(select.options).some((opt) => opt.value === previous)) {
-            select.value = previous;
-            userFilter = previous;
-        } else {
-            select.value = '';
+        const known = new Set(users.map((user) => String(user.id)));
+        if (userFilter && !known.has(userFilter)) {
             userFilter = '';
         }
 
-        enhanceAdminFilterSelects(select.parentElement || document);
+        const total = users.reduce((sum, user) => sum + Number(user.entries_count ?? 0), 0);
+        renderAdminFilterTabs(tabs, [
+            { value: '', label: 'All users', icon: 'fas fa-users', count: total },
+            ...users.map((user) => ({
+                value: String(user.id),
+                label: user.name || 'User',
+                icon: 'fas fa-user',
+                count: user.entries_count ?? 0,
+            })),
+        ]);
+        setAdminFilterTab(tabs, userFilter);
     } catch (error) {
         showErrorToast(
             error.response?.data?.message ?? 'Unable to load journal users.',
@@ -129,6 +125,12 @@ function loadDiaryEntries() {
 
             diaryTable.draw();
             bindDiaryActions();
+            if (!userFilter) {
+                skyCounts = countByKey(entries, (entry) => entry.sky || '');
+            }
+            if (skyCounts) {
+                applyAdminFilterTabCounts(document.getElementById('diary-sky-tabs'), skyCounts);
+            }
         })
         .catch((error) => {
             showErrorToast(
@@ -155,8 +157,8 @@ async function initializeDiaryTable(tableElement) {
         tableElement,
         getAdminDataTableOptions({
             columns: buildColumns(nextMode),
-            searchPlaceholder: 'Search journal entries...',
-            infoLabel: 'Showing _START_ to _END_ of _TOTAL_ journal entries',
+            searchPlaceholder: 'Search entries',
+            infoLabel: 'Showing _START_ to _END_ of _TOTAL_ entries',
             pageLength: nextMode === 'mobile' ? 5 : 10,
             scrollX: nextMode !== 'mobile',
             scrollCollapse: nextMode !== 'mobile',
@@ -202,10 +204,9 @@ function buildColumns(mode) {
 
     return [
         { title: 'Date', className: 'dt-col-nowrap' },
-        { title: 'User', className: 'dt-col-primary dt-col-name' },
-        { title: 'Sky', className: 'dt-col-nowrap' },
-        { title: 'Title', className: 'dt-col-wide' },
-        { title: 'Preview', className: 'dt-col-wide' },
+        { title: 'User', className: 'dt-col-primary dt-col-name', orderable: false },
+        { title: 'Sky', className: 'dt-col-nowrap', orderable: false },
+        { title: 'Preview', className: 'dt-col-wide', orderable: false },
         { title: 'Updated', className: 'dt-col-nowrap' },
         { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
     ];
@@ -214,14 +215,16 @@ function buildColumns(mode) {
 function buildDiaryRowData(entry) {
     const userName = escapeHtml(entry.user?.name ?? 'Unknown user');
     const userEmail = escapeHtml(entry.user?.email ?? '');
-    const title = escapeHtml(entry.title?.trim() || entry.sky?.replaceAll('_', ' ') || '—');
-    const notesPreview = stripHtml(entry.body_html ?? '').slice(0, 80);
-    const feelings = Array.isArray(entry.feelings) ? entry.feelings.join(', ') : '';
-    const previewBits = [notesPreview, feelings].filter(Boolean).join(' · ');
-    const preview = escapeHtml(previewBits.slice(0, 120));
+    const skyLabel = formatSky(entry.sky);
+    const distinctTitle = distinctDiaryTitle(entry, skyLabel);
+    const title = escapeHtml(distinctTitle || skyLabel || '—');
+    const notesPreview = stripHtml(entry.body_html ?? '');
+    const feelings = Array.isArray(entry.feelings)
+        ? entry.feelings.map((feeling) => formatFeelingLabel(feeling)).filter(Boolean)
+        : [];
+    const preview = buildDiaryPreview(notesPreview || distinctTitle, feelings);
     const entryDate = formatDate(entry.entry_date);
     const updatedAt = formatDateTime(entry.updated_at ?? entry.created_at);
-    const skyLabel = formatSky(entry.sky);
     const rowAttrs = `data-diary-row-id="${entry.id}"`;
 
     if (diaryTableMode === 'mobile') {
@@ -236,7 +239,7 @@ function buildDiaryRowData(entry) {
                 <div class="admin-table-mobile-details">
                     <p><span>User:</span> ${userName}</p>
                     ${userEmail ? `<p><span>Email:</span> ${userEmail}</p>` : ''}
-                    <p><span>Preview:</span> ${preview || '—'}</p>
+                    <div><span>Preview:</span> ${preview}</div>
                     <p><span>Updated:</span> ${escapeHtml(updatedAt)}</p>
                 </div>
                 <div class="admin-table-mobile-actions">${buildActionButtons(entry.id, true)}</div>
@@ -246,10 +249,11 @@ function buildDiaryRowData(entry) {
 
     return [
         `<span ${rowAttrs}>${escapeHtml(entryDate)}</span>`,
-        `<div class="min-w-[10rem]"><p class="font-semibold text-slate-800">${userName}</p><p class="text-xs text-slate-500">${userEmail}</p></div>`,
+        `<div class="min-w-[10rem]"><p class="font-semibold text-slate-800">${userName}</p>${
+            userEmail ? `<p class="diary-user-email">${userEmail}</p>` : ''
+        }</div>`,
         escapeHtml(skyLabel),
-        title,
-        preview || '—',
+        preview,
         updatedAt,
         buildActionButtons(entry.id, false),
     ];
@@ -391,13 +395,10 @@ function viewDiaryEntry(entryId) {
 }
 
 async function deleteDiaryEntry(entryId) {
-    const entry = diaryCache.get(String(entryId));
-    const userName = entry?.user?.name ?? 'this user';
-
     const result = await confirmWithSwal({
         icon: 'warning',
-        title: 'Delete journal entry?',
-        text: `This will permanently remove the journal note for ${userName}.`,
+        title: 'Delete this entry?',
+        text: 'This can’t be undone.',
         confirmButtonText: 'Delete entry',
         danger: true,
     });
@@ -457,6 +458,58 @@ function openDiaryView(entry) {
         confirmButtonText: 'Close',
         confirmOnly: false,
     }));
+}
+
+function distinctDiaryTitle(entry, skyLabel) {
+    const raw = String(entry?.title ?? '').trim();
+    if (!raw) {
+        return '';
+    }
+
+    const skyRaw = String(entry?.sky ?? '').replaceAll('_', ' ').trim();
+    if (raw.toLowerCase() === skyRaw.toLowerCase()
+        || raw.toLowerCase() === String(skyLabel ?? '').toLowerCase()) {
+        return '';
+    }
+
+    return raw;
+}
+
+function buildDiaryPreview(notesPreview, feelings = []) {
+    const text = notesPreview.trim();
+    const visibleFeelings = feelings.slice(0, 2);
+    const extraCount = Math.max(0, feelings.length - visibleFeelings.length);
+    const extraTitle = extraCount > 0
+        ? feelings.slice(2).join(', ')
+        : '';
+    const chips = [
+        ...visibleFeelings.map((feeling) => (
+            `<span class="diary-mood-chip">${escapeHtml(feeling)}</span>`
+        )),
+        extraCount > 0
+            ? `<span class="diary-mood-chip diary-mood-more" title="${escapeHtml(extraTitle)}">+${extraCount}</span>`
+            : '',
+    ].join('');
+
+    if (!text && !chips) {
+        return '—';
+    }
+
+    const textHtml = text
+        ? `<p class="diary-preview-text" title="${escapeHtml(text)}">${escapeHtml(text)}</p>`
+        : '';
+
+    return `<div class="diary-preview-cell">${textHtml}${
+        chips ? `<div class="diary-preview-moods">${chips}</div>` : ''
+    }</div>`;
+}
+
+function formatFeelingLabel(value) {
+    return String(value ?? '')
+        .replaceAll('_', ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function stripHtml(value) {

@@ -4,8 +4,11 @@ namespace App\Services;
 
 use App\Models\AppTranslation;
 use App\Repositories\AppTranslationRepository;
+use App\Support\AppTranslation\Visual;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 class AppTranslationService
 {
@@ -14,13 +17,17 @@ class AppTranslationService
     ) {
     }
 
+    /**
+     * @param  list<string>|null  $keys
+     */
     public function list(
         int $perPage = 50,
         ?string $search = null,
         ?string $group = null,
         ?bool $activeOnly = null,
+        ?array $keys = null,
     ): LengthAwarePaginator {
-        return $this->appTranslationRepository->paginate($perPage, $search, $group, $activeOnly);
+        return $this->appTranslationRepository->paginate($perPage, $search, $group, $activeOnly, $keys);
     }
 
     public function find(int $id): AppTranslation
@@ -45,6 +52,7 @@ class AppTranslationService
 
     public function delete(AppTranslation $translation): void
     {
+        $this->deleteStoredImage($translation->image_path);
         $this->appTranslationRepository->delete($translation);
     }
 
@@ -53,10 +61,15 @@ class AppTranslationService
         return $this->appTranslationRepository->groups();
     }
 
+    public function groupCounts(): Collection
+    {
+        return $this->appTranslationRepository->groupCounts();
+    }
+
     /**
      * Mobile-ready locale bundle.
      *
-     * @return array{locale: string, version: string|null, strings: array<string, string>}
+     * @return array{locale: string, version: string|null, strings: array<string, string>, assets: array<string, array{image_url: ?string, icon: ?string}>}
      */
     public function publicBundle(string $locale = 'en'): array
     {
@@ -64,14 +77,20 @@ class AppTranslationService
         $rows = $this->appTranslationRepository->activeBundle();
 
         $strings = [];
+        $assets = [];
         foreach ($rows as $row) {
             $strings[$row->key] = $locale === 'tl' ? $row->value_tl : $row->value_en;
+            $asset = Visual::publicAsset($row);
+            if ($asset !== null) {
+                $assets[$row->key] = $asset;
+            }
         }
 
         return [
             'locale' => $locale,
             'version' => $this->appTranslationRepository->latestUpdatedAt(),
             'strings' => $strings,
+            'assets' => $assets,
         ];
     }
 
@@ -124,6 +143,19 @@ class AppTranslationService
                 : ($existing?->is_active ?? true),
         ];
 
+        if (array_key_exists('icon', $data)) {
+            $icon = trim((string) ($data['icon'] ?? ''));
+            $payload['icon'] = $icon === '' ? null : $icon;
+        }
+
+        if (($data['image'] ?? null) instanceof UploadedFile) {
+            $this->deleteStoredImage($existing?->image_path);
+            $payload['image_path'] = $data['image']->store('app-translations', 'public');
+        } elseif (! empty($data['remove_image'])) {
+            $this->deleteStoredImage($existing?->image_path);
+            $payload['image_path'] = null;
+        }
+
         if (! $existing) {
             $payload['key'] = trim((string) ($data['key'] ?? ''));
         }
@@ -140,5 +172,14 @@ class AppTranslationService
         }
 
         return $value;
+    }
+
+    private function deleteStoredImage(?string $path): void
+    {
+        if (! filled($path) || str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return;
+        }
+
+        Storage::disk('public')->delete($path);
     }
 }

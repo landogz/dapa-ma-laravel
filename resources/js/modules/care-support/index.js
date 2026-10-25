@@ -3,12 +3,14 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildSwalForm, buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
+import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let supportTable;
 let supportTableMode;
 let hasBoundViewportListener = false;
 let currentCategoryFilter = '';
+let categoryCounts = null;
 
 const CATEGORY_LABELS = {
     hotline: 'Hotline',
@@ -26,11 +28,10 @@ export function initCareSupportModule() {
     document.querySelector('[data-admin-action="create-care-support-resource"]')
         ?.addEventListener('click', () => createCareSupportResource());
 
-    document.getElementById('care-support-category-filter')
-        ?.addEventListener('change', (event) => {
-            currentCategoryFilter = event.target.value || '';
-            loadCareSupportResources();
-        });
+    bindAdminFilterTabs(document.getElementById('care-support-category-tabs'), (value) => {
+        currentCategoryFilter = value;
+        loadCareSupportResources();
+    });
 
     initializeSupportTable(tableEl).then(() => {
         bindViewportListener(tableEl);
@@ -127,6 +128,10 @@ export function loadCareSupportResources() {
             supportTable.clear();
             rows.forEach((row) => supportTable.row.add(buildRowData(row)));
             supportTable.draw();
+            if (!currentCategoryFilter) {
+                categoryCounts = countByKey(rows, (row) => row.category || '');
+            }
+            applyAdminFilterTabCounts(document.getElementById('care-support-category-tabs'), categoryCounts || {});
         })
         .catch(({ response }) => {
             showErrorToast(response?.data?.message ?? 'Failed to load Care Support resources.');

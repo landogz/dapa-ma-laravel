@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
+import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from './shared/filter-tabs';
 import { enhanceAdminFilterSelects } from './shared/filter-select';
 import { buildSwalForm, buildSwalOptions, confirmWithSwal } from './shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
@@ -16,6 +17,7 @@ let contextNotificationId = null;
 const notificationsCache = new Map();
 
 let topicFilter = '';
+let topicCounts = null;
 
 const TOPIC_LABELS = {
     all: 'All users',
@@ -50,13 +52,10 @@ function bindNotificationFilters() {
 
     hasBoundFilters = true;
 
-    const filterEl = document.getElementById('notifications-topic-filter');
-    filterEl?.addEventListener('change', (event) => {
-        topicFilter = event.target.value || '';
+    bindAdminFilterTabs(document.getElementById('notifications-topic-tabs'), (value) => {
+        topicFilter = value;
         loadNotifications();
     });
-
-    enhanceAdminFilterSelects(document.querySelector('.admin-shell-card') || document);
 }
 
 export function loadNotifications() {
@@ -76,6 +75,11 @@ export function loadNotifications() {
         });
         notifTable.draw();
         bindNotificationActions();
+        const rows = [...notificationsCache.values()];
+        if (!topicFilter) {
+            topicCounts = countByKey(rows, (row) => row.topic || '');
+        }
+        applyAdminFilterTabCounts(document.getElementById('notifications-topic-tabs'), topicCounts || {});
     }).catch(() => {
         showErrorToast('Failed to load notifications.', 'Notifications');
     });

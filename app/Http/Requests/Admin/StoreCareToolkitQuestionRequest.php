@@ -24,6 +24,7 @@ class StoreCareToolkitQuestionRequest extends FormRequest
             'options_tl'   => ['nullable'],
             'sort_order'   => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active'    => ['sometimes', 'boolean'],
+            'is_reverse'   => ['sometimes', 'boolean'],
         ];
     }
 }

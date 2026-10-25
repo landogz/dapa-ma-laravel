@@ -8,11 +8,15 @@ use Illuminate\Support\Collection;
 
 class AppTranslationRepository
 {
+    /**
+     * @param  list<string>|null  $keys
+     */
     public function paginate(
         int $perPage = 50,
         ?string $search = null,
         ?string $group = null,
         ?bool $activeOnly = null,
+        ?array $keys = null,
     ): LengthAwarePaginator {
         return AppTranslation::query()
             ->where(function ($query): void {
@@ -20,6 +24,7 @@ class AppTranslationRepository
             })
             ->when($activeOnly === true, fn ($q) => $q->where('is_active', true))
             ->when($group, fn ($q) => $q->where('group', $group))
+            ->when($keys, fn ($q) => $q->whereIn('key', $keys))
             ->when($search, function ($q) use ($search): void {
                 $q->where(function ($q) use ($search): void {
                     $q->where('key', 'like', "%{$search}%")
@@ -65,6 +70,18 @@ class AppTranslationRepository
             ->distinct()
             ->orderBy('group')
             ->pluck('group');
+    }
+
+    public function groupCounts(): Collection
+    {
+        return AppTranslation::query()
+            ->whereNotNull('group')
+            ->where('group', '!=', '')
+            ->where('group', '!=', 'bible')
+            ->selectRaw('`group`, count(*) as total')
+            ->groupBy('group')
+            ->orderBy('group')
+            ->pluck('total', 'group');
     }
 
     public function deleteBibleCatalog(): int
@@ -139,7 +156,7 @@ class AppTranslationRepository
                 'chaptersLabel',
             ])
             ->orderBy('key')
-            ->get(['key', 'value_en', 'value_tl', 'updated_at']);
+            ->get(['key', 'value_en', 'value_tl', 'icon', 'image_path', 'updated_at']);
     }
 
     public function latestUpdatedAt(): ?string
@@ -155,7 +172,9 @@ class AppTranslationRepository
 
         return $text === ''
             || str_contains($text, 's scripture')
-            || str_contains($text, 's note');
+            || str_contains($text, 's note')
+            || str_contains($text, '${')
+            || str_contains($text, ' == 1 ?');
     }
 
     public function upsertMany(array $rows): int

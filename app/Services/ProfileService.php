@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Support\InterestValues;
+use App\Support\Journal\CustomFeelings;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -27,6 +28,8 @@ class ProfileService
             'email' => $user->email,
             'role' => $user->role,
             'profile_image_url' => $this->profileImageUrl($user),
+            'about' => $user->about,
+            'journal_custom_feelings' => CustomFeelings::forUser($user),
             'created_at' => $user->created_at?->toIso8601String(),
         ];
     }
@@ -65,6 +68,18 @@ class ProfileService
         } elseif (! empty($data['remove_profile_photo'])) {
             $this->deleteStoredImage($user->profile_image_url);
             $payload['profile_image_url'] = null;
+        }
+
+        if (array_key_exists('about', $data)) {
+            $about = is_string($data['about']) ? trim($data['about']) : '';
+            $payload['about'] = $about === '' ? null : $about;
+        }
+
+        if (array_key_exists('journal_custom_feelings', $data)) {
+            $feelings = $data['journal_custom_feelings'];
+            $payload['journal_custom_feelings'] = is_array($feelings)
+                ? CustomFeelings::customFrom($feelings)
+                : null;
         }
 
         if (array_key_exists('interests', $data)) {

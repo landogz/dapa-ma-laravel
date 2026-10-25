@@ -4,6 +4,7 @@
  */
 
 let overflowDocumentBound = false;
+let tooltipDocumentBound = false;
 
 export function escapeActionHtml(value = '') {
     return String(value)
@@ -246,6 +247,89 @@ function bindOverflowDocumentListeners() {
     window.addEventListener('resize', () => closeAllActionOverflows());
 }
 
+function getActionTooltip(wrap) {
+    return wrap._tooltip
+        || wrap.querySelector('.admin-action-tooltip')
+        || document.querySelector(`.admin-action-tooltip[data-tooltip-owner="${wrap.dataset.tooltipId}"]`);
+}
+
+function restoreAdminActionTooltip(wrap) {
+    const tooltip = getActionTooltip(wrap);
+    if (!tooltip) {
+        return;
+    }
+
+    tooltip.classList.remove('is-ported', 'is-below');
+    tooltip.style.position = '';
+    tooltip.style.top = '';
+    tooltip.style.left = '';
+    tooltip.style.right = '';
+    tooltip.style.bottom = '';
+    tooltip.style.zIndex = '';
+
+    if (tooltip.parentElement !== wrap) {
+        wrap.appendChild(tooltip);
+    }
+
+    wrap._tooltip = null;
+}
+
+function positionAdminActionTooltip(wrap) {
+    const tooltip = getActionTooltip(wrap);
+    const button = wrap.querySelector('.admin-table-action');
+    if (!tooltip || !button || wrap.classList.contains('admin-action-tooltip-wrap--suppressed')) {
+        return;
+    }
+
+    if (!wrap.dataset.tooltipId) {
+        wrap.dataset.tooltipId = `tip-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    tooltip.dataset.tooltipOwner = wrap.dataset.tooltipId;
+    wrap._tooltip = tooltip;
+    document.body.appendChild(tooltip);
+    tooltip.classList.add('is-ported');
+
+    const buttonRect = button.getBoundingClientRect();
+    const tipRect = tooltip.getBoundingClientRect();
+    const gap = 8;
+    const spaceAbove = buttonRect.top;
+    const spaceBelow = window.innerHeight - buttonRect.bottom;
+    const openBelow = spaceAbove < tipRect.height + gap && spaceBelow > spaceAbove;
+
+    tooltip.classList.toggle('is-below', openBelow);
+
+    const left = Math.min(
+        Math.max(8, buttonRect.right - tipRect.width),
+        window.innerWidth - tipRect.width - 8,
+    );
+
+    tooltip.style.position = 'fixed';
+    tooltip.style.zIndex = '220';
+    tooltip.style.left = `${Math.max(8, left)}px`;
+    tooltip.style.right = 'auto';
+    tooltip.style.bottom = 'auto';
+    tooltip.style.top = openBelow
+        ? `${buttonRect.bottom + gap}px`
+        : `${Math.max(8, buttonRect.top - tipRect.height - gap)}px`;
+}
+
+function closeAllPortedActionTooltips() {
+    document.querySelectorAll('.admin-action-tooltip-wrap').forEach((wrap) => {
+        restoreAdminActionTooltip(wrap);
+    });
+}
+
+function bindTooltipDocumentListeners() {
+    if (tooltipDocumentBound) {
+        return;
+    }
+
+    tooltipDocumentBound = true;
+    window.addEventListener('scroll', closeAllPortedActionTooltips, true);
+    window.addEventListener('resize', closeAllPortedActionTooltips);
+}
+
 /**
  * Suppress sticky hover tooltips after click (desktop).
  */
@@ -256,6 +340,25 @@ export function bindAdminActionTooltipSuppression(rootEl) {
 
     rootEl.dataset.actionTooltipsBound = 'true';
     bindOverflowDocumentListeners();
+    bindTooltipDocumentListeners();
+
+    rootEl.addEventListener('pointerenter', (event) => {
+        const wrap = event.target.closest?.('.admin-action-tooltip-wrap');
+        if (!wrap || wrap.querySelector('[data-admin-overflow-toggle]')) {
+            return;
+        }
+
+        positionAdminActionTooltip(wrap);
+    }, true);
+
+    rootEl.addEventListener('focusin', (event) => {
+        const wrap = event.target.closest?.('.admin-action-tooltip-wrap');
+        if (!wrap || wrap.querySelector('[data-admin-overflow-toggle]')) {
+            return;
+        }
+
+        positionAdminActionTooltip(wrap);
+    });
 
     rootEl.addEventListener('click', (event) => {
         const overflowToggle = event.target.closest('[data-admin-overflow-toggle]');
@@ -286,18 +389,25 @@ export function bindAdminActionTooltipSuppression(rootEl) {
         const wrap = event.target.closest('.admin-action-tooltip-wrap');
         if (!wrap) return;
         wrap.classList.add('admin-action-tooltip-wrap--suppressed');
+        restoreAdminActionTooltip(wrap);
         wrap.querySelector('.admin-table-action')?.blur();
     });
 
-    rootEl.addEventListener('mouseleave', (event) => {
+    rootEl.addEventListener('pointerleave', (event) => {
         const wrap = event.target.closest?.('.admin-action-tooltip-wrap');
         if (!wrap) return;
         wrap.classList.remove('admin-action-tooltip-wrap--suppressed');
+        restoreAdminActionTooltip(wrap);
     }, true);
 
     rootEl.addEventListener('focusout', (event) => {
         const wrap = event.target.closest?.('.admin-action-tooltip-wrap');
         if (!wrap) return;
+        if (wrap.contains(event.relatedTarget)) {
+            return;
+        }
+
         wrap.classList.remove('admin-action-tooltip-wrap--suppressed');
+        restoreAdminActionTooltip(wrap);
     }, true);
 }

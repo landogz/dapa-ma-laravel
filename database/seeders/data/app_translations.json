@@ -931,19 +931,19 @@
   },
   {
     "key": "navHope",
-    "group": "home",
+    "group": "navigation",
     "en": "Hope",
     "tl": "Hope"
   },
   {
     "key": "navFaq",
-    "group": "home",
+    "group": "navigation",
     "en": "FAQ",
     "tl": "FAQ"
   },
   {
     "key": "navCare",
-    "group": "care",
+    "group": "navigation",
     "en": "Care",
     "tl": "Care"
   },
@@ -2058,16 +2058,28 @@
     "tl": "Komento"
   },
   {
+    "key": "likesCountOne",
+    "group": "post_engagement",
+    "en": "1 like",
+    "tl": "1 like"
+  },
+  {
     "key": "likesCount",
     "group": "post_engagement",
-    "en": "{count} ${count == 1 ? 'like' : 'likes'}",
-    "tl": "{count} ${count == 1 ? 'like' : 'likes'}"
+    "en": "{count} likes",
+    "tl": "{count} likes"
+  },
+  {
+    "key": "commentsCountOne",
+    "group": "post_engagement",
+    "en": "1 comment",
+    "tl": "1 komento"
   },
   {
     "key": "commentsCount",
     "group": "post_engagement",
-    "en": "{count} ${count == 1 ? 'comment' : 'comments'}",
-    "tl": "{count} ${count == 1 ? 'komento' : 'mga komento'}"
+    "en": "{count} comments",
+    "tl": "{count} mga komento"
   },
   {
     "key": "savedToBookmarks",
@@ -2622,6 +2634,12 @@
     "tl": "Magbahagi ng kaunti tungkol sa iyong sarili"
   },
   {
+    "key": "aboutMeLimitHint",
+    "group": "account",
+    "en": "Up to {max} characters so it stays short on your profile.",
+    "tl": "Hanggang {max} na character para hindi masyadong mahaba sa profile."
+  },
+  {
     "key": "interestsLabel",
     "group": "account",
     "en": "Interests",
@@ -3132,6 +3150,24 @@
     "tl": "Palitan ang larawan"
   },
   {
+    "key": "profilePhotoTitle",
+    "group": "account",
+    "en": "Profile photo",
+    "tl": "Larawan ng profile"
+  },
+  {
+    "key": "removePhoto",
+    "group": "account",
+    "en": "Remove photo",
+    "tl": "Alisin ang larawan"
+  },
+  {
+    "key": "photoRemoved",
+    "group": "account",
+    "en": "Photo removed",
+    "tl": "Naalis ang larawan"
+  },
+  {
     "key": "name",
     "group": "account",
     "en": "Name",
@@ -3220,6 +3256,24 @@
     "group": "auth",
     "en": "Email is required",
     "tl": "Kailangan ang email"
+  },
+  {
+    "key": "emailInvalid",
+    "group": "auth",
+    "en": "Enter a valid email address, like name@example.com",
+    "tl": "Maglagay ng wastong email, tulad ng name@example.com"
+  },
+  {
+    "key": "emailTaken",
+    "group": "auth",
+    "en": "This email is already registered. Sign in or use another email.",
+    "tl": "Nakarehistro na ang email na ito. Mag-sign in o gumamit ng iba."
+  },
+  {
+    "key": "emailCheckFailed",
+    "group": "auth",
+    "en": "Could not verify that email. Check your connection and try again.",
+    "tl": "Hindi ma-verify ang email. Tingnan ang connection at subukan muli."
   },
   {
     "key": "passwordRequired",
@@ -3666,10 +3720,16 @@
     "tl": "Subukan ang ibang pamagat o category."
   },
   {
+    "key": "activityItemsCountOne",
+    "group": "bookmarks",
+    "en": "1 item",
+    "tl": "1 item"
+  },
+  {
     "key": "activityItemsCount",
     "group": "bookmarks",
-    "en": "{count} ${count == 1 ? 'item' : 'items'}",
-    "tl": "{count} ${count == 1 ? 'item' : 'mga item'}"
+    "en": "{count} items",
+    "tl": "{count} mga item"
   },
   {
     "key": "rehabCentersTitle",
@@ -3708,10 +3768,16 @@
     "tl": "Wala pang rating"
   },
   {
+    "key": "ratingsCountOne",
+    "group": "reviews",
+    "en": "1 rating",
+    "tl": "1 rating"
+  },
+  {
     "key": "ratingsCount",
     "group": "reviews",
-    "en": "{count} ${count == 1 ? 'rating' : 'ratings'}",
-    "tl": "{count} ${count == 1 ? 'rating' : 'mga rating'}"
+    "en": "{count} ratings",
+    "tl": "{count} mga rating"
   },
   {
     "key": "ratingSubmitted",
@@ -3924,9 +3990,15 @@
     "tl": "Sumulat ng tugon..."
   },
   {
+    "key": "youRatedStarOne",
+    "group": "post_detail",
+    "en": "You rated this 1 star",
+    "tl": "Ni-rate mo ito ng 1 bituin"
+  },
+  {
     "key": "youRatedStars",
     "group": "post_detail",
-    "en": "You rated this {rating} star${rating == 1 ? '' : 's'}",
+    "en": "You rated this {rating} stars",
     "tl": "Ni-rate mo ito ng {rating} bituin"
   },
   {
@@ -4056,6 +4128,13 @@
     "tl": "Kid Listo Says"
   },
   {
+    "key": "kidListoLogo",
+    "group": "kid_listo",
+    "en": "Kid Listo",
+    "tl": "Kid Listo",
+    "description": "Portrait shown on the Kid Listo welcome screen, Care card, and home thought banner. Upload an image here to replace the default art."
+  },
+  {
     "key": "kidListoMotivationalTagline",
     "group": "kid_listo",
     "en": "A daily motivational quote for a drug-free youth",
@@ -4142,8 +4221,8 @@
   {
     "key": "diaryTitle",
     "group": "journal",
-    "en": "Journal",
-    "tl": "Journal"
+    "en": "My Journal",
+    "tl": "Aking Journal"
   },
   {
     "key": "writeToday",
@@ -4218,10 +4297,76 @@
     "tl": "Hindi mabura ang journal entry."
   },
   {
+    "key": "diaryDeleted",
+    "group": "journal",
+    "en": "Journal entry deleted",
+    "tl": "Nabura ang journal entry"
+  },
+  {
     "key": "journalYourEntries",
     "group": "journal",
     "en": "Your Entries",
     "tl": "Mga Entry Mo"
+  },
+  {
+    "key": "journalFilterTitle",
+    "group": "journal",
+    "en": "Filter entries",
+    "tl": "I-filter ang entries"
+  },
+  {
+    "key": "journalFilterAll",
+    "group": "journal",
+    "en": "All",
+    "tl": "Lahat"
+  },
+  {
+    "key": "journalFilterToday",
+    "group": "journal",
+    "en": "Today",
+    "tl": "Ngayon"
+  },
+  {
+    "key": "journalFilterThisWeek",
+    "group": "journal",
+    "en": "This week",
+    "tl": "Linggong ito"
+  },
+  {
+    "key": "journalFilterThisMonth",
+    "group": "journal",
+    "en": "This month",
+    "tl": "Buwan na ito"
+  },
+  {
+    "key": "journalFilterClear",
+    "group": "journal",
+    "en": "Clear",
+    "tl": "I-clear"
+  },
+  {
+    "key": "journalFilterReset",
+    "group": "journal",
+    "en": "Reset",
+    "tl": "I-reset"
+  },
+  {
+    "key": "journalFilterApply",
+    "group": "journal",
+    "en": "Apply",
+    "tl": "I-apply"
+  },
+  {
+    "key": "journalFilterSearchHint",
+    "group": "journal",
+    "en": "Search notes or gratitude…",
+    "tl": "Maghanap sa notes o pasasalamat…"
+  },
+  {
+    "key": "journalFilterEmpty",
+    "group": "journal",
+    "en": "No entries match these filters.",
+    "tl": "Walang entry na tumutugma sa filter."
   },
   {
     "key": "journalDailyReflection",
@@ -4846,5 +4991,437 @@
     "group": "registration",
     "en": "Be a voice for change through your own ways.",
     "tl": "Maging boses ng pagbabago sa iyong sariling paraan."
+  },
+  {
+    "key": "careCheckStart",
+    "group": "care",
+    "en": "Start assessment",
+    "tl": "Simulan ang assessment"
+  },
+  {
+    "key": "careCheckNext",
+    "group": "care",
+    "en": "Next",
+    "tl": "Susunod"
+  },
+  {
+    "key": "careCheckBack",
+    "group": "care",
+    "en": "Back",
+    "tl": "Bumalik"
+  },
+  {
+    "key": "careCheckSubmit",
+    "group": "care",
+    "en": "See my result",
+    "tl": "Tingnan ang result"
+  },
+  {
+    "key": "careCheckMinutes",
+    "group": "care",
+    "en": "About 1–2 minutes",
+    "tl": "Mga 1–2 minuto"
+  },
+  {
+    "key": "careCheckResultTitle",
+    "group": "care",
+    "en": "Result",
+    "tl": "Resulta"
+  },
+  {
+    "key": "careStressResultTitle",
+    "group": "care",
+    "en": "Stress Check Result",
+    "tl": "Resulta ng Stress Check"
+  },
+  {
+    "key": "careYourStressLevel",
+    "group": "care",
+    "en": "Your Stress Level",
+    "tl": "Antas ng Stress Mo"
+  },
+  {
+    "key": "careYourAnxietyLevel",
+    "group": "care",
+    "en": "Your Anxiety Level",
+    "tl": "Antas ng Anxiety Mo"
+  },
+  {
+    "key": "careYourSleepQuality",
+    "group": "care",
+    "en": "Your Sleep Quality",
+    "tl": "Kalidad ng Tulog Mo"
+  },
+  {
+    "key": "careBandStressLow",
+    "group": "care",
+    "en": "Low to Moderate",
+    "tl": "Mababa hanggang Katamtaman"
+  },
+  {
+    "key": "careBandStressHigh",
+    "group": "care",
+    "en": "Moderate to High",
+    "tl": "Katamtaman hanggang Mataas"
+  },
+  {
+    "key": "careBandAnxietyLow",
+    "group": "care",
+    "en": "Minimal to Low",
+    "tl": "Minimal hanggang Mababa"
+  },
+  {
+    "key": "careBandAnxietyHigh",
+    "group": "care",
+    "en": "Moderate to Severe",
+    "tl": "Katamtaman hanggang Matindi"
+  },
+  {
+    "key": "careBandSleepLow",
+    "group": "care",
+    "en": "Good",
+    "tl": "Maganda"
+  },
+  {
+    "key": "careBandSleepHigh",
+    "group": "care",
+    "en": "Needs Improvement",
+    "tl": "Kailangan pang pagbutihin"
+  },
+  {
+    "key": "careStressLowHeadline",
+    "group": "care",
+    "en": "You're managing stress well!",
+    "tl": "Naaasikaso mo nang maayos ang stress!"
+  },
+  {
+    "key": "careStressLowBody",
+    "group": "care",
+    "en": "Everyone feels stressed sometimes. You're handling things well, but small self-care steps can help you stay balanced.",
+    "tl": "Normal ang stress. Hinahawakan mo ito nang maayos, at makakatulong ang maliit na self-care para manatiling balanced."
+  },
+  {
+    "key": "careStressHighHeadline",
+    "group": "care",
+    "en": "Your stress may be affecting your well-being.",
+    "tl": "Maaaring naaapektuhan ng stress ang well-being mo."
+  },
+  {
+    "key": "careStressHighBody",
+    "group": "care",
+    "en": "You're experiencing more stress than is ideal. It is important to take action and build healthier coping strategies.",
+    "tl": "Mas mataas sa ideal ang stress mo. Mahalagang gumawa ng hakbang at magtayo ng mas healthy na paraan ng pagcope."
+  },
+  {
+    "key": "careAnxietyLowHeadline",
+    "group": "care",
+    "en": "You may feel worried at times, but you're managing.",
+    "tl": "May pag-aalala paminsan-minsan, pero nahahawakan mo."
+  },
+  {
+    "key": "careAnxietyLowBody",
+    "group": "care",
+    "en": "Keep using the Calm Corner tools to maintain balance and prevent worries from building up.",
+    "tl": "Ituloy ang Calm Corner para mapanatili ang balance at maiwasang magtumpok ang pag-aalala."
+  },
+  {
+    "key": "careAnxietyHighHeadline",
+    "group": "care",
+    "en": "Your anxiety level may be affecting your well-being.",
+    "tl": "Maaaring naaapektuhan ng anxiety ang well-being mo."
+  },
+  {
+    "key": "careAnxietyHighBody",
+    "group": "care",
+    "en": "Try relaxation activities daily, journal your feelings, and use guided meditation to ease tension. Consider professional help if worries feel overwhelming.",
+    "tl": "Subukan ang relaxation araw-araw, mag-journal, at gumamit ng guided meditation. Humingi ng propesyonal na tulong kung sobrang bigat ng pag-aalala."
+  },
+  {
+    "key": "careSleepLowHeadline",
+    "group": "care",
+    "en": "You're getting enough quality sleep.",
+    "tl": "Sapat at maganda ang tulog mo."
+  },
+  {
+    "key": "careSleepLowBody",
+    "group": "care",
+    "en": "You have a consistent sleep routine and good sleep quality. Small improvements can make a big difference!",
+    "tl": "Consistent ang routine at maganda ang tulog mo. Malaki ang epekto ng maliliit na pagbabago."
+  },
+  {
+    "key": "careSleepHighHeadline",
+    "group": "care",
+    "en": "Your sleep quality be better.",
+    "tl": "Pwede pang pagbutihin ang tulog mo."
+  },
+  {
+    "key": "careSleepHighBody",
+    "group": "care",
+    "en": "You may not be getting enough restful sleep. Poor sleep can affect your mood, focus, and energy levels. Need help? Feel free to reach out.",
+    "tl": "Maaaring kulang ang restful sleep mo. Nakakaapekto ito sa mood, focus, at energy. Kung kailangan mo ng tulong, mag-reach out."
+  },
+  {
+    "key": "careCheckDisclaimer",
+    "group": "care",
+    "en": "This test is for self-reflection only and does not replace professional evaluation.",
+    "tl": "Para sa self-reflection lamang ang test na ito at hindi kapalit ng propesyonal na ebalwasyon."
+  },
+  {
+    "key": "careGoToCalmCorner",
+    "group": "care",
+    "en": "Go to Calm Corner",
+    "tl": "Pumunta sa Calm Corner"
+  },
+  {
+    "key": "careBackToToolkit",
+    "group": "care",
+    "en": "Back to Self-Care Toolkit",
+    "tl": "Bumalik sa Self-care Toolkit"
+  },
+  {
+    "key": "careRetakeAssessment",
+    "group": "care",
+    "en": "Retake Assessment",
+    "tl": "Ulitin ang Assessment"
+  },
+  {
+    "key": "careCheckSaveFailed",
+    "group": "care",
+    "en": "Could not save this check. Please try again.",
+    "tl": "Hindi nai-save ang check. Subukan ulit."
+  },
+  {
+    "key": "careBackToCalmCorner",
+    "group": "care",
+    "en": "Back to Calm Corner",
+    "tl": "Bumalik sa Calm Corner"
+  },
+  {
+    "key": "careCalmStudentIntro",
+    "group": "care",
+    "en": "Need a 2-minute reset? Use these tools before a quiz, after class, or anytime your mind feels busy.",
+    "tl": "Kailangan ng 2-minutong pahinga? Gamitin bago ang quiz, pagkatapos ng klase, o kapag magulo ang isip."
+  },
+  {
+    "key": "careGreatJob",
+    "group": "care",
+    "en": "Great job!",
+    "tl": "Magaling!"
+  },
+  {
+    "key": "careWellDone",
+    "group": "care",
+    "en": "Well done!",
+    "tl": "Mahusay!"
+  },
+  {
+    "key": "careBreathingDoneBody",
+    "group": "care",
+    "en": "You finished your breathing break.",
+    "tl": "Tapos na ang breathing break mo."
+  },
+  {
+    "key": "careAudioDoneBody",
+    "group": "care",
+    "en": "You finished today's calm break.",
+    "tl": "Tapos na ang calm break mo ngayon."
+  },
+  {
+    "key": "careNoticeBody",
+    "group": "care",
+    "en": "Notice how your body feels: lighter, calmer, more focused.",
+    "tl": "Pansinin ang katawan: mas magaan, mas kalmado, mas focused."
+  },
+  {
+    "key": "careWhyBreathing",
+    "group": "care",
+    "en": "Why Breathing Helps",
+    "tl": "Bakit nakakatulong ang paghinga"
+  },
+  {
+    "key": "careWhyBreathingBody",
+    "group": "care",
+    "en": "Slow breathing helps lower stress, steady your focus, and calm your body — useful before exams or presentations.",
+    "tl": "Ang mabagal na paghinga ay nagpapababa ng stress at tumutulong mag-focus — lalo na bago ang exam o recitation."
+  },
+  {
+    "key": "careHowToUse",
+    "group": "care",
+    "en": "How to Use",
+    "tl": "Paano gamitin"
+  },
+  {
+    "key": "careHowBreathingBody",
+    "group": "care",
+    "en": "Press play. Follow the circle: breathe in as it grows, hold, then breathe out as it shrinks. Four rounds is enough.",
+    "tl": "I-play. Huminga papasok habang lumalaki ang circle, pigilin, tapos huminga palabas habang lumiliit. Apat na round ay sapat."
+  },
+  {
+    "key": "careQuickTip",
+    "group": "care",
+    "en": "Quick Tip",
+    "tl": "Quick Tip"
+  },
+  {
+    "key": "careBreathingTip",
+    "group": "care",
+    "en": "Try this at your desk. No one needs to notice — just four quiet breaths.",
+    "tl": "Pwede sa desk. Hindi kailangang mapansin ng iba — apat na tahimik na hinga."
+  },
+  {
+    "key": "careWhyMusic",
+    "group": "care",
+    "en": "Why Music Helps",
+    "tl": "Bakit nakakatulong ang musika"
+  },
+  {
+    "key": "careWhyMusicBody",
+    "group": "care",
+    "en": "A short, steady sound can take your mind off racing thoughts and give you a quiet minute between classes.",
+    "tl": "Ang tahimik at steady na tunog ay nakakatulong kalmahin ang isip sa pagitan ng klase."
+  },
+  {
+    "key": "careHowMusicBody",
+    "group": "care",
+    "en": "Press play, use earphones if you can, and breathe slowly. You can pause anytime.",
+    "tl": "I-play, gumamit ng earphones kung maaari, at huminga nang dahan-dahan. Pwede i-pause anytime."
+  },
+  {
+    "key": "careMusicTip",
+    "group": "care",
+    "en": "Keep the volume low. This is a break, not a playlist.",
+    "tl": "Ibaba ang volume. Pahinga ito, hindi playlist."
+  },
+  {
+    "key": "careWhyMeditation",
+    "group": "care",
+    "en": "Why This Helps",
+    "tl": "Bakit nakakatulong ito"
+  },
+  {
+    "key": "careWhyMeditationBody",
+    "group": "care",
+    "en": "A short pause helps clear your mind, reduce stress, and return to class with more focus.",
+    "tl": "Ang maikling pause ay nakakatulong linawin ang isip at bumalik sa klase nang mas focused."
+  },
+  {
+    "key": "careHowMeditationBody",
+    "group": "care",
+    "en": "Press play, sit comfortably, and follow the words on the screen. You can pause anytime.",
+    "tl": "I-play, umupo nang komportable, at sundan ang mga salita sa screen. Pwede i-pause anytime."
+  },
+  {
+    "key": "careMeditationTip",
+    "group": "care",
+    "en": "If a thought about homework appears, notice it and let it pass. That is normal.",
+    "tl": "Kung may naiisip na assignment, pansinin at hayaan itong dumaan. Normal iyon."
+  },
+  {
+    "key": "careWhyVisualizationBody",
+    "group": "care",
+    "en": "Picturing a safe place can calm your body when you feel pressure from school, friends, or home.",
+    "tl": "Ang pag-isip ng ligtas na lugar ay nakakakalma kapag may pressure sa school, kaibigan, o bahay."
+  },
+  {
+    "key": "careHowVisualizationBody",
+    "group": "care",
+    "en": "Press play, close your eyes if you like, and follow the guided imagery. Pause anytime.",
+    "tl": "I-play, ipikit ang mata kung gusto mo, at sundan ang guided imagery. Pwede i-pause anytime."
+  },
+  {
+    "key": "careVisualizationTip",
+    "group": "care",
+    "en": "Pick a real place you know — your room, a court, the sea, or a quiet hallway.",
+    "tl": "Pumili ng tunay na lugar na kilala mo — kwarto, court, dagat, o tahimik na hallway."
+  },
+  {
+    "key": "careColorOnScreen",
+    "group": "care",
+    "en": "Color on screen",
+    "tl": "Kulayan sa screen"
+  },
+  {
+    "key": "careColorClear",
+    "group": "care",
+    "en": "Clear",
+    "tl": "Burahin"
+  },
+  {
+    "key": "careStretchHold",
+    "group": "care",
+    "en": "Hold this stretch",
+    "tl": "Hawakan ang stretch"
+  },
+  {
+    "key": "careMedStep1",
+    "group": "care",
+    "en": "Sit comfortably. Rest your hands. Let your shoulders drop.",
+    "tl": "Umupo nang komportable. Ihiga ang kamay. Ibaba ang balikat."
+  },
+  {
+    "key": "careMedStep2",
+    "group": "care",
+    "en": "Notice your breath. You do not need to change it yet.",
+    "tl": "Pansinin ang hinga. Hindi pa kailangang baguhin."
+  },
+  {
+    "key": "careMedStep3",
+    "group": "care",
+    "en": "If a thought about school appears, name it, then return to your breath.",
+    "tl": "Kung may naiisip na school, pangalanan, tapos bumalik sa hinga."
+  },
+  {
+    "key": "careMedStep4",
+    "group": "care",
+    "en": "Take one slower breath. When you are ready, open your eyes.",
+    "tl": "Kumuha ng mas mabagal na hinga. Kapag handa ka na, imulat ang mata."
+  },
+  {
+    "key": "careVizStep1",
+    "group": "care",
+    "en": "Picture a place that feels safe — your room, a court, the sea, or a quiet hallway.",
+    "tl": "Isipin ang lugar na ligtas para sa iyo — kwarto, court, dagat, o hallway."
+  },
+  {
+    "key": "careVizStep2",
+    "group": "care",
+    "en": "Notice colors, sounds, and temperature. Make the scene feel real.",
+    "tl": "Pansinin ang kulay, tunog, at temperatura. Gawing totoo ang eksena."
+  },
+  {
+    "key": "careVizStep3",
+    "group": "care",
+    "en": "Imagine your body relaxing in that place. Unclench your jaw and hands.",
+    "tl": "Isipin na nagre-relax ang katawan mo doon. Bitawan ang panga at kamay."
+  },
+  {
+    "key": "careVizStep4",
+    "group": "care",
+    "en": "Take that calm with you. You can return here anytime you need a pause.",
+    "tl": "Dalhin ang kalmado. Pwede kang bumalik dito anytime kailangan mo ng pause."
+  },
+  {
+    "key": "careStretchNeck",
+    "group": "care",
+    "en": "Gently tilt your right ear toward your shoulder. Keep breathing.",
+    "tl": "Dahan-dahang i-tilt ang kanang tenga patungo sa balikat. Patuloy na huminga."
+  },
+  {
+    "key": "careStretchShoulders",
+    "group": "care",
+    "en": "Roll both shoulders back slowly, then let them drop.",
+    "tl": "I-roll pabalik ang dalawang balikat, tapos ibaba."
+  },
+  {
+    "key": "careStretchReach",
+    "group": "care",
+    "en": "Reach both arms up, then fold forward over your desk or lap.",
+    "tl": "Itaas ang dalawang braso, tapos yumuko pasulong sa desk o kandungan."
+  },
+  {
+    "key": "careDoneColoring",
+    "group": "care",
+    "en": "Done coloring",
+    "tl": "Tapos na magkulay"
   }
 ]

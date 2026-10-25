@@ -71,6 +71,9 @@ class CareToolkitQuestionService
             'is_active'    => array_key_exists('is_active', $data)
                 ? (bool) $data['is_active']
                 : ($existing?->is_active ?? true),
+            'is_reverse'   => array_key_exists('is_reverse', $data)
+                ? (bool) $data['is_reverse']
+                : ($existing?->is_reverse ?? false),
         ];
     }
 

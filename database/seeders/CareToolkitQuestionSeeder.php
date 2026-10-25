@@ -36,6 +36,9 @@ class CareToolkitQuestionSeeder extends Seeder
         ];
 
         foreach ($rows as [$type, $answerType, $order, $en, $tl]) {
+            $isReverse = ($type === 'stress' && in_array($order, [4, 5], true))
+                || ($type === 'sleep' && $order === 5);
+
             CareToolkitQuestion::query()->updateOrCreate(
                 [
                     'toolkit_type' => $type,
@@ -48,6 +51,7 @@ class CareToolkitQuestionSeeder extends Seeder
                     'options_en'  => null,
                     'options_tl'  => null,
                     'is_active'   => true,
+                    'is_reverse'  => $isReverse,
                 ],
             );
         }

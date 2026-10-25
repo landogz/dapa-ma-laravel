@@ -76,6 +76,10 @@
                         <i class="fas fa-heart-pulse w-5 text-[#FBD116]"></i>
                         <span>Care Toolkit</span>
                     </a>
+                    <a href="/admin/care-checks" class="admin-nav-link {{ ($activePage ?? '') === 'care-checks' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-checks">
+                        <i class="fas fa-clipboard-check w-5 text-[#FBD116]"></i>
+                        <span>Care Checks</span>
+                    </a>
                     <a href="/admin/care-support" class="admin-nav-link {{ ($activePage ?? '') === 'care-support' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-support">
                         <i class="fas fa-handshake-angle w-5 text-[#FBD116]"></i>
                         <span>Care Support</span>
@@ -124,9 +128,13 @@
                         <i class="fas fa-gear w-5 text-[#FBD116]"></i>
                         <span>Settings</span>
                     </a>
-                    <a href="/admin/app-options" class="admin-nav-link {{ ($activePage ?? '') === 'app-options' ? 'admin-nav-link-active' : '' }}" data-nav-section="app-options">
+                    <a href="/admin/lookups" class="admin-nav-link {{ ($activePage ?? '') === 'lookups' ? 'admin-nav-link-active' : '' }}" data-nav-section="lookups">
                         <i class="fas fa-sliders w-5 text-[#FBD116]"></i>
-                        <span>Admin Settings</span>
+                        <span>Lookups</span>
+                    </a>
+                    <a href="/admin/word-blocking" class="admin-nav-link {{ ($activePage ?? '') === 'word-blocking' ? 'admin-nav-link-active' : '' }}" data-nav-section="word-blocking">
+                        <i class="fas fa-ban w-5 text-[#FBD116]"></i>
+                        <span>Word Blocking</span>
                     </a>
                 </div>
             </nav>

@@ -70,6 +70,19 @@ class AppOptionRepository
         return ((int) $max) + 1;
     }
 
+    /**
+     * @return array<string, int>
+     */
+    public function groupCounts(): array
+    {
+        return AppOption::query()
+            ->selectRaw('`group` as group_key, COUNT(*) as total')
+            ->groupBy('group')
+            ->pluck('total', 'group_key')
+            ->map(fn ($total) => (int) $total)
+            ->all();
+    }
+
     public function keyExists(string $group, string $key, ?int $ignoreId = null): bool
     {
         return AppOption::query()

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\DiaryEntry;
 use App\Models\User;
 use App\Repositories\DiaryRepository;
+use App\Support\Journal\CustomFeelings;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -17,9 +18,12 @@ class DiaryService
     ) {
     }
 
-    public function list(User $user, int $perPage = 20): LengthAwarePaginator
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public function list(User $user, int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
-        return $this->diaryRepository->paginateForUser($user, $perPage);
+        return $this->diaryRepository->paginateForUser($user, $perPage, $filters);
     }
 
     public function getToday(User $user): ?DiaryEntry
@@ -35,7 +39,6 @@ class DiaryService
     public function store(User $user, array $data): DiaryEntry
     {
         $date = Carbon::parse($data['entry_date'])->startOfDay();
-        $existing = $this->diaryRepository->findForUserOnDate($user, $date);
 
         $payload = [
             'title'     => $data['title'] ?? null,
@@ -46,19 +49,15 @@ class DiaryService
             'body_html' => $this->nullableTrim($data['body_html'] ?? null),
         ];
 
-        // One entry per day: update today's draft/entry instead of failing.
-        if ($existing !== null) {
-            $this->applyImagePayload($existing, $data, $payload);
-
-            return $this->diaryRepository->update($existing, $payload);
-        }
-
         $this->applyImagePayload(null, $data, $payload);
 
-        return $this->diaryRepository->create($user, [
+        $entry = $this->diaryRepository->create($user, [
             'entry_date' => $date->toDateString(),
             ...$payload,
         ]);
+        CustomFeelings::remember($user, $payload['feelings'] ?? null);
+
+        return $entry;
     }
 
     public function update(User $user, int $id, array $data): DiaryEntry
@@ -83,7 +82,12 @@ class DiaryService
 
         $this->applyImagePayload($entry, $data, $payload);
 
-        return $this->diaryRepository->update($entry, $payload);
+        $updated = $this->diaryRepository->update($entry, $payload);
+        if (array_key_exists('feelings', $payload)) {
+            CustomFeelings::remember($user, $payload['feelings']);
+        }
+
+        return $updated;
     }
 
     public function delete(User $user, int $id): void

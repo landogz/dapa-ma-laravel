@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreAppTranslationRequest;
 use App\Http\Requests\Admin\UpdateAppTranslationRequest;
 use App\Models\AppTranslation;
 use App\Services\AppTranslationService;
+use App\Support\AppTranslation\Visual;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,16 +24,40 @@ class AppTranslationAdminController extends Controller
             ? filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
             : null;
 
+        $group = $request->string('group')->toString() ?: null;
+        $visual = $request->string('visual')->toString() ?: null;
+        $keys = null;
+
+        if ($group === 'bottom_menu' || $visual === 'menu') {
+            $group = null;
+            $keys = Visual::MENU_KEYS;
+        } elseif ($visual === 'card') {
+            $group = null;
+            $keys = Visual::CARD_KEYS;
+        }
+
+        $counts = $this->appTranslationService->groupCounts();
+        $counts['bottom_menu'] = AppTranslation::query()
+            ->whereIn('key', Visual::MENU_KEYS)
+            ->count();
+
         return response()->json([
             'status' => true,
             'data' => $this->appTranslationService->list(
                 min(2000, max(1, (int) $request->integer('per_page', 200))),
                 $request->string('search')->toString() ?: null,
-                $request->string('group')->toString() ?: null,
+                $group,
                 $active,
-            ),
+                $keys,
+            )->through(fn (AppTranslation $row) => Visual::formatAdmin($row)),
             'meta' => [
                 'groups' => $this->appTranslationService->groups()->values(),
+                'counts' => $counts,
+                'icons' => Visual::iconChoices(),
+                'card_keys' => Visual::visualKeys(),
+                'menu_keys' => Visual::MENU_KEYS,
+                'logo_keys' => Visual::LOGO_KEYS,
+                'page_keys' => Visual::PAGE_KEYS,
             ],
         ]);
     }
@@ -41,29 +66,32 @@ class AppTranslationAdminController extends Controller
     {
         return response()->json([
             'status' => true,
-            'data' => $appTranslation,
+            'data' => Visual::formatAdmin($appTranslation),
         ]);
     }
 
     public function store(StoreAppTranslationRequest $request): JsonResponse
     {
-        $translation = $this->appTranslationService->create($request->validated());
+        $translation = $this->appTranslationService->create($this->payloadFromRequest($request));
 
         return response()->json([
             'status' => true,
             'message' => 'Translation created.',
-            'data' => $translation,
+            'data' => Visual::formatAdmin($translation),
         ], 201);
     }
 
     public function update(UpdateAppTranslationRequest $request, AppTranslation $appTranslation): JsonResponse
     {
-        $translation = $this->appTranslationService->update($appTranslation, $request->validated());
+        $translation = $this->appTranslationService->update(
+            $appTranslation,
+            $this->payloadFromRequest($request),
+        );
 
         return response()->json([
             'status' => true,
             'message' => 'Translation updated.',
-            'data' => $translation,
+            'data' => Visual::formatAdmin($translation),
         ]);
     }
 
@@ -75,5 +103,19 @@ class AppTranslationAdminController extends Controller
             'status' => true,
             'message' => 'Translation deleted.',
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function payloadFromRequest(StoreAppTranslationRequest|UpdateAppTranslationRequest $request): array
+    {
+        $data = $request->validated();
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image');
+        }
+
+        return $data;
     }
 }

@@ -15,15 +15,17 @@ import { initAppTranslationsModule } from './app-translations/index';
 import { initSettingsModule } from './settings/index';
 import { initAppOptionsModule } from './app-options/index';
 import { initCareToolkitModule } from './care-toolkit/index';
+import { initCareChecksModule } from './care-checks/index';
 import { initCareSupportModule } from './care-support/index';
+import { initWordBlockingModule } from './word-blocking/index';
 import { initHopeDirectoryModule } from './hope-directory/index';
 import { initHopeEventsModule } from './hope-events/index';
 import { initUsersModule } from './users';
 
 const ADMIN_ROLE_SECTIONS = {
-    super_admin: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'analytics', 'users', 'diary', 'care-toolkit', 'care-support', 'hope-directory', 'hope-events', 'settings', 'app-options'],
+    super_admin: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'analytics', 'users', 'diary', 'care-toolkit', 'care-checks', 'care-support', 'hope-directory', 'hope-events', 'settings', 'lookups', 'word-blocking'],
     editor: ['posts'],
-    publisher: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'care-toolkit', 'care-support', 'hope-directory', 'hope-events', 'settings', 'app-options'],
+    publisher: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'care-toolkit', 'care-checks', 'care-support', 'hope-directory', 'hope-events', 'settings', 'lookups', 'word-blocking'],
     analytics_viewer: ['analytics'],
 };
 
@@ -39,11 +41,13 @@ const PAGE_SECTION_REQUIREMENTS = {
     'admin-users': 'users',
     'admin-diary': 'diary',
     'admin-care-toolkit': 'care-toolkit',
+    'admin-care-checks': 'care-checks',
     'admin-care-support': 'care-support',
     'admin-hope-directory': 'hope-directory',
     'admin-hope-events': 'hope-events',
     'admin-settings': 'settings',
-    'admin-app-options': 'app-options',
+    'admin-lookups': 'lookups',
+    'admin-word-blocking': 'word-blocking',
 };
 
 const SECTION_PATHS = {
@@ -58,11 +62,13 @@ const SECTION_PATHS = {
     users: '/admin/users',
     diary: '/admin/diary',
     'care-toolkit': '/admin/care-toolkit',
+    'care-checks': '/admin/care-checks',
     'care-support': '/admin/care-support',
     'hope-directory': '/admin/hope-directory',
     'hope-events': '/admin/hope-events',
     settings: '/admin/settings',
-    'app-options': '/admin/app-options',
+    lookups: '/admin/lookups',
+    'word-blocking': '/admin/word-blocking',
 };
 
 let inboxFilter = 'unread';
@@ -421,6 +427,9 @@ function initializePageContent(pageName, allowedSections) {
         case 'admin-care-toolkit':
             initCareToolkitModule();
             break;
+        case 'admin-care-checks':
+            initCareChecksModule();
+            break;
         case 'admin-care-support':
             initCareSupportModule();
             break;
@@ -436,8 +445,11 @@ function initializePageContent(pageName, allowedSections) {
         case 'admin-settings':
             initSettingsModule();
             break;
-        case 'admin-app-options':
+        case 'admin-lookups':
             initAppOptionsModule();
+            break;
+        case 'admin-word-blocking':
+            initWordBlockingModule();
             break;
         default:
             break;

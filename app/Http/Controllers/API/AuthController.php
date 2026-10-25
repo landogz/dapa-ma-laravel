@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\CheckEmailRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\VerifyLoginCodeRequest;
@@ -13,6 +14,7 @@ use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Services\Auth\EmailCheckService;
 use App\Services\LoginVerificationService;
 use App\Services\NotificationService;
 use App\Services\PasswordResetService;
@@ -29,7 +31,21 @@ class AuthController extends Controller
         private readonly NotificationService $notificationService,
         private readonly PasswordResetService $passwordResetService,
         private readonly LoginVerificationService $loginVerificationService,
+        private readonly EmailCheckService $emailCheckService,
     ) {
+    }
+
+    public function checkEmail(CheckEmailRequest $request): JsonResponse
+    {
+        $result = $this->emailCheckService->availability($request->validated('email'));
+
+        return response()->json([
+            'status' => true,
+            'message' => $result['available']
+                ? 'Email is available.'
+                : 'This email is already registered.',
+            'data' => $result,
+        ]);
     }
 
     public function register(RegisterRequest $request): JsonResponse

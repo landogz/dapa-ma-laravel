@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
 import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
+import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let contestsTable;
@@ -11,6 +12,8 @@ let contestsTableMode;
 let hasBoundViewportListener = false;
 let contestsCategoryFilter = '';
 let contestsStatusFilter = '';
+let contestsCategoryCounts = null;
+let contestsStatusCounts = null;
 
 const CATEGORY_OPTIONS = [
     { value: 'song', label: 'Song Contest' },
@@ -34,80 +37,21 @@ export function initContestsModule() {
         await initializeContestsTable(tableEl);
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        bindContestFilters();
         loadContests();
     });
 }
 
-function mountContestToolbarFilters(tableEl) {
-    const container = tableEl.closest('.dt-container');
-    if (!container) {
-        return;
-    }
-
-    const layoutEnd = [...container.querySelectorAll('.dt-layout-end')]
-        .find((el) => el.querySelector('.dt-search'));
-
-    if (!layoutEnd) {
-        return;
-    }
-
-    layoutEnd.querySelector('#contests-toolbar-filters')?.remove();
-    layoutEnd.classList.add('admin-dt-toolbar-filters-host');
-
-    const filters = document.createElement('div');
-    filters.id = 'contests-toolbar-filters';
-    filters.className = 'admin-dt-filters';
-    filters.innerHTML = `
-        <label class="sr-only" for="contests-category-filter">Filter by contest type</label>
-        <select id="contests-category-filter" class="admin-filter-select admin-filter-select-inline" aria-label="Filter by contest type">
-            <option value="">All types</option>
-            ${CATEGORY_OPTIONS.map((option) => `
-                <option value="${option.value}" ${contestsCategoryFilter === option.value ? 'selected' : ''}>
-                    ${option.label}
-                </option>
-            `).join('')}
-        </select>
-        <label class="sr-only" for="contests-status-filter">Filter by status</label>
-        <select id="contests-status-filter" class="admin-filter-select admin-filter-select-inline" aria-label="Filter by status">
-            <option value="">All statuses</option>
-            ${STATUS_OPTIONS.map((option) => `
-                <option value="${option.value}" ${contestsStatusFilter === option.value ? 'selected' : ''}>
-                    ${option.label}
-                </option>
-            `).join('')}
-        </select>
-    `;
-
-    const search = layoutEnd.querySelector('.dt-search');
-    if (search) {
-        layoutEnd.insertBefore(filters, search);
-    } else {
-        layoutEnd.prepend(filters);
-    }
-
-    bindContestFilters();
-}
-
 function bindContestFilters() {
-    const categoryFilterEl = document.getElementById('contests-category-filter');
-    if (categoryFilterEl && !categoryFilterEl.dataset.bound) {
-        categoryFilterEl.dataset.bound = '1';
-        contestsCategoryFilter = categoryFilterEl.value || '';
-        categoryFilterEl.addEventListener('change', () => {
-            contestsCategoryFilter = categoryFilterEl.value || '';
-            loadContests();
-        });
-    }
+    bindAdminFilterTabs(document.getElementById('contests-category-tabs'), (value) => {
+        contestsCategoryFilter = value;
+        loadContests();
+    });
 
-    const statusFilterEl = document.getElementById('contests-status-filter');
-    if (statusFilterEl && !statusFilterEl.dataset.bound) {
-        statusFilterEl.dataset.bound = '1';
-        contestsStatusFilter = statusFilterEl.value || '';
-        statusFilterEl.addEventListener('change', () => {
-            contestsStatusFilter = statusFilterEl.value || '';
-            loadContests();
-        });
-    }
+    bindAdminFilterTabs(document.getElementById('contests-status-tabs'), (value) => {
+        contestsStatusFilter = value;
+        loadContests();
+    });
 }
 
 export function loadContests(search = '') {
@@ -128,6 +72,12 @@ export function loadContests(search = '') {
                 contestsTable.row.add(buildRowData(contest));
             });
             contestsTable.draw();
+            if (!contestsCategoryFilter && !contestsStatusFilter) {
+                contestsCategoryCounts = countByKey(rows, (row) => row.category || '');
+                contestsStatusCounts = countByKey(rows, (row) => row.status || '');
+            }
+            applyAdminFilterTabCounts(document.getElementById('contests-category-tabs'), contestsCategoryCounts || {});
+            applyAdminFilterTabCounts(document.getElementById('contests-status-tabs'), contestsStatusCounts || {});
         })
         .catch(({ response }) => {
             showErrorToast(response?.data?.message ?? 'Failed to load contests.');
@@ -430,7 +380,6 @@ async function initializeContestsTable(tableEl) {
     }
 
     if (contestsTable && contestsTableMode === nextMode) {
-        mountContestToolbarFilters(tableEl);
         return;
     }
 
@@ -454,11 +403,7 @@ async function initializeContestsTable(tableEl) {
             scrollX: nextMode !== 'mobile',
             scrollCollapse: nextMode !== 'mobile',
         }),
-        lengthMenu: nextMode === 'mobile'
-            ? [[5, 10, 25], [5, 10, 25]]
-            : [[10, 25, 50, 100], [10, 25, 50, 100]],
     });
-    mountContestToolbarFilters(tableEl);
     bindAdminActionTooltipSuppression(tableEl);
 }
 

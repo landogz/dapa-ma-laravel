@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             AppTranslationSeeder::class,
             LegalPageSeeder::class,
             AppOptionSeeder::class,
+            BlockedWordSeeder::class,
             KidListoQuoteSeeder::class,
             CareToolkitQuestionSeeder::class,
             CareSupportResourceSeeder::class,

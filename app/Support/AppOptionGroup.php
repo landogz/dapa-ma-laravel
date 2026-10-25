@@ -176,11 +176,54 @@ final class AppOptionGroup
     }
 
     /**
-     * @return list<array{value: string, label: string}>
+     * Font Awesome class used in admin icon pickers (Nova-style grid).
+     */
+    public static function iconFaClass(string $value): string
+    {
+        return match ($value) {
+            'school_outlined' => 'fas fa-graduation-cap',
+            'family_restroom_outlined' => 'fas fa-people-roof',
+            'menu_book_outlined' => 'fas fa-book-open',
+            'star_outline_rounded' => 'far fa-star',
+            'favorite_outline' => 'far fa-heart',
+            'flag_outlined' => 'fas fa-flag',
+            'work_outline' => 'fas fa-briefcase',
+            'volunteer_activism_outlined' => 'fas fa-hand-holding-heart',
+            'volunteer_activism_rounded' => 'fas fa-hand-holding-heart',
+            'handshake_outlined', 'handshake_rounded' => 'fas fa-handshake',
+            'spa_outlined' => 'fas fa-spa',
+            'auto_awesome_outlined' => 'fas fa-wand-magic-sparkles',
+            'menu_book_rounded' => 'fas fa-book',
+            'medical_services_outlined' => 'fas fa-kit-medical',
+            'wb_sunny_outlined' => 'fas fa-sun',
+            'cloud_queue_outlined' => 'fas fa-cloud-sun',
+            'cloud_outlined' => 'fas fa-cloud',
+            'thunderstorm_outlined' => 'fas fa-cloud-bolt',
+            'water_drop_outlined' => 'fas fa-droplet',
+            'air' => 'fas fa-wind',
+            'groups_outlined' => 'fas fa-users',
+            'groups_rounded' => 'fas fa-user-group',
+            'waves_outlined' => 'fas fa-water',
+            'bedtime_outlined' => 'fas fa-moon',
+            'place_outlined' => 'fas fa-location-dot',
+            'self_improvement_outlined' => 'fas fa-person-praying',
+            'home_outlined', 'home_rounded' => 'fas fa-house',
+            'help_outline_rounded', 'help_rounded' => 'fas fa-circle-question',
+            'person_rounded' => 'fas fa-user',
+            'person_outline' => 'far fa-user',
+            'fitness_center_outlined' => 'fas fa-dumbbell',
+            'restaurant_outlined' => 'fas fa-utensils',
+            'label_outline' => 'fas fa-tag',
+            default => 'fas fa-icons',
+        };
+    }
+
+    /**
+     * @return list<array{value: string, label: string, fa: string}>
      */
     public static function iconChoices(): array
     {
-        return [
+        $items = [
             ['value' => 'school_outlined', 'label' => 'School'],
             ['value' => 'family_restroom_outlined', 'label' => 'Family'],
             ['value' => 'menu_book_outlined', 'label' => 'Book'],
@@ -189,6 +232,11 @@ final class AppOptionGroup
             ['value' => 'flag_outlined', 'label' => 'Flag'],
             ['value' => 'work_outline', 'label' => 'Work'],
             ['value' => 'volunteer_activism_outlined', 'label' => 'Volunteer'],
+            ['value' => 'volunteer_activism_rounded', 'label' => 'Care heart'],
+            ['value' => 'handshake_outlined', 'label' => 'Handshake'],
+            ['value' => 'spa_outlined', 'label' => 'Calm'],
+            ['value' => 'auto_awesome_outlined', 'label' => 'Sparkle'],
+            ['value' => 'menu_book_rounded', 'label' => 'Journal book'],
             ['value' => 'medical_services_outlined', 'label' => 'Medical'],
             ['value' => 'wb_sunny_outlined', 'label' => 'Sun'],
             ['value' => 'cloud_queue_outlined', 'label' => 'Light cloud'],
@@ -206,6 +254,12 @@ final class AppOptionGroup
             ['value' => 'restaurant_outlined', 'label' => 'Food'],
             ['value' => 'label_outline', 'label' => 'Label'],
         ];
+
+        return array_map(static function (array $item): array {
+            $item['fa'] = self::iconFaClass($item['value']);
+
+            return $item;
+        }, $items);
     }
 
     /**

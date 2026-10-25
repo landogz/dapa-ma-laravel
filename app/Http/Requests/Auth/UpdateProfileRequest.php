@@ -21,6 +21,9 @@ class UpdateProfileRequest extends FormRequest
             'last_name' => ['sometimes', 'required', 'string', 'max:120'],
             'profile_photo' => ['sometimes', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
             'remove_profile_photo' => ['sometimes', 'boolean'],
+            'about' => ['sometimes', 'nullable', 'string', 'max:70'],
+            'journal_custom_feelings' => ['sometimes', 'nullable', 'array', 'max:40'],
+            'journal_custom_feelings.*' => ['string', 'max:80'],
             'interests' => ['sometimes', 'nullable', 'array', 'max:20'],
             'interests.*' => ['string', 'max:80'],
         ];

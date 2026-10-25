@@ -27,18 +27,23 @@ use App\Http\Controllers\API\AppTranslationController;
 use App\Http\Controllers\API\LegalPageController;
 use App\Http\Controllers\API\AppOptionController;
 use App\Http\Controllers\API\Admin\AppOptionAdminController;
+use App\Http\Controllers\API\BlockedWordController;
 use App\Http\Controllers\API\KidListoQuoteController;
 use App\Http\Controllers\API\MoodCheckinController;
 use App\Http\Controllers\API\Admin\LegalPageAdminController;
+use App\Http\Controllers\API\Admin\BlockedWordAdminController;
 use App\Http\Controllers\API\Admin\KidListoQuoteAdminController;
 use App\Http\Controllers\API\CareToolkitQuestionController;
 use App\Http\Controllers\API\Admin\CareToolkitQuestionAdminController;
+use App\Http\Controllers\API\CareCheck\CareCheckController;
+use App\Http\Controllers\API\Admin\CareCheck\CareCheckAdminController;
 use App\Http\Controllers\API\CareSupportResourceController;
 use App\Http\Controllers\API\Admin\CareSupportResourceAdminController;
 use App\Http\Controllers\API\HopeDirectoryController;
 use App\Http\Controllers\API\HopeEventController;
 use App\Http\Controllers\API\Admin\HopeDirectoryAdminController;
 use App\Http\Controllers\API\Admin\HopeEventAdminController;
+use App\Http\Controllers\API\Admin\IconPicker\IconPickerController;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserNotificationController;
@@ -73,6 +78,9 @@ Route::prefix('v1')
 
         // ── Auth (public) ─────────────────────────────────────────────────
         Route::prefix('auth')->name('auth.')->group(function (): void {
+            Route::get('/check-email', [AuthController::class, 'checkEmail'])
+                ->middleware('throttle:20,1')
+                ->name('check-email');
             Route::post('/register', [AuthController::class, 'register'])->name('register');
             Route::post('/login', [AuthController::class, 'login'])->name('login');
             Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password');
@@ -154,6 +162,9 @@ Route::prefix('v1')
         Route::get('/app-options', [AppOptionController::class, 'index'])
             ->name('app-options.index');
 
+        Route::get('/blocked-words', [BlockedWordController::class, 'index'])
+            ->name('blocked-words.index');
+
         // ── Public Kid Listo motivational quotes ─────────────────────────
         Route::get('/kid-listo/random', [KidListoQuoteController::class, 'random'])
             ->name('kid-listo.random');
@@ -200,6 +211,10 @@ Route::prefix('v1')
             Route::get('/mood-checkins/today', [MoodCheckinController::class, 'today'])->name('mood-checkins.today');
             Route::get('/mood-checkins', [MoodCheckinController::class, 'index'])->name('mood-checkins.index');
             Route::post('/mood-checkins', [MoodCheckinController::class, 'store'])->name('mood-checkins.store');
+
+            Route::get('/care-checks/latest', [CareCheckController::class, 'latest'])->name('care-checks.latest');
+            Route::get('/care-checks', [CareCheckController::class, 'index'])->name('care-checks.index');
+            Route::post('/care-checks', [CareCheckController::class, 'store'])->name('care-checks.store');
 
             // ── Contest submissions (song | poster | video) ───────────────
             Route::post('/contests/{contest}/entries', [ContestController::class, 'submit'])
@@ -294,17 +309,30 @@ Route::prefix('v1')
                         ->where('slug', 'privacy_policy|terms_of_use|privacy_notice')
                         ->name('legal-pages.update');
 
+                    Route::get('/blocked-words', [BlockedWordAdminController::class, 'index'])->name('blocked-words.index');
+                    Route::post('/blocked-words', [BlockedWordAdminController::class, 'store'])->name('blocked-words.store');
+                    Route::get('/blocked-words/{blockedWord}', [BlockedWordAdminController::class, 'show'])->name('blocked-words.show');
+                    Route::put('/blocked-words/{blockedWord}', [BlockedWordAdminController::class, 'update'])->name('blocked-words.update');
+                    Route::delete('/blocked-words/{blockedWord}', [BlockedWordAdminController::class, 'destroy'])->name('blocked-words.destroy');
+
                     Route::get('/kid-listo-quotes', [KidListoQuoteAdminController::class, 'index'])->name('kid-listo-quotes.index');
                     Route::post('/kid-listo-quotes', [KidListoQuoteAdminController::class, 'store'])->name('kid-listo-quotes.store');
                     Route::get('/kid-listo-quotes/{kidListoQuote}', [KidListoQuoteAdminController::class, 'show'])->name('kid-listo-quotes.show');
                     Route::put('/kid-listo-quotes/{kidListoQuote}', [KidListoQuoteAdminController::class, 'update'])->name('kid-listo-quotes.update');
                     Route::delete('/kid-listo-quotes/{kidListoQuote}', [KidListoQuoteAdminController::class, 'destroy'])->name('kid-listo-quotes.destroy');
 
+                    Route::get('/icon-picker/iconsets', [IconPickerController::class, 'iconsets'])->name('icon-picker.iconsets');
+                    Route::get('/icon-picker/iconsets/{iconset}', [IconPickerController::class, 'icons'])->name('icon-picker.icons');
+
                     Route::get('/app-options', [AppOptionAdminController::class, 'index'])->name('app-options.index');
                     Route::post('/app-options', [AppOptionAdminController::class, 'store'])->name('app-options.store');
                     Route::get('/app-options/{appOption}', [AppOptionAdminController::class, 'show'])->name('app-options.show');
                     Route::put('/app-options/{appOption}', [AppOptionAdminController::class, 'update'])->name('app-options.update');
                     Route::delete('/app-options/{appOption}', [AppOptionAdminController::class, 'destroy'])->name('app-options.destroy');
+
+                    Route::get('/care-checks/summary', [CareCheckAdminController::class, 'summary'])->name('care-checks.summary');
+                    Route::get('/care-checks', [CareCheckAdminController::class, 'index'])->name('care-checks.index');
+                    Route::get('/care-checks/{id}', [CareCheckAdminController::class, 'show'])->whereNumber('id')->name('care-checks.show');
 
                     Route::get('/care-toolkit-questions', [CareToolkitQuestionAdminController::class, 'index'])->name('care-toolkit-questions.index');
                     Route::post('/care-toolkit-questions', [CareToolkitQuestionAdminController::class, 'store'])->name('care-toolkit-questions.store');
@@ -375,6 +403,7 @@ Route::prefix('v1')
                         Route::post('/app-translations', [AppTranslationAdminController::class, 'store'])->name('app-translations.store');
                         Route::get('/app-translations/{appTranslation}', [AppTranslationAdminController::class, 'show'])->name('app-translations.show');
                         Route::put('/app-translations/{appTranslation}', [AppTranslationAdminController::class, 'update'])->name('app-translations.update');
+                        Route::post('/app-translations/{appTranslation}', [AppTranslationAdminController::class, 'update'])->name('app-translations.update.post');
                         Route::delete('/app-translations/{appTranslation}', [AppTranslationAdminController::class, 'destroy'])->name('app-translations.destroy');
                     });
 

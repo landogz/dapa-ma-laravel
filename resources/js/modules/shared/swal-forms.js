@@ -1,5 +1,17 @@
 import Swal from 'sweetalert2';
 import { bindPasswordToggles } from './password-toggle';
+import { bindSvgIconPickers } from './svg-icon-picker';
+
+const DEFAULT_PICKER_COLOR = '#055498';
+
+const DEFAULT_COLOR_PRESETS = [
+    { value: '#055498', className: 'bg-[#055498]', label: 'Medium Electric Blue' },
+    { value: '#123a60', className: 'bg-[#123a60]', label: 'Nile Blue' },
+    { value: '#CE2028', className: 'bg-[#CE2028]', label: 'Fire Engine Red' },
+    { value: '#FBD116', className: 'bg-[#FBD116]', label: 'Bright Gold' },
+    { value: '#7C3AED', className: 'bg-[#7C3AED]', label: 'Purple' },
+    { value: '#94A3B8', className: 'bg-[#94A3B8]', label: 'Slate' },
+];
 
 function escapeHtml(value = '') {
     return String(value)
@@ -8,6 +20,20 @@ function escapeHtml(value = '') {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
+}
+
+export function normalizeHexColor(value) {
+    const raw = String(value ?? '').trim();
+    if (!raw) {
+        return '';
+    }
+
+    const hex = raw.startsWith('#') ? raw : `#${raw}`;
+    if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        return '';
+    }
+
+    return hex.toUpperCase();
 }
 
 function renderOptions(options = [], selectedValue = '') {
@@ -102,6 +128,58 @@ function renderField(field) {
         `;
     }
 
+    if (field.type === 'svg-icon') {
+        const choicesJson = escapeHtml(JSON.stringify(field.choices ?? []));
+        const noneLabel = field.noneLabel != null ? field.noneLabel : 'None (use default art)';
+
+        return `
+            <div class="admin-swal-field">
+                ${label}
+                <div class="admin-svg-icon-picker" data-svg-icon-picker data-iconset="outline" data-resettable="1" data-icon-choices="${choicesJson}" data-none-label="${escapeHtml(noneLabel)}">
+                    <input type="hidden" id="${field.id}" name="${field.id}" value="${escapeHtml(field.value ?? '')}">
+                </div>
+                ${hint}
+            </div>
+        `;
+    }
+
+    if (field.type === 'color') {
+        const hex = normalizeHexColor(field.value);
+        const pickerValue = (hex || normalizeHexColor(field.placeholder) || DEFAULT_PICKER_COLOR).toLowerCase();
+        const swatchVar = hex ? ` style="--admin-swatch: ${escapeHtml(hex)}"` : '';
+        const presets = (Array.isArray(field.presets) ? field.presets : DEFAULT_COLOR_PRESETS)
+            .map((preset) => {
+                const presetHex = normalizeHexColor(preset.value);
+                if (!presetHex) {
+                    return '';
+                }
+
+                const presetLabel = escapeHtml(preset.label || presetHex);
+                const swatchClass = escapeHtml(preset.className || '');
+
+                return `<button type="button" class="admin-swal-color-preset ${swatchClass}" data-color-preset="${presetHex}" title="${presetLabel}" aria-label="${presetLabel}"></button>`;
+            })
+            .join('');
+
+        return `
+            <div class="admin-swal-field">
+                ${label}
+                <div class="admin-swal-color" data-color-field>
+                    <div class="admin-swal-color-row">
+                        <label class="admin-swal-color-swatch${hex ? '' : ' is-empty'}" title="Pick a color">
+                            <span class="admin-swal-color-face" data-color-face${swatchVar} aria-hidden="true"></span>
+                            <input id="${field.id}-picker" class="admin-swal-color-native" type="color" value="${escapeHtml(pickerValue)}" data-color-picker aria-label="Pick ${escapeHtml(field.label)}">
+                        </label>
+                        <input id="${field.id}" class="admin-swal-input admin-swal-color-hex" type="text" value="${escapeHtml(hex)}"${placeholder} maxlength="7" spellcheck="false" autocomplete="off" autocapitalize="characters" inputmode="text" data-color-hex aria-label="${escapeHtml(field.label)} hex">
+                        <button type="button" class="admin-swal-color-clear" data-color-clear${hex ? '' : ' hidden'}>Clear</button>
+                    </div>
+                    ${presets ? `<div class="admin-swal-color-presets" role="group" aria-label="Brand colors">${presets}</div>` : ''}
+                </div>
+                ${hint}
+            </div>
+        `;
+    }
+
     return `
         <div class="admin-swal-field">
             ${label}
@@ -126,6 +204,86 @@ export function buildSwalForm({ description = '', rules = '', fields = [] }) {
             </div>
         </div>
     `;
+}
+
+/**
+ * Sync native color pickers with hex text fields.
+ */
+export function bindColorPickers(root = document) {
+    root.querySelectorAll('[data-color-field]').forEach((field) => {
+        if (field.dataset.colorBound === '1') {
+            return;
+        }
+
+        field.dataset.colorBound = '1';
+
+        const picker = field.querySelector('[data-color-picker]');
+        const hexInput = field.querySelector('[data-color-hex]');
+        const face = field.querySelector('[data-color-face]');
+        const swatch = field.querySelector('.admin-swal-color-swatch');
+        const clearBtn = field.querySelector('[data-color-clear]');
+        const fallback = normalizeHexColor(hexInput?.getAttribute('placeholder')) || DEFAULT_PICKER_COLOR;
+
+        const apply = (raw, { syncHex = true } = {}) => {
+            const hex = normalizeHexColor(raw);
+
+            if (hex) {
+                if (picker) {
+                    picker.value = hex.toLowerCase();
+                }
+                if (syncHex && hexInput) {
+                    hexInput.value = hex;
+                }
+                face?.style.setProperty('--admin-swatch', hex);
+                swatch?.classList.remove('is-empty');
+                if (clearBtn) {
+                    clearBtn.hidden = false;
+                }
+                return;
+            }
+
+            if (picker) {
+                picker.value = fallback.toLowerCase();
+            }
+            face?.style.removeProperty('--admin-swatch');
+            swatch?.classList.add('is-empty');
+            if (clearBtn) {
+                clearBtn.hidden = true;
+            }
+        };
+
+        apply(hexInput?.value, { syncHex: Boolean(normalizeHexColor(hexInput?.value)) });
+
+        picker?.addEventListener('input', () => apply(picker.value));
+        hexInput?.addEventListener('input', () => {
+            const typed = String(hexInput.value ?? '').trim();
+            if (typed === '') {
+                apply('');
+                return;
+            }
+            const hex = normalizeHexColor(typed);
+            if (hex) {
+                apply(hex, { syncHex: false });
+            }
+        });
+        hexInput?.addEventListener('blur', () => {
+            const hex = normalizeHexColor(hexInput.value);
+            if (hex) {
+                hexInput.value = hex;
+                apply(hex);
+            }
+        });
+        clearBtn?.addEventListener('click', () => {
+            if (hexInput) {
+                hexInput.value = '';
+            }
+            apply('');
+            hexInput?.focus();
+        });
+        field.querySelectorAll('[data-color-preset]').forEach((button) => {
+            button.addEventListener('click', () => apply(button.getAttribute('data-color-preset')));
+        });
+    });
 }
 
 /**
@@ -466,6 +624,8 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
         didOpen: (popup) => {
             bindPasswordToggles(popup);
             bindImageFilePreviews(popup);
+            bindColorPickers(popup);
+            bindSvgIconPickers(popup);
 
             if (confirmDialog) {
                 mountConfirmDialog(popup);

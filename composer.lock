@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ad91ab9bde70e3576f2b64dd11542bc4",
+    "content-hash": "2dccf8cb2564498ad58aee2e817f8181",
     "packages": [
         {
             "name": "brick/math",
@@ -2447,6 +2447,53 @@
                 "source": "https://github.com/nette/utils/tree/v4.1.3"
             },
             "time": "2026-02-13T03:05:33+00:00"
+        },
+        {
+            "name": "nevadskiy/nova-icon-picker",
+            "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nevadskiy/nova-icon-picker.git",
+                "reference": "90595e31da1637be5633b0a73372386ee8308360"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nevadskiy/nova-icon-picker/zipball/90595e31da1637be5633b0a73372386ee8308360",
+                "reference": "90595e31da1637be5633b0a73372386ee8308360",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.3|^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Nevadskiy\\Nova\\IconPicker\\FieldServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Nevadskiy\\Nova\\IconPicker\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Icon Picker for Laravel Nova.",
+            "keywords": [
+                "icon",
+                "laravel",
+                "nova",
+                "picker"
+            ],
+            "support": {
+                "issues": "https://github.com/nevadskiy/nova-icon-picker/issues",
+                "source": "https://github.com/nevadskiy/nova-icon-picker/tree/0.1.0"
+            },
+            "time": "2023-09-10T17:33:24+00:00"
         },
         {
             "name": "nikic/php-parser",

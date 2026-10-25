@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Diary\IndexDiaryEntryRequest;
 use App\Http\Requests\Diary\StoreDiaryEntryRequest;
 use App\Http\Requests\Diary\UpdateDiaryEntryRequest;
 use App\Services\DiaryService;
@@ -16,10 +17,13 @@ class DiaryController extends Controller
     ) {
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(IndexDiaryEntryRequest $request): JsonResponse
     {
-        $user = $request->user();
-        $paginator = $this->diaryService->list($user);
+        $filters = $request->validated();
+        $perPage = (int) ($filters['per_page'] ?? 50);
+        unset($filters['per_page']);
+
+        $paginator = $this->diaryService->list($request->user(), $perPage, $filters);
 
         return response()->json([
             'status'  => true,

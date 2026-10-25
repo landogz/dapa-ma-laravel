@@ -28,6 +28,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        .share-fallback-logo {
+            width: 6.5rem;
+            height: 6.5rem;
+        }
+        @media (min-width: 640px) {
+            .share-fallback-logo { width: 8rem; height: 8rem; }
+        }
+        @media (min-width: 1024px) {
+            .share-fallback-logo { width: 10rem; height: 10rem; }
+        }
+    </style>
 </head>
 <body
     data-page="public-share"
@@ -52,13 +64,13 @@
 
         <main class="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-10 max-lg:pb-[12.5rem] [@media(max-height:500px)]:max-lg:pb-[7.25rem]">
             <article class="overflow-hidden rounded-2xl bg-white shadow-2xl shadow-black/30 sm:rounded-3xl lg:grid lg:grid-cols-2 lg:items-stretch [&>*]:min-w-0">
-                <div class="relative aspect-[2/1] min-h-[9.5rem] bg-gradient-to-br from-[#055498] to-[#123a60] sm:aspect-[16/7] sm:min-h-[12rem] lg:aspect-auto lg:min-h-[22rem]">
+                <div class="relative aspect-[2/1] min-h-[9.5rem] overflow-hidden bg-gradient-to-br from-[#055498] to-[#123a60] sm:aspect-[16/7] sm:min-h-[12rem] lg:aspect-auto lg:min-h-[22rem]">
                     @if ($card->imageIsLogo)
                         <div class="flex h-full w-full items-center justify-center p-6 sm:p-8">
                             <img
                                 src="{{ $card->imageSrc }}"
                                 alt="Dangerous Drugs Board"
-                                class="h-24 w-24 rounded-full bg-white object-contain p-1 shadow-xl sm:h-32 sm:w-32 lg:h-40 lg:w-40"
+                                class="share-fallback-logo rounded-full bg-white object-contain p-1 shadow-xl"
                             >
                         </div>
                     @else

@@ -4,17 +4,25 @@ namespace App\Repositories;
 
 use App\Models\DiaryEntry;
 use App\Models\User;
+use App\Support\Journal\EntryFilters;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 
 class DiaryRepository
 {
-    public function paginateForUser(User $user, int $perPage = 20): LengthAwarePaginator
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public function paginateForUser(User $user, int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
-        return DiaryEntry::query()
+        $query = DiaryEntry::query()
             ->where('user_id', $user->id)
             ->orderByDesc('entry_date')
-            ->paginate($perPage);
+            ->orderByDesc('id');
+
+        EntryFilters::apply($query, $filters);
+
+        return $query->paginate($perPage);
     }
 
     public function paginateAdmin(int $perPage = 20, array $filters = []): LengthAwarePaginator
@@ -93,6 +101,7 @@ class DiaryRepository
         return DiaryEntry::query()
             ->where('user_id', $user->id)
             ->whereDate('entry_date', $date->toDateString())
+            ->orderByDesc('id')
             ->first();
     }
 

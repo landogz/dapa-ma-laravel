@@ -19,6 +19,7 @@ class CareToolkitQuestion extends Model
         'options_tl',
         'sort_order',
         'is_active',
+        'is_reverse',
     ];
 
     protected function casts(): array
@@ -28,6 +29,7 @@ class CareToolkitQuestion extends Model
             'options_tl' => 'array',
             'sort_order' => 'integer',
             'is_active'  => 'boolean',
+            'is_reverse' => 'boolean',
         ];
     }
 
@@ -49,6 +51,7 @@ class CareToolkitQuestion extends Model
             'question'    => $isTl ? $this->question_tl : $this->question_en,
             'options'     => array_values($options ?? []),
             'sort_order'  => $this->sort_order,
+            'is_reverse'  => (bool) $this->is_reverse,
         ];
     }
 
@@ -64,6 +67,7 @@ class CareToolkitQuestion extends Model
             'options_tl'   => $this->options_tl,
             'sort_order'   => $this->sort_order,
             'is_active'    => $this->is_active,
+            'is_reverse'   => (bool) $this->is_reverse,
             'created_at'   => optional($this->created_at)?->toIso8601String(),
             'updated_at'   => optional($this->updated_at)?->toIso8601String(),
         ];

@@ -5,9 +5,11 @@ import {
     buildSwalOptions,
     confirmWithSwal,
     formatApiValidationMessage,
+    normalizeHexColor,
 } from '../shared/swal-forms';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
+import { bindAdminFilterTabs, renderAdminFilterTabs, setAdminFilterTab } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let optionsTable;
@@ -26,11 +28,10 @@ export function initAppOptionsModule() {
     document.querySelector('[data-admin-action="create-app-option"]')
         ?.addEventListener('click', () => createAppOption());
 
-    document.getElementById('app-option-group-filter')
-        ?.addEventListener('change', (event) => {
-            currentGroupFilter = event.target.value || '';
-            loadAppOptions();
-        });
+    bindAdminFilterTabs(document.getElementById('app-option-group-tabs'), (value) => {
+        currentGroupFilter = value;
+        loadAppOptions();
+    });
 
     initializeOptionsTable(tableEl).then(() => {
         bindViewportListener(tableEl);
@@ -61,6 +62,7 @@ async function initializeOptionsTable(tableElement) {
             pageLength: nextMode === 'mobile' ? 6 : 25,
             scrollX: nextMode !== 'mobile',
             scrollCollapse: nextMode !== 'mobile',
+            drawCallback: () => applyColorSwatches(tableElement),
         }),
     );
 }
@@ -112,19 +114,37 @@ function buildColumns(mode) {
     ];
 }
 
-function fillGroupFilter() {
-    const select = document.getElementById('app-option-group-filter');
-    if (!select || select.dataset.filled === 'true' || groupMeta.length === 0) {
+function fillGroupTabs() {
+    const tabs = document.getElementById('app-option-group-tabs');
+    if (!tabs || groupMeta.length === 0) {
         return;
     }
 
-    groupMeta.forEach((group) => {
-        const option = document.createElement('option');
-        option.value = group.key;
-        option.textContent = group.title;
-        select.appendChild(option);
-    });
-    select.dataset.filled = 'true';
+    const signature = groupMeta.map((group) => `${group.key}:${group.title}:${group.count ?? 0}`).join('|');
+    if (tabs.dataset.filled === signature) {
+        setAdminFilterTab(tabs, currentGroupFilter);
+        return;
+    }
+
+    const total = groupMeta.reduce((sum, group) => sum + Number(group.count ?? 0), 0);
+    const icons = {
+        pronouns: 'fas fa-user',
+        persona: 'fas fa-id-card',
+        journal_sky: 'fas fa-cloud-sun',
+        journal_feeling: 'fas fa-face-smile',
+        journal_impact: 'fas fa-sun',
+    };
+    renderAdminFilterTabs(tabs, [
+        { value: '', label: 'All catalogs', icon: 'fas fa-layer-group', count: total },
+        ...groupMeta.map((group) => ({
+            value: group.key,
+            label: group.title,
+            icon: icons[group.key] || 'fas fa-table',
+            count: group.count ?? 0,
+        })),
+    ]);
+    tabs.dataset.filled = signature;
+    setAdminFilterTab(tabs, currentGroupFilter);
 }
 
 export function loadAppOptions() {
@@ -140,16 +160,20 @@ export function loadAppOptions() {
     })
         .then(({ data }) => {
             groupMeta = data.meta?.groups ?? groupMeta;
+            if (currentGroupFilter && !groupMeta.some((group) => group.key === currentGroupFilter)) {
+                currentGroupFilter = '';
+            }
             iconChoices = data.meta?.icons ?? iconChoices;
-            fillGroupFilter();
+            fillGroupTabs();
 
             const rows = data.data?.data ?? [];
             optionsTable.clear();
             rows.forEach((row) => optionsTable.row.add(buildRowData(row)));
             optionsTable.draw();
+            applyColorSwatches(optionsTable.table().container());
         })
         .catch(({ response }) => {
-            showErrorToast(response?.data?.message ?? 'Failed to load admin settings.');
+            showErrorToast(response?.data?.message ?? 'Failed to load lookups.');
         });
 }
 
@@ -221,7 +245,7 @@ function buildRowData(row) {
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">${catalog}</p>
-                        <p class="admin-table-mobile-title">${label}</p>
+                        <p class="admin-table-mobile-title admin-option-label-cell">${optionIconHtml(row)}${accentSwatchHtml(row)}${label}</p>
                     </div>
                     ${status}
                 </div>
@@ -229,6 +253,7 @@ function buildRowData(row) {
                     <p><span>Key:</span> ${key}</p>
                     <p><span>Order:</span> ${escapeHtml(String(row.sort_order ?? 0))}</p>
                     <p><span>Selection:</span> ${escapeHtml(selection)}</p>
+                    <p><span>Accent:</span> ${escapeHtml(normalizeHexColor(row.accent_color) || 'None')}</p>
                 </div>
                 <div class="admin-table-mobile-actions">${mobileActions}</div>
             </div>`,
@@ -238,7 +263,7 @@ function buildRowData(row) {
     return [
         String(row.sort_order ?? 0),
         catalog,
-        label,
+        `<span class="admin-option-label-cell">${optionIconHtml(row)}${accentSwatchHtml(row)}${label}</span>`,
         key,
         escapeHtml(selection),
         status,
@@ -250,9 +275,6 @@ function showOptionForm(existing) {
     const isEdit = Boolean(existing);
     const groupOptions = (groupMeta.length ? groupMeta : [{ key: 'pronouns', title: 'Pronouns' }])
         .map((group) => ({ value: group.key, label: group.title }));
-    const icons = [{ value: '', label: 'None' }].concat(
-        iconChoices.map((icon) => ({ value: icon.value, label: icon.label })),
-    );
     const defaultGroup = existing?.group || currentGroupFilter || groupMeta[0]?.key || 'persona';
     const fields = [
         {
@@ -299,15 +321,18 @@ function showOptionForm(existing) {
         {
             id: 'ao-icon',
             label: 'Icon',
-            type: 'select',
+            type: 'svg-icon',
             value: existing?.icon ?? '',
-            options: icons,
+            choices: iconChoices,
+            noneLabel: 'None',
         },
         {
             id: 'ao-accent',
             label: 'Accent color',
+            type: 'color',
             value: existing?.accent_color ?? '',
             placeholder: '#055498',
+            hint: 'Used on journal sky cards. Leave blank for the default.',
         },
         {
             id: 'ao-sort-order',
@@ -345,10 +370,16 @@ function showOptionForm(existing) {
                 ? (existing.key ?? '')
                 : (document.getElementById('ao-key')?.value?.trim() ?? '');
             const sortRaw = document.getElementById('ao-sort-order')?.value?.trim() ?? '';
-            const accent = document.getElementById('ao-accent')?.value?.trim() ?? '';
+            const accentRaw = document.getElementById('ao-accent')?.value?.trim() ?? '';
+            const accent = normalizeHexColor(accentRaw);
 
             if (!labelEn || !labelTl) {
                 Swal.showValidationMessage('English and Tagalog labels are required.');
+                return false;
+            }
+
+            if (accentRaw && !accent) {
+                Swal.showValidationMessage('Use a 6-digit hex color like #055498, or leave blank.');
                 return false;
             }
 
@@ -388,8 +419,39 @@ function showOptionForm(existing) {
         if (!isConfirmed || !value) {
             return;
         }
-        showSuccessToast(value.message ?? 'Option saved.', 'Admin Settings');
+        showSuccessToast(value.message ?? 'Option saved.', 'Lookups');
         loadAppOptions();
+    });
+}
+
+function optionIconHtml(row) {
+    if (!row?.icon) {
+        return '';
+    }
+    const match = iconChoices.find((choice) => String(choice.value ?? '') === String(row.icon));
+    const fa = match?.fa || 'fas fa-icons';
+    return `<span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[#055498]" title="${escapeHtml(row.icon)}"><i class="${escapeHtml(fa)}" aria-hidden="true"></i></span>`;
+}
+
+function accentSwatchHtml(row) {
+    const hex = normalizeHexColor(row?.accent_color);
+    if (!hex) {
+        return '<span class="admin-color-swatch admin-color-swatch-empty" title="No accent" aria-hidden="true"></span>';
+    }
+
+    return `<span class="admin-color-swatch" data-swatch="${escapeHtml(hex)}" title="${escapeHtml(hex)}" aria-label="Accent ${escapeHtml(hex)}"></span>`;
+}
+
+function applyColorSwatches(root) {
+    if (!root) {
+        return;
+    }
+
+    root.querySelectorAll('[data-swatch]').forEach((swatch) => {
+        const hex = normalizeHexColor(swatch.getAttribute('data-swatch'));
+        if (hex) {
+            swatch.style.setProperty('--admin-swatch', hex);
+        }
     });
 }
 

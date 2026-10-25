@@ -21,9 +21,7 @@ class SharePageService
         }
 
         $image = $this->resolveImage(
-            $this->absoluteUrl($post->media_url)
-                ?? $this->youtubeThumb($post->youtube_url)
-                ?? $this->firstBodyImage($post->body),
+            $this->absoluteUrl($post->media_url),
             self::LOGO_PATH,
         );
 
@@ -241,15 +239,6 @@ class SharePageService
         return str_starts_with($trimmed, '/') ? $trimmed : '/'.$trimmed;
     }
 
-    private function firstBodyImage(?string $html): ?string
-    {
-        if (! $html || ! preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $html, $matches)) {
-            return null;
-        }
-
-        return $matches[1];
-    }
-
     private function absoluteUrl(?string $path): ?string
     {
         if (! $path) {
@@ -275,19 +264,6 @@ class SharePageService
         }
 
         return $this->origin().'/'.ltrim($stored, '/');
-    }
-
-    private function youtubeThumb(?string $url): ?string
-    {
-        if (! $url) {
-            return null;
-        }
-
-        if (! preg_match('/(?:youtu\.be\/|v=)([A-Za-z0-9_-]{11})/', $url, $matches)) {
-            return null;
-        }
-
-        return 'https://img.youtube.com/vi/'.$matches[1].'/hqdefault.jpg';
     }
 
     private function formatEventDates(HopeEvent $event): ?string

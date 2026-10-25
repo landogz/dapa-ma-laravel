@@ -9,6 +9,7 @@ import { showErrorToast, showSuccessToast } from './shared/toast';
 let usersTable;
 let usersTableMode = null;
 let usersViewportBound = false;
+let usersActionsBound = false;
 const USER_ROLES = [
     'super_admin',
     'editor',
@@ -31,6 +32,7 @@ export function initUsersModule() {
 
     initializeUsersTable(tableElement).then(() => {
         bindAdminActionTooltipSuppression(tableElement);
+        bindUserTableActions(tableElement);
         loadUsers();
     });
 
@@ -54,9 +56,6 @@ export function loadUsers() {
             });
 
             usersTable.draw();
-            bindRoleButtons();
-            bindEditButtons();
-            bindDeleteButtons();
         })
         .catch((error) => {
             const message =
@@ -71,9 +70,47 @@ export function loadUsers() {
         });
 }
 
-function bindDeleteButtons() {
-    document.querySelectorAll('[data-user-delete-button]').forEach((button) => {
-        button.addEventListener('click', async () => {
+function bindUserTableActions(tableElement) {
+    if (usersActionsBound || !tableElement) {
+        return;
+    }
+
+    usersActionsBound = true;
+
+    const handleClick = (event) => {
+        const deleteButton = event.target.closest('[data-user-delete-button]');
+        if (deleteButton) {
+            event.preventDefault();
+            deleteUser(deleteButton);
+            return;
+        }
+
+        const editButton = event.target.closest('[data-user-edit-button]');
+        if (editButton) {
+            event.preventDefault();
+            editUser(editButton);
+            return;
+        }
+
+        const roleButton = event.target.closest('[data-user-role-button]');
+        if (roleButton) {
+            event.preventDefault();
+            changeUserRole(roleButton);
+        }
+    };
+
+    tableElement.addEventListener('click', handleClick);
+    document.addEventListener('click', (event) => {
+        const overflowItem = event.target.closest(
+            '.admin-action-overflow-menu [data-user-delete-button], .admin-action-overflow-menu [data-user-edit-button], .admin-action-overflow-menu [data-user-role-button]',
+        );
+        if (overflowItem) {
+            handleClick(event);
+        }
+    });
+}
+
+async function deleteUser(button) {
             const userId = button.getAttribute('data-user-delete-button');
             const userName = button.getAttribute('data-user-name');
 
@@ -99,13 +136,9 @@ function bindDeleteButtons() {
                     'Unable to delete user',
                 );
             }
-        });
-    });
 }
 
-function bindEditButtons() {
-    document.querySelectorAll('[data-user-edit-button]').forEach((button) => {
-        button.addEventListener('click', async () => {
+async function editUser(button) {
             const userId = button.getAttribute('data-user-edit-button');
             const userName = button.getAttribute('data-user-name');
             const userEmail = button.getAttribute('data-user-email');
@@ -210,8 +243,6 @@ function bindEditButtons() {
 
             showSuccessToast(result.value.message ?? 'User updated successfully.', 'User updated');
             loadUsers();
-        });
-    });
 }
 
 function renderUserActions(user) {
@@ -251,9 +282,7 @@ function renderUserActions(user) {
     ], { isMobile, nowrap: true });
 }
 
-function bindRoleButtons() {
-    document.querySelectorAll('[data-user-role-button]').forEach((button) => {
-        button.addEventListener('click', async () => {
+async function changeUserRole(button) {
             const userId = button.getAttribute('data-user-role-button');
             const userName = button.getAttribute('data-user-name');
             const currentRole = button.getAttribute('data-user-role');
@@ -300,8 +329,6 @@ function bindRoleButtons() {
                     'Unable to update role',
                 );
             }
-        });
-    });
 }
 
 function badge(role) {

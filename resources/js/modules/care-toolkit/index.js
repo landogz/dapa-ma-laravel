@@ -3,12 +3,14 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildSwalForm, buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
+import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let toolkitTable;
 let toolkitTableMode;
 let hasBoundViewportListener = false;
 let currentTypeFilter = '';
+let typeCounts = null;
 
 const TYPE_LABELS = {
     stress: 'Stress Check',
@@ -31,11 +33,10 @@ export function initCareToolkitModule() {
     document.querySelector('[data-admin-action="create-care-toolkit-question"]')
         ?.addEventListener('click', () => createCareToolkitQuestion());
 
-    document.getElementById('care-toolkit-type-filter')
-        ?.addEventListener('change', (event) => {
-            currentTypeFilter = event.target.value || '';
-            loadCareToolkitQuestions();
-        });
+    bindAdminFilterTabs(document.getElementById('care-toolkit-type-tabs'), (value) => {
+        currentTypeFilter = value;
+        loadCareToolkitQuestions();
+    });
 
     initializeToolkitTable(tableEl).then(() => {
         bindViewportListener(tableEl);
@@ -132,6 +133,10 @@ export function loadCareToolkitQuestions() {
             toolkitTable.clear();
             rows.forEach((row) => toolkitTable.row.add(buildRowData(row)));
             toolkitTable.draw();
+            if (!currentTypeFilter) {
+                typeCounts = countByKey(rows, (row) => row.toolkit_type || '');
+            }
+            applyAdminFilterTabCounts(document.getElementById('care-toolkit-type-tabs'), typeCounts || {});
         })
         .catch(({ response }) => {
             showErrorToast(response?.data?.message ?? 'Failed to load Care Toolkit questions.');
@@ -306,6 +311,16 @@ function showQuestionForm(existing) {
                         { value: '0', label: 'Inactive' },
                     ],
                 },
+                {
+                    id: 'ctq-is-reverse',
+                    label: 'Reverse scoring',
+                    type: 'select',
+                    value: existing?.is_reverse ? '1' : '0',
+                    options: [
+                        { value: '0', label: 'No (higher answer = more difficulty)' },
+                        { value: '1', label: 'Yes (higher answer = less difficulty)' },
+                    ],
+                },
             ],
         }),
         confirmButtonText: isEdit ? 'Save changes' : 'Create question',
@@ -317,6 +332,7 @@ function showQuestionForm(existing) {
             const questionTl = document.getElementById('ctq-question-tl')?.value?.trim() ?? '';
             const sortRaw = document.getElementById('ctq-sort-order')?.value?.trim() ?? '';
             const isActive = document.getElementById('ctq-is-active')?.value === '1';
+            const isReverse = document.getElementById('ctq-is-reverse')?.value === '1';
 
             if (!questionEn || !questionTl) {
                 Swal.showValidationMessage('English and Tagalog questions are required.');
@@ -331,6 +347,7 @@ function showQuestionForm(existing) {
                 options_en: document.getElementById('ctq-options-en')?.value ?? '',
                 options_tl: document.getElementById('ctq-options-tl')?.value ?? '',
                 is_active: isActive,
+                is_reverse: isReverse,
             };
 
             if (sortRaw !== '') {

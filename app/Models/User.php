@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -38,6 +39,8 @@ class User extends Authenticatable
         'fcm_token',
         'fcm_platform',
         'profile_image_url',
+        'about',
+        'journal_custom_feelings',
     ];
 
     /**
@@ -63,11 +66,22 @@ class User extends Authenticatable
             'birthday' => 'date',
             'interests' => 'array',
             'personas' => 'array',
+            'journal_custom_feelings' => 'array',
             'onboarding_completed_at' => 'datetime',
             'accepted_terms_of_use_at' => 'datetime',
             'accepted_privacy_policy_at' => 'datetime',
             'accepted_privacy_notice_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function diaryEntries(): HasMany
+    {
+        return $this->hasMany(DiaryEntry::class);
+    }
+
+    public function careCheckResults(): HasMany
+    {
+        return $this->hasMany(CareCheckResult::class);
     }
 }

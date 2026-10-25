@@ -4,12 +4,17 @@ return [
 
     'show_demo_login' => env('DAPE_SHOW_DEMO_LOGIN', env('APP_DEBUG', false)),
 
+    'mobile' => [
+        'version' => env('MOBILE_APP_VERSION', '1.0.1'),
+        'build' => (int) env('MOBILE_APP_BUILD', 2),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Demo login accounts (admin login page shortcuts)
     |--------------------------------------------------------------------------
     |
-    | Shown when APP_DEBUG=true or APP_ENV is local. Password must match seeder.
+    | Shown when DAPE_SHOW_DEMO_LOGIN=true (defaults to APP_DEBUG). Password must match seeder.
     |
     */
 

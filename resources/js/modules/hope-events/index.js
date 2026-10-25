@@ -3,12 +3,14 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
+import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let eventsTable;
 let eventsTableMode;
 let hasBoundViewportListener = false;
 let audienceFilter = '';
+let audienceCounts = null;
 
 const AUDIENCE_LABELS = {
     youth: 'Youth',
@@ -23,11 +25,10 @@ export function initHopeEventsModule() {
     document.querySelector('[data-admin-action="create-hope-event"]')
         ?.addEventListener('click', () => showForm(null));
 
-    document.getElementById('hope-events-audience-filter')
-        ?.addEventListener('change', (event) => {
-            audienceFilter = event.target.value || '';
-            loadRows();
-        });
+    bindAdminFilterTabs(document.getElementById('hope-events-audience-tabs'), (value) => {
+        audienceFilter = value;
+        loadRows();
+    });
 
     initializeTable(tableEl).then(() => {
         bindViewportListener(tableEl);
@@ -124,6 +125,10 @@ function loadRows() {
             eventsTable.clear();
             rows.forEach((row) => eventsTable.row.add(buildRow(row)));
             eventsTable.draw();
+            if (!audienceFilter) {
+                audienceCounts = countByKey(rows, (row) => row.audience || '');
+            }
+            applyAdminFilterTabCounts(document.getElementById('hope-events-audience-tabs'), audienceCounts || {});
         })
         .catch(({ response }) => {
             showErrorToast(response?.data?.message ?? 'Failed to load Hope Events.');
