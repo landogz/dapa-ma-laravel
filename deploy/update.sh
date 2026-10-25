@@ -23,6 +23,8 @@ composer install --no-dev --optimize-autoloader --no-interaction
 if [[ "${SKIP_MIGRATE}" != "1" ]]; then
   echo "[update] Migrate..."
   php artisan migrate --force
+  echo "[update] Blocked words..."
+  php artisan db:seed --class=BlockedWordSeeder --force
 fi
 
 php artisan storage:link || true
