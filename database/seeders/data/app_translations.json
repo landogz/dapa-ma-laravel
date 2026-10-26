@@ -4465,6 +4465,30 @@
     "tl": "Idagdag ang sa iyo"
   },
   {
+    "key": "journalCustomFeelingHint",
+    "group": "journal",
+    "en": "Long-press a custom feeling to remove it.",
+    "tl": "Pindutin nang matagal ang custom feeling para alisin."
+  },
+  {
+    "key": "journalRemoveCustomFeelingTitle",
+    "group": "journal",
+    "en": "Remove feeling?",
+    "tl": "Alisin ang feeling?"
+  },
+  {
+    "key": "journalRemoveCustomFeelingBody",
+    "group": "journal",
+    "en": "Remove “{feeling}” from your saved feelings?",
+    "tl": "Alisin ang “{feeling}” sa iyong listahan?"
+  },
+  {
+    "key": "journalRemoveFeeling",
+    "group": "journal",
+    "en": "Remove",
+    "tl": "Alisin"
+  },
+  {
     "key": "journalImpactTitle",
     "group": "journal",
     "en": "What shaped your day?",
