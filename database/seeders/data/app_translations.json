@@ -3810,6 +3810,18 @@
     "tl": "Sumulat ng komento..."
   },
   {
+    "key": "commentEmojiTab",
+    "group": "comments",
+    "en": "Emoji",
+    "tl": "Emoji"
+  },
+  {
+    "key": "commentStickersTab",
+    "group": "comments",
+    "en": "Stickers",
+    "tl": "Mga Sticker"
+  },
+  {
     "key": "reply",
     "group": "comments",
     "en": "Reply",
