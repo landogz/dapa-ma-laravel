@@ -219,6 +219,26 @@
         @apply mt-1.5 h-5 w-5 shrink-0 rounded border-slate-300 text-[#055498] accent-[#055498] focus:ring-[#055498];
     }
 
+    .admin-swal-checkbox {
+        @apply flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left;
+    }
+
+    .admin-swal-checkbox-input {
+        @apply mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-[#055498] accent-[#055498] focus:ring-[#055498];
+    }
+
+    .admin-swal-checkbox-copy {
+        @apply min-w-0 flex-1;
+    }
+
+    .admin-swal-checkbox-title {
+        @apply block text-sm font-semibold text-[#123a60];
+    }
+
+    .admin-swal-checkbox .admin-swal-hint {
+        @apply mt-1;
+    }
+
     .admin-consent-copy {
         @apply pt-0.5 text-sm leading-5 text-slate-700;
     }
@@ -1526,6 +1546,11 @@
 .admin-table-shell .dt-container .dt-scroll-body {
     max-width: 100%;
     overflow-x: hidden !important;
+}
+
+.admin-table-shell .dt-container.admin-dt-has-x-overflow .dt-layout-table {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
 }
 
 .admin-table-shell table.dataTable:not(.collapsed) th.dt-col-toggle,

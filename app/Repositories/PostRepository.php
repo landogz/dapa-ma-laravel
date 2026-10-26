@@ -43,20 +43,28 @@ class PostRepository
             ->findOrFail($id);
     }
 
-    public function paginatePublished(int $perPage = 20, ?string $categorySlug = null): LengthAwarePaginator
-    {
+    public function paginatePublished(
+        int $perPage = 20,
+        ?string $categorySlug = null,
+        ?bool $featuredOnly = null,
+    ): LengthAwarePaginator {
         $query = Post::query()
             ->with(['category', 'author'])
             ->withCount(['likes', 'comments', 'reviews'])
             ->withAvg('reviews', 'rating')
             ->where('status', 'published')
             ->where('publish_date', '<=', Carbon::now())
+            ->orderByDesc('is_featured')
             ->latest('publish_date');
 
         if ($categorySlug !== null && $categorySlug !== '') {
             $query->whereHas('category', function ($q) use ($categorySlug) {
                 $q->where('slug', $categorySlug);
             });
+        }
+
+        if ($featuredOnly === true) {
+            $query->where('is_featured', true);
         }
 
         return $query->paginate($perPage);

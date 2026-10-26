@@ -65,6 +65,27 @@ function renderField(field) {
         `;
     }
 
+    if (field.type === 'checkbox') {
+        const checked = field.checked === true
+            || field.value === true
+            || field.value === 1
+            || field.value === '1'
+            ? ' checked'
+            : '';
+
+        return `
+            <div class="admin-swal-field">
+                <label class="admin-swal-checkbox" for="${field.id}">
+                    <input id="${field.id}" class="admin-swal-checkbox-input" type="checkbox" value="1"${checked}>
+                    <span class="admin-swal-checkbox-copy">
+                        <span class="admin-swal-checkbox-title">${escapeHtml(field.label)}</span>
+                        ${hint}
+                    </span>
+                </label>
+            </div>
+        `;
+    }
+
     if (field.type === 'select') {
         return `
             <div class="admin-swal-field">

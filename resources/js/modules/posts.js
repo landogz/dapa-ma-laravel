@@ -188,6 +188,10 @@ function openPostViewModal(post) {
                             <i class="fas fa-${isPostCommentsEnabled(post) ? 'comment-dots' : 'comment-slash'}" aria-hidden="true"></i>
                             <span>${isPostCommentsEnabled(post) ? 'Comments enabled' : 'Comments disabled'}</span>
                         </div>
+                        <div class="post-view-metric" role="listitem">
+                            <i class="fas fa-star${isPostFeatured(post) ? '' : '-half-stroke'}" aria-hidden="true"></i>
+                            <span>${isPostFeatured(post) ? 'Featured post' : 'Not featured'}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -939,9 +943,12 @@ function bindPostsViewportListener(tableEl) {
 
 function buildPostRowData(post) {
     const titleLink = `
-        <button type="button" class="admin-table-link-chip text-left" data-post-view="${post.id}" title="View post details">
-            ${escapeHtml(post.title)}
-        </button>
+        <div class="flex min-w-0 flex-wrap items-center gap-2">
+            <button type="button" class="admin-table-link-chip text-left" data-post-view="${post.id}" title="View post details">
+                ${escapeHtml(post.title)}
+            </button>
+            ${featuredBadge(post)}
+        </div>
     `;
 
     if (postsTableMode === 'mobile') {
@@ -949,7 +956,7 @@ function buildPostRowData(post) {
             `<div class="admin-table-mobile-card">
                 <div class="admin-table-mobile-title-row">
                     <div>
-                        <p class="admin-table-mobile-kicker">Post #${post.id}</p>
+                        <p class="admin-table-mobile-kicker">Post #${post.id}${isPostFeatured(post) ? ' · Featured' : ''}</p>
                         <button type="button" class="admin-table-mobile-title text-left" data-post-view="${post.id}" title="View post details">
                             ${escapeHtml(post.title)}
                         </button>
@@ -960,6 +967,7 @@ function buildPostRowData(post) {
                     <p><span>Category:</span> ${escapeHtml(post.category?.name ?? 'Uncategorized')}</p>
                     <p><span>Author:</span> ${escapeHtml(post.author?.name ?? 'N/A')}</p>
                     <p><span>Publish Date:</span> ${escapeHtml(formatDateTime(post.publish_date) || 'Not scheduled')}</p>
+                    <p><span>Featured:</span> ${isPostFeatured(post) ? 'Yes' : 'No'}</p>
                     <p><span>Comments:</span> ${isPostCommentsEnabled(post) ? 'Enabled' : 'Disabled'}</p>
                     <p><span>Engagement:</span> ${Number(post.likes_count ?? 0)} reactions · ${Number(post.comments_count ?? 0)} comments</p>
                     <p><span>Rating:</span> ${renderRatingBadge(post, { compact: true })}</p>
@@ -986,6 +994,20 @@ function isPostCommentsEnabled(post) {
     return !(post?.comments_enabled === false
         || post?.comments_enabled === 0
         || post?.comments_enabled === '0');
+}
+
+function isPostFeatured(post) {
+    return post?.is_featured === true
+        || post?.is_featured === 1
+        || post?.is_featured === '1';
+}
+
+function featuredBadge(post) {
+    if (!isPostFeatured(post)) {
+        return '';
+    }
+
+    return '<span class="admin-status-badge bg-[#FBD116] text-[#123a60]">Featured</span>';
 }
 
 function commentsEnabledBadge(post) {
@@ -1084,6 +1106,13 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
             hint: post?.media_url
                 ? 'Choose a new image only if you want to replace the current upload.'
                 : 'Upload a JPG, PNG, WEBP, or GIF image up to 5MB.',
+        },
+        {
+            id: 'post-is-featured',
+            label: 'Featured post',
+            type: 'checkbox',
+            checked: isPostFeatured(post),
+            hint: 'Featured posts appear in the mobile app carousel when more than one is selected.',
         },
         { id: 'post-title', label: 'Title *', placeholder: 'Enter post title', value: post?.title ?? '' },
         { id: 'post-body', label: 'Body / rich text content *', type: 'textarea', placeholder: 'Write the main content', value: post?.body ?? '' },
@@ -1219,6 +1248,8 @@ async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonT
                 payload.comments_enabled = commentsEnabledValue === '1';
             }
 
+            payload.is_featured = Boolean(document.getElementById('post-is-featured')?.checked);
+
             if (!payload.title || !payload.body || !categoryValue || Number.isNaN(payload.category_id) || payload.category_id < 1) {
                 Swal.showValidationMessage('Title, body, and category are required.');
                 return false;
@@ -1324,6 +1355,10 @@ function buildMultipartPayload(formData, { method = 'POST' } = {}) {
 
     if (typeof formData.comments_enabled === 'boolean') {
         payload.append('comments_enabled', formData.comments_enabled ? '1' : '0');
+    }
+
+    if (typeof formData.is_featured === 'boolean') {
+        payload.append('is_featured', formData.is_featured ? '1' : '0');
     }
 
     if (method !== 'POST') {

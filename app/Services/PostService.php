@@ -33,9 +33,12 @@ class PostService
         return $this->postRepository->paginateAdmin($perPage);
     }
 
-    public function listPublished(int $perPage = 20, ?string $categorySlug = null): LengthAwarePaginator
-    {
-        return $this->postRepository->paginatePublished($perPage, $categorySlug);
+    public function listPublished(
+        int $perPage = 20,
+        ?string $categorySlug = null,
+        ?bool $featuredOnly = null,
+    ): LengthAwarePaginator {
+        return $this->postRepository->paginatePublished($perPage, $categorySlug, $featuredOnly);
     }
 
     public function listForSelection(): Collection
@@ -72,6 +75,9 @@ class PostService
             'comments_enabled'  => array_key_exists('comments_enabled', $data)
                 ? (bool) $data['comments_enabled']
                 : true,
+            'is_featured'       => array_key_exists('is_featured', $data)
+                ? (bool) $data['is_featured']
+                : false,
             'status'            => $publishMeta['status'],
             'publish_date'      => $publishMeta['publish_date'],
             'author_id'         => $author->id,
@@ -114,6 +120,10 @@ class PostService
 
         if (array_key_exists('comments_enabled', $payload)) {
             $payload['comments_enabled'] = (bool) $payload['comments_enabled'];
+        }
+
+        if (array_key_exists('is_featured', $payload)) {
+            $payload['is_featured'] = (bool) $payload['is_featured'];
         }
 
         $post = $this->postRepository->update($post, $payload);

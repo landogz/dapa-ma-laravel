@@ -18,6 +18,7 @@ class Post extends Model
         'media_url',
         'youtube_url',
         'comments_enabled',
+        'is_featured',
         'status',
         'review_notes',
         'publish_date',
@@ -26,6 +27,7 @@ class Post extends Model
 
     protected $casts = [
         'comments_enabled' => 'boolean',
+        'is_featured' => 'boolean',
         'publish_date' => 'datetime',
     ];
 

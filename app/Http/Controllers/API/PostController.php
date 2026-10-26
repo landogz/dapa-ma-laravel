@@ -23,8 +23,9 @@ class PostController extends Controller
         $perPage = (int) $request->integer('per_page', 20);
         $category = $request->get('category');
         $categorySlug = is_string($category) && $category !== '' ? $category : null;
+        $featuredOnly = $request->has('featured') ? $request->boolean('featured') : null;
 
-        $posts = $this->postService->listPublished($perPage, $categorySlug);
+        $posts = $this->postService->listPublished($perPage, $categorySlug, $featuredOnly);
         $user = $this->postEngagementService->resolveUserFromBearer($request->bearerToken());
         $posts = $this->postEngagementService->attachLikedState($posts, $user);
         $posts = $this->reviewService->attachReviewState($posts, $user);

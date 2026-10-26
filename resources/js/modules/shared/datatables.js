@@ -207,8 +207,8 @@ function bindAdminTableCollapseControls(table, tableOptions) {
     container.classList.add('admin-dt-collapse');
     table._adminCollapseColumns = tableOptions.columns ?? [];
 
-    const sync = () => syncAdminTableCollapse(table);
-    table.on('draw', () => requestAnimationFrame(sync));
+    const scheduleSync = () => scheduleAdminTableCollapse(table);
+    table.on('draw', scheduleSync);
 
     container.addEventListener('click', (event) => {
         const cell = event.target.closest('td.dtr-control');
@@ -234,18 +234,42 @@ function bindAdminTableCollapseControls(table, tableOptions) {
         toggleAdminTableChildRow(table, cell.closest('tr'));
     });
 
-    const onResize = () => requestAnimationFrame(sync);
+    const onResize = () => scheduleSync();
     window.addEventListener('resize', onResize);
+
+    const host = container.querySelector('.dt-layout-table') || container;
+    if (typeof ResizeObserver === 'function' && host) {
+        const observer = new ResizeObserver(() => scheduleSync());
+        observer.observe(host);
+        table._adminCollapseObserver = observer;
+    }
 
     table.on('destroy', () => {
         window.removeEventListener('resize', onResize);
+        table._adminCollapseObserver?.disconnect();
+        cancelAnimationFrame(table._adminCollapseFrame || 0);
+        window.clearTimeout(table._adminCollapseTimer);
+        delete table._adminCollapseObserver;
+        delete table._adminCollapseFrame;
+        delete table._adminCollapseTimer;
         delete container.dataset.collapseBound;
         container.classList.remove('admin-dt-collapse');
         delete table._adminCollapseColumns;
         delete table._adminHiddenIndexes;
     });
 
-    requestAnimationFrame(sync);
+    scheduleSync();
+}
+
+function scheduleAdminTableCollapse(table) {
+    cancelAnimationFrame(table._adminCollapseFrame || 0);
+    window.clearTimeout(table._adminCollapseTimer);
+
+    const run = () => syncAdminTableCollapse(table);
+    table._adminCollapseFrame = requestAnimationFrame(() => {
+        run();
+        table._adminCollapseTimer = window.setTimeout(run, 120);
+    });
 }
 
 function syncAdminTableCollapse(table) {
@@ -278,14 +302,11 @@ function syncAdminTableCollapse(table) {
         for (let index = actionsIndex - 1; index >= 1; index -= 1) {
             const header = getAdminTableColumnHeader(table, index);
             const className = String(header?.className || '');
-            const primary = index === 1 || className.includes('dt-col-primary');
-            candidates.push({ index, primary });
+            const pinned = isPinnedAdminColumn(index, className, actionsIndex);
+            candidates.push({ index, pinned });
         }
 
-        const hideCandidates = [
-            ...candidates.filter((column) => !column.primary),
-            ...candidates.filter((column) => column.primary && column.index !== 1),
-        ];
+        const hideCandidates = candidates.filter((column) => !column.pinned);
 
         applyHiddenColumnClasses(tableNode, [], false);
         tableNode.classList.remove('collapsed');
@@ -325,6 +346,16 @@ function syncAdminTableCollapse(table) {
     } finally {
         table._adminCollapsing = false;
     }
+}
+
+function isPinnedAdminColumn(index, className, actionsIndex) {
+    if (index === 1 || index === actionsIndex) {
+        return true;
+    }
+
+    return className.includes('dt-col-primary')
+        || className.includes('dt-col-id')
+        || className.includes('dt-col-actions');
 }
 
 function getAdminTableColumnHeader(table, index) {

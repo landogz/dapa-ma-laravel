@@ -2352,6 +2352,12 @@
     "tl": "Featured"
   },
   {
+    "key": "featuredPostSlide",
+    "group": "account",
+    "en": "Featured post {current} of {total}",
+    "tl": "Featured na post {current} sa {total}"
+  },
+  {
     "key": "sharePost",
     "group": "account",
     "en": "Share",
