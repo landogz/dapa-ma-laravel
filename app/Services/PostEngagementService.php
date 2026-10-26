@@ -246,8 +246,13 @@ class PostEngagementService
         return $comment;
     }
 
-    public function updateComment(User $user, int $postId, int $commentId, string $body): PostComment
-    {
+    public function updateComment(
+        User $user,
+        int $postId,
+        int $commentId,
+        string $body,
+        ?UploadedFile $image = null,
+    ): PostComment {
         $post = $this->postRepository->findOrFail($postId);
 
         if ($post->status !== 'published') {
@@ -260,7 +265,15 @@ class PostEngagementService
             abort(403, 'You can only edit your own comments.');
         }
 
-        $updated = $this->postEngagementRepository->updateComment($comment, $body);
+        $imagePath = null;
+        if ($image !== null) {
+            if ($comment->image_path && Storage::disk('public')->exists($comment->image_path)) {
+                Storage::disk('public')->delete($comment->image_path);
+            }
+            $imagePath = $image->store('post-comments', 'public');
+        }
+
+        $updated = $this->postEngagementRepository->updateComment($comment, $body, $imagePath);
         $this->enrichCommentUser($updated);
 
         return $updated;

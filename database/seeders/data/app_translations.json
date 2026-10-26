@@ -4038,6 +4038,18 @@
     "tl": "I-update ang iyong komento..."
   },
   {
+    "key": "commentCaptionOptional",
+    "group": "comments",
+    "en": "Add a caption (optional)",
+    "tl": "Magdagdag ng caption (opsyonal)"
+  },
+  {
+    "key": "commentChangeSticker",
+    "group": "comments",
+    "en": "Change sticker",
+    "tl": "Palitan ang sticker"
+  },
+  {
     "key": "saveChanges",
     "group": "comments",
     "en": "Save changes",

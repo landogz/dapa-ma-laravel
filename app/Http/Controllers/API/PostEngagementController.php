@@ -100,7 +100,8 @@ class PostEngagementController extends Controller
             $request->user(),
             $id,
             $commentId,
-            $request->validated('body'),
+            trim((string) ($request->validated('body') ?? '')),
+            $request->file('image'),
         );
 
         return response()->json([

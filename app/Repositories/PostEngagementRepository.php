@@ -170,9 +170,17 @@ class PostEngagementRepository
             ->firstOrFail();
     }
 
-    public function updateComment(PostComment $comment, string $body): PostComment
-    {
-        $comment->update(['body' => $body]);
+    public function updateComment(
+        PostComment $comment,
+        string $body,
+        ?string $imagePath = null,
+    ): PostComment {
+        $payload = ['body' => $body];
+        if ($imagePath !== null) {
+            $payload['image_path'] = $imagePath;
+        }
+
+        $comment->update($payload);
 
         return $comment->fresh(['user:id,name,profile_image_url']);
     }

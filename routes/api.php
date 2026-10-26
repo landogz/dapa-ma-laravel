@@ -231,7 +231,7 @@ Route::prefix('v1')
             Route::post('/posts/{id}/comments', [PostEngagementController::class, 'storeComment'])
                 ->whereNumber('id')
                 ->name('posts.comments.store');
-            Route::put('/posts/{id}/comments/{commentId}', [PostEngagementController::class, 'updateComment'])
+            Route::match(['put', 'post'], '/posts/{id}/comments/{commentId}', [PostEngagementController::class, 'updateComment'])
                 ->whereNumber('id')
                 ->whereNumber('commentId')
                 ->name('posts.comments.update');
