@@ -11,10 +11,17 @@
                 <p class="admin-filter-rail-title">Skies</p>
                 <div id="diary-sky-tabs" class="admin-filter-tabs" role="tablist" aria-label="Filter by sky">
                     <button type="button" class="admin-filter-tab is-active" role="tab" aria-selected="true" data-filter-value="" data-icon="fas fa-layer-group">All skies</button>
-                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="clear_skies" data-icon="fas fa-sun">Clear skies</button>
-                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="passing_mist" data-icon="fas fa-smog">Passing mist</button>
-                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="overcast" data-icon="fas fa-cloud">Overcast</button>
-                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="stormy" data-icon="fas fa-cloud-bolt">Stormy</button>
+                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sky_red" data-icon="fas fa-circle">Red</button>
+                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sky_pink" data-icon="fas fa-circle">Pink</button>
+                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sky_blue" data-icon="fas fa-circle">Blue</button>
+                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sky_white" data-icon="far fa-circle">White</button>
+                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sky_violet" data-icon="fas fa-circle">Violet</button>
+                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sky_gray" data-icon="fas fa-circle">Gray</button>
+                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sky_purple" data-icon="fas fa-circle">Purple</button>
+                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sky_green" data-icon="fas fa-circle">Green</button>
+                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sky_orange" data-icon="fas fa-circle">Orange</button>
+                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sky_yellow" data-icon="fas fa-circle">Yellow</button>
+                    <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sky_black" data-icon="fas fa-circle">Black</button>
                 </div>
             </aside>
             <div class="admin-filter-main">

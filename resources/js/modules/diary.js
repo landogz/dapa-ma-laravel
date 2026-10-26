@@ -23,6 +23,35 @@ const SKY_LABELS = {
     passing_mist: 'Passing mist',
     overcast: 'Overcast',
     stormy: 'Stormy',
+    sky_red: 'Red',
+    sky_pink: 'Pink',
+    sky_blue: 'Blue',
+    sky_white: 'White',
+    sky_violet: 'Violet',
+    sky_gray: 'Gray',
+    sky_purple: 'Purple',
+    sky_green: 'Green',
+    sky_orange: 'Orange',
+    sky_yellow: 'Yellow',
+    sky_black: 'Black',
+};
+
+const SKY_SWATCH = {
+    clear_skies: 'bg-[#FBD116]',
+    passing_mist: 'bg-[#94A3B8]',
+    overcast: 'bg-[#64748B]',
+    stormy: 'bg-[#055498]',
+    sky_red: 'bg-[#CE2028]',
+    sky_pink: 'bg-[#EC4899]',
+    sky_blue: 'bg-[#055498]',
+    sky_white: 'bg-white border border-slate-300',
+    sky_violet: 'bg-[#7C3AED]',
+    sky_gray: 'bg-[#64748B]',
+    sky_purple: 'bg-[#581C87]',
+    sky_green: 'bg-[#16A34A]',
+    sky_orange: 'bg-[#EA580C]',
+    sky_yellow: 'bg-[#FBD116]',
+    sky_black: 'bg-[#0F172A]',
 };
 
 export function initDiaryModule() {
@@ -232,7 +261,7 @@ function buildDiaryRowData(entry) {
             `<div class="admin-table-mobile-card" ${rowAttrs}>
                 <div class="admin-table-mobile-title-row">
                     <div>
-                        <p class="admin-table-mobile-kicker">${escapeHtml(entryDate)} · ${escapeHtml(skyLabel)}</p>
+                        <p class="admin-table-mobile-kicker">${escapeHtml(entryDate)} · ${formatSkyMarkup(entry.sky)}</p>
                         <p class="admin-table-mobile-title">${title}</p>
                     </div>
                 </div>
@@ -252,7 +281,7 @@ function buildDiaryRowData(entry) {
         `<div class="min-w-[10rem]"><p class="font-semibold text-slate-800">${userName}</p>${
             userEmail ? `<p class="diary-user-email">${userEmail}</p>` : ''
         }</div>`,
-        escapeHtml(skyLabel),
+        formatSkyMarkup(entry.sky),
         preview,
         updatedAt,
         buildActionButtons(entry.id, false),
@@ -265,6 +294,17 @@ function formatSky(sky) {
     }
 
     return SKY_LABELS[sky] || String(sky).replaceAll('_', ' ');
+}
+
+function formatSkyMarkup(sky) {
+    const label = formatSky(sky);
+    if (!sky) {
+        return escapeHtml(label);
+    }
+
+    const swatch = SKY_SWATCH[sky] || 'bg-slate-300';
+
+    return `<span class="inline-flex min-h-11 items-center gap-2"><span class="inline-block h-4 w-4 shrink-0 rounded-full ${swatch}" aria-hidden="true"></span><span>${escapeHtml(label)}</span></span>`;
 }
 
 function buildActionButtons(entryId, isMobile) {
@@ -426,7 +466,6 @@ function openDiaryView(entry) {
     const userEmail = escapeHtml(entry.user?.email ?? '');
     const entryDate = formatDate(entry.entry_date);
     const bodyHtml = entry.body_html ?? '<p><em>No written notes</em></p>';
-    const sky = formatSky(entry.sky);
     const impact = entry.impact ? escapeHtml(String(entry.impact).replaceAll('_', ' ')) : '—';
     const feelings = Array.isArray(entry.feelings) && entry.feelings.length
         ? escapeHtml(entry.feelings.join(', '))
@@ -442,7 +481,7 @@ function openDiaryView(entry) {
             <div class="admin-swal-form text-left">
                 <div class="admin-swal-fields">
                     <div class="admin-swal-fields-grid-2">
-                        <p class="text-sm text-slate-600"><strong>Sky:</strong> ${escapeHtml(sky)}</p>
+                        <p class="text-sm text-slate-600"><strong>Sky:</strong> ${formatSkyMarkup(entry.sky)}</p>
                         <p class="text-sm text-slate-600"><strong>Impact:</strong> ${impact}</p>
                     </div>
                     <p class="text-sm text-slate-600"><strong>Feelings:</strong> ${feelings}</p>

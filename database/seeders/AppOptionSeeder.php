@@ -19,5 +19,15 @@ class AppOptionSeeder extends Seeder
                 $row,
             );
         }
+
+        $skyKeys = collect(AppOptionGroup::seedRows())
+            ->where('group', AppOptionGroup::JOURNAL_SKY)
+            ->pluck('key')
+            ->all();
+
+        AppOption::query()
+            ->where('group', AppOptionGroup::JOURNAL_SKY)
+            ->whereNotIn('key', $skyKeys)
+            ->update(['is_active' => false]);
     }
 }

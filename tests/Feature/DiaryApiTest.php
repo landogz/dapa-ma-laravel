@@ -19,13 +19,13 @@ class DiaryApiTest extends TestCase
         $this->postJson('/api/v1/diary-entries', [
             'entry_date' => '2026-10-24',
             'body_html' => 'Morning reflection',
-            'sky' => 'clear_skies',
+            'sky' => 'sky_yellow',
         ])->assertCreated();
 
         $this->postJson('/api/v1/diary-entries', [
             'entry_date' => '2026-10-24',
             'body_html' => 'Evening reflection',
-            'sky' => 'overcast',
+            'sky' => 'sky_gray',
         ])->assertCreated();
 
         $this->assertSame(2, $user->fresh()->diaryEntries()->count());
@@ -60,14 +60,14 @@ class DiaryApiTest extends TestCase
 
         $this->postJson('/api/v1/diary-entries', [
             'entry_date' => '2026-10-24',
-            'sky' => 'clear_skies',
+            'sky' => 'sky_yellow',
             'feelings' => ['Hopeful'],
             'body_html' => 'Today',
         ])->assertCreated();
 
         $this->postJson('/api/v1/diary-entries', [
             'entry_date' => '2026-09-01',
-            'sky' => 'stormy',
+            'sky' => 'sky_black',
             'feelings' => ['Lonely', 'test'],
             'body_html' => 'Last month',
         ])->assertCreated();
@@ -77,7 +77,7 @@ class DiaryApiTest extends TestCase
         $this->assertCount(1, $byDate->json('data.data'));
         $this->assertSame('Today', $byDate->json('data.data.0.body_html'));
 
-        $bySky = $this->getJson('/api/v1/diary-entries?sky=stormy')->assertOk();
+        $bySky = $this->getJson('/api/v1/diary-entries?sky=sky_black')->assertOk();
         $this->assertCount(1, $bySky->json('data.data'));
 
         $byFeeling = $this->getJson('/api/v1/diary-entries?feeling=test')->assertOk();

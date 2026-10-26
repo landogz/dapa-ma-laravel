@@ -56,8 +56,8 @@ final class AppOptionGroup
                 'surface' => 'Registration',
             ],
             self::JOURNAL_SKY => [
-                'title' => 'How’s your sky today',
-                'subtitle' => 'Journal check-in weather options',
+                'title' => 'What’s your sky today',
+                'subtitle' => 'Journal check-in color moods (light = positive, dark = negative)',
                 'selection' => self::SELECTION_SINGLE,
                 'surface' => 'Journal',
             ],
@@ -108,51 +108,18 @@ final class AppOptionGroup
             self::row(self::PERSONA, 'health_worker', 'Health Worker', 'Health Worker', 5, 'favorite_outline'),
             self::row(self::PERSONA, 'concerned_citizen', 'Concerned Citizen', 'Concerned Citizen', 6, 'flag_outlined'),
 
-            // Sky
-            self::row(
-                self::JOURNAL_SKY,
-                'clear_skies',
-                'Clear Skies',
-                'Maaliwalas',
-                1,
-                'wb_sunny_outlined',
-                'Steady and bright today.',
-                'Matatag at maliwanag ngayon.',
-                '#FBD116',
-            ),
-            self::row(
-                self::JOURNAL_SKY,
-                'passing_mist',
-                'Passing Mist',
-                'Pasadong ulap',
-                2,
-                'cloud_queue_outlined',
-                'A little unclear, but moving.',
-                'Medyo malabo, pero gumagalaw.',
-                '#94A3B8',
-            ),
-            self::row(
-                self::JOURNAL_SKY,
-                'overcast',
-                'Overcast',
-                'Maulap',
-                3,
-                'cloud_outlined',
-                'Heavy, but you are still here.',
-                'Mabigat, pero nandito ka pa.',
-                '#64748B',
-            ),
-            self::row(
-                self::JOURNAL_SKY,
-                'stormy',
-                'Stormy',
-                'Mabagyo',
-                4,
-                'thunderstorm_outlined',
-                'Rough weather — be gentle with yourself.',
-                'Masungit ang panahon — maging mahinahon sa sarili.',
-                '#055498',
-            ),
+            // Sky — color moods (light = positive, dark = negative)
+            self::skyRow(1, 'sky_red', 'Red', 'Pula', '#CE2028', 'Love', 'Anger', 'Pag-ibig', 'Galit'),
+            self::skyRow(2, 'sky_pink', 'Pink', 'Rosas', '#EC4899', 'Happy, Optimistic, Imaginative', null, 'Masaya, Optimista, Malikhain', null),
+            self::skyRow(3, 'sky_blue', 'Blue', 'Asul', '#055498', 'Calm/Peaceful, Serenity', 'Aloofness, Sad', 'Kalmado/Payapa, Katahimikan', 'Distansya, Malungkot'),
+            self::skyRow(4, 'sky_white', 'White', 'Puti', '#FFFFFF', 'Imaginative', null, 'Malikhain', null),
+            self::skyRow(5, 'sky_violet', 'Violet', 'Biolet', '#7C3AED', 'Reflective, Imaginative', null, 'Mapagmuni, Malikhain', null),
+            self::skyRow(6, 'sky_gray', 'Gray', 'Abo', '#64748B', 'Neutral, Balance', 'Overwhelmed, Unconfident, Lack of Energy', 'Neutral, Balanse', 'Nalulula, Walang kumpiyansa, Kakulangan sa enerhiya'),
+            self::skyRow(7, 'sky_purple', 'Purple', 'Lila', '#581C87', null, 'Afraid', null, 'Takot'),
+            self::skyRow(8, 'sky_green', 'Green', 'Berde', '#16A34A', 'Growth, Hope, Healing', 'Boredom, Sickness', 'Paglago, Pag-asa, Paghilom', 'Inip, Sakit'),
+            self::skyRow(9, 'sky_orange', 'Orange', 'Kahel', '#EA580C', 'Confidence', 'Anxious, Frustration', 'Kumpiyansa', 'Balisa, Frustrasyon'),
+            self::skyRow(10, 'sky_yellow', 'Yellow', 'Dilaw', '#FBD116', 'Happiness, Optimism, Cheerful', null, 'Kaligayahan, Optimismo, Masayahin', null),
+            self::skyRow(11, 'sky_black', 'Black', 'Itim', '#0F172A', 'Power', 'Mourning, Heaviness', 'Kapangyarihan', 'Pagluluksa, Bigat'),
 
             // Feelings — keys match stored diary values
             self::row(self::JOURNAL_FEELING, 'Grounded', 'Grounded', 'Nakatuntong', 1),
@@ -195,6 +162,7 @@ final class AppOptionGroup
             'auto_awesome_outlined' => 'fas fa-wand-magic-sparkles',
             'menu_book_rounded' => 'fas fa-book',
             'medical_services_outlined' => 'fas fa-kit-medical',
+            'palette_outlined' => 'fas fa-palette',
             'wb_sunny_outlined' => 'fas fa-sun',
             'cloud_queue_outlined' => 'fas fa-cloud-sun',
             'cloud_outlined' => 'fas fa-cloud',
@@ -238,6 +206,7 @@ final class AppOptionGroup
             ['value' => 'auto_awesome_outlined', 'label' => 'Sparkle'],
             ['value' => 'menu_book_rounded', 'label' => 'Journal book'],
             ['value' => 'medical_services_outlined', 'label' => 'Medical'],
+            ['value' => 'palette_outlined', 'label' => 'Color'],
             ['value' => 'wb_sunny_outlined', 'label' => 'Sun'],
             ['value' => 'cloud_queue_outlined', 'label' => 'Light cloud'],
             ['value' => 'cloud_outlined', 'label' => 'Cloud'],
@@ -260,6 +229,44 @@ final class AppOptionGroup
 
             return $item;
         }, $items);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function skyRow(
+        int $sortOrder,
+        string $key,
+        string $labelEn,
+        string $labelTl,
+        string $accentColor,
+        ?string $lightEn,
+        ?string $darkEn,
+        ?string $lightTl,
+        ?string $darkTl,
+    ): array {
+        $en = [];
+        $tl = [];
+        if ($lightEn) {
+            $en[] = "Light: {$lightEn}";
+            $tl[] = "Liwanag: {$lightTl}";
+        }
+        if ($darkEn) {
+            $en[] = "Dark: {$darkEn}";
+            $tl[] = "Dilim: {$darkTl}";
+        }
+
+        return self::row(
+            self::JOURNAL_SKY,
+            $key,
+            $labelEn,
+            $labelTl,
+            $sortOrder,
+            'palette_outlined',
+            implode(' · ', $en),
+            implode(' · ', $tl),
+            $accentColor,
+        );
     }
 
     /**

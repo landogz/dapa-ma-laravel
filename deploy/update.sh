@@ -25,6 +25,10 @@ if [[ "${SKIP_MIGRATE}" != "1" ]]; then
   php artisan migrate --force
   echo "[update] Blocked words..."
   php artisan db:seed --class=BlockedWordSeeder --force
+  echo "[update] App options..."
+  php artisan db:seed --class=AppOptionSeeder --force
+  echo "[update] App translations..."
+  php artisan db:seed --class=AppTranslationSeeder --force
 fi
 
 php artisan storage:link || true

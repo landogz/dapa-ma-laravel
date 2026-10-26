@@ -14,6 +14,17 @@ class StoreDiaryEntryRequest extends FormRequest
         'passing_mist',
         'overcast',
         'stormy',
+        'sky_red',
+        'sky_pink',
+        'sky_blue',
+        'sky_white',
+        'sky_violet',
+        'sky_gray',
+        'sky_purple',
+        'sky_green',
+        'sky_orange',
+        'sky_yellow',
+        'sky_black',
     ];
 
     public const IMPACT_VALUES = [

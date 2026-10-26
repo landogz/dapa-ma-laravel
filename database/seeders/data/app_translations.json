@@ -4431,14 +4431,14 @@
   {
     "key": "journalSkyTitle",
     "group": "journal",
-    "en": "How's your sky today?",
-    "tl": "Kumusta ang langit mo ngayon?"
+    "en": "What's your sky today?",
+    "tl": "Ano ang langit mo ngayon?"
   },
   {
     "key": "journalSkySubtitle",
     "group": "journal",
-    "en": "Pick the weather that matches your inner world.",
-    "tl": "Piliin ang panahon na tumutugma sa iyong loob."
+    "en": "Pick the color that matches your inner world. Light tones are brighter moods; dark tones are heavier ones.",
+    "tl": "Piliin ang kulay na tumutugma sa iyong loob. Ang maliwanag na tono ay mas magaan na damdamin; ang madilim ay mas mabigat."
   },
   {
     "key": "journalFeelingsTitle",

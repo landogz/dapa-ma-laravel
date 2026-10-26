@@ -41,9 +41,10 @@ class AppOptionApiTest extends TestCase
 
         $response = $this->getJson('/api/v1/app-options');
         $sky = collect($response->json('data'))->firstWhere('key', 'journal_sky');
-        $clear = collect($sky['options'] ?? [])->firstWhere('key', 'clear_skies');
+        $red = collect($sky['options'] ?? [])->firstWhere('key', 'sky_red');
 
-        $this->assertSame('#FBD116', $clear['accent'] ?? null);
+        $this->assertSame('#CE2028', $red['accent'] ?? null);
+        $this->assertSame('Red', $red['label_en'] ?? null);
     }
 
     public function test_admin_lookups_page_is_labeled_lookups(): void
@@ -66,7 +67,7 @@ class AppOptionApiTest extends TestCase
 
         $option = AppOption::query()
             ->where('group', 'journal_sky')
-            ->where('key', 'clear_skies')
+            ->where('key', 'sky_red')
             ->firstOrFail();
 
         $updated = app(AppOptionService::class)->update($option, [

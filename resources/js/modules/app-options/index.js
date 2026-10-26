@@ -130,7 +130,7 @@ function fillGroupTabs() {
     const icons = {
         pronouns: 'fas fa-user',
         persona: 'fas fa-id-card',
-        journal_sky: 'fas fa-cloud-sun',
+        journal_sky: 'fas fa-palette',
         journal_feeling: 'fas fa-face-smile',
         journal_impact: 'fas fa-sun',
     };
