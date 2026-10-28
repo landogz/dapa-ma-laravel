@@ -10,6 +10,7 @@ use App\Repositories\UserNotificationRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 
 class NotificationService
@@ -298,11 +299,18 @@ class NotificationService
             ->where('role', 'app_user')
             ->orderBy('id');
 
-        if (in_array($topic, ['android', 'ios'], true)) {
+        $hasPlatform = Schema::hasColumn('users', 'fcm_platform');
+
+        if ($hasPlatform && in_array($topic, ['android', 'ios'], true)) {
             $query->where('fcm_platform', $topic);
         }
 
-        return $query->get(['id', 'fcm_token', 'fcm_platform']);
+        $columns = ['id', 'fcm_token'];
+        if ($hasPlatform) {
+            $columns[] = 'fcm_platform';
+        }
+
+        return $query->get($columns);
     }
 
     private function emptyAudienceMessage(string $topic): string
