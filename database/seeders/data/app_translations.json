@@ -2622,6 +2622,24 @@
     "tl": "Buong Pangalan"
   },
   {
+    "key": "usernameLabel",
+    "group": "account",
+    "en": "Username",
+    "tl": "Username"
+  },
+  {
+    "key": "usernameHint",
+    "group": "account",
+    "en": "Choose a username",
+    "tl": "Pumili ng username"
+  },
+  {
+    "key": "usernameRequired",
+    "group": "account",
+    "en": "Please enter a username.",
+    "tl": "Maglagay ng username."
+  },
+  {
     "key": "emailAddressLabel",
     "group": "account",
     "en": "Email Address",
@@ -3404,20 +3422,20 @@
   {
     "key": "regNicknameHint",
     "group": "registration",
-    "en": "Type your nickname",
-    "tl": "I-type ang iyong palayaw"
+    "en": "Type your username",
+    "tl": "I-type ang iyong username"
   },
   {
     "key": "regNicknameHelper",
     "group": "registration",
-    "en": "You can change this anytime.",
-    "tl": "Maaari mong baguhin ito anytime."
+    "en": "This is your username. Your full name can be set later in Edit Profile.",
+    "tl": "Ito ang iyong username. Maaaring i-set ang buong pangalan sa Edit Profile."
   },
   {
     "key": "regNicknameRequired",
     "group": "registration",
-    "en": "Please enter a nickname.",
-    "tl": "Maglagay ng palayaw."
+    "en": "Please enter a username.",
+    "tl": "Maglagay ng username."
   },
   {
     "key": "regOptionalLabel",

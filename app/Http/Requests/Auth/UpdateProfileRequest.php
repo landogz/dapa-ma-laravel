@@ -19,6 +19,7 @@ class UpdateProfileRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:240'],
             'first_name' => ['sometimes', 'required', 'string', 'max:120'],
             'last_name' => ['sometimes', 'required', 'string', 'max:120'],
+            'nickname' => ['sometimes', 'nullable', 'string', 'max:120'],
             'profile_photo' => ['sometimes', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
             'remove_profile_photo' => ['sometimes', 'boolean'],
             'about' => ['sometimes', 'nullable', 'string', 'max:70'],

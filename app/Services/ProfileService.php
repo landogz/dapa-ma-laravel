@@ -70,6 +70,12 @@ class ProfileService
             $payload['name'] = trim($firstName.' '.$lastName);
         }
 
+        // Username / nickname is independent of full name.
+        if (array_key_exists('nickname', $data)) {
+            $nickname = trim((string) ($data['nickname'] ?? ''));
+            $payload['nickname'] = $nickname === '' ? null : $nickname;
+        }
+
         if (($data['profile_photo'] ?? null) instanceof UploadedFile) {
             $this->deleteStoredImage($user->profile_image_url);
             $payload['profile_image_url'] = $data['profile_photo']->store('profiles', 'public');
@@ -111,14 +117,10 @@ class ProfileService
     {
         $payload = [];
 
+        // Nickname is the public username. Keep it separate from full name.
         if (array_key_exists('nickname', $data)) {
             $nickname = trim((string) ($data['nickname'] ?? ''));
             $payload['nickname'] = $nickname === '' ? null : $nickname;
-            if ($nickname !== '') {
-                $payload['name'] = $nickname;
-                $payload['first_name'] = $nickname;
-                $payload['last_name'] = '';
-            }
         }
 
         if (array_key_exists('pronouns', $data)) {
