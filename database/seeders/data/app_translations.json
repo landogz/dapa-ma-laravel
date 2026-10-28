@@ -3888,6 +3888,24 @@
     "tl": "Tumutugon kay"
   },
   {
+    "key": "viewReplyOne",
+    "group": "comments",
+    "en": "View 1 reply",
+    "tl": "Tingnan ang 1 reply"
+  },
+  {
+    "key": "viewReplies",
+    "group": "comments",
+    "en": "View {count} replies",
+    "tl": "Tingnan ang {count} reply"
+  },
+  {
+    "key": "hideReplies",
+    "group": "comments",
+    "en": "Hide replies",
+    "tl": "Itago ang mga reply"
+  },
+  {
     "key": "edit",
     "group": "comments",
     "en": "Edit",
