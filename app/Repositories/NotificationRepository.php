@@ -10,7 +10,7 @@ class NotificationRepository
     public function paginate(int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
         $query = Notification::query()
-            ->with(['sender:id,name,email', 'post:id,title'])
+            ->with(['sender:id,name,email', 'post:id,title', 'hopeEvent:id,title'])
             ->latest('sent_at')
             ->latest('id');
 
@@ -35,7 +35,7 @@ class NotificationRepository
     public function findOrFail(int $id): Notification
     {
         return Notification::query()
-            ->with(['sender:id,name,email', 'post:id,title'])
+            ->with(['sender:id,name,email', 'post:id,title', 'hopeEvent:id,title'])
             ->findOrFail($id);
     }
 
@@ -49,7 +49,7 @@ class NotificationRepository
         $notification->fill($data);
         $notification->save();
 
-        return $notification->fresh(['sender', 'post']);
+        return $notification->fresh(['sender', 'post', 'hopeEvent']);
     }
 
     public function delete(Notification $notification): void

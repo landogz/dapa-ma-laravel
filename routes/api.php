@@ -368,6 +368,7 @@ Route::prefix('v1')
                     Route::delete('/hope-directory/{hopeDirectory}', [HopeDirectoryAdminController::class, 'destroy'])->name('hope-directory.destroy');
 
                     Route::get('/hope-events', [HopeEventAdminController::class, 'index'])->name('hope-events.index');
+                    Route::get('/hope-events/options', [HopeEventAdminController::class, 'options'])->name('hope-events.options');
                     Route::post('/hope-events', [HopeEventAdminController::class, 'store'])->name('hope-events.store');
                     Route::get('/hope-events/{hopeEvent}', [HopeEventAdminController::class, 'show'])->name('hope-events.show');
                     Route::put('/hope-events/{hopeEvent}', [HopeEventAdminController::class, 'update'])->name('hope-events.update');

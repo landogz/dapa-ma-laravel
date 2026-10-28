@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\HopeEvent;
 use App\Models\Notification;
 use App\Models\User;
 use App\Repositories\NotificationRepository;
@@ -73,7 +74,7 @@ class NotificationService
     public function send(array $data, User $sender): array
     {
         $topic = $data['topic'] ?? 'all';
-        $postId = $data['post_id'] ?? null;
+        [$linkType, $linkId, $postId] = $this->resolveLinkTarget($data);
         $title = trim((string) ($data['title'] ?? ''));
         $plainBody = $this->stripHtml((string) ($data['body'] ?? ''));
 
@@ -102,6 +103,8 @@ class NotificationService
             'title' => $title,
             'body' => $plainBody,
             'topic' => $topic,
+            'link_type' => $linkType,
+            'link_id' => $linkId,
             'post_id' => $postId,
             'sent_by' => $sender->id,
             'sent_at' => Carbon::now(),
@@ -111,7 +114,12 @@ class NotificationService
 
         $payloadData = array_filter([
             'type' => 'admin_push',
+            'link_type' => $linkType,
+            'link_id' => $linkId !== null ? (string) $linkId : null,
             'post_id' => $postId ? (string) $postId : null,
+            'hope_event_id' => $linkType === Notification::LINK_HOPE_EVENT && $linkId
+                ? (string) $linkId
+                : null,
             'topic' => (string) $topic,
             'notification_id' => (string) $notification->id,
         ]);
@@ -136,11 +144,14 @@ class NotificationService
             'title' => $title,
             'body' => $plainBody,
             'data' => array_filter([
+                'link_type' => $linkType,
+                'link_id' => $linkId,
                 'post_id' => $postId,
+                'hope_event_id' => $linkType === Notification::LINK_HOPE_EVENT ? $linkId : null,
                 'topic' => $topic,
                 'campaign' => true,
                 'notification_id' => $notification->id,
-            ]),
+            ], static fn ($value) => $value !== null && $value !== ''),
         ]);
 
         $notification = $this->notificationRepository->update($notification, [
@@ -184,17 +195,42 @@ class NotificationService
             $preview = mb_substr($preview, 0, 117).'...';
         }
 
+        $linkType = $notification->resolvedLinkType();
+        $linkId = $notification->resolvedLinkId();
+        $post = null;
+        $hopeEvent = null;
+
+        if ($linkType === Notification::LINK_POST) {
+            $postModel = $notification->post;
+            if ($postModel) {
+                $post = [
+                    'id' => $postModel->id,
+                    'title' => $postModel->title,
+                ];
+            }
+        } elseif ($linkType === Notification::LINK_HOPE_EVENT) {
+            $eventModel = $notification->relationLoaded('hopeEvent')
+                ? $notification->hopeEvent
+                : ($linkId ? HopeEvent::query()->find($linkId, ['id', 'title']) : null);
+            if ($eventModel) {
+                $hopeEvent = [
+                    'id' => $eventModel->id,
+                    'title' => $eventModel->title,
+                ];
+            }
+        }
+
         return [
             'id' => $notification->id,
             'title' => $notification->title,
             'body' => $notification->body,
             'preview' => $preview,
             'topic' => $notification->topic ?? 'all',
-            'post_id' => $notification->post_id,
-            'post' => $notification->post ? [
-                'id' => $notification->post->id,
-                'title' => $notification->post->title,
-            ] : null,
+            'link_type' => $linkType,
+            'link_id' => $linkId,
+            'post_id' => $linkType === Notification::LINK_POST ? $linkId : null,
+            'post' => $post,
+            'hope_event' => $hopeEvent,
             'sender' => $notification->sender ? [
                 'id' => $notification->sender->id,
                 'name' => $notification->sender->name,
@@ -206,6 +242,33 @@ class NotificationService
             'created_at' => $notification->created_at?->toIso8601String(),
             'updated_at' => $notification->updated_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{0: ?string, 1: ?int, 2: ?int}
+     */
+    private function resolveLinkTarget(array $data): array
+    {
+        $linkType = isset($data['link_type']) ? trim((string) $data['link_type']) : '';
+        $linkId = isset($data['link_id']) ? (int) $data['link_id'] : null;
+
+        if ($linkType === '' && filled($data['post_id'] ?? null)) {
+            $linkType = Notification::LINK_POST;
+            $linkId = (int) $data['post_id'];
+        }
+
+        if ($linkType === '' || ! $linkId) {
+            return [null, null, null];
+        }
+
+        if (! in_array($linkType, [Notification::LINK_POST, Notification::LINK_HOPE_EVENT], true)) {
+            return [null, null, null];
+        }
+
+        $postId = $linkType === Notification::LINK_POST ? $linkId : null;
+
+        return [$linkType, $linkId, $postId];
     }
 
     public function updateDeviceToken(User $user, string $token, string $platform): User

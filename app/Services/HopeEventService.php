@@ -6,6 +6,7 @@ use App\Models\HopeEvent;
 use App\Repositories\HopeEventRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
 class HopeEventService
@@ -22,6 +23,11 @@ class HopeEventService
         bool $activeOnly = true,
     ): LengthAwarePaginator {
         return $this->repository->paginate($perPage, $search, $audience, $activeOnly);
+    }
+
+    public function listForSelection(): Collection
+    {
+        return $this->repository->selectionList();
     }
 
     public function show(int|string $id): HopeEvent

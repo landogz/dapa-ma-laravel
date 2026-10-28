@@ -9,6 +9,7 @@ import { showErrorToast, showSuccessToast } from './shared/toast';
 
 let notifTable;
 let postOptionsCache = null;
+let hopeEventOptionsCache = null;
 let notificationsTableMode = null;
 let notificationsViewportBound = false;
 let hasBoundFilters = false;
@@ -21,6 +22,11 @@ const TOPIC_LABELS = {
     all: 'All users',
     android: 'Android',
     ios: 'iOS',
+};
+
+const LINK_TYPE_LABELS = {
+    post: 'Post',
+    hope_event: 'Hope Event',
 };
 
 export function initNotificationsModule() {
@@ -83,9 +89,12 @@ export function loadNotifications() {
 }
 
 export async function sendNotification() {
-    const postOptions = await loadPostOptions();
+    const [postOptions, hopeEventOptions] = await Promise.all([
+        loadPostOptions(),
+        loadHopeEventOptions(),
+    ]);
 
-    if (!postOptions) {
+    if (!postOptions || !hopeEventOptions) {
         return;
     }
 
@@ -102,11 +111,22 @@ export async function sendNotification() {
                     placeholder: 'Write a short plain-text message',
                 },
                 {
-                    id: 'notif-post-id',
-                    label: 'Related Post',
+                    id: 'notif-link-type',
+                    label: 'Link to',
                     type: 'select',
                     value: '',
-                    options: postOptions,
+                    options: [
+                        { value: '', label: 'None' },
+                        { value: 'post', label: 'Post' },
+                        { value: 'hope_event', label: 'Hope Event' },
+                    ],
+                },
+                {
+                    id: 'notif-link-id',
+                    label: 'Linked item',
+                    type: 'select',
+                    value: '',
+                    options: [{ value: '', label: 'Select an item' }],
                 },
                 {
                     id: 'notif-topic',
@@ -124,12 +144,40 @@ export async function sendNotification() {
         showCancelButton: true,
         confirmButtonText: 'Continue',
         didOpen: (popup) => {
-            enhanceAdminFilterSelects(popup);
+            const typeSelect = popup.querySelector('#notif-link-type');
+            const linkSelect = popup.querySelector('#notif-link-id');
+            const linkWrap = linkSelect?.closest('.admin-swal-field') || linkSelect?.parentElement;
+
+            const syncLinkTarget = () => {
+                const type = typeSelect?.value || '';
+                if (!linkSelect) return;
+
+                if (!type) {
+                    linkSelect.innerHTML = '<option value="">Select an item</option>';
+                    linkSelect.value = '';
+                    linkSelect.disabled = true;
+                    if (linkWrap) linkWrap.classList.add('hidden');
+                    enhanceAdminFilterSelects(popup);
+                    return;
+                }
+
+                const source = type === 'hope_event' ? hopeEventOptions : postOptions;
+                linkSelect.innerHTML = source.map((option) => (
+                    `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`
+                )).join('');
+                linkSelect.disabled = false;
+                if (linkWrap) linkWrap.classList.remove('hidden');
+                enhanceAdminFilterSelects(popup);
+            };
+
+            typeSelect?.addEventListener('change', syncLinkTarget);
+            syncLinkTarget();
         },
         preConfirm: () => {
             const title = document.getElementById('notif-title')?.value.trim();
             const topic = document.getElementById('notif-topic')?.value || 'all';
-            const postId = document.getElementById('notif-post-id')?.value;
+            const linkType = document.getElementById('notif-link-type')?.value || '';
+            const linkId = document.getElementById('notif-link-id')?.value;
             const bodyValue = document.getElementById('notif-body')?.value.trim();
 
             if (!title || !bodyValue) {
@@ -137,11 +185,17 @@ export async function sendNotification() {
                 return false;
             }
 
+            if (linkType && !linkId) {
+                Swal.showValidationMessage('Choose a linked item, or set Link to None.');
+                return false;
+            }
+
             return {
                 title,
                 body: bodyValue,
                 topic,
-                post_id: postId ? Number(postId) : null,
+                link_type: linkType || null,
+                link_id: linkType && linkId ? Number(linkId) : null,
             };
         },
     }));
@@ -215,7 +269,7 @@ async function loadPostOptions() {
         const posts = data.data ?? [];
 
         postOptionsCache = [
-            { value: '', label: 'No linked post' },
+            { value: '', label: 'Select a post' },
             ...posts.map((post) => ({
                 value: String(post.id),
                 label: post.title,
@@ -227,6 +281,34 @@ async function loadPostOptions() {
         showErrorToast(
             response?.data?.message ?? 'Failed to load post options.',
             'Posts',
+        );
+
+        return null;
+    }
+}
+
+async function loadHopeEventOptions() {
+    if (hopeEventOptionsCache && hopeEventOptionsCache.length > 1) {
+        return hopeEventOptionsCache;
+    }
+
+    try {
+        const { data } = await axios.get('/admin/hope-events/options');
+        const events = data.data ?? [];
+
+        hopeEventOptionsCache = [
+            { value: '', label: 'Select a hope event' },
+            ...events.map((event) => ({
+                value: String(event.id),
+                label: event.is_active === false ? `${event.title} (inactive)` : event.title,
+            })),
+        ];
+
+        return hopeEventOptionsCache;
+    } catch ({ response }) {
+        showErrorToast(
+            response?.data?.message ?? 'Failed to load hope event options.',
+            'Hope Events',
         );
 
         return null;
@@ -259,6 +341,7 @@ async function initializeNotificationsTable(tableEl) {
                 { title: 'Sent', className: 'dt-col-nowrap' },
                 { title: 'Title', className: 'dt-col-primary dt-col-wide' },
                 { title: 'Preview', className: 'dt-col-wide' },
+                { title: 'Link to', className: 'dt-col-wide' },
                 { title: 'Audience', className: 'dt-col-nowrap' },
                 { title: 'Recipients', className: 'dt-col-nowrap' },
                 { title: 'Sent By', className: 'dt-col-nowrap' },
@@ -294,6 +377,48 @@ function bindNotificationsViewportListener(tableEl) {
     notificationsViewportBound = true;
 }
 
+function linkedTargetCell(notification) {
+    const linkType = notification.link_type
+        || (notification.post_id || notification.post ? 'post' : null);
+    const typeLabel = LINK_TYPE_LABELS[linkType] || null;
+
+    if (linkType === 'hope_event') {
+        const eventId = notification.hope_event?.id ?? notification.link_id;
+        const title = notification.hope_event?.title;
+        if (!eventId || !title) {
+            return '<span class="admin-empty-badge">None</span>';
+        }
+
+        return `<span class="inline-flex flex-wrap items-center gap-1.5">
+            <span class="admin-status-badge bg-[#055498]/10 text-[#055498]">${escapeHtml(typeLabel)}</span>
+            <a
+                href="/admin/hope-events?event=${encodeURIComponent(eventId)}"
+                class="font-semibold text-[#055498] underline-offset-2 hover:underline"
+                title="Open linked hope event"
+            >${escapeHtml(title)}</a>
+        </span>`;
+    }
+
+    if (linkType === 'post') {
+        const postId = notification.post?.id ?? notification.post_id ?? notification.link_id;
+        const title = notification.post?.title;
+        if (!postId || !title) {
+            return '<span class="admin-empty-badge">None</span>';
+        }
+
+        return `<span class="inline-flex flex-wrap items-center gap-1.5">
+            <span class="admin-status-badge bg-[#055498]/10 text-[#055498]">${escapeHtml(typeLabel)}</span>
+            <a
+                href="/admin/posts?post=${encodeURIComponent(postId)}"
+                class="font-semibold text-[#055498] underline-offset-2 hover:underline"
+                title="Open linked post"
+            >${escapeHtml(title)}</a>
+        </span>`;
+    }
+
+    return '<span class="admin-empty-badge">None</span>';
+}
+
 function buildNotificationRowData(notification) {
     const topicKey = notification.topic ?? 'all';
     const topicLabel = TOPIC_LABELS[topicKey] || topicKey;
@@ -305,6 +430,7 @@ function buildNotificationRowData(notification) {
         ? escapeHtml(formatDateTime(notification.sent_at))
         : '<span class="admin-empty-badge">N/A</span>';
     const preview = escapeHtml(notification.preview || notification.body || '—');
+    const linkedTarget = linkedTargetCell(notification);
     const recipients = Number(notification.inbox_count ?? notification.recipient_count ?? 0);
     const rowAttrs = `data-notif-row-id="${notification.id}"`;
 
@@ -320,6 +446,7 @@ function buildNotificationRowData(notification) {
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Preview:</span> ${preview}</p>
+                    <p><span>Link to:</span> ${linkedTarget}</p>
                     <p><span>Recipients:</span> ${recipients}</p>
                     <p><span>Sent By:</span> ${sender}</p>
                 </div>
@@ -332,6 +459,7 @@ function buildNotificationRowData(notification) {
         `<span ${rowAttrs}>${sentAt}</span>`,
         escapeHtml(notification.title),
         preview,
+        linkedTarget,
         topic,
         String(recipients),
         sender,
@@ -396,8 +524,8 @@ async function viewNotification(notificationId) {
 
     const topicLabel = TOPIC_LABELS[notification.topic] || notification.topic || 'All users';
     const sender = notification.sender?.name || 'System';
-    const linkedPost = notification.post?.title || 'None';
     const recipients = Number(notification.inbox_count ?? notification.recipient_count ?? 0);
+    const linkedHtml = linkedTargetCell(notification);
 
     Swal.fire(buildSwalOptions({
         title: notification.title || 'Notification',
@@ -407,7 +535,7 @@ async function viewNotification(notificationId) {
                 <div class="admin-swal-fields">
                     <p class="text-sm text-slate-600"><strong>Sent:</strong> ${escapeHtml(formatDateTime(notification.sent_at) || '—')}</p>
                     <p class="text-sm text-slate-600"><strong>Sent by:</strong> ${escapeHtml(sender)}</p>
-                    <p class="text-sm text-slate-600"><strong>Related post:</strong> ${escapeHtml(linkedPost)}</p>
+                    <p class="text-sm text-slate-600"><strong>Link to:</strong> ${linkedHtml}</p>
                     <div class="diary-entry-preview rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
                         ${escapeHtml(notification.body || '')}
                     </div>

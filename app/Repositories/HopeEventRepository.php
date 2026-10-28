@@ -4,9 +4,21 @@ namespace App\Repositories;
 
 use App\Models\HopeEvent;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class HopeEventRepository
 {
+    public function selectionList(): Collection
+    {
+        return HopeEvent::query()
+            ->select(['id', 'title', 'start_date', 'is_active'])
+            ->orderByDesc('is_active')
+            ->orderBy('sort_order')
+            ->orderByDesc('start_date')
+            ->orderByDesc('id')
+            ->get();
+    }
+
     public function paginate(
         int $perPage = 50,
         ?string $search = null,

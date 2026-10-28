@@ -35,6 +35,19 @@ class HopeEventAdminController extends Controller
         ]);
     }
 
+    public function options(): JsonResponse
+    {
+        return response()->json([
+            'status' => true,
+            'message' => 'Hope event options loaded successfully.',
+            'data' => $this->hopeEventService->listForSelection()->map(static fn (HopeEvent $event) => [
+                'id' => $event->id,
+                'title' => $event->title,
+                'is_active' => (bool) $event->is_active,
+            ])->values(),
+        ]);
+    }
+
     public function show(HopeEvent $hopeEvent): JsonResponse
     {
         return response()->json([
