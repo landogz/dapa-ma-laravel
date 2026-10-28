@@ -2640,6 +2640,18 @@
     "tl": "Maglagay ng username."
   },
   {
+    "key": "usernameInvalid",
+    "group": "account",
+    "en": "Use 3–30 characters: letters, numbers, dots, underscores, or hyphens.",
+    "tl": "Gumamit ng 3–30 character: letra, numero, tuldok, underscore, o gitling."
+  },
+  {
+    "key": "usernameTaken",
+    "group": "account",
+    "en": "This username is already taken.",
+    "tl": "Nakuha na ang username na ito."
+  },
+  {
     "key": "emailAddressLabel",
     "group": "account",
     "en": "Email Address",

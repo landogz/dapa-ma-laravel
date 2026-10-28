@@ -200,6 +200,7 @@ Route::prefix('v1')
             Route::put('/auth/profile', [AuthController::class, 'updateProfile'])->name('auth.profile.update');
             Route::post('/auth/profile', [AuthController::class, 'updateProfile'])->name('auth.profile.update.post');
             Route::put('/auth/onboarding', [AuthController::class, 'updateOnboarding'])->name('auth.onboarding.update');
+            Route::post('/auth/onboarding', [AuthController::class, 'updateOnboarding'])->name('auth.onboarding.update.post');
             Route::put('/auth/password', [AuthController::class, 'changePassword'])->name('auth.password.update');
 
             // Basic user list (any authenticated user)

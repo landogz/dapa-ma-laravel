@@ -5,6 +5,7 @@ namespace App\Http\Requests\Auth;
 use App\Models\AppOption;
 use App\Support\AppOptionGroup;
 use App\Support\InterestValues;
+use App\Support\Username\Username;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -38,6 +39,12 @@ class UpdateOnboardingRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->exists('nickname')) {
+            $this->merge([
+                'nickname' => Username::normalize($this->input('nickname')),
+            ]);
+        }
+
         $personas = $this->input('personas');
         if (is_string($personas)) {
             $decoded = json_decode($personas, true);
@@ -50,7 +57,7 @@ class UpdateOnboardingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nickname' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'nickname' => Username::rules($this->user()?->id),
             'pronouns' => ['sometimes', 'nullable', 'string', 'max:80'],
             'birthday' => ['sometimes', 'nullable', 'date', 'before:today'],
             'persona' => ['sometimes', 'nullable', 'string', 'max:80'],
@@ -62,9 +69,26 @@ class UpdateOnboardingRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'nickname.unique' => 'This username is already taken.',
+            'nickname.regex' => 'Username may only contain letters, numbers, dots, underscores, and hyphens.',
+            'nickname.min' => 'Username must be at least '.Username::MIN_LENGTH.' characters.',
+            'nickname.max' => 'Username may not be greater than '.Username::MAX_LENGTH.' characters.',
+        ];
+    }
+
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            if ($this->exists('nickname')) {
+                $nickname = Username::normalize($this->input('nickname'));
+                if ($nickname !== null && Username::isTaken($nickname, $this->user()?->id)) {
+                    $validator->errors()->add('nickname', 'This username is already taken.');
+                }
+            }
+
             if ($this->filled('pronouns') && ! AppOption::isAllowed(
                 AppOptionGroup::PRONOUNS,
                 (string) $this->input('pronouns'),

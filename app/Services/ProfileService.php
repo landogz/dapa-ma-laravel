@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\Password\PasswordService;
 use App\Support\InterestValues;
 use App\Support\Journal\CustomFeelings;
+use App\Support\Username\Username;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -72,8 +73,7 @@ class ProfileService
 
         // Username / nickname is independent of full name.
         if (array_key_exists('nickname', $data)) {
-            $nickname = trim((string) ($data['nickname'] ?? ''));
-            $payload['nickname'] = $nickname === '' ? null : $nickname;
+            $payload['nickname'] = Username::normalize($data['nickname'] ?? null);
         }
 
         if (($data['profile_photo'] ?? null) instanceof UploadedFile) {
@@ -119,8 +119,7 @@ class ProfileService
 
         // Nickname is the public username. Keep it separate from full name.
         if (array_key_exists('nickname', $data)) {
-            $nickname = trim((string) ($data['nickname'] ?? ''));
-            $payload['nickname'] = $nickname === '' ? null : $nickname;
+            $payload['nickname'] = Username::normalize($data['nickname'] ?? null);
         }
 
         if (array_key_exists('pronouns', $data)) {
