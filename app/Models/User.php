@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Password\PasswordHistory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -35,6 +36,8 @@ class User extends Authenticatable
         'accepted_privacy_notice_at',
         'email',
         'password',
+        'must_change_password',
+        'password_changed_at',
         'role',
         'fcm_token',
         'fcm_platform',
@@ -72,7 +75,14 @@ class User extends Authenticatable
             'accepted_privacy_policy_at' => 'datetime',
             'accepted_privacy_notice_at' => 'datetime',
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
+            'password_changed_at' => 'datetime',
         ];
+    }
+
+    public function passwordHistories(): HasMany
+    {
+        return $this->hasMany(PasswordHistory::class);
     }
 
     public function diaryEntries(): HasMany

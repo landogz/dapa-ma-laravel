@@ -314,7 +314,7 @@ function bindViewportListener(tableEl) {
         return;
     }
 
-    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const mobileQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = async () => {
         const nextMode = getTableMode();
         if (nextMode === posterContestTableMode) return;
@@ -332,7 +332,7 @@ function bindViewportListener(tableEl) {
 }
 
 function getTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 function buildColumns(mode) {

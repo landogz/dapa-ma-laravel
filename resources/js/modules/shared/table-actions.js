@@ -320,6 +320,11 @@ function closeAllPortedActionTooltips() {
     });
 }
 
+export function dismissAdminTablePopovers() {
+    closeAllActionOverflows();
+    closeAllPortedActionTooltips();
+}
+
 function bindTooltipDocumentListeners() {
     if (tooltipDocumentBound) {
         return;

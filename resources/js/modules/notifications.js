@@ -12,8 +12,6 @@ let postOptionsCache = null;
 let notificationsTableMode = null;
 let notificationsViewportBound = false;
 let hasBoundFilters = false;
-let hasBoundContextMenu = false;
-let contextNotificationId = null;
 const notificationsCache = new Map();
 
 let topicFilter = '';
@@ -30,7 +28,6 @@ export function initNotificationsModule() {
     if (!tableEl) return;
 
     bindNotificationFilters();
-    bindNotificationsContextMenu(tableEl);
 
     if (notifTable && notificationsTableMode === getNotificationsTableMode()) {
         loadNotifications();
@@ -237,7 +234,7 @@ async function loadPostOptions() {
 }
 
 function getNotificationsTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 async function initializeNotificationsTable(tableEl) {
@@ -275,7 +272,7 @@ function bindNotificationsViewportListener(tableEl) {
         return;
     }
 
-    const query = window.matchMedia('(max-width: 767px)');
+    const query = window.matchMedia('(max-width: 1023px)');
     const onChange = async () => {
         const nextMode = getNotificationsTableMode();
 
@@ -377,75 +374,6 @@ function bindNotificationActions() {
             deleteNotification(button.getAttribute('data-notif-delete'));
         });
     });
-}
-
-function bindNotificationsContextMenu(tableElement) {
-    if (hasBoundContextMenu) {
-        return;
-    }
-
-    hasBoundContextMenu = true;
-    const menu = document.getElementById('notifications-context-menu');
-    if (!menu) {
-        return;
-    }
-
-    const hideMenu = () => {
-        menu.classList.add('hidden');
-        menu.setAttribute('hidden', 'hidden');
-        contextNotificationId = null;
-    };
-
-    tableElement.addEventListener('contextmenu', (event) => {
-        const row = event.target.closest('[data-notif-row-id], tr');
-        if (!row) {
-            return;
-        }
-
-        const notificationId = row.getAttribute('data-notif-row-id')
-            || row.querySelector('[data-notif-row-id]')?.getAttribute('data-notif-row-id')
-            || row.querySelector('[data-notif-view]')?.getAttribute('data-notif-view');
-
-        if (!notificationId || !notificationsCache.has(String(notificationId))) {
-            return;
-        }
-
-        event.preventDefault();
-        contextNotificationId = String(notificationId);
-        menu.classList.remove('hidden');
-        menu.removeAttribute('hidden');
-        menu.style.left = `${Math.min(event.clientX, window.innerWidth - 220)}px`;
-        menu.style.top = `${Math.min(event.clientY, window.innerHeight - 120)}px`;
-    });
-
-    menu.querySelectorAll('[data-notif-context]').forEach((button) => {
-        button.addEventListener('click', async () => {
-            const action = button.getAttribute('data-notif-context');
-            const notificationId = contextNotificationId;
-            hideMenu();
-            if (!notificationId) return;
-
-            if (action === 'view') {
-                viewNotification(notificationId);
-            } else if (action === 'delete') {
-                await deleteNotification(notificationId);
-            }
-        });
-    });
-
-    document.addEventListener('click', (event) => {
-        if (!menu.contains(event.target)) {
-            hideMenu();
-        }
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            hideMenu();
-        }
-    });
-
-    hideMenu();
 }
 
 async function viewNotification(notificationId) {

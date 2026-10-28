@@ -2,6 +2,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey, renderAdminFilterTabs, setAdminFilterTab } from './shared/filter-tabs';
+import { SKY_FILTER_ITEMS, userInitials } from './diary/sky-filters';
 import { buildSwalOptions, confirmWithSwal } from './shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
 import { showErrorToast, showSuccessToast } from './shared/toast';
@@ -9,9 +10,7 @@ import { showErrorToast, showSuccessToast } from './shared/toast';
 let diaryTable;
 let diaryTableMode;
 let hasBoundViewportListener = false;
-let hasBoundContextMenu = false;
 let hasBoundFilters = false;
-let contextEntryId = null;
 const diaryCache = new Map();
 
 let userFilter = '';
@@ -62,7 +61,7 @@ export function initDiaryModule() {
     }
 
     bindDiaryFilters();
-    bindDiaryContextMenu(tableElement);
+    renderDiarySkyTabs();
     loadDiaryUsers();
 
     if (diaryTable) {
@@ -93,6 +92,23 @@ function bindDiaryFilters() {
         skyFilter = value;
         loadDiaryEntries();
     });
+
+    document.querySelector('[data-diary-user-search]')?.addEventListener('input', (event) => {
+        filterDiaryUserTabs(event.target.value);
+    });
+}
+
+function renderDiarySkyTabs() {
+    const tabs = document.getElementById('diary-sky-tabs');
+    if (!tabs) {
+        return;
+    }
+
+    renderAdminFilterTabs(tabs, SKY_FILTER_ITEMS.map((item) => ({
+        ...item,
+        count: skyCounts ? (skyCounts[item.value] ?? 0) : '',
+    })));
+    setAdminFilterTab(tabs, skyFilter);
 }
 
 async function loadDiaryUsers() {
@@ -111,15 +127,16 @@ async function loadDiaryUsers() {
 
         const total = users.reduce((sum, user) => sum + Number(user.entries_count ?? 0), 0);
         renderAdminFilterTabs(tabs, [
-            { value: '', label: 'All users', icon: 'fas fa-users', count: total },
+            { value: '', label: 'All users', hint: 'Every writer', icon: 'fas fa-users', count: total },
             ...users.map((user) => ({
                 value: String(user.id),
                 label: user.name || 'User',
-                icon: 'fas fa-user',
+                initials: userInitials(user.name),
                 count: user.entries_count ?? 0,
             })),
         ]);
         setAdminFilterTab(tabs, userFilter);
+        filterDiaryUserTabs(document.querySelector('[data-diary-user-search]')?.value || '');
     } catch (error) {
         showErrorToast(
             error.response?.data?.message ?? 'Unable to load journal users.',
@@ -169,6 +186,34 @@ function loadDiaryEntries() {
         });
 }
 
+function filterDiaryUserTabs(query) {
+    const tabs = document.getElementById('diary-user-tabs');
+    const empty = document.querySelector('[data-diary-user-empty]');
+    if (!tabs) {
+        return;
+    }
+
+    const needle = String(query || '').trim().toLowerCase();
+    let visiblePeople = 0;
+
+    tabs.querySelectorAll('[data-filter-value]').forEach((tab) => {
+        const value = tab.dataset.filterValue ?? '';
+        if (!value) {
+            tab.hidden = false;
+            return;
+        }
+
+        const haystack = `${tab.dataset.filterLabel || ''} ${tab.textContent || ''}`.toLowerCase();
+        const match = !needle || haystack.includes(needle);
+        tab.hidden = !match;
+        if (match) {
+            visiblePeople += 1;
+        }
+    });
+
+    empty?.classList.toggle('hidden', !needle || visiblePeople > 0);
+}
+
 async function initializeDiaryTable(tableElement) {
     const nextMode = getTableMode();
 
@@ -200,7 +245,7 @@ function bindViewportListener(tableEl) {
         return;
     }
 
-    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const mobileQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = async () => {
         const nextMode = getTableMode();
         if (nextMode === diaryTableMode) {
@@ -221,7 +266,7 @@ function bindViewportListener(tableEl) {
 }
 
 function getTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 function buildColumns(mode) {
@@ -348,79 +393,6 @@ function bindDiaryActions() {
             deleteDiaryEntry(button.getAttribute('data-diary-delete'));
         });
     });
-}
-
-function bindDiaryContextMenu(tableElement) {
-    if (hasBoundContextMenu) {
-        return;
-    }
-
-    hasBoundContextMenu = true;
-    const menu = document.getElementById('diary-context-menu');
-    if (!menu) {
-        return;
-    }
-
-    const hideMenu = () => {
-        menu.classList.add('hidden');
-        menu.setAttribute('hidden', 'hidden');
-        contextEntryId = null;
-    };
-
-    tableElement.addEventListener('contextmenu', (event) => {
-        const row = event.target.closest('[data-diary-row-id], tr');
-        if (!row) {
-            return;
-        }
-
-        const entryId = row.getAttribute('data-diary-row-id')
-            || row.querySelector('[data-diary-row-id]')?.getAttribute('data-diary-row-id')
-            || row.querySelector('[data-diary-view]')?.getAttribute('data-diary-view');
-
-        if (!entryId || !diaryCache.has(String(entryId))) {
-            return;
-        }
-
-        event.preventDefault();
-        contextEntryId = String(entryId);
-
-        menu.classList.remove('hidden');
-        menu.removeAttribute('hidden');
-        menu.style.left = `${Math.min(event.clientX, window.innerWidth - 220)}px`;
-        menu.style.top = `${Math.min(event.clientY, window.innerHeight - 120)}px`;
-    });
-
-    menu.querySelectorAll('[data-diary-context]').forEach((button) => {
-        button.addEventListener('click', async () => {
-            const action = button.getAttribute('data-diary-context');
-            const entryId = contextEntryId;
-            hideMenu();
-
-            if (!entryId) {
-                return;
-            }
-
-            if (action === 'view') {
-                viewDiaryEntry(entryId);
-            } else if (action === 'delete') {
-                await deleteDiaryEntry(entryId);
-            }
-        });
-    });
-
-    document.addEventListener('click', (event) => {
-        if (!menu.contains(event.target)) {
-            hideMenu();
-        }
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            hideMenu();
-        }
-    });
-
-    hideMenu();
 }
 
 function viewDiaryEntry(entryId) {

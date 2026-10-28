@@ -1,12 +1,13 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
 import { buildSwalForm, buildSwalOptions, confirmWithSwal, formatApiValidationMessage } from './shared/swal-forms';
+import { getRichTextValue, isRichTextEmpty } from './rich-text-editor';
 import { renderRatingBadge, renderStars } from './shared/ratings';
-import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
+import { buildAdminActionButtons, bindAdminActionTooltipSuppression, buildAdminActionButton } from './shared/table-actions';
 import { showSuccessToast, showErrorToast } from './shared/toast';
+import { bindPostCommentDeletes, confirmDeletePostComment } from './post-comments';
 
 let postsTable;
 let currentUserRole = null;
@@ -26,7 +27,6 @@ export function initPostsModule() {
 
     if (postsTable && postsTableMode === getPostsTableMode()) {
         loadPosts();
-        bindPostsContextMenu();
         openPostFromQueryParam();
 
         return;
@@ -34,7 +34,6 @@ export function initPostsModule() {
 
     initializePostsTable(tableEl).then(() => {
         loadPosts();
-        bindPostsContextMenu();
         openPostFromQueryParam();
     });
 
@@ -121,7 +120,7 @@ export async function promptCreateDraft() {
     loadPosts();
 }
 
-export async function viewPost(postId) {
+export async function viewPost(postId, { engagementTab = null } = {}) {
     try {
         const { data } = await axios.get(`/admin/posts/${postId}`);
         const post = data?.data;
@@ -132,7 +131,7 @@ export async function viewPost(postId) {
         }
 
         postsById.set(String(post.id), post);
-        openPostViewModal(post);
+        openPostViewModal(post, { engagementTab });
     } catch (error) {
         showErrorToast(
             error?.response?.data?.message ?? 'Unable to load the selected post.',
@@ -141,7 +140,7 @@ export async function viewPost(postId) {
     }
 }
 
-function openPostViewModal(post) {
+function openPostViewModal(post, { engagementTab = null } = {}) {
     const likes = Array.isArray(post.likes) ? post.likes : [];
     const comments = Array.isArray(post.comments) ? post.comments : [];
     const reviews = Array.isArray(post.reviews) ? post.reviews : [];
@@ -206,7 +205,7 @@ function openPostViewModal(post) {
                     <div class="post-view-body diary-entry-preview">
                         ${post.body || '<p class="post-view-empty">No content yet.</p>'}
                     </div>
-                    ${hasEngagement ? renderPostEngagementPanel({ likes, comments, reviews, likesCount, commentsCount, reviewsCount }) : ''}
+                    ${hasEngagement ? renderPostEngagementPanel({ likes, comments, reviews, likesCount, commentsCount, reviewsCount, postId: post.id }) : ''}
                 </div>
             </div>
         `,
@@ -223,8 +222,10 @@ function openPostViewModal(post) {
             confirmButton: 'post-view-btn-close',
             cancelButton: 'post-view-btn-edit',
         },
-        didOpen: () => {
+        didOpen: (popup) => {
             bindPostEngagementTabs();
+            bindPostCommentDeletes(popup, deletePostComment);
+            activatePostEngagementTab(engagementTab);
         },
     }).then(({ isDismissed, dismiss }) => {
         if (isDismissed && dismiss === Swal.DismissReason.cancel && canEdit) {
@@ -233,7 +234,7 @@ function openPostViewModal(post) {
     });
 }
 
-function renderPostEngagementPanel({ likes, comments, reviews, likesCount, commentsCount, reviewsCount }) {
+function renderPostEngagementPanel({ likes, comments, reviews, likesCount, commentsCount, reviewsCount, postId }) {
     const tabs = [];
 
     if (likesCount > 0) {
@@ -241,7 +242,7 @@ function renderPostEngagementPanel({ likes, comments, reviews, likesCount, comme
     }
 
     if (commentsCount > 0) {
-        tabs.push({ id: 'comments', label: `Comments (${commentsCount})`, html: renderPostCommentsSection(comments) });
+        tabs.push({ id: 'comments', label: `Comments (${commentsCount})`, html: renderPostCommentsSection(comments, postId) });
     }
 
     if (reviewsCount > 0) {
@@ -303,6 +304,26 @@ function bindPostEngagementTabs() {
     });
 }
 
+function activatePostEngagementTab(tabId) {
+    if (!tabId) {
+        return;
+    }
+
+    const tab = document.querySelector(`.post-view-engagement [data-post-tab="${tabId}"]`);
+    tab?.click();
+}
+
+export async function deletePostComment(postId, commentId) {
+    const { deleted } = await confirmDeletePostComment(postId, commentId);
+
+    if (deleted) {
+        loadPosts();
+    }
+
+    await viewPost(postId, { engagementTab: 'comments' });
+    return deleted;
+}
+
 function reactionEmoji(reaction) {
     switch (String(reaction || 'like')) {
         case 'love':
@@ -340,7 +361,7 @@ function renderPostLikesSection(likes) {
     `;
 }
 
-function renderPostCommentsSection(comments) {
+function renderPostCommentsSection(comments, postId) {
     const byParent = new Map();
     comments.forEach((comment) => {
         const parentKey = comment.parent_id ? String(comment.parent_id) : 'root';
@@ -356,6 +377,17 @@ function renderPostCommentsSection(comments) {
         return nodes.map((comment) => {
             const children = renderTree(comment.id, depth + 1);
 
+            const body = String(comment.body ?? '').trim();
+            const imageUrl = String(comment.image_url ?? '').trim();
+            const deleteButton = buildAdminActionButton({
+                tooltip: 'Delete comment',
+                label: 'Delete',
+                icon: 'fas fa-trash-can',
+                className: 'admin-table-action-danger post-view-comment-delete',
+                attrs: `data-post-comment-delete="${escapeHtml(String(comment.id))}" data-post-id="${escapeHtml(String(postId))}"`,
+                isMobile: true,
+            });
+
             return `
             <li class="${depth > 0 ? 'post-view-comment-reply' : ''}">
                 <div class="post-view-comment-head">
@@ -364,8 +396,10 @@ function renderPostCommentsSection(comments) {
                         <strong>${escapeHtml(comment.user?.name ?? 'Unknown user')}</strong>
                         <em>${escapeHtml(formatDateTime(comment.created_at) || '')}</em>
                     </div>
+                    <div class="post-view-comment-delete-wrap">${deleteButton}</div>
                 </div>
-                <p>${escapeHtml(comment.body ?? '')}</p>
+                ${body ? `<p>${escapeHtml(body)}</p>` : ''}
+                ${imageUrl ? `<img class="post-view-comment-media" src="${escapeHtml(imageUrl)}" alt="Comment sticker">` : ''}
                 ${children ? `<ul class="post-view-thread">${children}</ul>` : ''}
             </li>
         `;
@@ -770,63 +804,8 @@ function bindPostTableActions(tableEl) {
     postsActionsBound = true;
 }
 
-function bindPostsContextMenu() {
-    const menu = document.getElementById('posts-context-menu');
-    if (!menu) return;
-
-    document.getElementById('posts-table')?.addEventListener('contextmenu', (e) => {
-        if (postsTableMode !== 'desktop') {
-            return;
-        }
-
-        e.preventDefault();
-        const row = e.target.closest('tr');
-        if (!row) return;
-        const rowData = postsTable?.row(row).data();
-        if (!rowData) return;
-        const postId = rowData[0];
-        const post = postsById.get(String(postId));
-        const actions = post ? getAvailableActions(post) : [];
-
-        if (actions.length === 0) {
-            menu.style.display = 'none';
-            return;
-        }
-
-        menu.innerHTML = actions.map((action) => `
-            <button type="button" class="admin-context-menu-button" data-action="${action.handler}">
-                <i class="${action.icon} w-4 ${action.iconClass ?? 'text-[#055498]'}"></i>${action.label}
-            </button>
-        `).join('');
-
-        menu.style.display = 'block';
-        menu.style.top  = `${e.pageY}px`;
-        menu.style.left = `${e.pageX}px`;
-        menu.dataset.postId = postId;
-    });
-
-    menu.addEventListener('click', (event) => {
-        const action = event.target.closest('[data-action]')?.getAttribute('data-action');
-        const postId = menu.dataset.postId;
-
-        if (!action || !postId) {
-            return;
-        }
-
-        menu.style.display = 'none';
-
-        if (typeof window.Posts?.[action] === 'function') {
-            window.Posts[action](postId);
-        }
-    });
-
-    document.addEventListener('click', () => {
-        if (menu) menu.style.display = 'none';
-    });
-}
-
 function getPostsTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 async function initializePostsTable(tableEl) {
@@ -920,7 +899,7 @@ function bindPostsViewportListener(tableEl) {
         return;
     }
 
-    const query = window.matchMedia('(max-width: 767px)');
+    const query = window.matchMedia('(max-width: 1023px)');
     const onChange = async () => {
         const nextMode = getPostsTableMode();
 
@@ -1115,7 +1094,7 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
             hint: 'Featured posts appear in the mobile app carousel when more than one is selected.',
         },
         { id: 'post-title', label: 'Title *', placeholder: 'Enter post title', value: post?.title ?? '' },
-        { id: 'post-body', label: 'Body / rich text content *', type: 'textarea', placeholder: 'Write the main content', value: post?.body ?? '' },
+        { id: 'post-body', label: 'Body / rich text content *', type: 'richtext', placeholder: 'Write the main content', value: post?.body ?? '' },
         {
             id: 'post-category-id',
             label: 'Category *',
@@ -1175,7 +1154,6 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
 }
 
 async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonText, showStatus = false, postId = null }) {
-    let editorInstance = null;
     const isSuperAdmin = currentUserRole === 'super_admin';
 
     return Swal.fire(buildSwalOptions({
@@ -1184,42 +1162,15 @@ async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonT
         showCancelButton: true,
         confirmButtonText,
         focusConfirm: false,
-        didOpen: async () => {
+        didOpen: () => {
             bindScheduledPublishDateField();
-
-            const textarea = document.getElementById('post-body');
-
-            if (!textarea) {
-                return;
-            }
-
-            editorInstance = await ClassicEditor.create(textarea, {
-                toolbar: [
-                    'heading',
-                    '|',
-                    'bold',
-                    'italic',
-                    'link',
-                    'bulletedList',
-                    'numberedList',
-                    '|',
-                    'undo',
-                    'redo',
-                ],
-            });
-        },
-        willClose: () => {
-            if (editorInstance) {
-                editorInstance.destroy();
-                editorInstance = null;
-            }
         },
         preConfirm: async () => {
             const categoryValue = document.getElementById('post-category-id')?.value ?? '';
             const mediaFile = document.getElementById('post-media-file')?.files?.[0] ?? null;
             const titleValue = document.getElementById('post-title')?.value.trim();
             const youtubeValue = document.getElementById('post-youtube-url')?.value.trim() || null;
-            const bodyValue = editorInstance ? editorInstance.getData().trim() : document.getElementById('post-body')?.value.trim();
+            const bodyValue = getRichTextValue('post-body');
 
             const payload = {
                 title: titleValue,
@@ -1250,7 +1201,7 @@ async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonT
 
             payload.is_featured = Boolean(document.getElementById('post-is-featured')?.checked);
 
-            if (!payload.title || !payload.body || !categoryValue || Number.isNaN(payload.category_id) || payload.category_id < 1) {
+            if (!payload.title || isRichTextEmpty(payload.body) || !categoryValue || Number.isNaN(payload.category_id) || payload.category_id < 1) {
                 Swal.showValidationMessage('Title, body, and category are required.');
                 return false;
             }
@@ -1515,4 +1466,5 @@ window.Posts = {
     rejectPost,
     archivePost,
     deletePost,
+    deleteComment: deletePostComment,
 };

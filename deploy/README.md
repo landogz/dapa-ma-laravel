@@ -135,7 +135,7 @@ The UI will: write `.env` → `key:generate` → `migrate` → optional `db:seed
 1. Confirm success message.
 2. Click **Open Admin Login**.
 3. If you seeded demo accounts, use **Quick sign-in (demo)** on the login page, or:
-   - Email: `superadmin@dape-ma.local`
+   - Email: `superadmin@yopmail.com`
    - Password: `password`
 4. Quick login stays on while `DAPE_SHOW_DEMO_LOGIN=true` in `.env` (set for DEV for now). Turn it off before production go-live:
    ```bash

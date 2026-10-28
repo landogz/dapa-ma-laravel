@@ -8,7 +8,7 @@
                 <div id="app-translations-group-tabs" class="admin-filter-tab-groups" role="tablist" aria-label="Translation groups"></div>
             </aside>
             <div class="admin-filter-main">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div class="admin-section-header admin-section-header-accent flex-1 items-center gap-3 sm:gap-4">
                         <span class="admin-icon-badge">
                             <i class="fas fa-language"></i>
@@ -18,8 +18,8 @@
                             <p id="app-translations-group-subtitle" class="mt-0.5 text-xs sm:mt-0 sm:text-sm admin-shell-subtitle">Choose a group, then edit its English and Tagalog labels.</p>
                         </div>
                     </div>
-                    <div class="admin-page-actions admin-page-actions-centered lg:self-center">
-                        <button type="button" class="admin-primary-button lg:w-auto" data-admin-action="create-app-translation">
+                    <div class="admin-page-actions admin-page-actions-centered xl:self-center">
+                        <button type="button" class="admin-primary-button xl:w-auto" data-admin-action="create-app-translation">
                             Add Translation
                         </button>
                     </div>

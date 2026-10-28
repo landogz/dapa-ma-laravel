@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\CareSupportResource;
+use App\Rules\Phone\PhilippinePhone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,7 +26,7 @@ class StoreCareSupportResourceRequest extends FormRequest
             'description_tl' => ['nullable', 'string', 'max:5000'],
             'meta_en'        => ['nullable', 'string', 'max:255'],
             'meta_tl'        => ['nullable', 'string', 'max:255'],
-            'phone'          => ['nullable', 'string', 'max:120'],
+            'phone'          => ['nullable', 'string', 'max:120', new PhilippinePhone(allowMultiple: true, allowShortCodes: true)],
             'web_url'        => ['nullable', 'string', 'max:500'],
             'logo_url'       => ['nullable', 'string', 'max:500'],
             'logo_initial'   => ['nullable', 'string', 'max:4'],

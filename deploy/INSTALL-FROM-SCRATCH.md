@@ -289,7 +289,7 @@ The web installer **also writes MySQL into `.env`** when you fill the Database s
 
 - Open **Admin Login**
 - If you seeded demo data, use **Quick sign-in (demo)** buttons on the page (enabled while `DAPE_SHOW_DEMO_LOGIN=true`), or:
-  - Email: `superadmin@dape-ma.local`
+  - Email: `superadmin@yopmail.com`
   - Password: `password`
 - Quick login is on for DEV for now; set `DAPE_SHOW_DEMO_LOGIN=false` and `php artisan config:cache` before production go-live
 - Change that password immediately
@@ -506,7 +506,7 @@ sudo bash -c 'mkdir -p storage/app; echo "{\"installed_at\":\"'"$(date -u +%Y-%m
 sudo chown -R www-data:www-data storage bootstrap/cache
 ```
 
-Default seeded admin (change after login): `superadmin@dape-ma.local` / `password`.
+Default seeded admin (change after login): `superadmin@yopmail.com` / `password`.
 
 Quick sign-in buttons on `/admin/login` require `DAPE_SHOW_DEMO_LOGIN=true` in `.env` (installer sets this when seeding; enabled on DEV for now).
 

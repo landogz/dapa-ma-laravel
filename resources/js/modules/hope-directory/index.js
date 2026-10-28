@@ -5,6 +5,7 @@ import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
+import { assertPhoneFields } from '../phone-validation';
 
 let directoryTable;
 let directoryTableMode;
@@ -69,7 +70,7 @@ function bindViewportListener(tableEl) {
         return;
     }
 
-    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const mobileQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = async () => {
         const nextMode = getTableMode();
         if (nextMode === directoryTableMode) {
@@ -90,7 +91,7 @@ function bindViewportListener(tableEl) {
 }
 
 function getTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 function buildColumns(mode) {
@@ -298,12 +299,15 @@ function buildFormHtml(row) {
                 <div class="admin-swal-fields">
                     <div class="admin-swal-field">
                         <label class="admin-swal-label" for="hd-address">Address</label>
-                        <input id="hd-address" class="admin-swal-input" type="text" placeholder="Street, city, province" value="${escapeAttr(row?.address ?? '')}">
+                        <div class="address-autocomplete">
+                            <input id="hd-address" class="admin-swal-input" type="text" data-address-autocomplete placeholder="Street, city, province" autocomplete="off" value="${escapeAttr(row?.address ?? '')}">
+                        </div>
                     </div>
                     <div class="admin-swal-fields-grid-2">
                         <div class="admin-swal-field">
                             <label class="admin-swal-label" for="hd-phone">Phone</label>
-                            <input id="hd-phone" class="admin-swal-input" type="text" placeholder="+63 ..." value="${escapeAttr(row?.phone ?? '')}">
+                            <input id="hd-phone" class="admin-swal-input" type="tel" inputmode="tel" data-phone-ph autocomplete="tel" placeholder="09XX XXX XXXX or +63…" value="${escapeAttr(row?.phone ?? '')}">
+                            <p class="admin-swal-hint">Philippine mobile or landline numbers only.</p>
                         </div>
                         <div class="admin-swal-field">
                             <label class="admin-swal-label" for="hd-email">Email</label>
@@ -344,6 +348,11 @@ function showForm(row) {
             const name = document.getElementById('hd-name')?.value.trim();
             if (!name) {
                 Swal.showValidationMessage('Name is required.');
+                return false;
+            }
+            const phoneError = assertPhoneFields(Swal.getHtmlContainer() ?? document);
+            if (phoneError) {
+                Swal.showValidationMessage(phoneError);
                 return false;
             }
             return {

@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\Auth\EmailCheckService;
 use App\Services\LoginVerificationService;
 use App\Services\NotificationService;
+use App\Services\Password\PasswordService;
 use App\Services\PasswordResetService;
 use App\Services\ProfileService;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +33,7 @@ class AuthController extends Controller
         private readonly PasswordResetService $passwordResetService,
         private readonly LoginVerificationService $loginVerificationService,
         private readonly EmailCheckService $emailCheckService,
+        private readonly PasswordService $passwordService,
     ) {
     }
 
@@ -59,7 +61,9 @@ class AuthController extends Controller
             'first_name' => $nameParts[0] ?? $fullName,
             'last_name' => $nameParts[1] ?? '',
             'email' => $request->validated('email'),
-            'password' => Hash::make($request->validated('password')),
+            'password' => $request->validated('password'),
+            'password_changed_at' => now(),
+            'must_change_password' => false,
             'role' => $isFirstAdmin ? 'super_admin' : 'app_user',
             'last_login_at' => now(),
             'accepted_terms_of_use_at' => now(),
@@ -97,7 +101,15 @@ class AuthController extends Controller
         $user  = $request->user();
         $user->forceFill(['last_login_at' => now()])->save();
 
-        $this->loginVerificationService->sendCode($user);
+        $verification = $this->loginVerificationService->sendCode($user);
+        if (! $verification['status']) {
+            Auth::logout();
+
+            return response()->json([
+                'status' => false,
+                'message' => $verification['message'],
+            ], $verification['http']);
+        }
 
         $token = $user->createToken('api-token', ['*'], now()->addDays(30))->plainTextToken;
 
@@ -205,9 +217,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user->update([
-            'password' => Hash::make($request->input('password')),
-        ]);
+        $this->passwordService->apply($user, (string) $request->input('password'), false);
 
         return response()->json([
             'status'  => true,

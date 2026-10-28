@@ -4,13 +4,18 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Notifications\PasswordResetCodeNotification;
+use App\Services\Password\PasswordService;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 
 class PasswordResetService
 {
     private const OTP_TTL_SECONDS = 3600;
+
+    public function __construct(
+        private readonly PasswordService $passwordService,
+    ) {
+    }
 
     /**
      * @return array{status: bool, message: string, data?: array<string, mixed>, http: int}
@@ -96,9 +101,7 @@ class PasswordResetService
                     ?? $payload['password'],
             ],
             function (User $user, string $password): void {
-                $user->forceFill([
-                    'password' => Hash::make($password),
-                ])->save();
+                $this->passwordService->apply($user, $password, false);
                 Cache::forget($this->otpCacheKey($user->email));
             }
         );

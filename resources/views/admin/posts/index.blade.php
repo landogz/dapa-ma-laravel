@@ -2,7 +2,7 @@
 
 @section('content')
     <section class="admin-shell-card p-4 sm:p-6">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div class="admin-section-header admin-section-header-accent flex-1 items-center gap-3 sm:gap-4">
                 <span class="admin-icon-badge">
                     <i class="fas fa-file-lines"></i>
@@ -15,7 +15,7 @@
             <div class="admin-page-actions admin-page-actions-centered">
                 <button
                     type="button"
-                    class="admin-primary-button lg:w-auto"
+                    class="admin-primary-button xl:w-auto"
                     data-admin-action="create-post"
                     title="Create a new draft post"
                 >
@@ -23,7 +23,7 @@
                 </button>
                 <a
                     href="/admin/analytics"
-                    class="admin-secondary-button lg:w-auto"
+                    class="admin-secondary-button xl:w-auto"
                     title="Open analytics dashboard"
                 >
                     Review Insights
@@ -34,6 +34,5 @@
         <div class="admin-table-shell mt-6">
             <table id="posts-table" class="min-w-full text-left text-sm text-slate-700"></table>
         </div>
-        <div id="posts-context-menu" class="admin-context-menu"></div>
     </section>
 @endsection

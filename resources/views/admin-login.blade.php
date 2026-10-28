@@ -206,7 +206,7 @@
                                 <div>
                                     <label for="forgot-new-password" class="admin-login-label">New password</label>
                                     <div class="relative">
-                                        <input id="forgot-new-password" name="password" type="password" autocomplete="new-password" required minlength="8" class="admin-auth-input admin-login-field pr-12" placeholder="New password">
+                                        <input id="forgot-new-password" name="password" type="password" autocomplete="new-password" required minlength="8" class="admin-auth-input admin-login-field pr-12" placeholder="New password" data-password-policy>
                                         <button type="button" class="absolute inset-y-0 right-0 flex min-w-11 items-center justify-center px-3 text-slate-500 transition hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#055498] focus:ring-inset" data-password-toggle="forgot-new-password">
                                             <i class="fa-solid fa-eye" aria-hidden="true"></i>
                                         </button>
@@ -216,7 +216,7 @@
                                 <div>
                                     <label for="forgot-confirm-password" class="admin-login-label">Confirm new password</label>
                                     <div class="relative">
-                                        <input id="forgot-confirm-password" name="password_confirmation" type="password" autocomplete="new-password" required minlength="8" class="admin-auth-input admin-login-field pr-12" placeholder="Confirm new password">
+                                        <input id="forgot-confirm-password" name="password_confirmation" type="password" autocomplete="new-password" required minlength="8" class="admin-auth-input admin-login-field pr-12" placeholder="Confirm new password" data-password-confirm data-password-confirm-for="forgot-new-password">
                                         <button type="button" class="absolute inset-y-0 right-0 flex min-w-11 items-center justify-center px-3 text-slate-500 transition hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#055498] focus:ring-inset" data-password-toggle="forgot-confirm-password">
                                             <i class="fa-solid fa-eye" aria-hidden="true"></i>
                                         </button>

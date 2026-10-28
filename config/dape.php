@@ -21,25 +21,25 @@ return [
     'demo_login_accounts' => [
         [
             'label' => 'Super Admin',
-            'email' => 'superadmin@dape-ma.local',
+            'email' => 'superadmin@yopmail.com',
             'password' => 'password',
             'role' => 'super_admin',
         ],
         [
             'label' => 'Editor',
-            'email' => 'editor@dape-ma.local',
+            'email' => 'editor@yopmail.com',
             'password' => 'password',
             'role' => 'editor',
         ],
         [
             'label' => 'Publisher',
-            'email' => 'publisher@dape-ma.local',
+            'email' => 'publisher@yopmail.com',
             'password' => 'password',
             'role' => 'publisher',
         ],
         [
             'label' => 'Analytics Viewer',
-            'email' => 'analytics@dape-ma.local',
+            'email' => 'analytics@yopmail.com',
             'password' => 'password',
             'role' => 'analytics_viewer',
         ],

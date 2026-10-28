@@ -3,7 +3,7 @@
 @section('content')
     <section id="dashboard-overview" class="space-y-6">
         <div class="admin-shell-card p-4 sm:p-6">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-900">Dashboard</h2>
                     <p class="mt-1 text-sm text-slate-500">Overview of admin operations.</p>
@@ -104,7 +104,7 @@
             <a href="/admin/app-translations" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="app-translations">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">Mobile</p>
+                        <p class="text-xs uppercase tracking-[0.16em] text-[#123a60]">Administration</p>
                         <p class="mt-3 text-base font-semibold text-slate-900">App Translations</p>
                         <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="app-translations">--</p>
                         <p class="admin-trend" data-overview-trend="app-translations">–</p>

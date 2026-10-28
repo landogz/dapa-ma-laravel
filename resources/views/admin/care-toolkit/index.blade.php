@@ -13,7 +13,7 @@
                 </div>
             </aside>
             <div class="admin-filter-main">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div class="admin-section-header admin-section-header-accent flex-1 items-center gap-3 sm:gap-4">
                         <span class="admin-icon-badge">
                             <i class="fas fa-heart-pulse"></i>
@@ -25,7 +25,7 @@
                             </p>
                         </div>
                     </div>
-                    <div class="admin-page-actions admin-page-actions-centered flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:self-center">
+                    <div class="admin-page-actions admin-page-actions-centered flex w-full flex-col gap-2 sm:flex-row sm:items-center xl:w-auto xl:self-center">
                         <button type="button" class="admin-primary-button w-full sm:w-auto" data-admin-action="create-care-toolkit-question">
                             Add Question
                         </button>

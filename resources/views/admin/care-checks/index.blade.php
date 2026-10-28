@@ -2,7 +2,7 @@
 
 @section('content')
     <section class="admin-shell-card p-4 sm:p-6">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div class="admin-section-header admin-section-header-accent flex-1 items-center gap-3 sm:gap-4">
                 <span class="admin-icon-badge">
                     <i class="fas fa-clipboard-check"></i>
@@ -14,7 +14,7 @@
                     </p>
                 </div>
             </div>
-            <div class="admin-page-actions admin-page-actions-centered flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto">
+            <div class="admin-page-actions admin-page-actions-centered flex w-full flex-col gap-2 sm:flex-row sm:items-center xl:w-auto">
                 <div class="flex min-w-0 flex-wrap items-center justify-center gap-2 text-xs text-slate-500 sm:justify-start">
                     <span>Range:</span>
                     <div class="admin-range-toggle inline-flex min-h-11 overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">

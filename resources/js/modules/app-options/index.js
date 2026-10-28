@@ -11,6 +11,7 @@ import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datata
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { bindAdminFilterTabs, renderAdminFilterTabs, setAdminFilterTab } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
+import { readAdminPageFocus } from '../shared/page-focus';
 
 let optionsTable;
 let optionsTableMode;
@@ -23,6 +24,11 @@ export function initAppOptionsModule() {
     const tableEl = document.getElementById('app-options-table');
     if (!tableEl) {
         return;
+    }
+
+    const focus = readAdminPageFocus();
+    if (focus.group) {
+        currentGroupFilter = focus.group;
     }
 
     document.querySelector('[data-admin-action="create-app-option"]')
@@ -72,7 +78,7 @@ function bindViewportListener(tableEl) {
         return;
     }
 
-    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const mobileQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = async () => {
         const nextMode = getTableMode();
         if (nextMode === optionsTableMode) {
@@ -93,7 +99,7 @@ function bindViewportListener(tableEl) {
 }
 
 function getTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 function buildColumns(mode) {

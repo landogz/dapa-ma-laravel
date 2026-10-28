@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Notifications\LoginCodeNotification;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class LoginVerificationService
 {
@@ -16,6 +18,15 @@ class LoginVerificationService
      */
     public function sendCode(User $user): array
     {
+        $email = strtolower(trim((string) $user->email));
+        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL) || str_ends_with($email, '.local')) {
+            return [
+                'status' => false,
+                'message' => 'This account email cannot receive mail. Ask an admin to set a real email address first.',
+                'http' => 422,
+            ];
+        }
+
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         Cache::put($this->cacheKey($user), [
@@ -23,7 +34,22 @@ class LoginVerificationService
             'verified' => false,
         ], self::OTP_TTL_SECONDS);
 
-        $user->notify(new LoginCodeNotification($code));
+        try {
+            $user->notify(new LoginCodeNotification($code));
+        } catch (Throwable $e) {
+            Cache::forget($this->cacheKey($user));
+            Log::error('Login verification email failed.', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'status' => false,
+                'message' => 'We could not send the verification code to your email. Please try again later or use a deliverable email address.',
+                'http' => 503,
+            ];
+        }
 
         return [
             'status' => true,

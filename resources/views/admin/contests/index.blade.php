@@ -21,7 +21,7 @@
                 </div>
             </aside>
             <div class="admin-filter-main">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div class="admin-section-header admin-section-header-accent flex-1 items-center gap-3 sm:gap-4">
                         <span class="admin-icon-badge admin-icon-badge-lg" aria-hidden="true">
                             <i class="fas fa-trophy"></i>
@@ -33,8 +33,8 @@
                             </p>
                         </div>
                     </div>
-                    <div class="admin-page-actions admin-page-actions-centered lg:self-center">
-                        <button type="button" class="admin-primary-button lg:w-auto" data-admin-action="create-contest">
+                    <div class="admin-page-actions admin-page-actions-centered xl:self-center">
+                        <button type="button" class="admin-primary-button xl:w-auto" data-admin-action="create-contest">
                             Add Contest
                         </button>
                     </div>

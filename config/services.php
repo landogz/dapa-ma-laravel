@@ -48,4 +48,22 @@ return [
         'server_key' => env('FCM_SERVER_KEY'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Nominatim (OpenStreetMap) — MapLibre address suggestions
+    |--------------------------------------------------------------------------
+    |
+    | Used by address autocomplete and rehab-center map pins. Identify this
+    | app in User-Agent per Nominatim usage policy.
+    |
+    */
+    'nominatim' => [
+        'base_url' => env('NOMINATIM_BASE_URL', 'https://nominatim.openstreetmap.org'),
+        'countrycodes' => env('NOMINATIM_COUNTRYCODES', 'ph'),
+        'user_agent' => env(
+            'NOMINATIM_USER_AGENT',
+            'DAPE-MA/1.0 ('.rtrim((string) env('APP_URL', 'https://dapemade.ddb.gov.ph'), '/').'; contact@ddb.gov.ph)',
+        ),
+    ],
+
 ];

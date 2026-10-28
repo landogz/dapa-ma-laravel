@@ -118,8 +118,11 @@
                 <div class="admin-profile-section-divider"></div>
 
                 <div class="admin-profile-section" id="admin-profile-password-section">
+                    <div id="admin-force-password-banner" class="admin-force-password-banner" hidden>
+                        You must set a new password before continuing. Temporary and admin-set passwords cannot be reused.
+                    </div>
                     <h3 class="admin-profile-section-title">Change Password</h3>
-                    <p class="admin-profile-section-description">Leave blank if you do not want to change your password.</p>
+                    <p class="admin-profile-section-description">Password must include at least 8 characters, upper and lower case, a number, a symbol.</p>
                     <div class="mt-4 grid gap-4 lg:grid-cols-3">
                         <div>
                             <label class="admin-auth-label" for="admin-profile-current-password">Current Password</label>
@@ -153,6 +156,8 @@
                                     autocomplete="new-password"
                                     class="admin-auth-input pr-12"
                                     data-profile-password-field
+                                    data-password-policy
+                                    data-password-optional
                                 >
                                 <button
                                     type="button"
@@ -175,6 +180,9 @@
                                     autocomplete="new-password"
                                     class="admin-auth-input pr-12"
                                     data-profile-password-field
+                                    data-password-confirm
+                                    data-password-confirm-for="admin-profile-new-password"
+                                    data-password-optional
                                 >
                                 <button
                                     type="button"

@@ -293,13 +293,29 @@ class PostEngagementService
             abort(403, 'You can only delete your own comments.');
         }
 
-        if ($comment->image_path && Storage::disk('public')->exists($comment->image_path)) {
-            Storage::disk('public')->delete($comment->image_path);
+        $this->purgeCommentTree($comment);
+
+        return $post->comments()->count();
+    }
+
+    public function adminDeleteComment(int $postId, int $commentId): int
+    {
+        $post = $this->postRepository->findOrFail($postId);
+        $comment = $this->postEngagementRepository->findCommentForPost($commentId, $postId);
+        $this->purgeCommentTree($comment);
+
+        return $post->comments()->count();
+    }
+
+    private function purgeCommentTree(PostComment $comment): void
+    {
+        foreach ($this->postEngagementRepository->listCommentSubtree($comment) as $node) {
+            if ($node->image_path && Storage::disk('public')->exists($node->image_path)) {
+                Storage::disk('public')->delete($node->image_path);
+            }
         }
 
         $this->postEngagementRepository->deleteComment($comment);
-
-        return $post->comments()->count();
     }
 
     /**

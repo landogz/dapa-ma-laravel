@@ -45,7 +45,7 @@
                             <div>
                                 <label for="password" class="admin-auth-label">Password</label>
                                 <div class="relative">
-                                    <input id="password" name="password" type="password" autocomplete="new-password" required class="admin-auth-input pr-12" placeholder="Strong password">
+                                    <input id="password" name="password" type="password" autocomplete="new-password" required class="admin-auth-input pr-12" placeholder="Strong password" data-password-policy>
                                     <button type="button" class="absolute inset-y-0 right-0 flex items-center px-4 text-slate-500 transition hover:text-slate-700" data-password-toggle="password" aria-label="Toggle password visibility">
                                         <i class="fa-solid fa-eye-slash"></i>
                                     </button>
@@ -56,7 +56,7 @@
                             <div>
                                 <label for="password_confirmation" class="admin-auth-label">Confirm Password</label>
                                 <div class="relative">
-                                    <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" required class="admin-auth-input pr-12" placeholder="Repeat password">
+                                    <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" required class="admin-auth-input pr-12" placeholder="Repeat password" data-password-confirm data-password-confirm-for="password">
                                     <button type="button" class="absolute inset-y-0 right-0 flex items-center px-4 text-slate-500 transition hover:text-slate-700" data-password-toggle="password_confirmation" aria-label="Toggle password visibility">
                                         <i class="fa-solid fa-eye-slash"></i>
                                     </button>

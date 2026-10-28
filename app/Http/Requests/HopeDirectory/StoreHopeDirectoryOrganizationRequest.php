@@ -3,6 +3,7 @@
 namespace App\Http\Requests\HopeDirectory;
 
 use App\Models\HopeDirectoryOrganization;
+use App\Rules\Phone\PhilippinePhone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,7 +21,7 @@ class StoreHopeDirectoryOrganizationRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:1000'],
             'category'    => ['required', 'string', Rule::in(HopeDirectoryOrganization::CATEGORIES)],
             'address'     => ['nullable', 'string', 'max:500'],
-            'phone'       => ['nullable', 'string', 'max:64'],
+            'phone'       => ['nullable', 'string', 'max:64', new PhilippinePhone()],
             'email'       => ['nullable', 'email', 'max:191'],
             'logo'        => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'sort_order'  => ['nullable', 'integer', 'min:0', 'max:9999'],

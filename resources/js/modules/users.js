@@ -176,12 +176,15 @@ async function editUser(button) {
                             id: 'user-password',
                             label: 'Reset Password',
                             type: 'password',
+                            optional: true,
                             placeholder: 'Leave blank to keep current password',
                         },
                         {
                             id: 'user-password-confirmation',
                             label: 'Confirm Password',
                             type: 'password',
+                            optional: true,
+                            confirmFor: 'user-password',
                             placeholder: 'Repeat new password',
                         },
                     ],
@@ -198,11 +201,6 @@ async function editUser(button) {
 
                     if (!name || !email || !role) {
                         Swal.showValidationMessage('Name, email, and role are required.');
-                        return false;
-                    }
-
-                    if (password && password.length < 8) {
-                        Swal.showValidationMessage('Password must be at least 8 characters.');
                         return false;
                     }
 
@@ -235,7 +233,7 @@ async function editUser(button) {
                         return false;
                     }
                 },
-            }, { size: 'md' }));
+            }, { size: 'lg' }));
 
             if (!result.isConfirmed || !result.value) {
                 return;
@@ -378,7 +376,7 @@ function renderUserAvatar(user) {
 }
 
 function getUsersTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 async function initializeUsersTable(tableElement) {
@@ -419,7 +417,7 @@ function bindUsersViewportListener(tableElement) {
         return;
     }
 
-    const query = window.matchMedia('(max-width: 767px)');
+    const query = window.matchMedia('(max-width: 1023px)');
     const onChange = async () => {
         const nextMode = getUsersTableMode();
 
@@ -538,12 +536,13 @@ async function createUserPrompt() {
                     id: 'user-password',
                     label: 'Password *',
                     type: 'password',
-                    placeholder: 'Minimum 8 characters',
+                    placeholder: 'Create a strong password',
                 },
                 {
                     id: 'user-password-confirmation',
                     label: 'Confirm Password *',
                     type: 'password',
+                    confirmFor: 'user-password',
                     placeholder: 'Repeat password',
                 },
             ],
@@ -560,11 +559,6 @@ async function createUserPrompt() {
 
             if (!name || !email || !role || !password || !passwordConfirmation) {
                 Swal.showValidationMessage('All fields are required.');
-                return false;
-            }
-
-            if (password.length < 8) {
-                Swal.showValidationMessage('Password must be at least 8 characters.');
                 return false;
             }
 
@@ -593,7 +587,7 @@ async function createUserPrompt() {
                 return false;
             }
         },
-    }, { size: 'md' }));
+    }, { size: 'lg' }));
 
     if (!result.isConfirmed || !result.value) {
         return;

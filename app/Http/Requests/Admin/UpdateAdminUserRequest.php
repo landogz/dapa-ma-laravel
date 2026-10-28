@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\User;
+use App\Support\Password\PasswordPolicy;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,7 +27,11 @@ class UpdateAdminUserRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email')->ignore($userId),
             ],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'password' => PasswordPolicy::rules(
+                required: false,
+                confirmed: true,
+                user: $this->route('user') instanceof User ? $this->route('user') : null,
+            ),
             'role' => [
                 'sometimes',
                 'required',
@@ -37,6 +43,13 @@ class UpdateAdminUserRequest extends FormRequest
                     'app_user',
                 ]),
             ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'password.required' => PasswordPolicy::hint(),
         ];
     }
 }

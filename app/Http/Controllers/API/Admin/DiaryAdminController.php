@@ -41,6 +41,20 @@ class DiaryAdminController extends Controller
         ]);
     }
 
+    public function summary(Request $request): JsonResponse
+    {
+        $days = (int) $request->query('days', 30);
+        if (! in_array($days, [7, 30, 90], true)) {
+            $days = 30;
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Journal analytics fetched successfully.',
+            'data' => $this->diaryService->adminSummary($days),
+        ]);
+    }
+
     public function users(): JsonResponse
     {
         return response()->json([

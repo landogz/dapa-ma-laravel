@@ -5,6 +5,7 @@ import { buildSwalForm, buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
+import { assertPhoneFields } from '../phone-validation';
 
 let supportTable;
 let supportTableMode;
@@ -71,7 +72,7 @@ function bindViewportListener(tableEl) {
         return;
     }
 
-    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const mobileQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = async () => {
         const nextMode = getTableMode();
         if (nextMode === supportTableMode) {
@@ -92,7 +93,7 @@ function bindViewportListener(tableEl) {
 }
 
 function getTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 function buildColumns(mode) {
@@ -298,7 +299,11 @@ function showResourceForm(existing) {
                 {
                     id: 'csr-phone',
                     label: 'Phone (multiple OK: 0945… | #33733)',
+                    type: 'tel',
                     value: existing?.phone ?? '',
+                    allowMultiple: true,
+                    allowShortCodes: true,
+                    hint: 'Philippine numbers only. Separate multiple numbers with | . Short codes such as 1553 or #33733 are allowed.',
                 },
                 {
                     id: 'csr-web-url',
@@ -367,6 +372,11 @@ function showResourceForm(existing) {
             const titleTl = document.getElementById('csr-title-tl')?.value?.trim() ?? '';
             if (!titleEn || !titleTl) {
                 Swal.showValidationMessage('English and Tagalog titles are required.');
+                return false;
+            }
+            const phoneError = assertPhoneFields(Swal.getHtmlContainer() ?? document);
+            if (phoneError) {
+                Swal.showValidationMessage(phoneError);
                 return false;
             }
 

@@ -16,9 +16,9 @@
 </head>
 <body data-page="{{ $bodyPage ?? 'admin-dashboard' }}" class="min-h-screen bg-slate-100 text-slate-900">
     <div id="admin-app" class="relative min-h-screen">
-        <div id="admin-sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-950/50 md:hidden"></div>
+        <div id="admin-sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-950/50 lg:hidden"></div>
 
-        <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-40 flex h-dvh max-h-dvh w-72 -translate-x-full flex-col overflow-hidden bg-[#123a60] px-5 py-6 text-white shadow-xl transition-transform duration-300 md:translate-x-0">
+        <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-40 flex h-dvh max-h-dvh w-72 -translate-x-full flex-col overflow-hidden bg-[#123a60] px-5 py-6 text-white shadow-xl transition-transform duration-300 lg:translate-x-0">
             <div class="shrink-0">
                 <div class="flex items-center gap-3">
                     <div class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-[#055498]/25">
@@ -112,10 +112,6 @@
                         <i class="fas fa-chart-column w-5 text-[#FBD116]"></i>
                         <span>Analytics</span>
                     </a>
-                    <a href="/admin/app-translations" class="admin-nav-link {{ ($activePage ?? '') === 'app-translations' ? 'admin-nav-link-active' : '' }}" data-nav-section="app-translations">
-                        <i class="fas fa-language w-5 text-[#FBD116]"></i>
-                        <span>App Translations</span>
-                    </a>
                 </div>
 
                 <div class="admin-nav-group">
@@ -132,6 +128,10 @@
                         <i class="fas fa-sliders w-5 text-[#FBD116]"></i>
                         <span>Lookups</span>
                     </a>
+                    <a href="/admin/app-translations" class="admin-nav-link {{ ($activePage ?? '') === 'app-translations' ? 'admin-nav-link-active' : '' }}" data-nav-section="app-translations">
+                        <i class="fas fa-language w-5 text-[#FBD116]"></i>
+                        <span>App Translations</span>
+                    </a>
                     <a href="/admin/word-blocking" class="admin-nav-link {{ ($activePage ?? '') === 'word-blocking' ? 'admin-nav-link-active' : '' }}" data-nav-section="word-blocking">
                         <i class="fas fa-ban w-5 text-[#FBD116]"></i>
                         <span>Word Blocking</span>
@@ -140,11 +140,12 @@
             </nav>
         </aside>
 
-        <div class="md:pl-72">
-            <header class="sticky top-0 z-20 border-b border-slate-200 bg-white shadow-sm">
-                <div class="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div class="lg:pl-72">
+            <header class="relative sticky top-0 z-30 border-b border-slate-200 bg-white shadow-sm" data-admin-mega>
+                {{-- Until xl, keep one compact header row: sidebar already uses ~18rem at lg. --}}
+                <div class="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:flex-nowrap lg:gap-3 lg:px-6 lg:py-3 xl:gap-4 xl:px-8 xl:py-4">
                     <div class="flex min-w-0 items-center gap-3">
-                        <button id="sidebar-toggle" type="button" class="admin-secondary-button admin-icon-button md:hidden" aria-controls="admin-sidebar" aria-expanded="false" aria-label="Open navigation menu">
+                        <button id="sidebar-toggle" type="button" class="admin-secondary-button admin-icon-button lg:hidden" aria-controls="admin-sidebar" aria-expanded="false" aria-label="Open navigation menu">
                             <i class="fas fa-bars"></i>
                         </button>
                         <div class="min-w-0">
@@ -152,7 +153,34 @@
                             <h1 class="truncate text-lg font-semibold text-slate-800 sm:text-xl">{{ $headerTitle ?? 'Dashboard' }}</h1>
                         </div>
                     </div>
-                    <div class="relative flex shrink-0 items-center justify-end gap-2">
+                    <div class="hidden min-w-0 flex-1 basis-[10rem] lg:flex lg:max-w-sm xl:max-w-xl 2xl:max-w-2xl">
+                        <label class="sr-only" for="admin-mega-search">Search admin</label>
+                        <div class="admin-mega-search">
+                            <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                            <input
+                                id="admin-mega-search"
+                                type="search"
+                                class="admin-mega-search-input"
+                                placeholder="Search pages, actions, and records…"
+                                autocomplete="off"
+                                data-admin-mega-input="desktop"
+                                aria-expanded="false"
+                                aria-controls="admin-mega-panel"
+                            >
+                            <kbd class="admin-mega-kbd">⌘K</kbd>
+                        </div>
+                    </div>
+                    <div class="relative ml-auto flex shrink-0 items-center justify-end gap-2">
+                        <button
+                            type="button"
+                            class="admin-secondary-button admin-icon-button lg:hidden"
+                            data-admin-mega-open
+                            aria-label="Search admin"
+                            aria-expanded="false"
+                            aria-controls="admin-mega-panel"
+                        >
+                            <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                        </button>
                         <button type="button" class="admin-secondary-button admin-icon-button relative hidden lg:inline-flex" aria-label="Notifications" data-admin-notifications-button>
                             <span class="relative inline-flex items-center justify-center">
                                 <i class="fas fa-bell text-slate-500"></i>
@@ -172,7 +200,7 @@
                                     <img data-admin-avatar-img class="hidden h-full w-full object-cover" alt="Profile photo">
                                     <span data-admin-initials class="text-xs font-bold text-white">DM</span>
                                 </span>
-                                <div class="hidden min-w-0 text-left sm:block">
+                                <div class="hidden min-w-0 text-left xl:block">
                                     <p data-admin-name class="truncate text-sm font-semibold text-slate-800">Loading...</p>
                                     <p data-admin-role class="truncate text-xs text-slate-500">Loading role...</p>
                                 </div>
@@ -196,7 +224,28 @@
                         <div id="admin-notifications-panel" class="admin-notifications-panel hidden"></div>
                     </div>
                 </div>
+                <div id="admin-mega-panel" class="admin-mega-panel hidden" data-admin-mega-panel>
+                    <div class="admin-mega-panel-inner">
+                        <div class="admin-mega-panel-search lg:hidden">
+                            <label class="sr-only" for="admin-mega-search-panel">Search admin</label>
+                            <div class="admin-mega-search">
+                                <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                                <input
+                                    id="admin-mega-search-panel"
+                                    type="search"
+                                    class="admin-mega-search-input"
+                                    placeholder="Search pages, actions, and records…"
+                                    autocomplete="off"
+                                    data-admin-mega-input="panel"
+                                >
+                            </div>
+                        </div>
+                        <p class="admin-mega-hint" data-admin-mega-hint>Browse every admin function, or type to search pages, actions, and records.</p>
+                        <div data-admin-mega-results></div>
+                    </div>
+                </div>
             </header>
+            <div class="admin-mega-backdrop hidden" data-admin-mega-backdrop></div>
 
             <main class="mx-auto max-w-[1600px] space-y-6 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
                 @yield('content')

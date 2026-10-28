@@ -2,7 +2,7 @@
 
 @section('content')
     <section class="admin-shell-card p-4 sm:p-6">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div class="admin-section-header admin-section-header-accent flex-1 items-center gap-3 sm:gap-4">
                 <span class="admin-icon-badge">
                     <i class="fas fa-user-shield"></i>
@@ -13,7 +13,7 @@
                 </div>
             </div>
             <div class="admin-page-actions admin-page-actions-centered">
-                <button type="button" class="admin-primary-button lg:w-auto" data-admin-action="create-user">
+                <button type="button" class="admin-primary-button xl:w-auto" data-admin-action="create-user">
                     Add User
                 </button>
             </div>

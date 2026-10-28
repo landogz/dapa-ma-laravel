@@ -221,7 +221,7 @@ try {
                     'api_url' => $appUrl.'/api/v1',
                     'seeded' => $seedDemo,
                     'demo_note' => $seedDemo
-                        ? 'Demo accounts use password “password” (e.g. superadmin@dape-ma.local). Change them immediately.'
+                        ? 'Demo accounts use password “password” (e.g. superadmin@yopmail.com). Change them immediately.'
                         : 'Create your first admin at /admin/register if no super admin exists yet.',
                     'steps' => $steps,
                 ],

@@ -28,6 +28,7 @@
       color: var(--text);
       background: var(--bg);
       line-height: 1.55;
+      overflow-x: clip;
     }
     .hero {
       background: linear-gradient(135deg, #055498 0%, #123a60 100%);
@@ -36,6 +37,7 @@
     }
     .hero-inner, .wrap {
       max-width: 880px;
+      width: 100%;
       margin: 0 auto;
     }
     .badge {
@@ -66,6 +68,7 @@
       gap: 8px;
       margin: -28px auto 28px;
       max-width: 880px;
+      width: 100%;
       padding: 0 20px;
       position: relative;
     }
@@ -75,7 +78,7 @@
       box-shadow: 0 12px 36px rgba(18, 58, 96, .12);
       padding: 18px 20px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 8px 16px;
     }
     .toc a {
@@ -83,15 +86,22 @@
       text-decoration: none;
       font-size: .86rem;
       font-weight: 600;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      padding: 4px 0;
     }
     .toc a:hover { text-decoration: underline; }
-    .wrap { padding: 8px 20px 56px; }
+    .wrap { padding: 8px 20px 56px; overflow-x: clip; }
     section {
       background: var(--card);
       border-radius: 16px;
       border: 1px solid var(--line);
       padding: 22px 22px 18px;
       margin-bottom: 16px;
+      max-width: 100%;
+      overflow-x: clip;
+      min-width: 0;
     }
     h2 {
       margin: 0 0 8px;
@@ -103,24 +113,41 @@
       font-size: .98rem;
       color: var(--blue);
     }
-    p, li { font-size: .92rem; }
+    p, li {
+      font-size: .92rem;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
     .lead { color: var(--muted); margin: 0 0 14px; }
+    .table-wrap {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 10px 0 4px;
+      border-radius: 8px;
+    }
     table {
       width: 100%;
+      min-width: 280px;
       border-collapse: collapse;
       font-size: .88rem;
-      margin: 10px 0 4px;
+      margin: 0;
     }
     th, td {
       border: 1px solid var(--line);
       padding: 10px 12px;
       text-align: left;
       vertical-align: top;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     th { background: #f8fafc; color: var(--nile); }
     code, .mono {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: .84em;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     pre {
       position: relative;
@@ -128,26 +155,40 @@
       color: #e2e8f0;
       border-radius: 12px;
       padding: 14px 16px;
+      padding-right: 72px;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       font-size: .82rem;
       line-height: 1.5;
       margin: 10px 0 6px;
+      max-width: 100%;
+      width: 100%;
+      min-width: 0;
     }
-    pre code { color: inherit; font-size: inherit; }
+    pre code {
+      color: inherit;
+      font-size: inherit;
+      white-space: pre;
+      overflow-wrap: normal;
+      word-break: normal;
+      display: block;
+      max-width: 100%;
+    }
     .copy {
       position: absolute;
       top: 8px;
       right: 8px;
       border: 0;
       border-radius: 8px;
-      padding: 6px 10px;
+      padding: 8px 12px;
       font: inherit;
       font-size: .72rem;
       font-weight: 700;
       cursor: pointer;
       background: rgba(255,255,255,.12);
       color: #fff;
-      min-height: 32px;
+      min-height: 44px;
+      min-width: 44px;
     }
     .copy:hover { background: rgba(255,255,255,.2); }
     .note {
@@ -184,9 +225,30 @@
       font-size: .8rem;
       padding: 8px 20px 40px;
     }
-    @media (max-width: 640px) {
-      section { padding: 16px; }
+    @media (max-width: 767px) {
       .hero { padding: 28px 16px 40px; }
+      .toc { padding: 0 16px; }
+      .wrap { padding: 8px 16px 48px; }
+      .toc-card {
+        grid-template-columns: 1fr;
+        padding: 14px 16px;
+        gap: 2px;
+      }
+      section { padding: 16px; }
+      th, td { padding: 8px 10px; font-size: .84rem; }
+      pre { font-size: .78rem; padding: 12px 14px; padding-right: 68px; }
+      .copy { top: 6px; right: 6px; }
+    }
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .toc-card {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      section { padding: 20px; }
+    }
+    @media (min-width: 1024px) {
+      .toc-card {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
     }
     @media print {
       .hero { background: #123a60 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -230,7 +292,7 @@
   <main class="wrap">
     <section id="overview">
       <h2>Overview — what you get</h2>
-      <table>
+      <div class="table-wrap"><table>
         <thead>
           <tr><th>Item</th><th>Result</th></tr>
         </thead>
@@ -241,7 +303,7 @@
           <tr><td>Admin</td><td><code>https://YOUR_DOMAIN/admin/login</code></td></tr>
           <tr><td>API</td><td><code>https://YOUR_DOMAIN/api/v1</code></td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p class="lead" style="margin-top:12px">Replace placeholders: <code>YOUR_USER</code>, <code>SERVER_IP</code>, <code>YOUR_DOMAIN</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASS</code>.</p>
     </section>
 
@@ -388,7 +450,7 @@ https://YOUR_DOMAIN/install/</code></pre>
       </ul>
 
       <h3>6.3 Database</h3>
-      <table>
+      <div class="table-wrap"><table>
         <thead><tr><th>Field</th><th>Value</th></tr></thead>
         <tbody>
           <tr><td>DB host</td><td><code>127.0.0.1</code></td></tr>
@@ -397,13 +459,13 @@ https://YOUR_DOMAIN/install/</code></pre>
           <tr><td>DB username</td><td><code>DB_USER</code></td></tr>
           <tr><td>DB password</td><td><code>DB_PASS</code></td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>Test connection → Install now.</p>
 
       <h3>6.4 Finish</h3>
       <ul>
         <li>Open Admin Login</li>
-        <li>Demo (if seeded): use <strong>Quick sign-in</strong> on the login page, or <code>superadmin@dape-ma.local</code> / <code>password</code></li>
+        <li>Demo (if seeded): use <strong>Quick sign-in</strong> on the login page, or <code>superadmin@yopmail.com</code> / <code>password</code></li>
         <li>Quick login stays on with <code>DAPE_SHOW_DEMO_LOGIN=true</code> (DEV for now). Set <code>false</code> before production go-live</li>
       </ul>
       <pre><button class="copy" type="button" data-copy>Copy</button><code>sudo mv /var/www/dape-ma-laravel/public/install \
@@ -450,14 +512,14 @@ sudo -u www-data php artisan config:cache</code></pre>
 
     <section id="step8">
       <h2>Step 8 — Verify</h2>
-      <table>
+      <div class="table-wrap"><table>
         <thead><tr><th>Check</th><th>URL</th></tr></thead>
         <tbody>
           <tr><td>Admin</td><td><code>https://YOUR_DOMAIN/admin/login</code></td></tr>
           <tr><td>API health</td><td><code>https://YOUR_DOMAIN/api/v1/health</code></td></tr>
           <tr><td>Posts</td><td><code>https://YOUR_DOMAIN/api/v1/posts</code></td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
 
     <section id="step9">
@@ -494,7 +556,7 @@ sudo bash deploy/apply-nginx-ssl.sh
 
     <section id="troubleshoot">
       <h2>Troubleshooting</h2>
-      <table>
+      <div class="table-wrap"><table>
         <thead><tr><th>Problem</th><th>Fix</th></tr></thead>
         <tbody>
           <tr>
@@ -534,7 +596,7 @@ sudo bash deploy/apply-nginx-ssl.sh
             <td>Use <code>sudo bash deploy/apply-nginx-ssl.sh</code> (443 only)</td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
 
       <h3 id="migrate-recovery">Migration failed recovery</h3>
       <p>On DAPEMA DEV, <code>/install/</code> showed <em>Migration failed</em> even with correct UI credentials. Two fixes were required:</p>
@@ -574,7 +636,7 @@ sudo -u www-data php artisan config:cache
 
 sudo bash -c 'mkdir -p storage/app; echo "{\"installed_at\":\"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'\"}" > storage/app/installed'
 sudo chown -R www-data:www-data storage bootstrap/cache</code></pre>
-      <p>Seeded admin: <code>superadmin@dape-ma.local</code> / <code>password</code> (change after first login).</p>
+      <p>Seeded admin: <code>superadmin@yopmail.com</code> / <code>password</code> (change after first login).</p>
 
       <h3>What the script installs (short)</h3>
       <ul>

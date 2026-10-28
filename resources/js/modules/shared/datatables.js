@@ -1,3 +1,6 @@
+import { bindAdminPageFocus } from './page-focus';
+import { bindAdminTableContextMenu } from './table-context-menu';
+
 let dataTablesLibraryPromise;
 
 const PAGE_LENGTH_KEY = 'dape-admin-dt-page-length';
@@ -107,6 +110,8 @@ export async function createAdminDataTable(tableElement, options) {
         || 'Search');
     bindAdminTableCollapseControls(table, tableOptions);
     bindAdminDataTableFooter(table, hidePagingWhenSinglePage);
+    bindAdminPageFocus(table);
+    bindAdminTableContextMenu(tableElement);
 
     return table;
 }

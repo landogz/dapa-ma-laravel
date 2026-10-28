@@ -189,4 +189,24 @@ class PostEngagementRepository
     {
         $comment->delete();
     }
+
+    /**
+     * Comment plus nested replies (depth-first), including image paths for cleanup.
+     *
+     * @return Collection<int, PostComment>
+     */
+    public function listCommentSubtree(PostComment $comment): Collection
+    {
+        $nodes = collect([$comment]);
+        $children = PostComment::query()
+            ->where('post_id', $comment->post_id)
+            ->where('parent_id', $comment->id)
+            ->get();
+
+        foreach ($children as $child) {
+            $nodes = $nodes->concat($this->listCommentSubtree($child));
+        }
+
+        return $nodes;
+    }
 }

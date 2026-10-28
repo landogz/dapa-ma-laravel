@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\API\Admin\AdminNotificationController;
+use App\Http\Controllers\API\Admin\AdminSearch\AdminSearchController;
 use App\Http\Controllers\API\Admin\AnalyticsAdminController;
 use App\Http\Controllers\API\Admin\CategoryAdminController;
 use App\Http\Controllers\API\Admin\DiaryAdminController;
 use App\Http\Controllers\API\Admin\NotificationAdminController;
 use App\Http\Controllers\API\Admin\PostAdminController;
+use App\Http\Controllers\API\Admin\PostComment\PostCommentAdminController;
 use App\Http\Controllers\API\Admin\RehabCenterAdminController;
 use App\Http\Controllers\API\Admin\TrainingAdminController;
 use App\Http\Controllers\API\Admin\ContestAdminController;
@@ -44,6 +46,7 @@ use App\Http\Controllers\API\HopeEventController;
 use App\Http\Controllers\API\Admin\HopeDirectoryAdminController;
 use App\Http\Controllers\API\Admin\HopeEventAdminController;
 use App\Http\Controllers\API\Admin\IconPicker\IconPickerController;
+use App\Http\Controllers\API\Geocode\GeocodeController;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserNotificationController;
@@ -180,7 +183,14 @@ Route::prefix('v1')
             ->name('care-support.resources');
 
         // ── Authenticated ─────────────────────────────────────────────────
-        Route::middleware('auth:sanctum')->group(function (): void {
+        Route::middleware(['auth:sanctum', 'password.current'])->group(function (): void {
+
+            Route::get('/geocode/search', [GeocodeController::class, 'search'])
+                ->middleware('throttle:30,1')
+                ->name('geocode.search');
+            Route::get('/geocode/reverse', [GeocodeController::class, 'reverse'])
+                ->middleware('throttle:30,1')
+                ->name('geocode.reverse');
 
             Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
             Route::post('/auth/login-code', [AuthController::class, 'sendLoginCode'])->name('auth.login-code');
@@ -277,6 +287,9 @@ Route::prefix('v1')
                     Route::get('/posts/options',      [PostAdminController::class, 'options'])->name('posts.options');
                     Route::get('/posts',              [PostAdminController::class, 'index'])->name('posts.index');
                     Route::get('/posts/{post}',       [PostAdminController::class, 'show'])->name('posts.show');
+                    Route::delete('/posts/{post}/comments/{comment}', [PostCommentAdminController::class, 'destroy'])
+                        ->whereNumber('comment')
+                        ->name('posts.comments.destroy');
                 });
 
                 // Editor + Super Admin — draft creation, editing, and submission
@@ -363,6 +376,7 @@ Route::prefix('v1')
 
                 // Admin in-app notification inbox (all admin roles)
                 Route::middleware('role:super_admin,editor,publisher,analytics_viewer')->group(function (): void {
+                    Route::get('/search',                [AdminSearchController::class, 'index'])->name('admin-search.index');
                     Route::get('/inbox',                 [AdminNotificationController::class, 'index'])->name('admin-inbox.index');
                     Route::get('/inbox/summary',         [AdminNotificationController::class, 'summary'])->name('admin-inbox.summary');
                     Route::post('/inbox/read-all',       [AdminNotificationController::class, 'markAllAsRead'])->name('admin-inbox.read-all');

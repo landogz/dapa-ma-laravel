@@ -1,6 +1,7 @@
 import { getStoredUser, mergeStoredUser } from './auth';
 import { bindPasswordToggles } from './shared/password-toggle';
 import { showErrorToast, showSuccessToast } from './shared/toast';
+import { assertPasswordFields, bindPasswordPolicyFields } from './password-validation';
 
 const ROLE_LABELS = {
     super_admin: 'Super Admin',
@@ -21,11 +22,13 @@ export function initProfileModule() {
     }
 
     bindPasswordToggles(form);
+    bindPasswordPolicyFields(form);
     bindPhotoPreview(form);
     bindRemovePhoto(form);
     bindPasswordSubmit(form);
     bindSubmit(form);
     loadProfile(form);
+    applyForcePasswordGate(form);
 }
 
 async function loadProfile(form) {
@@ -127,6 +130,12 @@ function bindPasswordSubmit(form) {
             return;
         }
 
+        const passwordError = assertPasswordFields(form);
+        if (passwordError) {
+            showErrorToast(passwordError, 'Password policy');
+            return;
+        }
+
         clearPasswordFieldErrors(form);
         setPasswordBusy(passwordButton, submitLabel, true);
 
@@ -138,7 +147,13 @@ function bindPasswordSubmit(form) {
             });
 
             clearPasswordFields(form);
+            mergeStoredUser({ must_change_password: false, password_expired: false });
+            hideForcePasswordBanner();
             showSuccessToast(response.data.message ?? 'Password updated.', 'Saved');
+
+            if (new URLSearchParams(window.location.search).has('force_password')) {
+                window.history.replaceState({}, '', '/admin/profile');
+            }
         } catch (error) {
             applyFieldErrors(form, error.response?.data?.errors ?? {});
             showErrorToast(
@@ -372,4 +387,35 @@ function buildErrorMessage(errors, message) {
     }
 
     return message ?? 'Unable to update your profile right now.';
+}
+
+function applyForcePasswordGate(form) {
+    const forced = new URLSearchParams(window.location.search).has('force_password')
+        || Boolean(getStoredUser()?.must_change_password);
+
+    if (!forced) {
+        return;
+    }
+
+    const banner = document.getElementById('admin-force-password-banner');
+    if (banner) {
+        banner.hidden = false;
+    }
+
+    form.querySelectorAll('[data-password-optional]').forEach((field) => {
+        field.removeAttribute('data-password-optional');
+        field.setAttribute('required', 'required');
+    });
+
+    form.querySelector('#admin-profile-password-section')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+    });
+}
+
+function hideForcePasswordBanner() {
+    const banner = document.getElementById('admin-force-password-banner');
+    if (banner) {
+        banner.hidden = true;
+    }
 }

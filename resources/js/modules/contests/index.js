@@ -3,8 +3,9 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
 import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
-import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
+import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey, setAdminFilterTab } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
+import { readAdminPageFocus } from '../shared/page-focus';
 
 let contestsTable;
 let contestsDataTableClass;
@@ -32,6 +33,11 @@ export function initContestsModule() {
     const tableEl = document.getElementById('contests-table');
     if (!tableEl) return;
 
+    const focus = readAdminPageFocus();
+    if (focus.group) {
+        contestsCategoryFilter = focus.group;
+    }
+
     loadAdminDataTableLibrary().then(async (DataTable) => {
         contestsDataTableClass = DataTable;
         await initializeContestsTable(tableEl);
@@ -52,6 +58,8 @@ function bindContestFilters() {
         contestsStatusFilter = value;
         loadContests();
     });
+
+    setAdminFilterTab(document.getElementById('contests-category-tabs'), contestsCategoryFilter);
 }
 
 export function loadContests(search = '') {
@@ -412,7 +420,7 @@ function bindViewportListener(tableEl) {
         return;
     }
 
-    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const mobileQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = async () => {
         const nextMode = getTableMode();
         if (nextMode === contestsTableMode) return;
@@ -430,7 +438,7 @@ function bindViewportListener(tableEl) {
 }
 
 function getTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 function buildColumns(mode) {

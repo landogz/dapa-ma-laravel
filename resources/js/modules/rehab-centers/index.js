@@ -120,7 +120,9 @@ function buildRehabCenterFormHtml(existing) {
                         </div>
                         <div class="admin-swal-field">
                             <label class="admin-swal-label" for="rc-address">Address *</label>
-                            <textarea id="rc-address" class="admin-swal-textarea rehab-center-address-field" placeholder="Filled from map pin or edit manually">${escapeHtml(existing?.address ?? '')}</textarea>
+                            <div class="address-autocomplete">
+                                <textarea id="rc-address" class="admin-swal-textarea rehab-center-address-field" data-address-autocomplete placeholder="Start typing a Philippine address" autocomplete="off">${escapeHtml(existing?.address ?? '')}</textarea>
+                            </div>
                         </div>
                         <div class="admin-swal-field">
                             <label class="admin-swal-label" for="rc-contact">Contact</label>
@@ -167,6 +169,13 @@ function showRehabForm(existing) {
                 lat: existing?.latitude ?? null,
                 lng: existing?.longitude ?? null,
                 onLocationChange: (location) => applyGeocodedFields(location),
+            });
+            document.getElementById('rc-address')?.addEventListener('address-autocomplete:select', (event) => {
+                const item = event.detail ?? {};
+                applyGeocodedFields(item);
+                if (Number.isFinite(item.lat) && Number.isFinite(item.lng)) {
+                    picker?.applyLocation?.(item.lat, item.lng, item);
+                }
             });
             requestAnimationFrame(() => {
                 picker?.map?.resize();
@@ -264,7 +273,7 @@ function bindViewportListener(tableEl) {
         return;
     }
 
-    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const mobileQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = async () => {
         const nextMode = getTableMode();
 
@@ -291,7 +300,7 @@ function bindViewportListener(tableEl) {
 }
 
 function getTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 function buildColumns(mode) {

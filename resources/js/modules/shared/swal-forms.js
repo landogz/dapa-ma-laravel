@@ -1,4 +1,13 @@
 import Swal from 'sweetalert2';
+import { bindAddressFields, destroyAddressAutocompletes } from '../address-autocomplete';
+import { bindPhilippinePhoneFields, destroyPhilippinePhoneFields } from '../phone-validation';
+import {
+    assertPasswordFields,
+    bindPasswordPolicyFields,
+    destroyPasswordPolicyFields,
+    PASSWORD_POLICY_HINT,
+} from '../password-validation';
+import { bindRichTextEditors, destroyRichTextEditors, isBodyRichTextField } from '../rich-text-editor';
 import { bindPasswordToggles } from './password-toggle';
 import { bindSvgIconPickers } from './svg-icon-picker';
 
@@ -54,6 +63,22 @@ function renderField(field) {
     const value = field.value ? ` value="${escapeHtml(field.value)}"` : '';
     const min = field.min ? ` min="${escapeHtml(field.min)}"` : '';
     const hint = field.hint ? `<p class="admin-swal-hint">${escapeHtml(field.hint)}</p>` : '';
+
+    if (isBodyRichTextField(field)) {
+        const richPlaceholder = field.placeholder
+            ? ` placeholder="${escapeHtml(field.placeholder)}"`
+            : ' placeholder="Write the main content"';
+
+        return `
+            <div class="admin-swal-field">
+                ${label}
+                <div class="admin-rich-text">
+                    <textarea id="${field.id}" class="admin-swal-textarea admin-swal-richtext" data-rich-text${richPlaceholder}>${escapeHtml(field.value ?? '')}</textarea>
+                </div>
+                ${hint}
+            </div>
+        `;
+    }
 
     if (field.type === 'textarea') {
         return `
@@ -134,17 +159,59 @@ function renderField(field) {
         `;
     }
 
+    if (field.type === 'address') {
+        return `
+            <div class="admin-swal-field">
+                ${label}
+                <div class="address-autocomplete">
+                    <input id="${field.id}" class="admin-swal-input" type="text" data-address-autocomplete autocomplete="off"${placeholder}${value}>
+                </div>
+                ${hint}
+            </div>
+        `;
+    }
+
+    if (field.type === 'tel' || field.type === 'phone') {
+        const multiple = field.allowMultiple ? ' data-phone-multiple' : '';
+        const shortCodes = field.allowShortCodes ? ' data-phone-shortcodes' : '';
+        const phoneHint = field.hint
+            ? hint
+            : '<p class="admin-swal-hint">Philippine numbers only, e.g. 09XX XXX XXXX or +63…</p>';
+
+        return `
+            <div class="admin-swal-field">
+                ${label}
+                <input id="${field.id}" class="admin-swal-input" type="tel" inputmode="tel" data-phone-ph autocomplete="tel"${multiple}${shortCodes}${placeholder}${value}>
+                ${phoneHint}
+            </div>
+        `;
+    }
+
     if (field.type === 'password') {
+        const isCurrent = field.current === true;
+        const isConfirm = Boolean(field.confirmFor) || /^confirm(\s+new)?\s+password/i.test(field.label ?? '');
+        const optional = field.optional === true ? ' data-password-optional' : '';
+        const confirmFor = field.confirmFor ? ` data-password-confirm-for="${escapeHtml(field.confirmFor)}"` : '';
+        const policyAttr = isCurrent
+            ? ' data-password-current'
+            : (isConfirm ? ' data-password-confirm' : ' data-password-policy');
+        const autocomplete = isCurrent ? 'current-password' : 'new-password';
+        const passwordHint = field.hint
+            ? hint
+            : (isCurrent || isConfirm
+                ? hint
+                : `<p class="admin-swal-hint password-policy-hint" data-password-hint>${PASSWORD_POLICY_HINT}</p>`);
+
         return `
             <div class="admin-swal-field">
                 ${label}
                 <div class="admin-swal-password-wrap">
-                    <input id="${field.id}" class="admin-swal-input admin-swal-input-password" type="password"${placeholder}${value}${min} autocomplete="new-password">
+                    <input id="${field.id}" class="admin-swal-input admin-swal-input-password" type="password"${placeholder}${value}${min} autocomplete="${autocomplete}"${policyAttr}${optional}${confirmFor}>
                     <button type="button" class="admin-swal-password-toggle" data-password-toggle="${field.id}" aria-label="Show password">
                         <i class="fa-solid fa-eye-slash"></i>
                     </button>
                 </div>
-                ${hint}
+                ${passwordHint}
             </div>
         `;
     }
@@ -387,7 +454,7 @@ export function formatApiValidationMessage(response, fallback = 'Unable to save.
 }
 
 function htmlLooksLikeForm(html) {
-    return /admin-swal-form|admin-swal-fields|admin-swal-section|admin-swal-repeatable|<input|<textarea|<select/i
+    return /admin-swal-form|admin-swal-fields|admin-swal-section|admin-swal-repeatable|data-rich-text|<input|<textarea|<select/i
         .test(String(html ?? ''));
 }
 
@@ -582,6 +649,8 @@ function mountConfirmDialog(popup) {
  */
 export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } = {}) {
     const userDidOpen = options.didOpen;
+    const userWillClose = options.willClose;
+    const userPreConfirm = options.preConfirm;
     const confirmDialog = isConfirmDialog(options, { danger });
     const popupSizeClass = {
         sm: 'admin-swal-popup admin-swal-popup-sm',
@@ -628,7 +697,7 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
     }
 
     // Keep title for Swal accessibility, but forms render our own visible header bar.
-    const { subtitle: _ignoredSubtitle, confirmOnly: _ignoredConfirmOnly, ...restOptions } = options;
+    const { subtitle: _ignoredSubtitle, confirmOnly: _ignoredConfirmOnly, preConfirm: _ignoredPreConfirm, ...restOptions } = options;
 
     return {
         ...restOptions,
@@ -642,11 +711,33 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
         reverseButtons: options.reverseButtons ?? true,
         focusConfirm: options.focusConfirm ?? false,
         buttonsStyling: false,
-        didOpen: (popup) => {
+        preConfirm: async (value) => {
+            if (!confirmDialog) {
+                const popup = Swal.getPopup();
+                if (popup) {
+                    const passwordError = assertPasswordFields(popup);
+                    if (passwordError) {
+                        Swal.showValidationMessage(passwordError);
+                        return false;
+                    }
+                }
+            }
+
+            if (typeof userPreConfirm === 'function') {
+                return userPreConfirm(value);
+            }
+
+            return value;
+        },
+        didOpen: async (popup) => {
             bindPasswordToggles(popup);
             bindImageFilePreviews(popup);
             bindColorPickers(popup);
             bindSvgIconPickers(popup);
+            bindAddressFields(popup);
+            bindPhilippinePhoneFields(popup);
+            bindPasswordPolicyFields(popup);
+            await bindRichTextEditors(popup);
 
             if (confirmDialog) {
                 mountConfirmDialog(popup);
@@ -660,7 +751,16 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
             }
 
             if (typeof userDidOpen === 'function') {
-                userDidOpen(popup);
+                await userDidOpen(popup);
+            }
+        },
+        willClose: (popup) => {
+            destroyAddressAutocompletes(popup);
+            destroyPhilippinePhoneFields(popup);
+            destroyPasswordPolicyFields(popup);
+            destroyRichTextEditors(popup);
+            if (typeof userWillClose === 'function') {
+                userWillClose(popup);
             }
         },
         customClass: {

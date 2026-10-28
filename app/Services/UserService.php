@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Repositories\UserRepository;
+use App\Services\Password\PasswordService;
+use App\Support\Password\PasswordPolicy;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class UserService
@@ -11,6 +13,7 @@ class UserService
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly ProfileService $profileService,
+        private readonly PasswordService $passwordService,
     ) {
     }
 
@@ -32,12 +35,40 @@ class UserService
 
     public function createAdminUser(array $data): User
     {
-        return $this->userRepository->create($data);
+        $plainPassword = (string) ($data['password'] ?? '');
+        unset($data['password_confirmation']);
+
+        $user = $this->userRepository->create($data);
+
+        if ($plainPassword !== '') {
+            $this->passwordService->apply(
+                $user,
+                $plainPassword,
+                PasswordPolicy::forceChangeOnAdminSet(),
+            );
+        }
+
+        return $user;
     }
 
     public function updateAdminUser(User $user, array $data): User
     {
-        return $this->userRepository->update($user, $data);
+        $plainPassword = (string) ($data['password'] ?? '');
+        unset($data['password'], $data['password_confirmation']);
+
+        $updated = $data === []
+            ? $user
+            : $this->userRepository->update($user, $data);
+
+        if ($plainPassword !== '') {
+            $this->passwordService->apply(
+                $updated,
+                $plainPassword,
+                PasswordPolicy::forceChangeOnAdminSet(),
+            );
+        }
+
+        return $updated->refresh();
     }
 
     public function delete(User $user): void

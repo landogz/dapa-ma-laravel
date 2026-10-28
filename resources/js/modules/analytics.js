@@ -4,6 +4,7 @@ import { getPostRatingMetrics, renderRatingBadge, renderStars } from './shared/r
 import { showErrorToast, showSuccessToast } from './shared/toast';
 
 const METRIC_COLORS = {
+    total: '#055498',
     views: '#055498',
     bookmarks: '#10B981',
     searches: '#7C3AED',
@@ -17,13 +18,25 @@ const DEVICE_COLORS = {
     other: '#64748B',
 };
 
+const EVENT_TYPE_META = {
+    post_view: { label: 'Post views', icon: 'fas fa-eye' },
+    view: { label: 'Views', icon: 'fas fa-eye' },
+    bookmark: { label: 'Bookmarks', icon: 'fas fa-bookmark' },
+    search: { label: 'Searches', icon: 'fas fa-magnifying-glass' },
+    share: { label: 'Shares', icon: 'fas fa-share-nodes' },
+};
+
 let cachedDailyCounts = [];
 let cachedTopPosts = [];
+let cachedRecentEvents = [];
 let topPostsSearchBound = false;
+let recentSearchBound = false;
 
 export function initAnalyticsModule() {
     initializeAnalyticsRange();
     bindAnalyticsExport();
+    bindAnalyticsRefresh();
+    bindRecentActivitySearch();
     loadAnalytics();
 }
 
@@ -39,6 +52,23 @@ function bindAnalyticsExport() {
     });
 }
 
+function bindAnalyticsRefresh() {
+    const button = document.querySelector('[data-admin-action="refresh-analytics"]');
+    if (!button || button.dataset.boundRefresh === '1') {
+        return;
+    }
+
+    button.dataset.boundRefresh = '1';
+    button.addEventListener('click', () => {
+        loadAnalytics();
+    });
+}
+
+function setAnalyticsLoading(isLoading) {
+    const overlay = document.querySelector('[data-analytics-loading]');
+    overlay?.classList.toggle('hidden', !isLoading);
+}
+
 export function loadAnalytics() {
     const overviewTopPostsContainer = document.getElementById('dashboard-top-posts');
     const analyticsTopPostsContainer = document.getElementById('analytics-top-posts');
@@ -52,29 +82,47 @@ export function loadAnalytics() {
     }
 
     const range = getSelectedAnalyticsRange();
+    setAnalyticsLoading(true);
 
     axios.get('/admin/analytics', { params: { range } })
         .then(({ data }) => {
-            const eventTypes = data.data?.by_event_type ?? [];
-            const topPosts = data.data?.top_posts ?? [];
-            const topRatedPosts = data.data?.top_rated_posts ?? [];
-            const ratings = data.data?.ratings ?? null;
-            const dailyCounts = data.data?.daily_counts ?? [];
-            const dailyByEventType = data.data?.daily_by_event_type ?? [];
-            const periodComparison = data.data?.period_comparison ?? null;
-            const recentEvents = data.data?.recent_events ?? [];
-            const devices = data.data?.devices ?? null;
-            const generatedAt = data.data?.generated_at ?? null;
+            const payload = data.data ?? {};
+            const eventTypes = payload.by_event_type ?? [];
+            const topPosts = payload.top_posts ?? [];
+            const topRatedPosts = payload.top_rated_posts ?? [];
+            const topCategories = payload.top_categories ?? [];
+            const ratings = payload.ratings ?? null;
+            const ratingDistribution = payload.rating_distribution ?? [];
+            const dailyCounts = payload.daily_counts ?? [];
+            const dailyByEventType = payload.daily_by_event_type ?? [];
+            const periodComparison = payload.period_comparison ?? null;
+            const recentEvents = payload.recent_events ?? [];
+            const devices = payload.devices ?? null;
+            const generatedAt = payload.generated_at ?? null;
+            const audience = payload.audience ?? {};
+            const funnel = payload.funnel ?? {};
+            const hourlyCounts = payload.hourly_counts ?? [];
+            const weekdayCounts = payload.weekday_counts ?? [];
+            const insights = payload.insights ?? [];
 
             cachedDailyCounts = Array.isArray(dailyCounts) ? dailyCounts : [];
+            cachedRecentEvents = Array.isArray(recentEvents) ? recentEvents : [];
 
-            renderAnalyticsSummary(periodComparison, generatedAt, eventTypes);
+            renderAnalyticsSummary(periodComparison, generatedAt, eventTypes, audience, funnel);
             renderRatingsSummary(ratings, periodComparison?.label ?? 'previous period');
             renderMetricSparklines(dailyByEventType, dailyCounts);
+            renderInsights(insights);
             renderEventTypeSummary(eventTypes);
+            renderFunnel(funnel);
             renderTopPosts(topPosts);
             renderTopRatedPosts(topRatedPosts);
-            renderDailyCounts(dailyCounts);
+            renderTopCategories(topCategories);
+            renderDailyCounts(dailyCounts, audience);
+            renderHourlyHeatmap(hourlyCounts);
+            renderWeekdayChart(weekdayCounts);
+            renderRatingDistribution(ratingDistribution);
+            renderAudienceSplit(audience);
+            renderRecentActivity(cachedRecentEvents);
             initializeOverviewActivity(dailyCounts);
             renderOverviewDistribution(eventTypes);
             renderOverviewTopPosts(topPosts);
@@ -86,6 +134,9 @@ export function loadAnalytics() {
                 error.response?.data?.message ?? 'Failed to load analytics data.',
                 'Analytics',
             );
+        })
+        .finally(() => {
+            setAnalyticsLoading(false);
         });
 }
 
@@ -118,28 +169,57 @@ function summarizeEventTypes(events) {
     return summary;
 }
 
-function renderAnalyticsSummary(periodComparison, generatedAt, eventTypes = []) {
-    const current = periodComparison?.current ?? summarizeEventTypes(eventTypes);
+function renderAnalyticsSummary(periodComparison, generatedAt, eventTypes = [], audience = {}, funnel = {}) {
+    const summarized = summarizeEventTypes(eventTypes);
+    const current = periodComparison?.current ?? summarized;
     const previous = periodComparison?.previous ?? {};
     const periodLabel = periodComparison?.label ?? 'previous period';
+    const totalEvents = Number(current.total_events ?? audience.total_events ?? summarized.total) || 0;
+    const uniqueUsers = Number(current.unique_users ?? audience.unique_users) || 0;
+    const uniqueSessions = Number(current.unique_sessions ?? audience.unique_sessions) || 0;
+    const views = Number(current.views ?? 0);
+    const bookmarks = Number(current.bookmarks ?? 0);
+    const shares = Number(current.shares ?? 0);
+    const engagement = Number(funnel.engagement ?? (views > 0 ? ((bookmarks + shares) / views) * 100 : 0));
+    const previousEngagement = Number(previous.views) > 0
+        ? (((Number(previous.bookmarks) || 0) + (Number(previous.shares) || 0)) / Number(previous.views)) * 100
+        : 0;
 
-    const setValue = (key, value) => {
+    const setValue = (key, value, formatted = null) => {
         const el = document.querySelector(`[data-analytics-summary="${key}"]`);
 
         if (el) {
-            el.textContent = Number(value).toLocaleString();
+            el.textContent = formatted ?? Number(value).toLocaleString();
         }
     };
 
-    setValue('views', current.views ?? 0);
+    setValue('total-events', totalEvents);
+    setValue('views', views);
+    setValue('unique-users', uniqueUsers);
+    setValue('unique-sessions', uniqueSessions);
     setValue('bookmarks', current.bookmarks ?? 0);
     setValue('searches', current.searches ?? 0);
     setValue('shares', current.shares ?? 0);
+    setValue('engagement', engagement, `${engagement.toFixed(1)}%`);
 
-    updatePeriodTrend('views', current.views ?? 0, previous.views ?? 0, periodLabel);
+    updatePeriodTrend('total-events', totalEvents, previous.total_events ?? 0, periodLabel);
+    updatePeriodTrend('views', views, previous.views ?? 0, periodLabel);
+    updatePeriodTrend('unique-users', uniqueUsers, previous.unique_users ?? 0, periodLabel);
+    updatePeriodTrend('unique-sessions', uniqueSessions, previous.unique_sessions ?? 0, periodLabel);
     updatePeriodTrend('bookmarks', current.bookmarks ?? 0, previous.bookmarks ?? 0, periodLabel);
     updatePeriodTrend('searches', current.searches ?? 0, previous.searches ?? 0, periodLabel);
     updatePeriodTrend('shares', current.shares ?? 0, previous.shares ?? 0, periodLabel);
+    updateChangeBadge('engagement', engagement, previousEngagement);
+
+    const avgDayEl = document.querySelector('[data-analytics-avg-day]');
+
+    if (avgDayEl) {
+        const avg = Number(audience.avg_per_day ?? 0);
+        const peakTotal = Number(audience.peak_day?.total ?? 0);
+        avgDayEl.textContent = peakTotal > 0
+            ? `Avg ${avg.toLocaleString()} / day · peak ${peakTotal.toLocaleString()}`
+            : `Avg ${avg.toLocaleString()} events / day`;
+    }
 
     const updatedEl = document.querySelector('[data-analytics-updated-at]');
 
@@ -171,6 +251,7 @@ function renderRatingsSummary(ratings, periodLabel = 'previous period') {
 
 function renderMetricSparklines(dailyByEventType, filledDays) {
     const sparklines = buildMetricSparklineSeries(dailyByEventType, filledDays);
+    sparklines.total = (filledDays ?? []).map((day) => Number(day.total) || 0);
 
     Object.entries(sparklines).forEach(([metric, values]) => {
         const container = document.querySelector(`[data-analytics-sparkline="${metric}"]`);
@@ -324,35 +405,41 @@ export function exportAnalyticsCsvWithRange() {
 
 function renderEventTypeSummary(events) {
     const container = document.getElementById('analytics-event-summary');
-    if (!container) return;
+    if (!container) {
+        return;
+    }
 
     if (!events.length) {
-        container.innerHTML = '<p class="text-sm text-slate-400">No events recorded yet.</p>';
+        container.innerHTML = buildAnalyticsEmptyState(
+            'No events recorded yet',
+            'Event mix will appear here once the app starts tracking activity.',
+            'fa-chart-pie',
+        );
 
         return;
     }
 
     const summary = summarizeEventTypes(events);
+    const colors = [METRIC_COLORS.views, METRIC_COLORS.bookmarks, METRIC_COLORS.searches, METRIC_COLORS.shares, '#123a60', '#CE2028'];
 
-    const types = [
-        { key: 'views', label: 'Views', color: METRIC_COLORS.views },
-        { key: 'bookmarks', label: 'Bookmarks', color: METRIC_COLORS.bookmarks },
-        { key: 'searches', label: 'Searches', color: METRIC_COLORS.searches },
-        { key: 'shares', label: 'Shares', color: METRIC_COLORS.shares },
-    ];
-
-    const rows = types.map((type) => {
-        const value = summary[type.key] || 0;
+    const rows = events.map((event, index) => {
+        const value = Number(event.total) || 0;
         const percent = summary.total ? Math.round((value / summary.total) * 100) : 0;
+        const typeKey = String(event.event_type || '').toLowerCase();
+        const meta = EVENT_TYPE_META[typeKey] ?? { label: formatEventTypeLabel(event.event_type), icon: 'fas fa-bolt' };
+        const color = colors[index % colors.length];
 
         return `
             <div class="space-y-1.5">
-                <div class="flex items-center justify-between text-xs font-medium text-slate-600">
-                    <span>${type.label}</span>
-                    <span class="text-slate-500">${Number(value).toLocaleString()} (${percent}%)</span>
+                <div class="flex items-center justify-between gap-3 text-xs font-medium text-slate-600">
+                    <span class="inline-flex min-w-0 items-center gap-2">
+                        <i class="${meta.icon} text-[11px]" style="color:${color}"></i>
+                        <span class="truncate">${escapeHtml(meta.label)}</span>
+                    </span>
+                    <span class="shrink-0 text-slate-500">${value.toLocaleString()} · ${percent}%</span>
                 </div>
-                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                    <div class="h-full rounded-full" style="width:${percent}%;background:${type.color};"></div>
+                <div class="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                    <div class="h-full rounded-full" style="width:${percent}%;background:${color};"></div>
                 </div>
             </div>
         `;
@@ -360,7 +447,7 @@ function renderEventTypeSummary(events) {
 
     container.innerHTML = `
         <p class="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Total events: ${Number(summary.total).toLocaleString()}
+            ${summary.total.toLocaleString()} events across ${events.length} type${events.length === 1 ? '' : 's'}
         </p>
         <div class="space-y-3">
             ${rows}
@@ -408,23 +495,45 @@ function renderTopPostsList(posts) {
         return;
     }
 
+    const maxViews = Math.max(...posts.map((post) => Number(post.views) || 0), 1);
+    const totalViews = cachedTopPosts.reduce((sum, post) => sum + (Number(post.views) || 0), 0) || 1;
+
     const rows = posts.map((post, index) => {
         const title = escapeHtml(post.post?.title ?? 'Untitled post');
         const postId = post.post?.id ?? post.post_id;
+        const views = Number(post.views) || 0;
+        const share = Math.round((views / totalViews) * 100);
+        const width = Math.max(8, Math.round((views / maxViews) * 100));
+        const category = escapeHtml(post.post?.category?.name ?? '');
         const titleMarkup = postId
-            ? `<a href="/admin/posts?post=${encodeURIComponent(postId)}" class="admin-table-link-chip block truncate text-left" title="${title}">${title}</a>`
-            : `<span class="block truncate text-left">${title}</span>`;
+            ? `<a href="/admin/posts?post=${encodeURIComponent(postId)}" class="admin-table-link-chip block max-w-full truncate text-left" title="${title}">${title}</a>`
+            : `<span class="block max-w-full truncate text-left text-sm font-semibold text-slate-800">${title}</span>`;
         const ratingMarkup = getPostRatingMetrics(post.post ?? {}).count > 0
             ? `<span class="shrink-0">${renderRatingBadge(post.post ?? {}, { compact: true })}</span>`
             : '<span class="shrink-0 text-[11px] text-slate-400">No ratings</span>';
 
         return `
-            <div class="flex items-center gap-3 border-b border-slate-100 py-2 last:border-0" data-analytics-post-row>
-                <span class="w-5 shrink-0 text-xs font-bold text-slate-400">${index + 1}</span>
-                <div class="min-w-0 flex-1">${titleMarkup}</div>
-                <div class="flex shrink-0 flex-col items-end gap-1 text-right">
-                    <span class="text-xs font-semibold text-[#055498]">${formatViewCount(post.views)}</span>
-                    ${ratingMarkup}
+            <div class="space-y-1.5 border-b border-slate-100 py-2.5 last:border-0" data-analytics-post-row>
+                <div class="flex items-start gap-3">
+                    <span class="mt-1 w-5 shrink-0 text-xs font-bold text-slate-400">${index + 1}</span>
+                    <div class="min-w-0 flex-1 space-y-1.5">
+                        <div class="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                            <div class="min-w-0 flex-1">
+                                ${titleMarkup}
+                                ${category ? `<p class="mt-0.5 truncate text-[11px] text-slate-400">${category}</p>` : ''}
+                            </div>
+                            <div class="flex shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
+                                <span class="whitespace-nowrap text-xs font-semibold text-[#055498]">${formatViewCount(post.views)}</span>
+                                ${ratingMarkup}
+                            </div>
+                        </div>
+                        <div class="analytics-post-share">
+                            <div class="analytics-track">
+                                <div class="analytics-track-fill" style="width:${width}%"></div>
+                            </div>
+                            <span class="w-8 shrink-0 text-right text-[10px] font-semibold text-slate-400">${share}%</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -458,14 +567,16 @@ function renderTopRatedPosts(posts) {
         const title = escapeHtml(post.title ?? 'Untitled post');
         const postId = post.id;
         const titleMarkup = postId
-            ? `<a href="/admin/posts?post=${encodeURIComponent(postId)}" class="admin-table-link-chip block truncate text-left" title="${title}">${title}</a>`
-            : `<span class="block truncate text-left">${title}</span>`;
+            ? `<a href="/admin/posts?post=${encodeURIComponent(postId)}" class="admin-table-link-chip block max-w-full truncate text-left" title="${title}">${title}</a>`
+            : `<span class="block max-w-full truncate text-left text-sm font-semibold text-slate-800">${title}</span>`;
 
         return `
-            <div class="flex items-center gap-3 border-b border-slate-100 py-2 last:border-0">
-                <span class="w-5 text-xs font-bold text-slate-400">${index + 1}</span>
-                <div class="min-w-0 flex-1">${titleMarkup}</div>
-                <div class="shrink-0">${renderRatingBadge(post, { compact: true })}</div>
+            <div class="flex items-start gap-3 border-b border-slate-100 py-2.5 last:border-0">
+                <span class="mt-1 w-5 shrink-0 text-xs font-bold text-slate-400">${index + 1}</span>
+                <div class="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                    <div class="min-w-0 flex-1">${titleMarkup}</div>
+                    <div class="shrink-0">${renderRatingBadge(post, { compact: true })}</div>
+                </div>
             </div>
         `;
     }).join('');
@@ -496,7 +607,9 @@ function bindTopPostsSearch() {
 
 function renderDailyCounts(days) {
     const container = document.getElementById('analytics-daily-chart');
-    if (!container) return;
+    if (!container) {
+        return;
+    }
 
     container.innerHTML = buildActivityChartHtml(days, {
         emptyTitle: 'Daily trend will appear here',
@@ -938,11 +1051,6 @@ function initializeAnalyticsRange() {
 
 function updatePeriodTrend(key, current, previousValue, periodLabel) {
     const elements = document.querySelectorAll(`[data-analytics-trend="${key}"]`);
-
-    if (!elements.length) {
-        return;
-    }
-
     const previous = Number(previousValue) || 0;
     const currentValue = Number(current) || 0;
     const delta = currentValue - previous;
@@ -964,6 +1072,498 @@ function updatePeriodTrend(key, current, previousValue, periodLabel) {
             element.textContent = `Same as ${periodLabel}`;
         }
     });
+
+    updateChangeBadge(key, currentValue, previous);
+}
+
+function percentChange(current, previous) {
+    const currentValue = Number(current) || 0;
+    const previousValue = Number(previous) || 0;
+
+    if (previousValue === 0) {
+        return currentValue === 0 ? 0 : 100;
+    }
+
+    return Math.round(((currentValue - previousValue) / previousValue) * 100);
+}
+
+function updateChangeBadge(key, current, previous) {
+    const element = document.querySelector(`[data-analytics-change="${key}"]`);
+
+    if (!element) {
+        return;
+    }
+
+    const delta = percentChange(current, previous);
+    element.classList.remove('is-up', 'is-down');
+
+    if (delta > 0) {
+        element.classList.add('is-up');
+        element.textContent = `+${delta}%`;
+        return;
+    }
+
+    if (delta < 0) {
+        element.classList.add('is-down');
+        element.textContent = `${delta}%`;
+        return;
+    }
+
+    element.textContent = '0%';
+}
+
+function renderInsights(insights) {
+    const container = document.querySelector('[data-analytics-insights]');
+
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(insights) || insights.length === 0) {
+        container.classList.remove('is-visible');
+        container.innerHTML = '';
+
+        return;
+    }
+
+    container.classList.add('is-visible');
+    container.innerHTML = insights.map((insight) => {
+        const tone = ['up', 'down'].includes(insight.tone) ? insight.tone : 'info';
+        const icon = escapeHtml(insight.icon || 'fa-lightbulb');
+
+        return `
+            <article class="analytics-insight-chip is-${tone}">
+                <span class="analytics-insight-chip-icon">
+                    <i class="fas ${icon}" aria-hidden="true"></i>
+                </span>
+                <p class="analytics-insight-chip-text">${escapeHtml(insight.text || '')}</p>
+            </article>
+        `;
+    }).join('');
+}
+
+function renderFunnel(funnel) {
+    const container = document.getElementById('analytics-funnel');
+
+    if (!container) {
+        return;
+    }
+
+    const views = Number(funnel.views) || 0;
+    const bookmarks = Number(funnel.bookmarks) || 0;
+    const shares = Number(funnel.shares) || 0;
+    const max = Math.max(views, bookmarks, shares, 1);
+
+    if (views + bookmarks + shares === 0) {
+        container.innerHTML = buildAnalyticsEmptyState(
+            'No funnel data yet',
+            'Views, bookmarks, and shares will populate this conversion path.',
+            'fa-filter',
+        );
+
+        return;
+    }
+
+    const steps = [
+        { key: 'views', label: 'Views', value: views, className: '' },
+        { key: 'bookmarks', label: 'Bookmarks', value: bookmarks, className: 'is-bookmarks' },
+        { key: 'shares', label: 'Shares', value: shares, className: 'is-shares' },
+    ];
+
+    container.innerHTML = `
+        <div class="space-y-3">
+            ${steps.map((step) => {
+                const width = Math.max(18, Math.round((step.value / max) * 100));
+                const conversion = views > 0 ? Math.round((step.value / views) * 100) : 0;
+
+                return `
+                    <div class="analytics-funnel-step">
+                        <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
+                            <span>${step.label}</span>
+                            <span>${step.value.toLocaleString()} · ${conversion}%</span>
+                        </div>
+                        <div class="analytics-funnel-bar ${step.className}" style="width:${width}%"></div>
+                    </div>
+                `;
+            }).join('')}
+            <p class="text-[11px] text-slate-500">Conversion is relative to views in the selected range.</p>
+        </div>
+    `;
+}
+
+function renderTopCategories(categories) {
+    const container = document.getElementById('analytics-top-categories');
+
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(categories) || categories.length === 0) {
+        container.innerHTML = buildAnalyticsEmptyState(
+            'No category traffic yet',
+            'Viewed posts with a category will rank here.',
+            'fa-layer-group',
+        );
+
+        return;
+    }
+
+    const max = Math.max(...categories.map((category) => Number(category.views) || 0), 1);
+
+    container.innerHTML = categories.map((category, index) => {
+        const views = Number(category.views) || 0;
+        const width = Math.max(8, Math.round((views / max) * 100));
+        const name = escapeHtml(category.name || 'Uncategorized');
+
+        return `
+            <div class="analytics-category-row border-b border-slate-100 py-2 last:border-0">
+                <span class="w-5 shrink-0 text-xs font-bold text-slate-400">${index + 1}</span>
+                <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold text-slate-800">${name}</p>
+                    <div class="analytics-track mt-1.5">
+                        <div class="analytics-track-fill" style="width:${width}%"></div>
+                    </div>
+                </div>
+                <span class="shrink-0 text-xs font-semibold text-[#055498]">${formatViewCount(views)}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderHourlyHeatmap(hours) {
+    const container = document.getElementById('analytics-hourly-heatmap');
+
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(hours) || hours.length === 0) {
+        container.innerHTML = buildAnalyticsEmptyState(
+            'No hourly pattern yet',
+            'A 24-hour heatmap will appear once events are recorded.',
+            'fa-clock',
+        );
+
+        return;
+    }
+
+    const max = Math.max(...hours.map((row) => Number(row.total) || 0), 0);
+
+    if (max === 0) {
+        container.innerHTML = buildAnalyticsEmptyState(
+            'No hourly pattern yet',
+            'A 24-hour heatmap will appear once events are recorded.',
+            'fa-clock',
+        );
+
+        return;
+    }
+
+    const peak = hours.reduce((best, row) => (
+        Number(row.total) > Number(best.total) ? row : best
+    ), hours[0]);
+
+    container.innerHTML = `
+        <div class="overflow-x-auto pb-1">
+            <div class="analytics-heat-grid">
+                ${hours.map((row) => {
+                    const total = Number(row.total) || 0;
+                    const intensity = heatIntensity(total, max);
+                    const hourLabel = formatHourCompact(row.hour);
+                    const aria = `${formatHourFull(row.hour)}: ${total.toLocaleString()} events`;
+
+                    return `
+                        <div class="analytics-heat-cell analytics-heat-${intensity}" title="${escapeHtml(aria)}" aria-label="${escapeHtml(aria)}">
+                            <span>${hourLabel}</span>
+                            <span>${total}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+        <p class="mt-3 text-[11px] text-slate-500">Peak hour ${formatHourFull(peak.hour)} · ${Number(peak.total).toLocaleString()} events</p>
+    `;
+}
+
+function heatIntensity(value, max) {
+    if (!value || !max) {
+        return 0;
+    }
+
+    const ratio = value / max;
+
+    if (ratio >= 0.8) {
+        return 4;
+    }
+
+    if (ratio >= 0.55) {
+        return 3;
+    }
+
+    if (ratio >= 0.3) {
+        return 2;
+    }
+
+    return 1;
+}
+
+function formatHourCompact(hour) {
+    const value = Number(hour) || 0;
+    const suffix = value >= 12 ? 'p' : 'a';
+    const twelve = value % 12 === 0 ? 12 : value % 12;
+
+    return `${twelve}${suffix}`;
+}
+
+function formatHourFull(hour) {
+    const value = Math.max(0, Math.min(23, Number(hour) || 0));
+    const date = new Date();
+    date.setHours(value, 0, 0, 0);
+
+    return date.toLocaleTimeString(undefined, { hour: 'numeric' });
+}
+
+function renderWeekdayChart(weekdays) {
+    const container = document.getElementById('analytics-weekday-chart');
+
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(weekdays) || weekdays.length === 0) {
+        container.innerHTML = buildAnalyticsEmptyState(
+            'No weekday pattern yet',
+            'Monday through Sunday volume will appear here.',
+            'fa-calendar-week',
+        );
+
+        return;
+    }
+
+    const max = Math.max(...weekdays.map((row) => Number(row.total) || 0), 1);
+    const total = weekdays.reduce((sum, row) => sum + (Number(row.total) || 0), 0);
+
+    container.innerHTML = `
+        <div class="space-y-2.5">
+            ${weekdays.map((row) => {
+                const value = Number(row.total) || 0;
+                const width = Math.max(value ? 8 : 0, Math.round((value / max) * 100));
+                const share = total ? Math.round((value / total) * 100) : 0;
+
+                return `
+                    <div class="analytics-weekday-row">
+                        <span class="w-9 shrink-0 text-xs font-semibold text-slate-500">${escapeHtml(row.label)}</span>
+                        <div class="analytics-track">
+                            <div class="analytics-track-fill" style="width:${width}%"></div>
+                        </div>
+                        <span class="w-16 shrink-0 text-right text-xs font-semibold text-slate-700">${value.toLocaleString()}</span>
+                        <span class="w-10 shrink-0 text-right text-[11px] text-slate-400">${share}%</span>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+function renderRatingDistribution(distribution) {
+    const container = document.getElementById('analytics-rating-distribution');
+
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(distribution) || distribution.every((row) => !Number(row.total))) {
+        container.innerHTML = buildAnalyticsEmptyState(
+            'No ratings in this range',
+            'Star totals will appear as users review posts.',
+            'fa-star',
+        );
+
+        return;
+    }
+
+    const max = Math.max(...distribution.map((row) => Number(row.total) || 0), 1);
+    const total = distribution.reduce((sum, row) => sum + (Number(row.total) || 0), 0);
+
+    container.innerHTML = `
+        <div class="space-y-2.5">
+            ${distribution.map((row) => {
+                const value = Number(row.total) || 0;
+                const width = Math.max(value ? 8 : 0, Math.round((value / max) * 100));
+                const share = total ? Math.round((value / total) * 100) : 0;
+                const stars = '★'.repeat(Number(row.rating) || 0);
+
+                return `
+                    <div class="analytics-rating-row">
+                        <span class="w-16 shrink-0 text-xs font-semibold text-amber-500">${stars}</span>
+                        <div class="analytics-track">
+                            <div class="analytics-track-fill" style="width:${width}%"></div>
+                        </div>
+                        <span class="w-12 shrink-0 text-right text-xs font-semibold text-slate-700">${value.toLocaleString()}</span>
+                        <span class="w-10 shrink-0 text-right text-[11px] text-slate-400">${share}%</span>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+function renderAudienceSplit(audience) {
+    const container = document.getElementById('analytics-audience-split');
+
+    if (!container) {
+        return;
+    }
+
+    const signedIn = Number(audience.signed_in_events) || 0;
+    const anonymous = Number(audience.anonymous_events) || 0;
+    const total = signedIn + anonymous;
+
+    if (!total) {
+        container.innerHTML = '';
+
+        return;
+    }
+
+    const signedShare = Math.round((signedIn / total) * 100);
+    const anonymousShare = 100 - signedShare;
+
+    container.innerHTML = `
+        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Audience split</p>
+        <div class="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100">
+            <span class="h-full bg-[#055498]" style="width:${signedShare}%"></span>
+            <span class="h-full bg-slate-300" style="width:${anonymousShare}%"></span>
+        </div>
+        <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+            <span>Signed-in ${signedIn.toLocaleString()} (${signedShare}%)</span>
+            <span>Anonymous ${anonymous.toLocaleString()} (${anonymousShare}%)</span>
+        </div>
+    `;
+}
+
+function formatEventTypeLabel(value) {
+    return String(value || 'Event')
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function bindRecentActivitySearch() {
+    if (recentSearchBound) {
+        return;
+    }
+
+    const input = document.getElementById('analytics-recent-search');
+
+    if (!input) {
+        return;
+    }
+
+    input.addEventListener('input', () => {
+        renderRecentActivity(cachedRecentEvents);
+    });
+
+    recentSearchBound = true;
+}
+
+function renderRecentActivity(events) {
+    const container = document.getElementById('analytics-recent-feed');
+    const meta = document.querySelector('[data-analytics-recent-meta]');
+    const searchInput = document.getElementById('analytics-recent-search');
+
+    if (!container) {
+        return;
+    }
+
+    const query = searchInput?.value?.trim().toLowerCase() ?? '';
+    const list = Array.isArray(events) ? events : [];
+    const filtered = query
+        ? list.filter((event) => {
+            const haystack = [
+                event.event_type,
+                event.user?.name,
+                event.post?.title,
+                event.platform,
+            ].join(' ').toLowerCase();
+
+            return haystack.includes(query);
+        })
+        : list;
+
+    if (meta) {
+        meta.textContent = filtered.length
+            ? `Showing ${filtered.length} of ${list.length} latest events`
+            : 'Latest tracked events in this range';
+    }
+
+    if (!list.length) {
+        container.innerHTML = buildAnalyticsEmptyState(
+            'No recent activity',
+            'New events will appear here as users interact with the app.',
+            'fa-clock',
+        );
+
+        return;
+    }
+
+    if (!filtered.length) {
+        container.innerHTML = '<p class="text-sm text-slate-400">No events match this filter.</p>';
+
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="grid gap-2 xl:grid-cols-2">
+            ${filtered.map((event) => buildRecentActivityCard(event)).join('')}
+        </div>
+    `;
+}
+
+function buildRecentActivityCard(event) {
+    const typeKey = String(event.event_type || '').toLowerCase();
+    const meta = EVENT_TYPE_META[typeKey] ?? { label: formatEventTypeLabel(event.event_type), icon: 'fas fa-bolt' };
+    const when = formatRelativeTime(event.created_at);
+    const exactWhen = event.created_at ? new Date(event.created_at).toLocaleString() : '';
+    const userName = escapeHtml(event.user?.name || 'Anonymous');
+    const postTitle = event.post?.title ? escapeHtml(event.post.title) : 'App activity';
+    const postId = event.post?.id ?? event.post_id;
+    const platform = formatPlatformLabel(event.platform);
+    const titleMarkup = postId
+        ? `<a href="/admin/posts?post=${encodeURIComponent(postId)}" class="admin-table-link-chip block max-w-full truncate text-left" title="${postTitle}">${postTitle}</a>`
+        : `<span class="block max-w-full truncate text-sm font-semibold text-slate-800">${postTitle}</span>`;
+
+    return `
+        <article class="flex min-h-11 items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-3">
+            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#055498]/10 text-[#055498]">
+                <i class="${meta.icon}" aria-hidden="true"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-semibold text-slate-800">${escapeHtml(meta.label)}</span>
+                    <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">${escapeHtml(platform)}</span>
+                </div>
+                <div class="mt-1 min-w-0">${titleMarkup}</div>
+                <p class="mt-1 text-[11px] text-slate-500">${userName} · <span title="${escapeHtml(exactWhen)}">${escapeHtml(when)}</span></p>
+            </div>
+        </article>
+    `;
+}
+
+function formatPlatformLabel(platform) {
+    const value = String(platform || '').toLowerCase();
+
+    if (value === 'ios') {
+        return 'iOS';
+    }
+
+    if (value === 'android') {
+        return 'Android';
+    }
+
+    if (value === 'web') {
+        return 'Web';
+    }
+
+    return value ? value : 'Unknown';
 }
 
 function renderDeviceBreakdown(devices) {

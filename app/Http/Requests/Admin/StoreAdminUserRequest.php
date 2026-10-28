@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\Password\PasswordPolicy;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,7 +18,7 @@ class StoreAdminUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => PasswordPolicy::rules(),
             'role' => [
                 'required',
                 Rule::in([
@@ -28,6 +29,13 @@ class StoreAdminUserRequest extends FormRequest
                     'app_user',
                 ]),
             ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'password.required' => PasswordPolicy::hint(),
         ];
     }
 }

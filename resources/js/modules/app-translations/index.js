@@ -6,12 +6,15 @@ import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../s
 import { bindAdminFilterTabs, setAdminFilterTab } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { bindSvgIconPickers } from '../shared/svg-icon-picker';
+import { readAdminPageFocus } from '../shared/page-focus';
 
 let translationsTable;
 let translationsDataTableClass;
 let translationsTableMode;
 let hasBoundViewportListener = false;
 let translationsGroupFilter = 'bottom_menu';
+let translationsSearchAll = false;
+let appliedFocusSearch = false;
 let translationGroups = [];
 let translationGroupCounts = {};
 let translationIconChoices = [];
@@ -80,6 +83,13 @@ export function initAppTranslationsModule() {
     const tableEl = document.getElementById('app-translations-table');
     if (!tableEl) return;
 
+    const focus = readAdminPageFocus();
+    if (focus.group) {
+        translationsGroupFilter = focus.group;
+    } else if (focus.q) {
+        translationsSearchAll = true;
+    }
+
     loadAdminDataTableLibrary().then(async (DataTable) => {
         translationsDataTableClass = DataTable;
         await initializeTranslationsTable(tableEl);
@@ -87,6 +97,7 @@ export function initAppTranslationsModule() {
         bindAdminActionTooltipSuppression(tableEl);
         bindAdminFilterTabs(document.getElementById('app-translations-group-tabs'), (value) => {
             translationsGroupFilter = value;
+            translationsSearchAll = false;
             loadAppTranslations();
         });
         loadAppTranslations();
@@ -96,11 +107,18 @@ export function initAppTranslationsModule() {
 export function loadAppTranslations(search = '') {
     if (!translationsTable) return;
 
+    const focus = readAdminPageFocus();
+    let apiSearch = search;
+    if (!appliedFocusSearch && focus.q) {
+        apiSearch = focus.q;
+        appliedFocusSearch = true;
+    }
+
     axios.get('/admin/app-translations', {
         params: {
-            search,
+            search: apiSearch,
             per_page: 200,
-            group: translationsGroupFilter || firstAvailableGroup(),
+            group: translationsSearchAll ? undefined : (translationsGroupFilter || firstAvailableGroup()),
         },
     })
         .then(({ data }) => {
@@ -171,7 +189,7 @@ function isVirtualGroup(group) {
 }
 
 function isKnownGroup(group) {
-    return isVirtualGroup(group) || translationGroups.includes(group);
+    return Boolean(GROUP_META[group]) || translationGroups.includes(group);
 }
 
 function firstAvailableGroup() {
@@ -548,7 +566,7 @@ function bindViewportListener(tableEl) {
         return;
     }
 
-    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const mobileQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = async () => {
         const nextMode = getTableMode();
         if (nextMode === translationsTableMode) {
@@ -569,7 +587,7 @@ function bindViewportListener(tableEl) {
 }
 
 function getTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 function buildColumns(mode) {

@@ -3194,8 +3194,26 @@
   {
     "key": "passwordMinLength",
     "group": "account",
-    "en": "New password must be at least 6 characters",
-    "tl": "Ang bagong password ay dapat 6 character"
+    "en": "Password must include at least 8 characters, upper and lower case, a number, a symbol.",
+    "tl": "Ang password ay dapat may 8 character, malaki at maliit na letra, numero, at simbolo."
+  },
+  {
+    "key": "passwordPolicyHint",
+    "group": "account",
+    "en": "Password must include at least 8 characters, upper and lower case, a number, a symbol.",
+    "tl": "Ang password ay dapat may 8 character, malaki at maliit na letra, numero, at simbolo."
+  },
+  {
+    "key": "passwordMustChangeTitle",
+    "group": "account",
+    "en": "Set a new password",
+    "tl": "Magtakda ng bagong password"
+  },
+  {
+    "key": "passwordMustChangeBody",
+    "group": "account",
+    "en": "Your password was set by an administrator or has expired. Choose a new password to continue.",
+    "tl": "Itinakda ng administrator ang password o nag-expire na ito. Pumili ng bago para magpatuloy."
   },
   {
     "key": "passwordsDoNotMatch",
@@ -3644,8 +3662,8 @@
   {
     "key": "passwordMinEight",
     "group": "registration",
-    "en": "Password must be at least 8 characters",
-    "tl": "Ang password ay dapat hindi bababa sa 8 character"
+    "en": "Password must include at least 8 characters, upper and lower case, a number, a symbol.",
+    "tl": "Ang password ay dapat may 8 character, malaki at maliit na letra, numero, at simbolo."
   },
   {
     "key": "saveNewPassword",
@@ -3866,8 +3884,8 @@
   {
     "key": "passwordMinSix",
     "group": "registration",
-    "en": "Password must be at least 8 characters",
-    "tl": "Ang password ay dapat hindi bababa sa 8 character"
+    "en": "Password must include at least 8 characters, upper and lower case, a number, a symbol.",
+    "tl": "Ang password ay dapat may 8 character, malaki at maliit na letra, numero, at simbolo."
   },
   {
     "key": "bookmarkRemoveFailed",

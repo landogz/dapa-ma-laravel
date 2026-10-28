@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
+import { assertPasswordFields, bindPasswordPolicyFields } from '../password-validation';
 
 export function initResetPasswordPage() {
     const form = document.getElementById('reset-password-form');
@@ -26,6 +27,8 @@ export function initResetPasswordPage() {
         return;
     }
 
+    bindPasswordPolicyFields(form);
+
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (!emailInput || !passwordInput || !confirmInput || !submitBtn) return;
@@ -39,8 +42,9 @@ export function initResetPasswordPage() {
             return;
         }
 
-        if (password.length < 8) {
-            showMessage(messageEl, 'Password must be at least 8 characters.', true);
+        const policyError = assertPasswordFields(form);
+        if (policyError) {
+            showMessage(messageEl, policyError, true);
             return;
         }
 

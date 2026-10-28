@@ -63,13 +63,17 @@ export function enhanceAdminFilterTabs(root) {
             return;
         }
 
-        const label = tab.textContent.trim();
+        const label = tab.dataset.filterLabel || tab.textContent.trim();
         const icon = tab.dataset.icon || DEFAULT_ICON;
         const count = tab.dataset.count;
         tab.replaceChildren();
         tab.appendChild(buildAdminFilterTabInner({
             label,
             icon,
+            hint: tab.dataset.hint || '',
+            swatch: tab.dataset.swatch || '',
+            initials: tab.dataset.initials || '',
+            spectrum: tab.dataset.spectrum === '1',
             count: count === undefined || count === '' ? null : Number(count),
         }));
     });
@@ -110,8 +114,21 @@ function buildAdminFilterTab(item) {
     button.className = 'admin-filter-tab';
     button.setAttribute('role', 'tab');
     button.dataset.filterValue = item.value ?? '';
+    button.dataset.filterLabel = item.label ?? '';
     if (item.icon) {
         button.dataset.icon = item.icon;
+    }
+    if (item.swatch) {
+        button.dataset.swatch = item.swatch;
+    }
+    if (item.hint) {
+        button.dataset.hint = item.hint;
+    }
+    if (item.initials) {
+        button.dataset.initials = item.initials;
+    }
+    if (item.spectrum) {
+        button.dataset.spectrum = '1';
     }
     button.appendChild(buildAdminFilterTabInner(item));
     return button;
@@ -119,6 +136,34 @@ function buildAdminFilterTab(item) {
 
 function buildAdminFilterTabInner(item) {
     const fragment = document.createDocumentFragment();
+    fragment.append(buildAdminFilterTabLead(item), buildAdminFilterTabCopy(item), buildAdminFilterTabCount(item));
+    return fragment;
+}
+
+function buildAdminFilterTabLead(item) {
+    if (item.spectrum || item.swatch) {
+        const swatch = document.createElement('span');
+        swatch.className = 'admin-filter-tab-swatch';
+        swatch.setAttribute('aria-hidden', 'true');
+        if (item.spectrum) {
+            swatch.classList.add('is-spectrum');
+        }
+        if (item.swatch) {
+            swatch.dataset.sky = item.swatch;
+            if (item.swatch === 'sky_white') {
+                swatch.classList.add('is-light');
+            }
+        }
+        return swatch;
+    }
+
+    if (item.initials) {
+        const avatar = document.createElement('span');
+        avatar.className = 'admin-filter-tab-avatar';
+        avatar.setAttribute('aria-hidden', 'true');
+        avatar.textContent = item.initials;
+        return avatar;
+    }
 
     const iconWrap = document.createElement('span');
     iconWrap.className = 'admin-filter-tab-icon';
@@ -126,17 +171,33 @@ function buildAdminFilterTabInner(item) {
     const icon = document.createElement('i');
     icon.className = item.icon || DEFAULT_ICON;
     iconWrap.appendChild(icon);
+    return iconWrap;
+}
+
+function buildAdminFilterTabCopy(item) {
+    const copy = document.createElement('span');
+    copy.className = 'admin-filter-tab-copy';
 
     const label = document.createElement('span');
     label.className = 'admin-filter-tab-label';
     label.textContent = item.label ?? '';
+    copy.appendChild(label);
 
+    if (item.hint) {
+        const hint = document.createElement('span');
+        hint.className = 'admin-filter-tab-hint';
+        hint.textContent = item.hint;
+        copy.appendChild(hint);
+    }
+
+    return copy;
+}
+
+function buildAdminFilterTabCount(item) {
     const count = document.createElement('span');
     count.className = 'admin-filter-tab-count';
     if (item.count != null && item.count !== '') {
         count.textContent = String(item.count);
     }
-
-    fragment.append(iconWrap, label, count);
-    return fragment;
+    return count;
 }

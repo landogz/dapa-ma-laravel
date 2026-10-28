@@ -2,6 +2,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { showSuccessToast } from './shared/toast';
 import { bindPasswordToggles } from './shared/password-toggle';
+import { assertPasswordFields, bindPasswordPolicyFields } from './password-validation';
 
 const TOKEN_KEY = 'dape_ma_admin_token';
 const USER_KEY = 'dape_ma_admin_user';
@@ -86,12 +87,14 @@ export function bindLoginForm() {
         setBusy(submitButton, true, 'Signing in...');
 
         try {
-            await submitLogin({
+            const payload = await submitLogin({
                 email: formData.get('email'),
                 password: formData.get('password'),
             });
 
-            window.location.href = '/admin';
+            window.location.href = payload?.data?.user?.must_change_password
+                ? '/admin/profile?force_password=1'
+                : '/admin';
         } catch (error) {
             showLoginFailure(form, error);
             setBusy(submitButton, false, 'Sign In');
@@ -128,9 +131,11 @@ function bindDemoLoginAccounts(form) {
             button.disabled = true;
 
             try {
-                await submitLogin({ email, password });
+                const payload = await submitLogin({ email, password });
                 showSuccessToast(`Signed in as ${label}`, 'Welcome');
-                window.location.href = '/admin';
+                window.location.href = payload?.data?.user?.must_change_password
+                    ? '/admin/profile?force_password=1'
+                    : '/admin';
             } catch (error) {
                 showLoginFailure(form, error);
             } finally {
@@ -149,6 +154,7 @@ export function bindRegisterForm() {
     }
 
     bindPasswordToggles(form);
+    bindPasswordPolicyFields(form);
 
     const submitButton = form.querySelector('[type="submit"]');
     const consentFields = [
@@ -194,6 +200,11 @@ export function bindRegisterForm() {
                 text: 'Please accept the Terms of Use, Privacy Policy, and Privacy Notice before continuing.',
                 confirmButtonColor: '#055498',
             });
+            return;
+        }
+
+        const passwordError = assertPasswordFields(form);
+        if (passwordError) {
             return;
         }
 
@@ -322,6 +333,20 @@ function applyFieldErrors(form, errors) {
     });
 }
 
+function renderLegalMarkup(value) {
+    const raw = String(value ?? '').trim();
+
+    if (!raw) {
+        return '';
+    }
+
+    if (/<[a-z][\s\S]*>/i.test(raw)) {
+        return raw.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '');
+    }
+
+    return `<p>${escapeHtml(raw).replaceAll('\n', '<br>')}</p>`;
+}
+
 async function showLegalPreview(slug) {
     if (!slug) {
         return;
@@ -330,13 +355,13 @@ async function showLegalPreview(slug) {
     try {
         const { data } = await axios.get(`/legal-pages/${slug}`, { params: { locale: 'en' } });
         const page = data.data ?? {};
-        const intro = String(page.intro ?? '').trim();
-        const body = String(page.body ?? '').trim();
-        const html = [intro, body].filter(Boolean).map(escapeHtml).join('\n\n');
+        const intro = renderLegalMarkup(page.intro);
+        const body = renderLegalMarkup(page.body);
+        const html = [intro, body].filter(Boolean).join('');
 
         await Swal.fire({
             title: page.title || 'Legal document',
-            html: `<div class="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-left text-sm leading-6 text-slate-700">${html}</div>`,
+            html: `<div class="admin-legal-preview max-h-[60vh] overflow-y-auto text-left text-sm leading-6 text-slate-700">${html}</div>`,
             confirmButtonText: 'Close',
             confirmButtonColor: '#055498',
             width: '36rem',

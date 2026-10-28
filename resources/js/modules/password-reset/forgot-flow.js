@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { bindPasswordToggles } from '../shared/password-toggle';
+import { assertPasswordFields, bindPasswordPolicyFields } from '../password-validation';
 
 const RESEND_SECONDS = 45;
 
@@ -36,6 +37,7 @@ export function bindForgotPasswordFlow() {
     let verifying = false;
 
     bindPasswordToggles(forgotView);
+    bindPasswordPolicyFields(forgotView);
 
     const showStep = (nextStep) => {
         step = nextStep;
@@ -184,8 +186,9 @@ export function bindForgotPasswordFlow() {
         clearError('forgot-password-error');
         clearError('forgot-confirm-error');
 
-        if (password.length < 8) {
-            showError('forgot-password-error', 'Password must be at least 8 characters.');
+        const policyError = assertPasswordFields(passwordForm);
+        if (policyError) {
+            showError('forgot-password-error', policyError);
             return;
         }
         if (password !== confirmation) {

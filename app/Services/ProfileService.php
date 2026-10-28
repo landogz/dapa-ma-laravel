@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Services\Password\PasswordService;
 use App\Support\InterestValues;
 use App\Support\Journal\CustomFeelings;
 use Illuminate\Http\UploadedFile;
@@ -11,6 +12,11 @@ use Illuminate\Support\Str;
 
 class ProfileService
 {
+    public function __construct(
+        private readonly PasswordService $passwordService,
+    ) {
+    }
+
     public function formatUser(User $user): array
     {
         return [
@@ -30,6 +36,8 @@ class ProfileService
             'profile_image_url' => $this->profileImageUrl($user),
             'about' => $user->about,
             'journal_custom_feelings' => CustomFeelings::forUser($user),
+            'must_change_password' => $this->passwordService->requiresChange($user),
+            'password_expired' => $this->passwordService->isExpired($user),
             'created_at' => $user->created_at?->toIso8601String(),
         ];
     }

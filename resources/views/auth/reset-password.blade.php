@@ -52,6 +52,7 @@
                             autocomplete="new-password"
                             minlength="8"
                             class="min-h-11 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none ring-[#055498]/30 focus:ring-2"
+                            data-password-policy
                             required
                         >
                     </div>
@@ -64,6 +65,8 @@
                             autocomplete="new-password"
                             minlength="8"
                             class="min-h-11 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none ring-[#055498]/30 focus:ring-2"
+                            data-password-confirm
+                            data-password-confirm-for="reset-password"
                             required
                         >
                     </div>

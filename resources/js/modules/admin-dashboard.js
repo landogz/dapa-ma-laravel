@@ -21,6 +21,7 @@ import { initWordBlockingModule } from './word-blocking/index';
 import { initHopeDirectoryModule } from './hope-directory/index';
 import { initHopeEventsModule } from './hope-events/index';
 import { initUsersModule } from './users';
+import { initAdminMegaMenu } from './admin-mega-menu/index';
 
 const ADMIN_ROLE_SECTIONS = {
     super_admin: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'analytics', 'users', 'diary', 'care-toolkit', 'care-checks', 'care-support', 'hope-directory', 'hope-events', 'settings', 'lookups', 'word-blocking'],
@@ -92,10 +93,16 @@ export async function initAdminPage(pageName) {
 
     renderProfile(profile);
 
+    if (profile.must_change_password && pageName !== 'admin-profile') {
+        window.location.href = '/admin/profile?force_password=1';
+        return;
+    }
+
     const allowedSections = ADMIN_ROLE_SECTIONS[profile.role] ?? [];
 
     revealNavigation(allowedSections);
     revealSidebarNavigation();
+    initAdminMegaMenu(allowedSections);
 
     await refreshInboxBadge();
 
@@ -117,7 +124,7 @@ function bindShell(appRoot) {
     const sidebar = document.getElementById('admin-sidebar');
     const sidebarLinks = document.querySelectorAll('#admin-sidebar a');
 
-    const isDesktopViewport = () => window.matchMedia('(min-width: 768px)').matches;
+    const isDesktopViewport = () => window.matchMedia('(min-width: 1024px)').matches;
 
     const setSidebarOpen = (isOpen) => {
         const shouldOpen = isOpen && !isDesktopViewport();
@@ -167,6 +174,7 @@ function bindShell(appRoot) {
         if (event.key === 'Escape') {
             setSidebarOpen(false);
             closeAdminAccountMenu();
+            window.AdminMegaMenu?.close();
         }
     });
 

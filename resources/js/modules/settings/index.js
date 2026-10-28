@@ -2,8 +2,10 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
 import { buildSwalForm, buildSwalOptions, formatApiValidationMessage } from '../shared/swal-forms';
+import { getRichTextValue, isRichTextEmpty } from '../rich-text-editor';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
+import { highlightAdminPageMatches, readAdminPageFocus } from '../shared/page-focus';
 
 const LEGAL_META = {
     privacy_policy: {
@@ -50,6 +52,9 @@ async function loadLegalPages(listEl) {
         const pages = data.data ?? [];
 
         listEl.innerHTML = pages.map(renderLegalTile).join('');
+
+        const focused = highlightAdminPageMatches(listEl, readAdminPageFocus().q);
+        focused[0]?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 
         listEl.querySelectorAll('[data-legal-slug]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -156,13 +161,15 @@ async function openLegalEditor(slug) {
                 {
                     id: 'legal-body-en',
                     label: 'Body (English) *',
-                    type: 'textarea',
+                    type: 'richtext',
+                    placeholder: 'Write the main content',
                     value: page.body_en ?? '',
                 },
                 {
                     id: 'legal-body-tl',
                     label: 'Body (Tagalog) *',
-                    type: 'textarea',
+                    type: 'richtext',
+                    placeholder: 'Write the main content',
                     value: page.body_tl ?? '',
                 },
                 {
@@ -188,12 +195,12 @@ async function openLegalEditor(slug) {
                 subtitle_tl: document.getElementById('legal-subtitle-tl')?.value.trim() || null,
                 intro_en: document.getElementById('legal-intro-en')?.value.trim() || null,
                 intro_tl: document.getElementById('legal-intro-tl')?.value.trim() || null,
-                body_en: document.getElementById('legal-body-en')?.value.trim(),
-                body_tl: document.getElementById('legal-body-tl')?.value.trim(),
+                body_en: getRichTextValue('legal-body-en'),
+                body_tl: getRichTextValue('legal-body-tl'),
                 is_active: document.getElementById('legal-is-active')?.value === '1',
             };
 
-            if (!payload.title_en || !payload.title_tl || !payload.body_en || !payload.body_tl) {
+            if (!payload.title_en || !payload.title_tl || isRichTextEmpty(payload.body_en) || isRichTextEmpty(payload.body_tl)) {
                 Swal.showValidationMessage('Title and body are required for both English and Tagalog.');
                 return false;
             }
@@ -477,7 +484,7 @@ function bindQuotesViewportListener(tableEl) {
         return;
     }
 
-    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const mobileQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = async () => {
         const nextMode = getQuotesTableMode();
         if (nextMode === quotesTableMode || !document.getElementById('kid-listo-quotes-table')) {
@@ -497,7 +504,7 @@ function bindQuotesViewportListener(tableEl) {
 }
 
 function getQuotesTableMode() {
-    return window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
 
 function truncate(value, max = 100) {

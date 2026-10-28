@@ -13,6 +13,7 @@ import { initResetPasswordPage } from './modules/password-reset/index';
 import { bindForgotPasswordFlow } from './modules/password-reset/forgot-flow';
 import { initPublicPostShow } from './modules/public/post-show';
 import { initPublicSharePage } from './modules/public/share-page';
+import { bindPasswordPolicyFields } from './modules/password-validation';
 
 axios.defaults.baseURL = '/api/v1';
 axios.defaults.headers.common.Accept = 'application/json';
@@ -44,6 +45,14 @@ axios.interceptors.response.use(
             });
         }
 
+        if (status === 403 && error.response?.data?.data?.must_change_password) {
+            const target = '/admin/profile?force_password=1';
+            if (!window.location.pathname.startsWith('/admin/profile')) {
+                window.location.href = target;
+            }
+            return Promise.reject(error);
+        }
+
         if (status === 403) {
             Swal.fire({
                 icon: 'error',
@@ -60,6 +69,8 @@ window.axios = axios;
 window.Swal = Swal;
 
 document.addEventListener('DOMContentLoaded', () => {
+    bindPasswordPolicyFields(document);
+
     const page = document.body.dataset.page;
 
     if (page === 'admin-login') {
