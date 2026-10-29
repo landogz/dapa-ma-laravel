@@ -232,6 +232,7 @@ function renderProfile(profile) {
     const initialElements = document.querySelectorAll('[data-admin-initials]');
     const avatarImages = document.querySelectorAll('[data-admin-avatar-img]');
     const displayName = buildDisplayName(profile);
+    const initials = buildInitials(displayName) || '--';
 
     nameElements.forEach((element) => {
         element.textContent = displayName;
@@ -241,28 +242,38 @@ function renderProfile(profile) {
         element.textContent = formatRole(profile.role);
     });
 
+    initialElements.forEach((element) => {
+        element.textContent = initials;
+    });
+
+    const showInitials = () => {
+        avatarImages.forEach((image) => {
+            image.removeAttribute('src');
+            image.classList.add('hidden');
+        });
+        initialElements.forEach((element) => {
+            element.classList.remove('hidden');
+        });
+    };
+
     if (profile.profile_image_url && avatarImages.length > 0) {
         avatarImages.forEach((image) => {
+            image.onerror = () => {
+                showInitials();
+            };
+            image.onload = () => {
+                image.classList.remove('hidden');
+                initialElements.forEach((element) => {
+                    element.classList.add('hidden');
+                });
+            };
             image.src = profile.profile_image_url;
-            image.classList.remove('hidden');
-        });
-
-        initialElements.forEach((element) => {
-            element.classList.add('hidden');
         });
 
         return;
     }
 
-    avatarImages.forEach((image) => {
-        image.removeAttribute('src');
-        image.classList.add('hidden');
-    });
-
-    initialElements.forEach((element) => {
-        element.textContent = buildInitials(displayName);
-        element.classList.remove('hidden');
-    });
+    showInitials();
 }
 
 function buildDisplayName(profile) {
@@ -428,8 +439,9 @@ async function guardPageAccess(pageName, allowedSections) {
 function initializePageContent(pageName, allowedSections, profile = null) {
     switch (pageName) {
         case 'admin-dashboard':
-            initializeDashboardChrome(profile);
+            initializeDashboardChrome(profile, allowedSections);
             loadOverviewCounts(allowedSections);
+            loadOverviewTrends(allowedSections);
             loadNeedsAttention(allowedSections);
 
             if (allowedSections.includes('analytics')) {
@@ -536,19 +548,6 @@ function bindQuickActions() {
 }
 
 async function loadOverviewCounts(allowedSections) {
-    const storageKey = 'dape-admin-overview-totals';
-    let previousTotals = {};
-
-    try {
-        const raw = window.localStorage.getItem(storageKey);
-
-        if (raw) {
-            previousTotals = JSON.parse(raw);
-        }
-    } catch {
-        previousTotals = {};
-    }
-
     const requests = [
         {
             key: 'posts',
@@ -607,6 +606,7 @@ async function loadOverviewCounts(allowedSections) {
             elements.forEach((element) => {
                 element.textContent = '--';
             });
+            hideTrend(item.key);
 
             return;
         }
@@ -622,20 +622,50 @@ async function loadOverviewCounts(allowedSections) {
             if (item.key === 'notifications') {
                 updateNotificationBadge(total);
             }
-
-            updateTrend(item.key, total, previousTotals[item.key]);
-            previousTotals[item.key] = total;
         } catch {
             elements.forEach((element) => {
                 element.textContent = '--';
             });
+            hideTrend(item.key);
         }
     }));
+}
+
+async function loadOverviewTrends(allowedSections) {
+    const range = document.querySelector('[data-dashboard-range]')?.value || '7';
+
+    document.querySelectorAll('[data-overview-trend]').forEach((el) => {
+        el.classList.add('hidden');
+        el.innerHTML = '';
+    });
+    document.querySelectorAll('[data-overview-sparkline]').forEach((canvas) => {
+        canvas.classList.add('hidden');
+        if (canvas instanceof HTMLCanvasElement) {
+            const ctx = canvas.getContext('2d');
+            ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    });
 
     try {
-        window.localStorage.setItem(storageKey, JSON.stringify(previousTotals));
+        const { data } = await window.axios.get('/admin/dashboard/trends', {
+            params: { range },
+        });
+        const metrics = data.data?.metrics ?? {};
+        const label = data.data?.label || getDashboardRangeLabel();
+
+        Object.entries(metrics).forEach(([key, metric]) => {
+            if (!allowedSections.includes(key === 'diary' ? 'diary' : key)) {
+                hideTrend(key);
+                return;
+            }
+
+            applyTrendMetric(key, metric, label);
+        });
     } catch {
-        // ignore storage errors
+        document.querySelectorAll('[data-overview-trend]').forEach((el) => {
+            const key = el.getAttribute('data-overview-trend');
+            if (key) hideTrend(key);
+        });
     }
 }
 
@@ -663,7 +693,7 @@ function getDashboardRangeLabel() {
     return 'this week';
 }
 
-function initializeDashboardChrome(profile) {
+function initializeDashboardChrome(profile, allowedSections = []) {
     const greetingEl = document.querySelector('[data-dashboard-greeting]');
     const dateEl = document.querySelector('[data-dashboard-date]');
     const firstName = profile?.first_name
@@ -686,78 +716,67 @@ function initializeDashboardChrome(profile) {
     }
 
     const rangeSelect = document.querySelector('[data-dashboard-range]');
-    if (rangeSelect && rangeSelect.dataset.bound !== '1') {
-        rangeSelect.dataset.bound = '1';
+    if (rangeSelect && rangeSelect.dataset.trendsBound !== '1') {
+        rangeSelect.dataset.trendsBound = '1';
         rangeSelect.addEventListener('change', () => {
-            document.querySelectorAll('[data-overview-trend]').forEach((el) => {
-                const key = el.getAttribute('data-overview-trend');
-                const countEl = document.querySelector(`[data-overview-count="${key}"]`);
-                const total = Number(String(countEl?.textContent || '0').replace(/,/g, '')) || 0;
-                // TODO: replace localStorage delta with server period stats when available.
-                updateTrend(key, total, total);
-            });
+            loadOverviewTrends(allowedSections);
         });
     }
 }
 
-function updateTrend(key, total, previous) {
-    const elements = document.querySelectorAll(`[data-overview-trend="${key}"]`);
+function hideTrend(key) {
+    document.querySelectorAll(`[data-overview-trend="${key}"]`).forEach((element) => {
+        element.classList.add('hidden');
+        element.innerHTML = '';
+    });
 
-    if (!elements.length) {
+    const canvas = document.querySelector(`[data-overview-sparkline="${key}"]`);
+    if (canvas instanceof HTMLCanvasElement) {
+        canvas.classList.add('hidden');
+        const ctx = canvas.getContext('2d');
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+}
+
+function applyTrendMetric(key, metric, periodLabel) {
+    const elements = document.querySelectorAll(`[data-overview-trend="${key}"]`);
+    const canvas = document.querySelector(`[data-overview-sparkline="${key}"]`);
+    const available = Boolean(metric?.available);
+    const delta = Number(metric?.delta) || 0;
+    const sparkline = Array.isArray(metric?.sparkline) ? metric.sparkline.map(Number) : [];
+    const hasSparkline = sparkline.some((value) => value > 0);
+
+    if (!available) {
+        hideTrend(key);
         return;
     }
 
-    // TODO: compute true period deltas from API; currently uses last-visit snapshot delta.
-    const previousValue = typeof previous === 'number' ? previous : total;
-    const delta = Number(total) - Number(previousValue);
-    const period = getDashboardRangeLabel();
-
     elements.forEach((element) => {
-        element.classList.remove('admin-trend-up', 'admin-trend-down', 'admin-trend-neutral');
+        element.classList.remove('hidden', 'admin-trend-up', 'admin-trend-down', 'admin-trend-neutral');
+        element.classList.add('admin-trend');
 
         if (delta > 0) {
-            element.classList.add('admin-trend', 'admin-trend-up');
-            element.innerHTML = `<i class="fas fa-arrow-up" aria-hidden="true"></i> +${delta.toLocaleString()} ${period}`;
+            element.classList.add('admin-trend-up');
+            element.innerHTML = `<i class="fas fa-arrow-up" aria-hidden="true"></i> +${delta.toLocaleString()} ${periodLabel}`;
         } else if (delta < 0) {
-            element.classList.add('admin-trend', 'admin-trend-down');
-            element.innerHTML = `<i class="fas fa-arrow-down" aria-hidden="true"></i> −${Math.abs(delta).toLocaleString()} ${period}`;
+            element.classList.add('admin-trend-down');
+            element.innerHTML = `<i class="fas fa-arrow-down" aria-hidden="true"></i> −${Math.abs(delta).toLocaleString()} ${periodLabel}`;
         } else {
-            element.classList.add('admin-trend', 'admin-trend-neutral');
-            element.innerHTML = `No change ${period}`;
+            element.classList.add('hidden');
+            element.innerHTML = '';
         }
     });
 
-    pushSparklineSample(key, Number(total) || 0);
-}
-
-function pushSparklineSample(key, total) {
-    const canvas = document.querySelector(`[data-overview-sparkline="${key}"]`);
-    if (!(canvas instanceof HTMLCanvasElement)) {
-        return;
+    if (canvas instanceof HTMLCanvasElement) {
+        if (hasSparkline) {
+            canvas.classList.remove('hidden');
+            drawSparkline(canvas, sparkline);
+        } else {
+            canvas.classList.add('hidden');
+            const ctx = canvas.getContext('2d');
+            ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        }
     }
-
-    const storageKey = 'dape-admin-overview-series';
-    let series = {};
-
-    try {
-        series = JSON.parse(window.localStorage.getItem(storageKey) || '{}') || {};
-    } catch {
-        series = {};
-    }
-
-    const values = Array.isArray(series[key]) ? series[key].map(Number) : [];
-    if (values.length === 0 || values[values.length - 1] !== total) {
-        values.push(total);
-    }
-    series[key] = values.slice(-7);
-
-    try {
-        window.localStorage.setItem(storageKey, JSON.stringify(series));
-    } catch {
-        // ignore
-    }
-
-    drawSparkline(canvas, series[key]);
 }
 
 function drawSparkline(canvas, values) {
@@ -810,15 +829,24 @@ async function loadNeedsAttention(allowedSections) {
             return;
         }
 
-        container.innerHTML = items.map((item) => `
+        container.innerHTML = items.map((item) => {
+            const isAmber = item.tone === 'amber'
+                || item.id === 'draft_posts'
+                || item.id === 'care_checks';
+            const badgeClass = isAmber
+                ? 'bg-amber-100 text-amber-800'
+                : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]';
+
+            return `
             <a href="${item.href}" class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-slate-50 px-3 py-3 transition hover:border-[var(--color-primary)]/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2">
                 <span class="flex min-w-0 items-start gap-3">
                     <span class="admin-stat-card-icon shrink-0"><i class="${item.icon}"></i></span>
                     <span class="text-sm font-medium leading-snug text-[var(--color-text)] break-words">${item.label}</span>
                 </span>
-                <span class="inline-flex shrink-0 min-h-7 min-w-7 items-center justify-center rounded-full bg-[var(--color-primary-soft)] px-2 text-xs font-bold text-[var(--color-primary)]">${Number(item.count).toLocaleString()}</span>
+                <span class="inline-flex shrink-0 min-h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-bold ${badgeClass}">${Number(item.count).toLocaleString()}</span>
             </a>
-        `).join('');
+        `;
+        }).join('');
     } catch {
         container.innerHTML = `
             <div class="rounded-xl border border-dashed border-[var(--color-border)] px-3 py-4 text-sm text-[var(--color-text-muted)]">

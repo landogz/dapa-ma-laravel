@@ -1519,9 +1519,11 @@ table.dataTable tbody tr.is-context-target > *,
 
 #admin-sidebar {
     width: min(85vw, var(--admin-sidebar-width));
-    height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
+    height: 100vh;
+    max-height: 100vh;
+    position: fixed;
+    top: 0;
+    overflow-y: auto;
     transition: width 0.2s ease, transform 0.3s ease, padding 0.2s ease;
 }
 
@@ -3184,6 +3186,12 @@ select.admin-filter-select:not(.admin-choice-select-native),
     height: 10rem;
 }
 
+#dashboard-activity-chart .dashboard-activity-bars,
+#dashboard-activity-chart .analytics-chart-y-ticks,
+#dashboard-activity-chart .analytics-chart-plot {
+    height: 280px;
+}
+
 .analytics-chart-shell {
     display: flex;
     align-items: flex-start;
@@ -3205,6 +3213,57 @@ select.admin-filter-select:not(.admin-choice-select-native),
     flex-direction: column;
     justify-content: space-between;
     text-align: right;
+}
+
+.admin-chart-summary {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+@media (min-width: 480px) {
+    .admin-chart-summary {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.admin-chart-summary-item {
+    min-width: 0;
+}
+
+.admin-chart-summary-label {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.admin-chart-summary-value {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+}
+
+.admin-trend-new {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.35rem;
+    border-radius: 999px;
+    background: rgba(251, 209, 22, 0.25);
+    color: #123a60;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    vertical-align: middle;
 }
 
 .analytics-chart-y-tick {

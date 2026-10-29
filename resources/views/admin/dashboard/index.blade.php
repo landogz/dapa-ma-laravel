@@ -59,9 +59,9 @@
                             <div class="mt-2 flex items-end justify-between gap-3">
                                 <div class="min-w-0">
                                     <p class="text-3xl font-bold text-[var(--color-text)]" data-overview-count="{{ $key }}">--</p>
-                                    <p class="admin-trend" data-overview-trend="{{ $key }}">–</p>
+                                    <p class="admin-trend hidden" data-overview-trend="{{ $key }}"></p>
                                 </div>
-                                <canvas class="admin-stat-sparkline" data-overview-sparkline="{{ $key }}" width="80" height="24" aria-hidden="true"></canvas>
+                                <canvas class="admin-stat-sparkline hidden" data-overview-sparkline="{{ $key }}" width="80" height="24" aria-hidden="true"></canvas>
                             </div>
                         </div>
                         <span class="admin-stat-card-icon" aria-hidden="true">
@@ -85,7 +85,7 @@
                             <p class="admin-stat-card-label">{{ $label }}</p>
                             <p class="mt-1.5 text-sm font-semibold text-[var(--color-text)]">{{ $title }}</p>
                             <p class="mt-1 text-2xl font-bold text-[var(--color-text)]" data-overview-count="{{ $key }}">--</p>
-                            <p class="admin-trend" data-overview-trend="{{ $key }}">–</p>
+                            <p class="admin-trend hidden" data-overview-trend="{{ $key }}"></p>
                         </div>
                         <span class="admin-stat-card-icon" aria-hidden="true">
                             <i class="fas {{ $icon }}"></i>
@@ -107,12 +107,9 @@
                             <p class="text-xs text-[var(--color-text-muted)]" data-activity-subtitle>Events in the last 7 days</p>
                         </div>
                     </div>
-                    <div class="admin-range-toggle inline-flex overflow-hidden rounded-full border border-[var(--color-border)] bg-slate-50 text-[11px]">
-                        <button type="button" class="admin-range-toggle-button is-active" data-activity-range="7">7 days</button>
-                        <button type="button" class="admin-range-toggle-button" data-activity-range="30">30 days</button>
-                    </div>
                 </div>
                 <div id="dashboard-activity-chart" class="mt-6"></div>
+                <div id="dashboard-activity-summary" class="admin-chart-summary mt-4" hidden></div>
             </div>
 
             <div class="space-y-6">

@@ -4,9 +4,13 @@ namespace App\Http\Controllers\API\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppTranslation;
+use App\Models\DiaryEntry;
 use App\Models\HopeEvent;
+use App\Models\Notification;
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -49,6 +53,7 @@ class DashboardAdminController extends Controller
                 'count' => $draftPosts,
                 'href' => '/admin/posts',
                 'icon' => 'fas fa-file-pen',
+                'tone' => 'amber',
             ],
             [
                 'id' => 'care_checks',
@@ -56,6 +61,7 @@ class DashboardAdminController extends Controller
                 'count' => $careChecksRecent,
                 'href' => '/admin/care-checks',
                 'icon' => 'fas fa-clipboard-check',
+                'tone' => 'amber',
             ],
             [
                 'id' => 'untranslated',
@@ -63,6 +69,7 @@ class DashboardAdminController extends Controller
                 'count' => $untranslated,
                 'href' => '/admin/app-translations',
                 'icon' => 'fas fa-language',
+                'tone' => 'default',
             ],
             [
                 'id' => 'hope_events',
@@ -70,6 +77,7 @@ class DashboardAdminController extends Controller
                 'count' => $hopeEventsThisWeek,
                 'href' => '/admin/hope-events',
                 'icon' => 'fas fa-calendar-days',
+                'tone' => 'default',
             ],
         ], static fn (array $item): bool => (int) $item['count'] > 0));
 
@@ -80,5 +88,111 @@ class DashboardAdminController extends Controller
                 'items' => $items,
             ],
         ]);
+    }
+
+    public function trends(Request $request): JsonResponse
+    {
+        $range = (int) $request->query('range', 7);
+        if (! in_array($range, [1, 7, 30], true)) {
+            $range = 7;
+        }
+
+        $now = Carbon::now();
+        $currentStart = $now->copy()->subDays($range);
+        $previousStart = $now->copy()->subDays($range * 2);
+        $previousEnd = $currentStart->copy();
+        $label = match ($range) {
+            1 => 'today',
+            30 => 'this month',
+            default => 'this week',
+        };
+
+        $sources = [
+            'users' => ['model' => User::class, 'table' => 'users'],
+            'posts' => ['model' => Post::class, 'table' => 'posts'],
+            'notifications' => ['model' => Notification::class, 'table' => 'notifications'],
+            'diary' => ['model' => DiaryEntry::class, 'table' => 'diary_entries'],
+            'rehab-centers' => ['table' => 'rehab_centers'],
+            'contests' => ['table' => 'contests'],
+            'iec-materials' => ['table' => 'iec_materials'],
+            'app-translations' => ['model' => AppTranslation::class, 'table' => 'app_translations'],
+        ];
+
+        $metrics = [];
+
+        foreach ($sources as $key => $source) {
+            $table = $source['table'];
+
+            if (! Schema::hasTable($table)) {
+                $metrics[$key] = [
+                    'current' => 0,
+                    'previous' => 0,
+                    'delta' => 0,
+                    'available' => false,
+                    'sparkline' => [],
+                ];
+
+                continue;
+            }
+
+            $base = isset($source['model'])
+                ? $source['model']::query()
+                : DB::table($table);
+
+            $current = (int) (clone $base)
+                ->where('created_at', '>=', $currentStart)
+                ->where('created_at', '<=', $now)
+                ->count();
+            $previous = (int) (clone $base)
+                ->where('created_at', '>=', $previousStart)
+                ->where('created_at', '<', $previousEnd)
+                ->count();
+
+            $sparkline = [];
+            if (in_array($key, ['users', 'posts', 'notifications', 'diary'], true)) {
+                $sparkline = $this->dailyCreatedCounts($base, 7);
+            }
+
+            $metrics[$key] = [
+                'current' => $current,
+                'previous' => $previous,
+                'delta' => $current - $previous,
+                'available' => ($current + $previous) > 0,
+                'sparkline' => $sparkline,
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Dashboard trends fetched.',
+            'data' => [
+                'range' => $range,
+                'label' => $label,
+                'metrics' => $metrics,
+            ],
+        ]);
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>|\Illuminate\Database\Query\Builder  $query
+     * @return list<int>
+     */
+    private function dailyCreatedCounts($query, int $days = 7): array
+    {
+        $from = Carbon::now()->subDays($days - 1)->startOfDay();
+        $rows = (clone $query)
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as total'))
+            ->where('created_at', '>=', $from)
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->pluck('total', 'date')
+            ->all();
+
+        $series = [];
+        for ($i = 0; $i < $days; $i++) {
+            $date = $from->copy()->addDays($i)->toDateString();
+            $series[] = (int) ($rows[$date] ?? 0);
+        }
+
+        return $series;
     }
 }

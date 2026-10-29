@@ -650,7 +650,7 @@ function buildYTicks(ceiling, steps = 4) {
     });
 }
 
-function buildActivityChartHtml(days, messages) {
+function buildActivityChartHtml(days, messages, options = {}) {
     if (!days.length) {
         return buildAnalyticsEmptyState(messages.emptyTitle, messages.emptyMessage, 'fa-chart-line');
     }
@@ -658,7 +658,7 @@ function buildActivityChartHtml(days, messages) {
     const rawMax = Math.max(...days.map((day) => Number(day.total) || 0), 0);
     const ceiling = niceCeiling(rawMax, 4);
     const ticks = buildYTicks(ceiling, 4);
-    const plotHeight = 160;
+    const plotHeight = Number(options.plotHeight) || 160;
     const showAllLabels = days.length <= 7;
 
     return `
@@ -750,6 +750,7 @@ function formatChartDateLabel(dateValue, full = false) {
 function renderOverviewActivity(days, rangeDays = 7) {
     const container = document.getElementById('dashboard-activity-chart');
     const subtitle = document.querySelector('[data-activity-subtitle]');
+    const summary = document.getElementById('dashboard-activity-summary');
 
     if (!container) {
         return;
@@ -765,7 +766,44 @@ function renderOverviewActivity(days, rangeDays = 7) {
         emptyMessage: 'Activity will appear here once analytics events are recorded.',
         singleTitle: 'No activity data available',
         singleMessage: 'Activity will appear here once analytics events are recorded.',
-    });
+    }, { plotHeight: 280 });
+
+    renderOverviewActivitySummary(days, summary);
+}
+
+function renderOverviewActivitySummary(days, summary) {
+    if (!summary) {
+        return;
+    }
+
+    if (!days.length) {
+        summary.hidden = true;
+        summary.innerHTML = '';
+        return;
+    }
+
+    const totals = days.map((day) => Number(day.total) || 0);
+    const totalEvents = totals.reduce((sum, value) => sum + value, 0);
+    const peakValue = Math.max(...totals, 0);
+    const peakIndex = totals.indexOf(peakValue);
+    const peakDay = peakIndex >= 0 ? formatChartDateLabel(days[peakIndex]?.date, true) : '—';
+    const dailyAverage = days.length > 0 ? Math.round((totalEvents / days.length) * 10) / 10 : 0;
+
+    summary.hidden = false;
+    summary.innerHTML = `
+        <div class="admin-chart-summary-item">
+            <span class="admin-chart-summary-label">Total events</span>
+            <span class="admin-chart-summary-value">${totalEvents.toLocaleString()}</span>
+        </div>
+        <div class="admin-chart-summary-item">
+            <span class="admin-chart-summary-label">Peak day</span>
+            <span class="admin-chart-summary-value">${escapeHtml(peakDay)}${peakValue > 0 ? ` · ${peakValue.toLocaleString()}` : ''}</span>
+        </div>
+        <div class="admin-chart-summary-item">
+            <span class="admin-chart-summary-label">Daily average</span>
+            <span class="admin-chart-summary-value">${dailyAverage.toLocaleString()}</span>
+        </div>
+    `;
 }
 
 function renderOverviewDistribution(events) {
@@ -838,30 +876,43 @@ function renderOverviewRecentActivity(events) {
     }
 
     const sorted = [...events].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    const groups = [];
+    const viewGroups = new Map();
+    const otherItems = [];
 
     sorted.forEach((event) => {
         const type = String(event.event_type || '').toLowerCase();
         const postId = event.post?.id ?? event.post_id ?? '';
         const createdAt = event.created_at ? new Date(event.created_at).getTime() : 0;
-        const last = groups[groups.length - 1];
-        const withinHour = last
-            && last.eventType === type
-            && String(last.postId) === String(postId)
-            && Math.abs(last.latestAtMs - createdAt) <= 60 * 60 * 1000;
+        const isView = type === 'post_view' || type === 'view';
 
-        if (withinHour) {
-            last.count += 1;
-            if (createdAt > last.latestAtMs) {
-                last.latestAt = event.created_at;
-                last.latestAtMs = createdAt;
-                last.post = event.post || last.post;
-                last.user = event.user || last.user;
+        if (isView && postId !== '' && postId !== null) {
+            const key = String(postId);
+            const existing = viewGroups.get(key);
+
+            if (existing) {
+                existing.count += 1;
+                if (createdAt > existing.latestAtMs) {
+                    existing.latestAt = event.created_at;
+                    existing.latestAtMs = createdAt;
+                    existing.post = event.post || existing.post;
+                    existing.user = event.user || existing.user;
+                }
+                return;
             }
+
+            viewGroups.set(key, {
+                eventType: type,
+                postId,
+                post: event.post,
+                user: event.user,
+                count: 1,
+                latestAt: event.created_at,
+                latestAtMs: createdAt,
+            });
             return;
         }
 
-        groups.push({
+        otherItems.push({
             eventType: type,
             postId,
             post: event.post,
@@ -872,7 +923,11 @@ function renderOverviewRecentActivity(events) {
         });
     });
 
-    container.innerHTML = groups.slice(0, 8).map((group) => {
+    const groups = [...viewGroups.values(), ...otherItems]
+        .sort((a, b) => b.latestAtMs - a.latestAtMs)
+        .slice(0, 5);
+
+    container.innerHTML = groups.map((group) => {
         const meta = describeGroupedEvent(group);
         const exact = group.latestAt ? new Date(group.latestAt).toLocaleString() : '';
 
@@ -884,7 +939,7 @@ function renderOverviewRecentActivity(events) {
                     </span>
                     <div class="min-w-0 space-y-0.5">
                         <p class="truncate text-sm font-semibold text-[var(--color-text)]">${escapeHtml(meta.title)}</p>
-                        <p class="text-xs text-[var(--color-text-muted)]">${escapeHtml(meta.details)}</p>
+                        ${meta.details ? `<p class="text-xs text-[var(--color-text-muted)]">${escapeHtml(meta.details)}</p>` : ''}
                     </div>
                 </div>
                 <p class="shrink-0 text-xs font-medium text-[var(--color-text-muted)]" title="${escapeHtml(exact)}">${formatRelativeTime(group.latestAt)}</p>
@@ -903,8 +958,8 @@ function describeGroupedEvent(group) {
         return {
             icon: 'fas fa-eye',
             tone: 'is-view',
-            title: count > 1 ? `${postTitle} viewed ${count} times` : 'Post viewed',
-            details: count > 1 ? 'Grouped views within the last hour.' : `${userName} viewed this post.`,
+            title: count > 1 ? `${postTitle} viewed ${count} times` : `${postTitle} viewed`,
+            details: count > 1 ? `${userName} and others viewed this post.` : `${userName} viewed this post.`,
         };
     }
 
@@ -922,7 +977,7 @@ function describeGroupedEvent(group) {
             icon: 'fas fa-bookmark',
             tone: 'is-bookmark',
             title: count > 1 ? `${postTitle} bookmarked ${count} times` : 'Post bookmarked',
-            details: count > 1 ? 'Grouped bookmarks within the last hour.' : `${userName} bookmarked this post.`,
+            details: `${userName} bookmarked this post.`,
         };
     }
 
@@ -940,7 +995,7 @@ function describeGroupedEvent(group) {
             icon: 'fas fa-user-plus',
             tone: 'is-signup',
             title: count > 1 ? `${count} new signups` : 'New signup',
-            details: count > 1 ? 'Grouped signups within the last hour.' : `${userName} joined the app.`,
+            details: `${userName} joined the app.`,
         };
     }
 
@@ -1010,24 +1065,44 @@ function renderOverviewTopPosts(posts) {
         return;
     }
 
+    const placeholderThumb = `
+        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)]" data-top-post-placeholder>
+            <i class="fas fa-image" aria-hidden="true"></i>
+        </span>
+    `;
+
     container.innerHTML = posts.slice(0, 5).map((row) => {
         const post = row.post ?? {};
         const views = Number(row.views) || 0;
         const previous = Number(row.previous_views) || 0;
+        const isNew = previous === 0 && views > 0;
         const deltaPct = previous > 0
             ? Math.round(((views - previous) / previous) * 100)
-            : (views > 0 ? 100 : 0);
-        const trendLabel = previous === 0 && views === 0
-            ? 'no change'
-            : deltaPct > 0
-                ? `up ${deltaPct}%`
-                : deltaPct < 0
-                    ? `down ${Math.abs(deltaPct)}%`
-                    : 'no change';
-        const trendClass = deltaPct > 0 ? 'admin-trend-up' : deltaPct < 0 ? 'admin-trend-down' : 'admin-trend-neutral';
+            : 0;
+        let trendHtml = '';
+
+        if (isNew) {
+            trendHtml = ' <span class="admin-trend-new">New</span>';
+        } else if (previous > 0 && deltaPct > 0) {
+            trendHtml = ` <span class="admin-trend-up">· up ${deltaPct}%</span>`;
+        } else if (previous > 0 && deltaPct < 0) {
+            trendHtml = ` <span class="admin-trend-down">· down ${Math.abs(deltaPct)}%</span>`;
+        }
+
         const thumb = post.media_url
-            ? `<img src="${escapeHtml(post.media_url)}" alt="" class="h-10 w-10 rounded-lg object-cover">`
-            : `<span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)]"><i class="fas fa-image"></i></span>`;
+            ? `<span class="relative inline-flex h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[var(--color-primary-soft)]">
+                    <img
+                        src="${escapeHtml(post.media_url)}"
+                        alt=""
+                        class="h-10 w-10 rounded-lg object-cover"
+                        data-top-post-thumb
+                        onerror="this.classList.add('hidden'); const p=this.parentElement?.querySelector('[data-top-post-placeholder]'); if(p){p.classList.remove('hidden');}"
+                    >
+                    <span class="hidden absolute inset-0 inline-flex items-center justify-center text-[var(--color-primary)]" data-top-post-placeholder>
+                        <i class="fas fa-image" aria-hidden="true"></i>
+                    </span>
+               </span>`
+            : placeholderThumb;
         const href = post.id ? `/admin/posts?post=${encodeURIComponent(post.id)}` : '/admin/posts';
 
         return `
@@ -1037,8 +1112,7 @@ function renderOverviewTopPosts(posts) {
                 <div class="min-w-0">
                     <p class="truncate text-sm font-semibold text-[var(--color-text)]">${escapeHtml(post.title ?? 'Untitled Post')}</p>
                     <p class="text-xs text-[var(--color-text-muted)]">
-                        ${formatViewCount(views)} views
-                        <span class="${trendClass}"> · ${trendLabel}</span>
+                        ${formatViewCount(views)}${trendHtml}
                     </p>
                 </div>
             </div>
@@ -1055,45 +1129,8 @@ function initializeOverviewActivity(days) {
         return;
     }
 
-    const controls = document.querySelectorAll('[data-activity-range]');
-
-    if (!controls.length) {
-        renderOverviewActivity(days);
-
-        return;
-    }
-
-    const applyRange = (range) => {
-        let subset = days;
-        const rangeDays = Number(range) || 30;
-
-        if (range === '1') {
-            subset = days.slice(-1);
-        } else if (range === '7') {
-            subset = days.slice(-7);
-        } else if (range === '30') {
-            subset = days.slice(-30);
-        }
-
-        renderOverviewActivity(subset, rangeDays);
-    };
-
-    controls.forEach((button) => {
-        button.addEventListener('click', () => {
-            controls.forEach((other) => other.classList.remove('is-active'));
-            button.classList.add('is-active');
-
-            applyRange(button.getAttribute('data-activity-range') || '30');
-        });
-    });
-
-    const initial = document.querySelector('[data-activity-range].is-active') || controls[0];
-
-    if (initial) {
-        applyRange(initial.getAttribute('data-activity-range') || '30');
-    } else {
-        renderOverviewActivity(days);
-    }
+    const rangeDays = Number(getSelectedAnalyticsRange()) || days.length || 7;
+    renderOverviewActivity(days, rangeDays);
 }
 
 function buildTopPostsSkeleton() {
@@ -1107,6 +1144,11 @@ function buildTopPostsSkeleton() {
 }
 
 function getSelectedAnalyticsRange() {
+    const dashboardRange = document.querySelector('[data-dashboard-range]');
+    if (dashboardRange?.value) {
+        return dashboardRange.value;
+    }
+
     const active = document.querySelector('[data-analytics-range].is-active');
 
     return active?.getAttribute('data-analytics-range') || '7';
@@ -1115,10 +1157,6 @@ function getSelectedAnalyticsRange() {
 function initializeAnalyticsRange() {
     const buttons = document.querySelectorAll('[data-analytics-range]');
 
-    if (!buttons.length) {
-        return;
-    }
-
     buttons.forEach((button) => {
         button.addEventListener('click', () => {
             buttons.forEach((other) => other.classList.remove('is-active'));
@@ -1126,6 +1164,16 @@ function initializeAnalyticsRange() {
             loadAnalytics();
         });
     });
+
+    const dashboardRange = document.querySelector('[data-dashboard-range]');
+    if (dashboardRange && dashboardRange.dataset.analyticsBound !== '1') {
+        dashboardRange.dataset.analyticsBound = '1';
+        dashboardRange.addEventListener('change', () => {
+            if (document.getElementById('dashboard-activity-chart')) {
+                loadAnalytics();
+            }
+        });
+    }
 }
 
 function updatePeriodTrend(key, current, previousValue, periodLabel) {

@@ -384,6 +384,8 @@ Route::prefix('v1')
                     Route::get('/inbox/summary',         [AdminNotificationController::class, 'summary'])->name('admin-inbox.summary');
                     Route::post('/inbox/read-all',       [AdminNotificationController::class, 'markAllAsRead'])->name('admin-inbox.read-all');
                     Route::post('/inbox/{notification}/read', [AdminNotificationController::class, 'markAsRead'])->name('admin-inbox.read');
+                    Route::get('/dashboard/attention', [DashboardAdminController::class, 'attention'])->name('dashboard.attention');
+                    Route::get('/dashboard/trends', [DashboardAdminController::class, 'trends'])->name('dashboard.trends');
                 });
 
                 // Super Admin + Publisher — rehab centers, trainings, contests, IEC materials
@@ -428,7 +430,6 @@ Route::prefix('v1')
                 Route::middleware('role:analytics_viewer,super_admin')->group(function (): void {
                     Route::get('/analytics',        [AnalyticsAdminController::class, 'index'])->name('analytics.index');
                     Route::get('/analytics/export', [AnalyticsAdminController::class, 'export'])->name('analytics.export');
-                    Route::get('/dashboard/attention', [DashboardAdminController::class, 'attention'])->name('dashboard.attention');
                 });
             });
         });
