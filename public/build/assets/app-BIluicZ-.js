@@ -11387,11 +11387,11 @@ ${N.shaderPreludeCode.vertexSource}`,define:N.shaderDefine},defaultProjectionDat
                 </div>
             `;return}h.innerHTML=E.map(P=>`
             <a href="${P.href}" class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-slate-50 px-3 py-3 transition hover:border-[var(--color-primary)]/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2">
-                <span class="flex min-w-0 items-center gap-3">
-                    <span class="admin-stat-card-icon"><i class="${P.icon}"></i></span>
-                    <span class="truncate text-sm font-medium text-[var(--color-text)]">${P.label}</span>
+                <span class="flex min-w-0 items-start gap-3">
+                    <span class="admin-stat-card-icon shrink-0"><i class="${P.icon}"></i></span>
+                    <span class="text-sm font-medium leading-snug text-[var(--color-text)] break-words">${P.label}</span>
                 </span>
-                <span class="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-[var(--color-primary-soft)] px-2 text-xs font-bold text-[var(--color-primary)]">${Number(P.count).toLocaleString()}</span>
+                <span class="inline-flex shrink-0 min-h-7 min-w-7 items-center justify-center rounded-full bg-[var(--color-primary-soft)] px-2 text-xs font-bold text-[var(--color-primary)]">${Number(P.count).toLocaleString()}</span>
             </a>
         `).join("")}catch{h.innerHTML=`
             <div class="rounded-xl border border-dashed border-[var(--color-border)] px-3 py-4 text-sm text-[var(--color-text-muted)]">

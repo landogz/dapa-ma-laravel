@@ -812,11 +812,11 @@ async function loadNeedsAttention(allowedSections) {
 
         container.innerHTML = items.map((item) => `
             <a href="${item.href}" class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-slate-50 px-3 py-3 transition hover:border-[var(--color-primary)]/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2">
-                <span class="flex min-w-0 items-center gap-3">
-                    <span class="admin-stat-card-icon"><i class="${item.icon}"></i></span>
-                    <span class="truncate text-sm font-medium text-[var(--color-text)]">${item.label}</span>
+                <span class="flex min-w-0 items-start gap-3">
+                    <span class="admin-stat-card-icon shrink-0"><i class="${item.icon}"></i></span>
+                    <span class="text-sm font-medium leading-snug text-[var(--color-text)] break-words">${item.label}</span>
                 </span>
-                <span class="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-[var(--color-primary-soft)] px-2 text-xs font-bold text-[var(--color-primary)]">${Number(item.count).toLocaleString()}</span>
+                <span class="inline-flex shrink-0 min-h-7 min-w-7 items-center justify-center rounded-full bg-[var(--color-primary-soft)] px-2 text-xs font-bold text-[var(--color-primary)]">${Number(item.count).toLocaleString()}</span>
             </a>
         `).join('');
     } catch {
