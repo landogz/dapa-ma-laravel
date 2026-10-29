@@ -619,26 +619,35 @@ function renderDailyCounts(days) {
     });
 }
 
-function niceCeiling(value) {
+function niceCeiling(value, steps = 4) {
     const max = Math.max(Number(value) || 0, 0);
 
     if (max === 0) {
-        return 4;
+        return steps;
     }
 
-    const exp = 10 ** Math.floor(Math.log10(max));
-    const fraction = max / exp;
-    let nice = 10;
+    const roughStep = max / steps;
+    const exp = 10 ** Math.floor(Math.log10(roughStep));
+    const fraction = roughStep / exp;
+    let niceFraction = 10;
 
-    if (fraction <= 1) nice = 1;
-    else if (fraction <= 2) nice = 2;
-    else if (fraction <= 5) nice = 5;
+    if (fraction <= 1) niceFraction = 1;
+    else if (fraction <= 2) niceFraction = 2;
+    else if (fraction <= 2.5) niceFraction = 2.5;
+    else if (fraction <= 5) niceFraction = 5;
 
-    return nice * exp;
+    const step = niceFraction * exp;
+
+    return step * steps;
 }
 
 function buildYTicks(ceiling, steps = 4) {
-    return Array.from({ length: steps + 1 }, (_, index) => Math.round((ceiling / steps) * index));
+    const step = ceiling / steps;
+
+    return Array.from({ length: steps + 1 }, (_, index) => {
+        const value = step * index;
+        return Number.isInteger(value) ? value : Number(value.toFixed(1));
+    });
 }
 
 function buildActivityChartHtml(days, messages) {
@@ -647,41 +656,39 @@ function buildActivityChartHtml(days, messages) {
     }
 
     const rawMax = Math.max(...days.map((day) => Number(day.total) || 0), 0);
-    const ceiling = niceCeiling(rawMax);
+    const ceiling = niceCeiling(rawMax, 4);
     const ticks = buildYTicks(ceiling, 4);
-    const plotHeight = 176;
-    const showAllLabels = days.length <= 14;
+    const plotHeight = 160;
+    const showAllLabels = days.length <= 7;
 
     return `
-        <div class="analytics-chart-shell flex gap-3 sm:gap-4">
-            <div class="analytics-chart-y-axis flex shrink-0 gap-2">
+        <div class="analytics-chart-shell">
+            <div class="analytics-chart-y-axis">
                 <span class="analytics-chart-y-label">Events</span>
-                <div class="analytics-chart-y-ticks flex h-44 flex-col justify-between text-[11px] text-[var(--color-text-muted)]">
-                    ${[...ticks].reverse().map((tick) => `<span>${tick.toLocaleString()}</span>`).join('')}
+                <div class="analytics-chart-y-ticks" aria-hidden="true">
+                    ${[...ticks].reverse().map((tick) => `<span class="analytics-chart-y-tick">${tick.toLocaleString()}</span>`).join('')}
                 </div>
             </div>
-            <div class="analytics-chart-plot-wrap min-w-0 flex-1">
-                <div class="analytics-chart-plot relative h-44 w-full">
-                    <div class="analytics-chart-gridlines pointer-events-none absolute inset-0" aria-hidden="true">
+            <div class="analytics-chart-plot-wrap">
+                <div class="analytics-chart-plot">
+                    <div class="analytics-chart-gridlines" aria-hidden="true">
                         ${ticks.map((tick) => {
                             const top = ceiling === 0 ? 100 : 100 - ((tick / ceiling) * 100);
                             return `<span class="analytics-chart-gridline" style="top:${top}%"></span>`;
                         }).join('')}
                     </div>
-                    <div class="dashboard-activity-bars analytics-activity-bars relative z-[1] h-full w-full" style="--bars:${days.length}">
+                    <div class="dashboard-activity-bars analytics-activity-bars" style="--bars:${days.length}">
                     ${days.map((day, index) => {
                         const total = Number(day.total) || 0;
                         const height = total === 0
-                            ? 2
-                            : Math.max(6, Math.round((total / ceiling) * plotHeight));
+                            ? 3
+                            : Math.max(8, Math.round((total / ceiling) * plotHeight));
                         const label = showAllLabels || index % 2 === 0 || index === days.length - 1
                             ? formatChartDateLabel(day.date)
                             : '';
-                        const shortDate = formatChartDateLabel(day.date);
                         const fullDate = formatChartDateLabel(day.date, true);
                         const countLabel = `${total.toLocaleString()} event${total === 1 ? '' : 's'}`;
                         const tooltipLabel = `${fullDate}: ${countLabel}`;
-                        const ariaLabel = tooltipLabel;
 
                         return `
                             <div
@@ -691,7 +698,7 @@ function buildActivityChartHtml(days, messages) {
                                 data-chart-count="${escapeHtml(String(total))}"
                                 tabindex="0"
                                 role="img"
-                                aria-label="${escapeHtml(ariaLabel)}"
+                                aria-label="${escapeHtml(tooltipLabel)}"
                             >
                                 <div class="analytics-chart-hitbox">
                                     <div class="analytics-column-tooltip" role="tooltip">${escapeHtml(tooltipLabel)}</div>

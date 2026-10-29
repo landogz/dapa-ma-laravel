@@ -17,7 +17,7 @@
             </div>
         </div>
 
-        <div class="admin-dashboard-quick-actions -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+        <div class="admin-dashboard-quick-actions flex max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1 sm:flex-wrap sm:overflow-visible">
             <button type="button" class="admin-primary-button shrink-0" data-admin-action="create-post" data-action-section="posts">
                 <i class="fas fa-pen-to-square mr-2" aria-hidden="true"></i>
                 New Post

@@ -3177,27 +3177,63 @@ select.admin-filter-select:not(.admin-choice-select-native),
 .dashboard-activity-bars {
     display: grid;
     grid-template-columns: repeat(var(--bars, 10), minmax(0, 1fr));
-    gap: 0.35rem;
+    gap: 0.25rem;
     align-items: end;
     width: 100%;
     min-width: 0;
-    height: 100%;
-    min-height: 0;
+    height: 10rem;
+}
+
+.analytics-chart-shell {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.analytics-chart-y-axis {
+    display: flex;
+    flex-shrink: 0;
+    align-items: stretch;
+    gap: 0.35rem;
+    padding-top: 2.25rem;
+}
+
+.analytics-chart-y-ticks {
+    display: flex;
+    height: 10rem;
+    min-width: 1.75rem;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: right;
+}
+
+.analytics-chart-y-tick {
+    display: block;
+    font-size: 10px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--color-text-muted);
 }
 
 .analytics-chart-plot-wrap {
     width: 100%;
     min-width: 0;
-    overflow: hidden;
-    padding-top: 2.75rem;
+    overflow: visible;
+    padding-top: 2.25rem;
 }
 
 .analytics-chart-plot {
+    position: relative;
     width: 100%;
+    height: 10rem;
 }
 
 .analytics-chart-gridlines {
+    position: absolute;
+    inset: 0;
     z-index: 0;
+    pointer-events: none;
 }
 
 .analytics-chart-gridline {
@@ -3276,16 +3312,18 @@ select.admin-filter-select:not(.admin-choice-select-native),
 
 .dashboard-activity-bar {
     display: flex;
+    min-width: 0;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
 }
 
 .dashboard-activity-bar-fill {
     width: 100%;
-    border-radius: 1rem 1rem 0.4rem 0.4rem;
+    max-width: 1.5rem;
+    border-radius: 0.5rem 0.5rem 0.25rem 0.25rem;
     background: linear-gradient(180deg, #3b82c4 0%, #055498 100%);
-    min-height: 4px;
+    min-height: 3px;
 }
 
 .analytics-bar-brand {
@@ -3293,9 +3331,13 @@ select.admin-filter-select:not(.admin-choice-select-native),
 }
 
 .analytics-bar-zero {
-    background: #cbd5e1;
-    min-height: 2px !important;
-    opacity: 0.85;
+    width: 100%;
+    max-width: 1.5rem;
+    background: #94a3b8;
+    min-height: 3px !important;
+    height: 3px !important;
+    opacity: 1;
+    border-radius: 999px;
 }
 
 .analytics-activity-bars {
@@ -3306,6 +3348,17 @@ select.admin-filter-select:not(.admin-choice-select-native),
     position: relative;
 }
 
+.analytics-bar-label {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: nowrap;
+    font-size: 9px;
+    line-height: 1.1;
+    color: var(--color-text-muted);
+}
+
 .analytics-chart-column {
     position: relative;
     cursor: pointer;
@@ -3314,14 +3367,14 @@ select.admin-filter-select:not(.admin-choice-select-native),
 }
 
 .analytics-chart-scroll-wrap {
-    padding-top: 2.75rem;
+    padding-top: 2.25rem;
     width: 100%;
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .analytics-chart-scroll {
-    overflow: hidden;
+    overflow: visible;
     width: 100%;
 }
 
@@ -3385,7 +3438,7 @@ select.admin-filter-select:not(.admin-choice-select-native),
     position: relative;
     display: flex;
     width: 100%;
-    min-height: 11rem;
+    height: 10rem;
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;
@@ -3403,23 +3456,129 @@ select.admin-filter-select:not(.admin-choice-select-native),
     filter: brightness(1.1);
 }
 
-.analytics-chart-shell {
-    align-items: stretch;
-}
-
-.analytics-chart-y-axis {
-    align-items: stretch;
-}
-
 .analytics-chart-y-label {
+    display: none;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
+    align-self: center;
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: #94a3b8;
-    align-self: center;
+}
+
+@media (min-width: 640px) {
+    .analytics-chart-shell {
+        gap: 0.75rem;
+    }
+
+    .analytics-chart-y-label {
+        display: inline-block;
+    }
+
+    .analytics-chart-y-tick {
+        font-size: 11px;
+    }
+
+    .analytics-bar-label {
+        font-size: 10px;
+    }
+
+    .dashboard-activity-bar-fill,
+    .analytics-bar-zero {
+        max-width: 2rem;
+    }
+}
+
+.admin-dashboard {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.admin-dashboard > * {
+    min-width: 0;
+    max-width: 100%;
+}
+
+#dashboard-overview .admin-shell-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.admin-dashboard-quick-actions {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Keep mobile dashboard from expanding page width via horizontal chip rows. */
+#admin-app {
+    overflow-x: clip;
+    max-width: 100vw;
+}
+
+.admin-main-offset {
+    overflow-x: clip;
+}
+
+@media (max-width: 639px) {
+    .admin-dashboard-header {
+        gap: 0.75rem;
+    }
+
+    .admin-dashboard-quick-actions {
+        padding-bottom: 0.25rem;
+        scrollbar-width: thin;
+    }
+
+    .admin-dashboard-quick-actions .admin-primary-button,
+    .admin-dashboard-quick-actions .admin-secondary-button {
+        min-height: 44px;
+        flex: 0 0 auto;
+        padding-inline: 0.875rem;
+        font-size: 0.8125rem;
+        white-space: nowrap;
+    }
+
+    .admin-panel-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-panel-header .admin-range-toggle {
+        align-self: flex-start;
+    }
+
+    .admin-stat-card-tier-primary {
+        min-height: 0;
+        padding: 1rem;
+    }
+
+    .admin-stat-sparkline {
+        width: 64px;
+        height: 20px;
+    }
+
+    .analytics-column-tooltip {
+        font-size: 0.6875rem;
+        padding: 0.35rem 0.55rem;
+        white-space: normal;
+        max-width: 9rem;
+    }
+
+    #dashboard-overview .admin-shell-card {
+        max-width: 100%;
+    }
+}
+
+.admin-main-offset,
+.admin-main-offset > main {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .analytics-bar-label {
@@ -3802,8 +3961,7 @@ select.admin-filter-select:not(.admin-choice-select-native),
 /* Page chrome stacks until xl (1280): sidebar already eats ~18rem at lg. */
 @media (max-width: 1279px) {
     .dashboard-activity-bars {
-        gap: 0.35rem;
-        min-height: 200px;
+        gap: 0.25rem;
     }
 
     .dashboard-donut-chart {
