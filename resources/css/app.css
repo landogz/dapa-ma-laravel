@@ -3501,10 +3501,24 @@ select.admin-filter-select:not(.admin-choice-select-native),
     max-width: 100%;
 }
 
+.admin-dashboard .grid,
+.admin-dashboard .grid > * {
+    min-width: 0;
+}
+
 #dashboard-overview .admin-shell-card {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    overflow-x: clip;
+}
+
+.analytics-chart-shell,
+.analytics-chart-plot-wrap,
+.analytics-chart-plot,
+.dashboard-activity-bars {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .admin-dashboard-quick-actions {
