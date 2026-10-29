@@ -122,7 +122,9 @@
                         You must set a new password before continuing. It cannot match your current password, recent passwords, or passwords found in known data breaches.
                     </div>
                     <h3 class="admin-profile-section-title">Change Password</h3>
-                    <p class="admin-profile-section-description">Password must include at least 8 characters, upper and lower case, a number, a symbol. Avoid common passwords such as Default@123.</p>
+                    <p class="admin-profile-section-description">
+                        Optional — leave blank to keep your current password. New passwords need at least 8 characters, upper and lower case, a number, and a symbol. Avoid common passwords such as Default@123.
+                    </p>
                     <div class="mt-4 grid gap-4 lg:grid-cols-3">
                         <div>
                             <label class="admin-auth-label" for="admin-profile-current-password">Current Password</label>
@@ -195,11 +197,6 @@
                             </div>
                             <p id="password_confirmation-error" class="admin-auth-error" data-field-error="password_confirmation"></p>
                         </div>
-                    </div>
-                    <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <button type="button" class="admin-secondary-button" data-profile-password-submit>
-                            <span data-profile-password-submit-label>Update Password</span>
-                        </button>
                     </div>
                 </div>
 
