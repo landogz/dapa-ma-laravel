@@ -40,8 +40,8 @@ class AnalyticsAdminController extends Controller
     private function resolveDaysFromRange(string $range): int
     {
         return match ($range) {
-            'today' => 1,
-            '7'     => 7,
+            '1', 'today' => 1,
+            '7', '7d', 'week' => 7,
             default => 30,
         };
     }
