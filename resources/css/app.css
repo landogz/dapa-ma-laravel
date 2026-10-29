@@ -3273,11 +3273,24 @@ select.admin-filter-select:not(.admin-choice-select-native),
     height: 100%;
 }
 
-.admin-activity-chart-area .analytics-chart-plot,
-.admin-activity-chart-area .analytics-chart-y-ticks,
+.admin-activity-chart-area .analytics-chart-plot {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 220px;
+}
+
+.admin-activity-chart-area .analytics-chart-y-ticks {
+    flex: 1 1 auto;
+    height: auto !important;
+    min-height: 220px;
+}
+
 .admin-activity-chart-area .dashboard-activity-bars {
     flex: 1 1 auto;
-    height: auto;
+    width: 100%;
+    height: 100% !important;
     min-height: 220px;
 }
 
