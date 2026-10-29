@@ -8,7 +8,6 @@ import { initProfileModule } from './profile';
 import { initRehabCentersModule } from './rehab-centers/index';
 import { enableAdminSwalHeaders } from './shared/swal-forms';
 import { startAdminFilterSelectWatcher } from './shared/filter-select';
-import { initTrainingsModule } from './trainings/index';
 import { initContestsModule } from './contests/index';
 import { initIecMaterialsModule } from './iec-materials/index';
 import { initAppTranslationsModule } from './app-translations/index';
@@ -24,16 +23,15 @@ import { initUsersModule } from './users';
 import { initAdminMegaMenu } from './admin-mega-menu/index';
 
 const ADMIN_ROLE_SECTIONS = {
-    super_admin: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'analytics', 'users', 'diary', 'care-toolkit', 'care-checks', 'care-support', 'hope-directory', 'hope-events', 'settings', 'lookups', 'word-blocking'],
+    super_admin: ['posts', 'rehab-centers', 'contests', 'iec-materials', 'app-translations', 'notifications', 'analytics', 'users', 'diary', 'care-toolkit', 'care-checks', 'care-support', 'hope-directory', 'hope-events', 'settings', 'lookups', 'word-blocking'],
     editor: ['posts'],
-    publisher: ['posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials', 'app-translations', 'notifications', 'care-toolkit', 'care-checks', 'care-support', 'hope-directory', 'hope-events', 'settings', 'lookups', 'word-blocking'],
+    publisher: ['posts', 'rehab-centers', 'contests', 'iec-materials', 'app-translations', 'notifications', 'care-toolkit', 'care-checks', 'care-support', 'hope-directory', 'hope-events', 'settings', 'lookups', 'word-blocking'],
     analytics_viewer: ['analytics'],
 };
 
 const PAGE_SECTION_REQUIREMENTS = {
     'admin-posts': 'posts',
     'admin-rehab-centers': 'rehab-centers',
-    'admin-trainings': 'trainings',
     'admin-contests': 'contests',
     'admin-iec-materials': 'iec-materials',
     'admin-app-translations': 'app-translations',
@@ -54,7 +52,6 @@ const PAGE_SECTION_REQUIREMENTS = {
 const SECTION_PATHS = {
     posts: '/admin/posts',
     'rehab-centers': '/admin/rehab-centers',
-    trainings: '/admin/trainings',
     'contests': '/admin/contests',
     'iec-materials': '/admin/iec-materials',
     'app-translations': '/admin/app-translations',
@@ -408,9 +405,6 @@ function initializePageContent(pageName, allowedSections) {
         case 'admin-rehab-centers':
             initRehabCentersModule();
             break;
-        case 'admin-trainings':
-            initTrainingsModule();
-            break;
         case 'admin-contests':
             initContestsModule();
             break;
@@ -473,10 +467,6 @@ function bindQuickActions() {
         window.RehabCenters?.create();
     });
 
-    document.querySelector('[data-admin-action="create-training"]')?.addEventListener('click', () => {
-        window.Trainings?.create();
-    });
-
     document.querySelector('[data-admin-action="create-contest"]')?.addEventListener('click', () => {
         window.Contests?.create();
     });
@@ -533,12 +523,6 @@ async function loadOverviewCounts(allowedSections) {
             key: 'rehab-centers',
             allowed: allowedSections.includes('rehab-centers'),
             request: () => window.axios.get('/admin/rehab-centers', { params: { per_page: 1 } }),
-            count: (response) => response.data.data?.total,
-        },
-        {
-            key: 'trainings',
-            allowed: allowedSections.includes('trainings'),
-            request: () => window.axios.get('/admin/trainings', { params: { per_page: 1 } }),
             count: (response) => response.data.data?.total,
         },
         {

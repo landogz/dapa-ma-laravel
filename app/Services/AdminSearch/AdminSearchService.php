@@ -8,14 +8,14 @@ class AdminSearchService
 {
     private const ROLE_SECTIONS = [
         'super_admin' => [
-            'posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials',
+            'posts', 'rehab-centers', 'contests', 'iec-materials',
             'app-translations', 'notifications', 'analytics', 'users', 'diary',
             'care-toolkit', 'care-checks', 'care-support', 'hope-directory',
             'hope-events', 'settings', 'lookups', 'word-blocking',
         ],
         'editor' => ['posts'],
         'publisher' => [
-            'posts', 'rehab-centers', 'trainings', 'contests', 'iec-materials',
+            'posts', 'rehab-centers', 'contests', 'iec-materials',
             'app-translations', 'notifications', 'care-toolkit', 'care-checks',
             'care-support', 'hope-directory', 'hope-events', 'settings',
             'lookups', 'word-blocking',
@@ -38,7 +38,6 @@ class AdminSearchService
             'users'            => fn () => $this->adminSearchRepository->users($query),
             'contests'         => fn () => $this->adminSearchRepository->contests($query),
             'rehab-centers'    => fn () => $this->adminSearchRepository->rehabCenters($query),
-            'trainings'        => fn () => $this->adminSearchRepository->trainings($query),
             'iec-materials'    => fn () => $this->adminSearchRepository->iecMaterials($query),
             'app-translations' => fn () => $this->adminSearchRepository->translations($query),
             'lookups'          => fn () => $this->adminSearchRepository->lookups($query),
