@@ -1356,43 +1356,6 @@ table.dataTable tbody tr.is-context-target > *,
     font-style: italic;
 }
 
-.admin-users-filters .admin-filter-tabs,
-.admin-users-audience,
-.admin-users-role-tabs {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    max-height: none;
-    overflow: visible;
-}
-
-.admin-users-filters .admin-filter-tab {
-    width: auto;
-    min-height: 44px;
-    padding-inline: 0.75rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-}
-
-.admin-users-filters .admin-filter-tab.is-active {
-    border-color: rgba(5, 84, 152, 0.28);
-}
-
-.admin-users-audience .admin-filter-tab {
-    min-width: min(100%, 11rem);
-}
-
-.admin-users-role-tabs .admin-filter-tab-hint {
-    display: none;
-}
-
-@media (min-width: 640px) {
-    .admin-users-role-tabs .admin-filter-tab-hint {
-        display: block;
-    }
-}
-
 .dt-container .dt-col-avatar {
     width: 4rem;
     min-width: 4rem;

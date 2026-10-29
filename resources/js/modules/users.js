@@ -170,16 +170,24 @@ function renderRoleTabs() {
         return;
     }
 
+    const roleTitle = document.querySelector('[data-users-role-title]');
+
     // App users have a single role — hide the redundant role strip.
     if (activeAudience === 'app') {
         activeRole = '';
         roleRoot.hidden = true;
+        if (roleTitle) {
+            roleTitle.hidden = true;
+        }
         roleRoot.replaceChildren();
         delete roleRoot.dataset.tabsBound;
         return;
     }
 
     roleRoot.hidden = false;
+    if (roleTitle) {
+        roleTitle.hidden = false;
+    }
     const items = [
         {
             value: '',
