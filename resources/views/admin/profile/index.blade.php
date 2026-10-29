@@ -119,10 +119,10 @@
 
                 <div class="admin-profile-section" id="admin-profile-password-section">
                     <div id="admin-force-password-banner" class="admin-force-password-banner" hidden>
-                        You must set a new password before continuing. Temporary and admin-set passwords cannot be reused.
+                        You must set a new password before continuing. It cannot match your current password, recent passwords, or passwords found in known data breaches.
                     </div>
                     <h3 class="admin-profile-section-title">Change Password</h3>
-                    <p class="admin-profile-section-description">Password must include at least 8 characters, upper and lower case, a number, a symbol.</p>
+                    <p class="admin-profile-section-description">Password must include at least 8 characters, upper and lower case, a number, a symbol. Avoid common passwords such as Default@123.</p>
                     <div class="mt-4 grid gap-4 lg:grid-cols-3">
                         <div>
                             <label class="admin-auth-label" for="admin-profile-current-password">Current Password</label>
@@ -204,7 +204,7 @@
                 </div>
 
                 <div class="admin-profile-form-actions">
-                    <a href="/admin/dashboard" class="admin-secondary-button text-center">Cancel</a>
+                    <a href="/admin/dashboard" class="admin-secondary-button text-center" data-profile-cancel>Cancel</a>
                     <button type="submit" class="admin-primary-button" data-profile-submit>
                         <span data-profile-submit-label>Save Changes</span>
                     </button>

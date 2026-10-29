@@ -54,6 +54,9 @@ class DefaultAccountsSeeder extends Seeder
                 'email' => $account['email'],
                 'role' => $account['role'],
                 'password' => 'password',
+                'must_change_password' => false,
+                'password_changed_at' => now(),
+                'is_active' => true,
                 'email_verified_at' => now(),
                 'remember_token' => Str::random(10),
             ])->save();

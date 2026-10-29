@@ -139,6 +139,14 @@ function bindPasswordSubmit(form) {
         clearPasswordFieldErrors(form);
         setPasswordBusy(passwordButton, submitLabel, true);
 
+        if (password && currentPassword && password === currentPassword) {
+            applyFieldErrors(form, {
+                password: ['New password must be different from your current password.'],
+            });
+            showErrorToast('New password must be different from your current password.', 'Password policy');
+            return;
+        }
+
         try {
             const response = await window.axios.put('/auth/password', {
                 current_password: currentPassword,
@@ -146,10 +154,16 @@ function bindPasswordSubmit(form) {
                 password_confirmation: passwordConfirmation,
             });
 
+            const wasForced = isForcePasswordRequired();
             clearPasswordFields(form);
             mergeStoredUser({ must_change_password: false, password_expired: false });
             hideForcePasswordBanner();
             showSuccessToast(response.data.message ?? 'Password updated.', 'Saved');
+
+            if (wasForced) {
+                window.location.href = '/admin/dashboard';
+                return;
+            }
 
             if (new URLSearchParams(window.location.search).has('force_password')) {
                 window.history.replaceState({}, '', '/admin/profile');
@@ -365,13 +379,22 @@ function applyFieldErrors(form, errors) {
     Object.entries(errors).forEach(([field, messages]) => {
         const input = form.querySelector(`[name="${field}"]`);
         const errorLabel = form.querySelector(`[data-field-error="${field}"]`);
+        const message = Array.isArray(messages) ? messages[0] : messages;
 
         if (input) {
             input.classList.add('is-invalid');
+            const policyError = input
+                .closest('div')
+                ?.parentElement
+                ?.querySelector('[data-password-error]');
+            if (policyError && message) {
+                policyError.hidden = false;
+                policyError.textContent = String(message);
+            }
         }
 
-        if (errorLabel && messages.length > 0) {
-            errorLabel.textContent = messages[0];
+        if (errorLabel && message) {
+            errorLabel.textContent = String(message);
             errorLabel.classList.add('is-visible');
         }
     });
@@ -389,9 +412,13 @@ function buildErrorMessage(errors, message) {
     return message ?? 'Unable to update your profile right now.';
 }
 
-function applyForcePasswordGate(form) {
-    const forced = new URLSearchParams(window.location.search).has('force_password')
+function isForcePasswordRequired() {
+    return new URLSearchParams(window.location.search).has('force_password')
         || Boolean(getStoredUser()?.must_change_password);
+}
+
+function applyForcePasswordGate(form) {
+    const forced = isForcePasswordRequired();
 
     if (!forced) {
         return;
@@ -406,6 +433,22 @@ function applyForcePasswordGate(form) {
         field.removeAttribute('data-password-optional');
         field.setAttribute('required', 'required');
     });
+
+    const cancel = form.querySelector('[data-profile-cancel]');
+    if (cancel) {
+        cancel.textContent = 'Sign out';
+        cancel.setAttribute('href', '#');
+        cancel.addEventListener('click', (event) => {
+            event.preventDefault();
+            window.location.href = '/admin/login';
+        });
+    }
+
+    const profileSubmit = form.querySelector('[data-profile-submit]');
+    if (profileSubmit) {
+        profileSubmit.disabled = true;
+        profileSubmit.title = 'Set a new password before saving other profile changes.';
+    }
 
     form.querySelector('#admin-profile-password-section')?.scrollIntoView({
         behavior: 'smooth',
