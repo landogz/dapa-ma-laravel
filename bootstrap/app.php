@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\EnsureRole::class,
             'user.active' => \App\Http\Middleware\EnsureUserIsActive::class,
             'password.current' => \App\Http\Middleware\Password\EnsurePasswordIsCurrent::class,
+            'audit.admin' => \App\Http\Middleware\LogAdminAudit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

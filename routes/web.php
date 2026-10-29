@@ -102,6 +102,7 @@ Route::get('/admin/settings', fn () => AdminPage::render('admin.settings.index',
 
 Route::get('/admin/lookups', fn () => AdminPage::render('admin.app-options.index', 'lookups', 'Lookups'));
 Route::get('/admin/word-blocking', fn () => AdminPage::render('admin.word-blocking.index', 'word-blocking', 'Word Blocking'));
+Route::get('/admin/audit-trail', fn () => AdminPage::render('admin.audit-trail.index', 'audit-trail', 'Audit Trail'));
 
 Route::get('/admin/app-options', fn () => redirect('/admin/lookups', 301));
 

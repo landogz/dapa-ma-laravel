@@ -14,6 +14,7 @@ use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Services\Audit\AuditLogger;
 use App\Services\Auth\EmailCheckService;
 use App\Services\LoginVerificationService;
 use App\Services\NotificationService;
@@ -34,6 +35,7 @@ class AuthController extends Controller
         private readonly LoginVerificationService $loginVerificationService,
         private readonly EmailCheckService $emailCheckService,
         private readonly PasswordService $passwordService,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -91,7 +93,22 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
+        $email = (string) $request->input('email');
+
         if (! Auth::attempt($request->only('email', 'password'))) {
+            $this->auditLogger->record([
+                'actor' => [
+                    'id' => null,
+                    'name' => null,
+                    'email' => $email,
+                    'role' => null,
+                ],
+                'category' => 'auth',
+                'action' => 'login_failed',
+                'description' => "Failed sign-in attempt for {$email}",
+                'subject_label' => $email,
+            ], $request);
+
             return response()->json([
                 'status'  => false,
                 'message' => 'Invalid credentials.',
@@ -102,6 +119,16 @@ class AuthController extends Controller
 
         if ($user->is_active === false) {
             Auth::logout();
+
+            $this->auditLogger->record([
+                'actor' => $user,
+                'category' => 'auth',
+                'action' => 'login_failed',
+                'description' => "Blocked sign-in for suspended account {$user->email}",
+                'subject_type' => $user->getMorphClass(),
+                'subject_id' => $user->id,
+                'subject_label' => $user->email,
+            ], $request);
 
             return response()->json([
                 'status' => false,
@@ -125,6 +152,16 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('api-token', ['*'], now()->addDays(30))->plainTextToken;
+
+        $this->auditLogger->record([
+            'actor' => $user,
+            'category' => 'auth',
+            'action' => 'login',
+            'description' => 'Signed in successfully',
+            'subject_type' => $user->getMorphClass(),
+            'subject_id' => $user->id,
+            'subject_label' => $user->email,
+        ], $request);
 
         return response()->json([
             'status'  => true,
@@ -164,6 +201,16 @@ class AuthController extends Controller
     {
         $user = $request->user();
         if ($user) {
+            $this->auditLogger->record([
+                'actor' => $user,
+                'category' => 'auth',
+                'action' => 'logout',
+                'description' => 'Signed out',
+                'subject_type' => $user->getMorphClass(),
+                'subject_id' => $user->id,
+                'subject_label' => $user->email,
+            ], $request);
+
             $this->notificationService->clearDeviceToken($user);
             $user->currentAccessToken()?->delete();
         }
@@ -231,6 +278,16 @@ class AuthController extends Controller
         }
 
         $this->passwordService->apply($user, (string) $request->input('password'), false);
+
+        $this->auditLogger->record([
+            'actor' => $user,
+            'category' => 'auth',
+            'action' => 'password_changed',
+            'description' => 'Changed account password',
+            'subject_type' => $user->getMorphClass(),
+            'subject_id' => $user->id,
+            'subject_label' => $user->email,
+        ], $request);
 
         return response()->json([
             'status'  => true,

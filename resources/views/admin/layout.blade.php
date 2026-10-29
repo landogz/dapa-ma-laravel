@@ -135,6 +135,10 @@
                         <i class="fas fa-ban w-5 text-[#FBD116]"></i>
                         <span>Word Blocking</span>
                     </a>
+                    <a href="/admin/audit-trail" class="admin-nav-link {{ ($activePage ?? '') === 'audit-trail' ? 'admin-nav-link-active' : '' }}" data-nav-section="audit-trail">
+                        <i class="fas fa-clock-rotate-left w-5 text-[#FBD116]"></i>
+                        <span>Audit Trail</span>
+                    </a>
                 </div>
             </nav>
         </aside>

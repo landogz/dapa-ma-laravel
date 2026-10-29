@@ -20,6 +20,7 @@ import { initWordBlockingModule } from './word-blocking/index';
 import { initHopeDirectoryModule } from './hope-directory/index';
 import { initHopeEventsModule } from './hope-events/index';
 import { initUsersModule } from './users';
+import { initAuditTrailModule } from './audit-trail/index';
 import { initAdminMegaMenu } from './admin-mega-menu/index';
 
 const ANALYTICS_METRIC_SECTIONS = [
@@ -48,6 +49,7 @@ const ADMIN_ROLE_SECTIONS = {
         'settings',
         'lookups',
         'word-blocking',
+        'audit-trail',
     ],
     editor: ['posts'],
     publisher: [
@@ -88,6 +90,7 @@ const PAGE_SECTION_REQUIREMENTS = {
     'admin-settings': 'settings',
     'admin-lookups': 'lookups',
     'admin-word-blocking': 'word-blocking',
+    'admin-audit-trail': 'audit-trail',
 };
 
 const SECTION_PATHS = {
@@ -108,6 +111,7 @@ const SECTION_PATHS = {
     settings: '/admin/settings',
     lookups: '/admin/lookups',
     'word-blocking': '/admin/word-blocking',
+    'audit-trail': '/admin/audit-trail',
 };
 
 let inboxFilter = 'unread';
@@ -564,6 +568,9 @@ function initializePageContent(pageName, allowedSections, profile = null) {
             break;
         case 'admin-word-blocking':
             initWordBlockingModule();
+            break;
+        case 'admin-audit-trail':
+            initAuditTrailModule();
             break;
         default:
             break;

@@ -15,6 +15,7 @@ use App\Http\Controllers\API\Admin\ContestAdminController;
 use App\Http\Controllers\API\Admin\IecMaterialAdminController;
 use App\Http\Controllers\API\Admin\AppTranslationAdminController;
 use App\Http\Controllers\API\Admin\UserAdminController;
+use App\Http\Controllers\API\Admin\AuditLogAdminController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BookmarkController;
 use App\Http\Controllers\API\DiaryController;
@@ -266,10 +267,15 @@ Route::prefix('v1')
             });
 
             // ── Admin ─────────────────────────────────────────────────────
-            Route::prefix('admin')->name('admin.')->group(function (): void {
+            Route::prefix('admin')->name('admin.')->middleware('audit.admin')->group(function (): void {
 
                 // Super Admin only
                 Route::middleware('role:super_admin')->group(function (): void {
+                    Route::get('/audit-logs', [AuditLogAdminController::class, 'index'])->name('audit-logs.index');
+                    Route::get('/audit-logs/summary', [AuditLogAdminController::class, 'summary'])->name('audit-logs.summary');
+                    Route::get('/audit-logs/export', [AuditLogAdminController::class, 'export'])->name('audit-logs.export');
+                    Route::get('/audit-logs/{auditLog}', [AuditLogAdminController::class, 'show'])->name('audit-logs.show');
+
                     Route::get('/users',                     [UserAdminController::class, 'index'])->name('users.index');
                     Route::post('/users',                    [UserAdminController::class, 'store'])->name('users.store');
                     Route::put('/users/{user}',              [UserAdminController::class, 'update'])->name('users.update');

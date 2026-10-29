@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateAdminUserRequest;
 use App\Http\Requests\Admin\UpdateUserRoleRequest;
 use App\Models\User;
 use App\Services\AdminNotificationService;
+use App\Services\Audit\AuditLogger;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class UserAdminController extends Controller
     public function __construct(
         private readonly UserService              $userService,
         private readonly AdminNotificationService $adminNotificationService,
+        private readonly AuditLogger              $auditLogger,
     ) {
     }
 
@@ -52,6 +54,20 @@ class UserAdminController extends Controller
         if ($actor instanceof User) {
             $this->adminNotificationService->notifyUserCreated($user, $actor);
         }
+
+        $this->auditLogger->record([
+            'category' => 'users',
+            'action' => 'created',
+            'description' => "Created user {$user->name} ({$user->email}) as {$user->role}",
+            'subject_type' => $user->getMorphClass(),
+            'subject_id' => $user->id,
+            'subject_label' => $user->email,
+            'new_values' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+            ],
+        ], $request);
 
         return response()->json([
             'status'  => true,
@@ -89,6 +105,17 @@ class UserAdminController extends Controller
             $this->adminNotificationService->notifyUserRoleChanged($user, $actor, $oldRole, $newRole);
         }
 
+        $this->auditLogger->record([
+            'category' => 'users',
+            'action' => 'role_changed',
+            'description' => "Changed role for {$user->name} from {$oldRole} to {$newRole}",
+            'subject_type' => $user->getMorphClass(),
+            'subject_id' => $user->id,
+            'subject_label' => $user->email,
+            'old_values' => ['role' => $oldRole],
+            'new_values' => ['role' => $newRole],
+        ], $request);
+
         return response()->json([
             'status'  => true,
             'message' => "Role updated to '{$user->role}' for {$user->name}.",
@@ -108,7 +135,29 @@ class UserAdminController extends Controller
             unset($data['password']);
         }
 
+        $before = [
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+        ];
+
         $updated = $this->userService->updateAdminUser($user, $data);
+
+        $this->auditLogger->record([
+            'category' => 'users',
+            'action' => 'updated',
+            'description' => "Updated user {$updated->name} ({$updated->email})",
+            'subject_type' => $updated->getMorphClass(),
+            'subject_id' => $updated->id,
+            'subject_label' => $updated->email,
+            'old_values' => $before,
+            'new_values' => [
+                'name' => $updated->name,
+                'email' => $updated->email,
+                'role' => $updated->role,
+                'password_reset' => array_key_exists('password', $data),
+            ],
+        ], $request);
 
         return response()->json([
             'status'  => true,
@@ -140,6 +189,15 @@ class UserAdminController extends Controller
             return $this->validationErrorResponse($exception);
         }
 
+        $this->auditLogger->record([
+            'category' => 'users',
+            'action' => 'force_password',
+            'description' => "Forced password change for {$updated->name}",
+            'subject_type' => $updated->getMorphClass(),
+            'subject_id' => $updated->id,
+            'subject_label' => $updated->email,
+        ], $request);
+
         return response()->json([
             'status' => true,
             'message' => "{$updated->name} must change password on next login.",
@@ -167,6 +225,16 @@ class UserAdminController extends Controller
             return $this->validationErrorResponse($exception);
         }
 
+        $this->auditLogger->record([
+            'category' => 'users',
+            'action' => 'suspended',
+            'description' => "Suspended account {$updated->name} ({$updated->email})",
+            'subject_type' => $updated->getMorphClass(),
+            'subject_id' => $updated->id,
+            'subject_label' => $updated->email,
+            'new_values' => ['is_active' => false],
+        ], $request);
+
         return response()->json([
             'status' => true,
             'message' => "{$updated->name} has been suspended.",
@@ -180,6 +248,16 @@ class UserAdminController extends Controller
     public function activate(Request $request, User $user): JsonResponse
     {
         $updated = $this->userService->activate($user);
+
+        $this->auditLogger->record([
+            'category' => 'users',
+            'action' => 'activated',
+            'description' => "Enabled account {$updated->name} ({$updated->email})",
+            'subject_type' => $updated->getMorphClass(),
+            'subject_id' => $updated->id,
+            'subject_label' => $updated->email,
+            'new_values' => ['is_active' => true],
+        ], $request);
 
         return response()->json([
             'status' => true,
@@ -215,8 +293,19 @@ class UserAdminController extends Controller
         }
 
         $name = $user->name;
+        $email = $user->email;
+        $id = $user->id;
 
         $this->userService->delete($user);
+
+        $this->auditLogger->record([
+            'category' => 'users',
+            'action' => 'deleted',
+            'description' => "Deleted user {$name} ({$email})",
+            'subject_type' => User::class,
+            'subject_id' => $id,
+            'subject_label' => $email,
+        ], $request);
 
         return response()->json([
             'status'  => true,
