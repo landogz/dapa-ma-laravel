@@ -18,7 +18,7 @@
     <div id="admin-app" class="relative min-h-screen">
         <div id="admin-sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-950/50 lg:hidden"></div>
 
-        <aside id="admin-sidebar" class="fixed inset-y-0 left-0 top-0 z-40 flex h-screen max-h-screen w-72 -translate-x-full flex-col overflow-y-auto bg-[#123a60] px-3 py-4 text-white shadow-xl transition-transform duration-300 lg:translate-x-0" data-admin-sidebar>
+        <aside id="admin-sidebar" class="fixed inset-y-0 left-0 top-0 z-40 flex min-h-screen w-72 -translate-x-full flex-col overflow-y-auto bg-[#123a60] px-3 py-4 text-white shadow-xl transition-transform duration-300 lg:sticky lg:translate-x-0" data-admin-sidebar>
             <div class="shrink-0 px-2">
                 <div class="flex items-center gap-3">
                     <div class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg shadow-[#055498]/25">
@@ -139,7 +139,7 @@
             </nav>
         </aside>
 
-        <div class="admin-main-offset lg:pl-72">
+        <div class="admin-main-offset max-lg:w-full lg:min-w-0 lg:flex-1">
             <header class="relative sticky top-0 z-30 border-b border-slate-200 bg-white shadow-sm" data-admin-mega>
                 {{-- Until xl, keep one compact header row: sidebar already uses ~18rem at lg. --}}
                 <div class="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:flex-nowrap lg:gap-3 lg:px-6 lg:py-3 xl:gap-4 xl:px-8 xl:py-4">

@@ -143,12 +143,19 @@
 
     .admin-stat-card-tier-primary {
         padding: 1.25rem;
-        min-height: 8.5rem;
+        min-height: 10rem;
+        height: 100%;
     }
 
     .admin-stat-card-tier-secondary {
         padding: 0.875rem 1rem;
-        min-height: 6.5rem;
+        min-height: 7.5rem;
+        height: 100%;
+    }
+
+    #function-cards-primary,
+    #function-cards-secondary {
+        align-items: stretch;
     }
 
     .admin-stat-card-label {
@@ -1519,12 +1526,43 @@ table.dataTable tbody tr.is-context-target > *,
 
 #admin-sidebar {
     width: min(85vw, var(--admin-sidebar-width));
+    min-height: 100vh;
     height: 100vh;
     max-height: 100vh;
-    position: fixed;
+    position: sticky;
     top: 0;
     overflow-y: auto;
     transition: width 0.2s ease, transform 0.3s ease, padding 0.2s ease;
+}
+
+@media (max-width: 1023px) {
+    #admin-sidebar {
+        position: fixed;
+        min-height: 100vh;
+        height: 100vh;
+    }
+}
+
+@media (min-width: 1024px) {
+    #admin-app {
+        display: flex;
+        align-items: flex-start;
+    }
+
+    #admin-sidebar {
+        position: sticky;
+        top: 0;
+        min-height: 100vh;
+        height: 100vh;
+        flex-shrink: 0;
+        transform: none;
+    }
+
+    .admin-main-offset {
+        flex: 1;
+        min-width: 0;
+        padding-left: 0;
+    }
 }
 
 .admin-sidebar-nav {
@@ -3186,10 +3224,93 @@ select.admin-filter-select:not(.admin-choice-select-native),
     height: 10rem;
 }
 
-#dashboard-activity-chart .dashboard-activity-bars,
-#dashboard-activity-chart .analytics-chart-y-ticks,
-#dashboard-activity-chart .analytics-chart-plot {
-    height: 280px;
+.admin-activity-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100%;
+}
+
+.admin-activity-chart-area {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 280px;
+}
+
+.admin-activity-chart-area .analytics-chart-shell,
+.admin-activity-chart-area .analytics-chart-shell-fill {
+    flex: 1 1 auto;
+    min-height: 280px;
+    height: 100%;
+    align-items: stretch;
+}
+
+.admin-activity-chart-area .analytics-chart-y-axis {
+    align-self: stretch;
+    padding-top: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-activity-chart-area .analytics-chart-y-label {
+    margin-bottom: 0.5rem;
+}
+
+.admin-activity-chart-area .analytics-chart-plot-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding-top: 0;
+    height: 100%;
+}
+
+.admin-activity-chart-area .analytics-chart-plot,
+.admin-activity-chart-area .analytics-chart-y-ticks,
+.admin-activity-chart-area .dashboard-activity-bars {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 220px;
+}
+
+.admin-activity-chart-area .analytics-chart-column {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.admin-activity-chart-area .analytics-chart-hitbox {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.admin-activity-chart-area .analytics-chart-bar:not(.analytics-bar-zero) {
+    width: 100%;
+    max-width: 1.5rem;
+}
+
+.analytics-chart-x-labels {
+    display: grid;
+    grid-template-columns: repeat(var(--bars, 7), minmax(0, 1fr));
+    gap: 0.25rem;
+    margin-top: 0.35rem;
+    align-items: start;
+    text-align: center;
+}
+
+.admin-chart-summary-sub {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
 }
 
 .analytics-chart-shell {
@@ -3348,7 +3469,7 @@ select.admin-filter-select:not(.admin-choice-select-native),
     }
 
     #admin-app.sidebar-collapsed .admin-main-offset {
-        padding-left: var(--admin-sidebar-collapsed-width);
+        padding-left: 0;
     }
 
     #admin-app.sidebar-collapsed .admin-sidebar-brand-text,
@@ -3372,9 +3493,21 @@ select.admin-filter-select:not(.admin-choice-select-native),
 .dashboard-activity-bar {
     display: flex;
     min-width: 0;
+    height: 100%;
     flex-direction: column;
     align-items: center;
-    gap: 0.35rem;
+    justify-content: flex-end;
+}
+
+.analytics-chart-hitbox {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    position: relative;
 }
 
 .dashboard-activity-bar-fill {
@@ -3497,7 +3630,9 @@ select.admin-filter-select:not(.admin-choice-select-native),
     position: relative;
     display: flex;
     width: 100%;
-    height: 10rem;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;

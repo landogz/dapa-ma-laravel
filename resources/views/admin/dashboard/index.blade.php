@@ -59,7 +59,7 @@
                             <div class="mt-2 flex items-end justify-between gap-3">
                                 <div class="min-w-0">
                                     <p class="text-3xl font-bold text-[var(--color-text)]" data-overview-count="{{ $key }}">--</p>
-                                    <p class="admin-trend hidden" data-overview-trend="{{ $key }}"></p>
+                                    <p class="admin-trend admin-trend-neutral" data-overview-trend="{{ $key }}">No change this week</p>
                                 </div>
                                 <canvas class="admin-stat-sparkline hidden" data-overview-sparkline="{{ $key }}" width="80" height="24" aria-hidden="true"></canvas>
                             </div>
@@ -85,7 +85,7 @@
                             <p class="admin-stat-card-label">{{ $label }}</p>
                             <p class="mt-1.5 text-sm font-semibold text-[var(--color-text)]">{{ $title }}</p>
                             <p class="mt-1 text-2xl font-bold text-[var(--color-text)]" data-overview-count="{{ $key }}">--</p>
-                            <p class="admin-trend hidden" data-overview-trend="{{ $key }}"></p>
+                            <p class="admin-trend admin-trend-neutral" data-overview-trend="{{ $key }}">No change this week</p>
                         </div>
                         <span class="admin-stat-card-icon" aria-hidden="true">
                             <i class="fas {{ $icon }}"></i>
@@ -95,9 +95,9 @@
             @endforeach
         </div>
 
-        <div class="grid gap-6 xl:grid-cols-2">
-            <div class="admin-shell-card p-4 sm:p-6" data-overview-analytics>
-                <div class="admin-panel-header">
+        <div class="grid gap-6 xl:grid-cols-2 xl:items-stretch">
+            <div class="admin-shell-card admin-activity-panel p-4 sm:p-6" data-overview-analytics>
+                <div class="admin-panel-header shrink-0">
                     <div class="flex items-center gap-3">
                         <span class="admin-stat-card-icon" aria-hidden="true">
                             <i class="fas fa-chart-line"></i>
@@ -108,8 +108,8 @@
                         </div>
                     </div>
                 </div>
-                <div id="dashboard-activity-chart" class="mt-6"></div>
-                <div id="dashboard-activity-summary" class="admin-chart-summary mt-4" hidden></div>
+                <div id="dashboard-activity-chart" class="admin-activity-chart-area mt-6"></div>
+                <div id="dashboard-activity-summary" class="admin-chart-summary mt-4 shrink-0" hidden></div>
             </div>
 
             <div class="space-y-6">

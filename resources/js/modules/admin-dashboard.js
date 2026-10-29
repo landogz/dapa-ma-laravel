@@ -633,10 +633,11 @@ async function loadOverviewCounts(allowedSections) {
 
 async function loadOverviewTrends(allowedSections) {
     const range = document.querySelector('[data-dashboard-range]')?.value || '7';
+    const fallbackLabel = getDashboardRangeLabel();
 
     document.querySelectorAll('[data-overview-trend]').forEach((el) => {
-        el.classList.add('hidden');
-        el.innerHTML = '';
+        const key = el.getAttribute('data-overview-trend');
+        if (key) setNeutralTrend(key, fallbackLabel);
     });
     document.querySelectorAll('[data-overview-sparkline]').forEach((canvas) => {
         canvas.classList.add('hidden');
@@ -651,11 +652,11 @@ async function loadOverviewTrends(allowedSections) {
             params: { range },
         });
         const metrics = data.data?.metrics ?? {};
-        const label = data.data?.label || getDashboardRangeLabel();
+        const label = data.data?.label || fallbackLabel;
 
         Object.entries(metrics).forEach(([key, metric]) => {
             if (!allowedSections.includes(key === 'diary' ? 'diary' : key)) {
-                hideTrend(key);
+                setNeutralTrend(key, label);
                 return;
             }
 
@@ -664,7 +665,7 @@ async function loadOverviewTrends(allowedSections) {
     } catch {
         document.querySelectorAll('[data-overview-trend]').forEach((el) => {
             const key = el.getAttribute('data-overview-trend');
-            if (key) hideTrend(key);
+            if (key) setNeutralTrend(key, fallbackLabel);
         });
     }
 }
@@ -724,10 +725,11 @@ function initializeDashboardChrome(profile, allowedSections = []) {
     }
 }
 
-function hideTrend(key) {
+function setNeutralTrend(key, periodLabel = 'this week') {
     document.querySelectorAll(`[data-overview-trend="${key}"]`).forEach((element) => {
-        element.classList.add('hidden');
-        element.innerHTML = '';
+        element.classList.remove('hidden', 'admin-trend-up', 'admin-trend-down');
+        element.classList.add('admin-trend', 'admin-trend-neutral');
+        element.textContent = `No change ${periodLabel}`;
     });
 
     const canvas = document.querySelector(`[data-overview-sparkline="${key}"]`);
@@ -738,6 +740,10 @@ function hideTrend(key) {
     }
 }
 
+function hideTrend(key) {
+    setNeutralTrend(key, getDashboardRangeLabel());
+}
+
 function applyTrendMetric(key, metric, periodLabel) {
     const elements = document.querySelectorAll(`[data-overview-trend="${key}"]`);
     const canvas = document.querySelector(`[data-overview-sparkline="${key}"]`);
@@ -746,8 +752,12 @@ function applyTrendMetric(key, metric, periodLabel) {
     const sparkline = Array.isArray(metric?.sparkline) ? metric.sparkline.map(Number) : [];
     const hasSparkline = sparkline.some((value) => value > 0);
 
-    if (!available) {
-        hideTrend(key);
+    if (!available || delta === 0) {
+        setNeutralTrend(key, periodLabel);
+        if (canvas instanceof HTMLCanvasElement && hasSparkline) {
+            canvas.classList.remove('hidden');
+            drawSparkline(canvas, sparkline);
+        }
         return;
     }
 
@@ -758,12 +768,9 @@ function applyTrendMetric(key, metric, periodLabel) {
         if (delta > 0) {
             element.classList.add('admin-trend-up');
             element.innerHTML = `<i class="fas fa-arrow-up" aria-hidden="true"></i> +${delta.toLocaleString()} ${periodLabel}`;
-        } else if (delta < 0) {
+        } else {
             element.classList.add('admin-trend-down');
             element.innerHTML = `<i class="fas fa-arrow-down" aria-hidden="true"></i> −${Math.abs(delta).toLocaleString()} ${periodLabel}`;
-        } else {
-            element.classList.add('hidden');
-            element.innerHTML = '';
         }
     });
 
@@ -839,7 +846,7 @@ async function loadNeedsAttention(allowedSections) {
 
             return `
             <a href="${item.href}" class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-slate-50 px-3 py-3 transition hover:border-[var(--color-primary)]/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2">
-                <span class="flex min-w-0 items-start gap-3">
+                <span class="flex min-w-0 items-center gap-3">
                     <span class="admin-stat-card-icon shrink-0"><i class="${item.icon}"></i></span>
                     <span class="text-sm font-medium leading-snug text-[var(--color-text)] break-words">${item.label}</span>
                 </span>

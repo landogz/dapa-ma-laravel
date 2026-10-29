@@ -656,13 +656,53 @@ function buildActivityChartHtml(days, messages, options = {}) {
     }
 
     const rawMax = Math.max(...days.map((day) => Number(day.total) || 0), 0);
-    const ceiling = niceCeiling(rawMax, 4);
-    const ticks = buildYTicks(ceiling, 4);
-    const plotHeight = Number(options.plotHeight) || 160;
+    const yMax = niceCeiling(rawMax, 4);
+    const ticks = buildYTicks(yMax, 4);
     const showAllLabels = days.length <= 7;
+    const useFlexFill = Boolean(options.flexFill);
+
+    const columns = days.map((day, index) => {
+        const total = Number(day.total) || 0;
+        const heightPct = total === 0 || yMax === 0
+            ? null
+            : (total / yMax) * 100;
+        const label = showAllLabels || index % 2 === 0 || index === days.length - 1
+            ? formatChartDateLabel(day.date)
+            : '';
+        const fullDate = formatChartDateLabel(day.date, true);
+        const countLabel = `${total.toLocaleString()} event${total === 1 ? '' : 's'}`;
+        const tooltipLabel = `${fullDate}: ${countLabel}`;
+        const barStyle = heightPct === null
+            ? ''
+            : `height:${heightPct}%`;
+
+        return {
+            label,
+            html: `
+                <div
+                    class="dashboard-activity-bar analytics-activity-bar analytics-chart-column"
+                    data-chart-bar
+                    data-chart-date="${escapeHtml(fullDate)}"
+                    data-chart-count="${escapeHtml(String(total))}"
+                    tabindex="0"
+                    role="img"
+                    aria-label="${escapeHtml(tooltipLabel)}"
+                >
+                    <div class="analytics-chart-hitbox">
+                        <div class="analytics-column-tooltip" role="tooltip">${escapeHtml(tooltipLabel)}</div>
+                        <div
+                            class="dashboard-activity-bar-fill analytics-bar-brand analytics-chart-bar${total === 0 ? ' analytics-bar-zero' : ''}"
+                            style="${barStyle}"
+                        ></div>
+                    </div>
+                </div>
+            `,
+            labelHtml: `<span class="analytics-bar-label">${label}</span>`,
+        };
+    });
 
     return `
-        <div class="analytics-chart-shell">
+        <div class="analytics-chart-shell${useFlexFill ? ' analytics-chart-shell-fill' : ''}">
             <div class="analytics-chart-y-axis">
                 <span class="analytics-chart-y-label">Events</span>
                 <div class="analytics-chart-y-ticks" aria-hidden="true">
@@ -673,45 +713,16 @@ function buildActivityChartHtml(days, messages, options = {}) {
                 <div class="analytics-chart-plot">
                     <div class="analytics-chart-gridlines" aria-hidden="true">
                         ${ticks.map((tick) => {
-                            const top = ceiling === 0 ? 100 : 100 - ((tick / ceiling) * 100);
+                            const top = yMax === 0 ? 100 : 100 - ((tick / yMax) * 100);
                             return `<span class="analytics-chart-gridline" style="top:${top}%"></span>`;
                         }).join('')}
                     </div>
                     <div class="dashboard-activity-bars analytics-activity-bars" style="--bars:${days.length}">
-                    ${days.map((day, index) => {
-                        const total = Number(day.total) || 0;
-                        const height = total === 0
-                            ? 3
-                            : Math.max(8, Math.round((total / ceiling) * plotHeight));
-                        const label = showAllLabels || index % 2 === 0 || index === days.length - 1
-                            ? formatChartDateLabel(day.date)
-                            : '';
-                        const fullDate = formatChartDateLabel(day.date, true);
-                        const countLabel = `${total.toLocaleString()} event${total === 1 ? '' : 's'}`;
-                        const tooltipLabel = `${fullDate}: ${countLabel}`;
-
-                        return `
-                            <div
-                                class="dashboard-activity-bar analytics-activity-bar analytics-chart-column"
-                                data-chart-bar
-                                data-chart-date="${escapeHtml(fullDate)}"
-                                data-chart-count="${escapeHtml(String(total))}"
-                                tabindex="0"
-                                role="img"
-                                aria-label="${escapeHtml(tooltipLabel)}"
-                            >
-                                <div class="analytics-chart-hitbox">
-                                    <div class="analytics-column-tooltip" role="tooltip">${escapeHtml(tooltipLabel)}</div>
-                                    <div
-                                        class="dashboard-activity-bar-fill analytics-bar-brand analytics-chart-bar${total === 0 ? ' analytics-bar-zero' : ''}"
-                                        style="height:${height}px"
-                                    ></div>
-                                </div>
-                                <span class="analytics-bar-label">${label}</span>
-                            </div>
-                        `;
-                    }).join('')}
+                        ${columns.map((column) => column.html).join('')}
                     </div>
+                </div>
+                <div class="analytics-chart-x-labels" style="--bars:${days.length}" aria-hidden="true">
+                    ${columns.map((column) => column.labelHtml).join('')}
                 </div>
             </div>
         </div>
@@ -766,7 +777,7 @@ function renderOverviewActivity(days, rangeDays = 7) {
         emptyMessage: 'Activity will appear here once analytics events are recorded.',
         singleTitle: 'No activity data available',
         singleMessage: 'Activity will appear here once analytics events are recorded.',
-    }, { plotHeight: 280 });
+    }, { flexFill: true });
 
     renderOverviewActivitySummary(days, summary);
 }
@@ -788,6 +799,7 @@ function renderOverviewActivitySummary(days, summary) {
     const peakIndex = totals.indexOf(peakValue);
     const peakDay = peakIndex >= 0 ? formatChartDateLabel(days[peakIndex]?.date, true) : '—';
     const dailyAverage = days.length > 0 ? Math.round((totalEvents / days.length) * 10) / 10 : 0;
+    const peakEventsLabel = peakValue === 1 ? '1 event' : `${peakValue.toLocaleString()} events`;
 
     summary.hidden = false;
     summary.innerHTML = `
@@ -797,7 +809,8 @@ function renderOverviewActivitySummary(days, summary) {
         </div>
         <div class="admin-chart-summary-item">
             <span class="admin-chart-summary-label">Peak day</span>
-            <span class="admin-chart-summary-value">${escapeHtml(peakDay)}${peakValue > 0 ? ` · ${peakValue.toLocaleString()}` : ''}</span>
+            <span class="admin-chart-summary-value">${escapeHtml(peakDay)}</span>
+            ${peakValue > 0 ? `<span class="admin-chart-summary-sub">${escapeHtml(peakEventsLabel)}</span>` : ''}
         </div>
         <div class="admin-chart-summary-item">
             <span class="admin-chart-summary-label">Daily average</span>
