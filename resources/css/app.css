@@ -1289,6 +1289,110 @@ table.dataTable tbody tr.is-context-target > *,
     letter-spacing: 0.02em;
 }
 
+.admin-user-identity {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.admin-user-identity-name {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 650;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-user-identity-email {
+    margin: 0.1rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-user-role-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.admin-user-role-badge.is-navy {
+    background: rgba(18, 58, 96, 0.12);
+    color: #123a60;
+}
+
+.admin-user-role-badge.is-blue {
+    background: rgba(5, 84, 152, 0.12);
+    color: #055498;
+}
+
+.admin-user-role-badge.is-slate {
+    background: rgba(100, 116, 139, 0.14);
+    color: #475569;
+}
+
+.admin-user-role-badge.is-gold {
+    background: rgba(251, 209, 22, 0.28);
+    color: #123a60;
+}
+
+.admin-user-role-badge.is-muted {
+    background: rgba(148, 163, 184, 0.18);
+    color: #64748b;
+}
+
+.admin-user-login-muted {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.admin-users-filters .admin-filter-tabs,
+.admin-users-audience,
+.admin-users-role-tabs {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-height: none;
+    overflow: visible;
+}
+
+.admin-users-filters .admin-filter-tab {
+    width: auto;
+    min-height: 44px;
+    padding-inline: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.admin-users-filters .admin-filter-tab.is-active {
+    border-color: rgba(5, 84, 152, 0.28);
+}
+
+.admin-users-audience .admin-filter-tab {
+    min-width: min(100%, 11rem);
+}
+
+.admin-users-role-tabs .admin-filter-tab-hint {
+    display: none;
+}
+
+@media (min-width: 640px) {
+    .admin-users-role-tabs .admin-filter-tab-hint {
+        display: block;
+    }
+}
+
 .dt-container .dt-col-avatar {
     width: 4rem;
     min-width: 4rem;

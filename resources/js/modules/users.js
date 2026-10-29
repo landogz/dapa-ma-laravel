@@ -2,6 +2,13 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
+import {
+    applyAdminFilterTabCounts,
+    bindAdminFilterTabs,
+    countByKey,
+    renderAdminFilterTabs,
+    setAdminFilterTab,
+} from './shared/filter-tabs';
 import { buildSwalForm, buildSwalOptions, formatApiValidationMessage } from './shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
 import { showErrorToast, showSuccessToast } from './shared/toast';
@@ -10,13 +17,60 @@ let usersTable;
 let usersTableMode = null;
 let usersViewportBound = false;
 let usersActionsBound = false;
-const USER_ROLES = [
+let usersFiltersBound = false;
+let cachedUsers = [];
+let activeAudience = 'staff';
+let activeRole = '';
+
+const STAFF_ROLES = [
     'super_admin',
-    'editor',
     'publisher',
+    'editor',
     'analytics_viewer',
+];
+
+const USER_ROLES = [
+    ...STAFF_ROLES,
     'app_user',
 ];
+
+const ROLE_META = {
+    super_admin: {
+        label: 'Super Admin',
+        short: 'Super Admin',
+        icon: 'fas fa-shield-halved',
+        tone: 'navy',
+        hint: 'Full admin access',
+    },
+    publisher: {
+        label: 'Publisher',
+        short: 'Publisher',
+        icon: 'fas fa-bullhorn',
+        tone: 'blue',
+        hint: 'Publish & campaigns',
+    },
+    editor: {
+        label: 'Editor',
+        short: 'Editor',
+        icon: 'fas fa-pen-to-square',
+        tone: 'slate',
+        hint: 'Content editing',
+    },
+    analytics_viewer: {
+        label: 'Analytics Viewer',
+        short: 'Analytics',
+        icon: 'fas fa-chart-column',
+        tone: 'gold',
+        hint: 'Reports only',
+    },
+    app_user: {
+        label: 'App User',
+        short: 'App User',
+        icon: 'fas fa-mobile-screen-button',
+        tone: 'muted',
+        hint: 'Mobile app account',
+    },
+};
 
 export function initUsersModule() {
     const tableElement = document.getElementById('users-table');
@@ -24,6 +78,8 @@ export function initUsersModule() {
     if (!tableElement) {
         return;
     }
+
+    bindUsersFilters();
 
     if (usersTable && usersTableMode === getUsersTableMode()) {
         loadUsers();
@@ -45,17 +101,13 @@ export function loadUsers() {
     }
 
     axios
-        .get('/admin/users')
+        .get('/admin/users', { params: { per_page: 200 } })
         .then((response) => {
-            const users = response.data.data?.data ?? [];
-
-            usersTable.clear();
-
-            users.forEach((user) => {
-                usersTable.row.add(buildUserRowData(user));
-            });
-
-            usersTable.draw();
+            cachedUsers = Array.isArray(response.data.data?.data)
+                ? response.data.data.data
+                : [];
+            updateFilterCounts();
+            renderFilteredUsers();
         })
         .catch((error) => {
             const message =
@@ -68,6 +120,136 @@ export function loadUsers() {
                 text: message,
             });
         });
+}
+
+function bindUsersFilters() {
+    if (usersFiltersBound) {
+        return;
+    }
+
+    const audienceRoot = document.getElementById('users-audience-tabs');
+    const roleRoot = document.getElementById('users-role-tabs');
+
+    if (!audienceRoot || !roleRoot) {
+        return;
+    }
+
+    usersFiltersBound = true;
+
+    renderAdminFilterTabs(audienceRoot, [
+        {
+            value: 'staff',
+            label: 'Admin staff',
+            icon: 'fas fa-user-tie',
+            hint: 'Console access',
+            count: 0,
+        },
+        {
+            value: 'app',
+            label: 'App users',
+            icon: 'fas fa-mobile-screen-button',
+            hint: 'Mobile accounts',
+            count: 0,
+        },
+    ]);
+    setAdminFilterTab(audienceRoot, activeAudience);
+    bindAdminFilterTabs(audienceRoot, (value) => {
+        activeAudience = value || 'staff';
+        activeRole = '';
+        renderRoleTabs();
+        updateFilterCounts();
+        renderFilteredUsers();
+    });
+
+    renderRoleTabs();
+}
+
+function renderRoleTabs() {
+    const roleRoot = document.getElementById('users-role-tabs');
+    if (!roleRoot) {
+        return;
+    }
+
+    const roles = activeAudience === 'app' ? ['app_user'] : STAFF_ROLES;
+    const items = [
+        {
+            value: '',
+            label: 'All',
+            icon: 'fas fa-users',
+            hint: activeAudience === 'app' ? 'All app accounts' : 'All staff roles',
+            count: 0,
+        },
+        ...roles.map((role) => ({
+            value: role,
+            label: ROLE_META[role]?.short ?? formatRole(role),
+            icon: ROLE_META[role]?.icon ?? 'fas fa-user',
+            hint: ROLE_META[role]?.hint ?? '',
+            count: 0,
+        })),
+    ];
+
+    delete roleRoot.dataset.tabsBound;
+    renderAdminFilterTabs(roleRoot, items);
+    setAdminFilterTab(roleRoot, activeRole);
+    bindAdminFilterTabs(roleRoot, (value) => {
+        activeRole = value ?? '';
+        renderFilteredUsers();
+    });
+    updateFilterCounts();
+}
+
+function updateFilterCounts() {
+    const audienceRoot = document.getElementById('users-audience-tabs');
+    const roleRoot = document.getElementById('users-role-tabs');
+    const staffUsers = cachedUsers.filter((user) => isStaffRole(user.role));
+    const appUsers = cachedUsers.filter((user) => user.role === 'app_user');
+    const scoped = activeAudience === 'app' ? appUsers : staffUsers;
+
+    applyAdminFilterTabCounts(audienceRoot, {
+        staff: staffUsers.length,
+        app: appUsers.length,
+    });
+
+    applyAdminFilterTabCounts(roleRoot, {
+        '': scoped.length,
+        ...countByKey(scoped, (user) => user.role),
+    });
+}
+
+function getFilteredUsers() {
+    return cachedUsers.filter((user) => {
+        const role = String(user.role || '');
+        const inAudience = activeAudience === 'app'
+            ? role === 'app_user'
+            : isStaffRole(role);
+
+        if (!inAudience) {
+            return false;
+        }
+
+        if (!activeRole) {
+            return true;
+        }
+
+        return role === activeRole;
+    });
+}
+
+function renderFilteredUsers() {
+    if (!usersTable) {
+        return;
+    }
+
+    const users = getFilteredUsers();
+    usersTable.clear();
+    users.forEach((user) => {
+        usersTable.row.add(buildUserRowData(user));
+    });
+    usersTable.draw();
+}
+
+function isStaffRole(role) {
+    return STAFF_ROLES.includes(String(role || ''));
 }
 
 function bindUserTableActions(tableElement) {
@@ -111,136 +293,133 @@ function bindUserTableActions(tableElement) {
 }
 
 async function deleteUser(button) {
-            const userId = button.getAttribute('data-user-delete-button');
-            const userName = button.getAttribute('data-user-name');
+    const userId = button.getAttribute('data-user-delete-button');
+    const userName = button.getAttribute('data-user-name');
 
-            const result = await Swal.fire(buildSwalOptions({
-                icon: 'warning',
-                title: `Delete User: ${userName}`,
-                text: 'This will permanently remove the selected user account.',
-                showCancelButton: true,
-                confirmButtonText: 'Delete User',
-            }, { danger: true, size: 'sm' }));
+    const result = await Swal.fire(buildSwalOptions({
+        icon: 'warning',
+        title: `Delete User: ${userName}`,
+        text: 'This will permanently remove the selected user account.',
+        showCancelButton: true,
+        confirmButtonText: 'Delete User',
+    }, { danger: true, size: 'sm' }));
 
-            if (!result.isConfirmed) {
-                return;
-            }
+    if (!result.isConfirmed) {
+        return;
+    }
 
-            try {
-                const response = await axios.delete(`/admin/users/${userId}`);
-                showSuccessToast(response.data.message ?? 'User deleted successfully.', 'User deleted');
-                loadUsers();
-            } catch (error) {
-                showErrorToast(
-                    error.response?.data?.message ?? 'Please try again.',
-                    'Unable to delete user',
-                );
-            }
+    try {
+        const response = await axios.delete(`/admin/users/${userId}`);
+        showSuccessToast(response.data.message ?? 'User deleted successfully.', 'User deleted');
+        loadUsers();
+    } catch (error) {
+        showErrorToast(
+            error.response?.data?.message ?? 'Please try again.',
+            'Unable to delete user',
+        );
+    }
 }
 
 async function editUser(button) {
-            const userId = button.getAttribute('data-user-edit-button');
-            const userName = button.getAttribute('data-user-name');
-            const userEmail = button.getAttribute('data-user-email');
-            const userRole = button.getAttribute('data-user-role');
+    const userId = button.getAttribute('data-user-edit-button');
+    const userName = button.getAttribute('data-user-name');
+    const userEmail = button.getAttribute('data-user-email');
+    const userRole = button.getAttribute('data-user-role');
 
-            const result = await Swal.fire(buildSwalOptions({
-                title: `Edit User: ${userName}`,
-                html: buildSwalForm({
-                    description: 'Update core user details and access level.',
-                    fields: [
-                        {
-                            id: 'user-name',
-                            label: 'Full Name *',
-                            value: userName,
-                            placeholder: 'Administrator name',
-                        },
-                        {
-                            id: 'user-email',
-                            label: 'Email Address *',
-                            value: userEmail,
-                            type: 'email',
-                            placeholder: 'admin@example.gov.ph',
-                        },
-                        {
-                            id: 'user-role',
-                            label: 'Role *',
-                            type: 'select',
-                            value: userRole,
-                            options: USER_ROLES.map((role) => ({
-                                value: role,
-                                label: formatRole(role),
-                            })),
-                        },
-                        {
-                            id: 'user-password',
-                            label: 'Reset Password',
-                            type: 'password',
-                            optional: true,
-                            placeholder: 'Leave blank to keep current password',
-                        },
-                        {
-                            id: 'user-password-confirmation',
-                            label: 'Confirm Password',
-                            type: 'password',
-                            optional: true,
-                            confirmFor: 'user-password',
-                            placeholder: 'Repeat new password',
-                        },
-                    ],
-                }),
-                showCancelButton: true,
-                confirmButtonText: 'Save Changes',
-                allowOutsideClick: () => !Swal.isLoading(),
-                preConfirm: async () => {
-                    const name = document.getElementById('user-name')?.value.trim();
-                    const email = document.getElementById('user-email')?.value.trim();
-                    const role = document.getElementById('user-role')?.value;
-                    const password = document.getElementById('user-password')?.value;
-                    const passwordConfirmation = document.getElementById('user-password-confirmation')?.value;
-
-                    if (!name || !email || !role) {
-                        Swal.showValidationMessage('Name, email, and role are required.');
-                        return false;
-                    }
-
-                    if (password && password !== passwordConfirmation) {
-                        Swal.showValidationMessage('Password confirmation does not match.');
-                        return false;
-                    }
-
-                    const payload = {
-                        name,
-                        email,
-                        role,
-                    };
-
-                    if (password) {
-                        payload.password = password;
-                        payload.password_confirmation = passwordConfirmation;
-                    }
-
-                    try {
-                        const response = await axios.put(`/admin/users/${userId}`, payload);
-                        return response.data;
-                    } catch (error) {
-                        Swal.showValidationMessage(
-                            formatApiValidationMessage(
-                                error.response,
-                                error.response?.data?.message ?? 'Unable to update user. Please try again.',
-                            ),
-                        );
-                        return false;
-                    }
+    const result = await Swal.fire(buildSwalOptions({
+        title: `Edit User: ${userName}`,
+        html: buildSwalForm({
+            description: 'Update core user details and access level.',
+            fields: [
+                {
+                    id: 'user-name',
+                    label: 'Full Name *',
+                    value: userName,
+                    placeholder: 'Administrator name',
                 },
-            }, { size: 'lg' }));
+                {
+                    id: 'user-email',
+                    label: 'Email Address *',
+                    value: userEmail,
+                    type: 'email',
+                    placeholder: 'admin@example.gov.ph',
+                },
+                {
+                    id: 'user-role',
+                    label: 'Role *',
+                    type: 'select',
+                    value: userRole,
+                    options: roleSelectOptions(),
+                },
+                {
+                    id: 'user-password',
+                    label: 'Reset Password',
+                    type: 'password',
+                    optional: true,
+                    placeholder: 'Leave blank to keep current password',
+                },
+                {
+                    id: 'user-password-confirmation',
+                    label: 'Confirm Password',
+                    type: 'password',
+                    optional: true,
+                    confirmFor: 'user-password',
+                    placeholder: 'Repeat new password',
+                },
+            ],
+        }),
+        showCancelButton: true,
+        confirmButtonText: 'Save Changes',
+        allowOutsideClick: () => !Swal.isLoading(),
+        preConfirm: async () => {
+            const name = document.getElementById('user-name')?.value.trim();
+            const email = document.getElementById('user-email')?.value.trim();
+            const role = document.getElementById('user-role')?.value;
+            const password = document.getElementById('user-password')?.value;
+            const passwordConfirmation = document.getElementById('user-password-confirmation')?.value;
 
-            if (!result.isConfirmed || !result.value) {
-                return;
+            if (!name || !email || !role) {
+                Swal.showValidationMessage('Name, email, and role are required.');
+                return false;
             }
 
-            showSuccessToast(result.value.message ?? 'User updated successfully.', 'User updated');
-            loadUsers();
+            if (password && password !== passwordConfirmation) {
+                Swal.showValidationMessage('Password confirmation does not match.');
+                return false;
+            }
+
+            const payload = {
+                name,
+                email,
+                role,
+            };
+
+            if (password) {
+                payload.password = password;
+                payload.password_confirmation = passwordConfirmation;
+            }
+
+            try {
+                const response = await axios.put(`/admin/users/${userId}`, payload);
+                return response.data;
+            } catch (error) {
+                Swal.showValidationMessage(
+                    formatApiValidationMessage(
+                        error.response,
+                        error.response?.data?.message ?? 'Unable to update user. Please try again.',
+                    ),
+                );
+                return false;
+            }
+        },
+    }, { size: 'lg' }));
+
+    if (!result.isConfirmed || !result.value) {
+        return;
+    }
+
+    showSuccessToast(result.value.message ?? 'User updated successfully.', 'User updated');
+    loadUsers();
 }
 
 function renderUserActions(user) {
@@ -281,60 +460,66 @@ function renderUserActions(user) {
 }
 
 async function changeUserRole(button) {
-            const userId = button.getAttribute('data-user-role-button');
-            const userName = button.getAttribute('data-user-name');
-            const currentRole = button.getAttribute('data-user-role');
+    const userId = button.getAttribute('data-user-role-button');
+    const userName = button.getAttribute('data-user-name');
+    const currentRole = button.getAttribute('data-user-role');
 
-            const options = USER_ROLES.reduce((accumulator, role) => {
-                accumulator[role] = formatRole(role);
+    const result = await Swal.fire(buildSwalOptions({
+        title: `Update Role: ${userName}`,
+        html: buildSwalForm({
+            description: 'Choose the appropriate access level for this user account.',
+            fields: [
+                {
+                    id: 'user-role',
+                    label: 'Role *',
+                    type: 'select',
+                    value: currentRole,
+                    options: roleSelectOptions(),
+                },
+            ],
+        }),
+        showCancelButton: true,
+        confirmButtonText: 'Save Role',
+        preConfirm: () => document.getElementById('user-role')?.value,
+    }, { size: 'sm' }));
 
-                return accumulator;
-            }, {});
+    if (!result.isConfirmed) {
+        return;
+    }
 
-            const result = await Swal.fire(buildSwalOptions({
-                title: `Update Role: ${userName}`,
-                html: buildSwalForm({
-                    description: 'Choose the appropriate access level for this user account.',
-                    fields: [
-                        {
-                            id: 'user-role',
-                            label: 'Role *',
-                            type: 'select',
-                            value: currentRole,
-                            options: Object.entries(options).map(([value, label]) => ({ value, label })),
-                        },
-                    ],
-                }),
-                showCancelButton: true,
-                confirmButtonText: 'Save Role',
-                preConfirm: () => document.getElementById('user-role')?.value,
-            }, { size: 'sm' }));
+    try {
+        const response = await axios.put(`/admin/users/${userId}/role`, {
+            role: result.value,
+        });
 
-            if (!result.isConfirmed) {
-                return;
-            }
+        showSuccessToast(response.data.message ?? 'Role updated successfully.', 'Role updated');
+        loadUsers();
+    } catch (error) {
+        showErrorToast(
+            error.response?.data?.message ?? 'Please try again.',
+            'Unable to update role',
+        );
+    }
+}
 
-            try {
-                const response = await axios.put(`/admin/users/${userId}/role`, {
-                    role: result.value,
-                });
-
-                showSuccessToast(response.data.message ?? 'Role updated successfully.', 'Role updated');
-                loadUsers();
-            } catch (error) {
-                showErrorToast(
-                    error.response?.data?.message ?? 'Please try again.',
-                    'Unable to update role',
-                );
-            }
+function roleSelectOptions() {
+    return USER_ROLES.map((role) => ({
+        value: role,
+        label: ROLE_META[role]?.label ?? formatRole(role),
+    }));
 }
 
 function badge(role) {
-    return `<span class="inline-flex rounded-full bg-[#055498]/10 px-2.5 py-1 text-xs font-semibold text-[#055498]">${formatRole(role)}</span>`;
+    const meta = ROLE_META[role] ?? {
+        label: formatRole(role),
+        tone: 'muted',
+    };
+
+    return `<span class="admin-user-role-badge is-${escapeHtml(meta.tone)}">${escapeHtml(meta.label)}</span>`;
 }
 
 function formatRole(role) {
-    return role
+    return String(role || '')
         .split('_')
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(' ');
@@ -375,6 +560,18 @@ function renderUserAvatar(user) {
     return `<span class="admin-user-avatar admin-user-avatar-fallback" title="${name}" aria-label="${name}">${initials}</span>`;
 }
 
+function renderUserIdentity(user) {
+    return `
+        <div class="admin-user-identity">
+            ${renderUserAvatar(user)}
+            <div class="admin-user-identity-copy min-w-0">
+                <p class="admin-user-identity-name">${escapeHtml(user.name)}</p>
+                <p class="admin-user-identity-email">${escapeHtml(user.email)}</p>
+            </div>
+        </div>
+    `;
+}
+
 function getUsersTableMode() {
     return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
 }
@@ -390,7 +587,7 @@ async function initializeUsersTable(tableElement) {
     usersTableMode = nextMode;
     usersTable = await createAdminDataTable(tableElement, getAdminDataTableOptions({
         searchLabel: 'Search users:',
-        searchPlaceholder: 'Search users',
+        searchPlaceholder: 'Search name or email',
         infoLabel: 'Showing _START_ to _END_ of _TOTAL_ users',
         pageLength: nextMode === 'mobile' ? 5 : 10,
         scrollX: nextMode !== 'mobile',
@@ -402,9 +599,7 @@ async function initializeUsersTable(tableElement) {
             ]
             : [
                 { title: 'ID', className: 'dt-col-id' },
-                { title: 'Photo', className: 'dt-col-avatar', orderable: false },
-                { title: 'Name', className: 'dt-col-primary' },
-                { title: 'Email', className: 'dt-col-wide' },
+                { title: 'User', className: 'dt-col-primary', orderable: true },
                 { title: 'Role', className: 'dt-col-nowrap' },
                 { title: 'Last Login', className: 'dt-col-nowrap' },
                 { title: 'Actions', orderable: false, className: 'dt-col-actions' },
@@ -426,7 +621,7 @@ function bindUsersViewportListener(tableElement) {
         }
 
         await initializeUsersTable(tableElement);
-        loadUsers();
+        renderFilteredUsers();
     };
 
     if (typeof query.addEventListener === 'function') {
@@ -439,11 +634,14 @@ function bindUsersViewportListener(tableElement) {
 }
 
 function buildUserRowData(user) {
+    const lastLogin = formatLastLogin(user.last_login_at);
+    const neverLoggedIn = !user.last_login_at;
+
     if (usersTableMode === 'mobile') {
         return [
             `<div class="admin-table-mobile-card">
                 <div class="admin-table-mobile-title-row">
-                    <div class="flex items-center gap-3 min-w-0">
+                    <div class="flex min-w-0 items-center gap-3">
                         ${renderUserAvatar(user)}
                         <div class="min-w-0">
                             <p class="admin-table-mobile-kicker">User #${user.id}</p>
@@ -454,7 +652,7 @@ function buildUserRowData(user) {
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Email:</span> ${escapeHtml(user.email)}</p>
-                    <p><span>Last login:</span> ${escapeHtml(formatLastLogin(user.last_login_at))}</p>
+                    <p><span>Last login:</span> ${neverLoggedIn ? '<span class="admin-user-login-muted">Never</span>' : escapeHtml(lastLogin)}</p>
                 </div>
             </div>`,
             renderUserActions(user),
@@ -463,11 +661,11 @@ function buildUserRowData(user) {
 
     return [
         user.id,
-        renderUserAvatar(user),
-        escapeHtml(user.name),
-        escapeHtml(user.email),
+        renderUserIdentity(user),
         badge(user.role),
-        escapeHtml(formatLastLogin(user.last_login_at)),
+        neverLoggedIn
+            ? '<span class="admin-user-login-muted">Never</span>'
+            : escapeHtml(lastLogin),
         renderUserActions(user),
     ];
 }
@@ -506,10 +704,12 @@ function escapeHtml(value) {
 }
 
 async function createUserPrompt() {
+    const defaultRole = activeAudience === 'app' ? 'app_user' : 'editor';
+
     const result = await Swal.fire(buildSwalOptions({
         title: 'Add User',
         html: buildSwalForm({
-            description: 'Create a new admin or analytics user.',
+            description: 'Create a staff console account or a mobile app user.',
             fields: [
                 {
                     id: 'user-name',
@@ -526,11 +726,8 @@ async function createUserPrompt() {
                     id: 'user-role',
                     label: 'Role *',
                     type: 'select',
-                    value: 'editor',
-                    options: USER_ROLES.map((role) => ({
-                        value: role,
-                        label: formatRole(role),
-                    })),
+                    value: defaultRole,
+                    options: roleSelectOptions(),
                 },
                 {
                     id: 'user-password',
@@ -594,8 +791,23 @@ async function createUserPrompt() {
     }
 
     showSuccessToast(result.value.message ?? 'User created successfully.', 'User created');
+
+    const createdRole = result.value.data?.role;
+    if (createdRole === 'app_user') {
+        activeAudience = 'app';
+        activeRole = '';
+        const audienceRoot = document.getElementById('users-audience-tabs');
+        setAdminFilterTab(audienceRoot, 'app');
+        renderRoleTabs();
+    } else if (createdRole && isStaffRole(createdRole)) {
+        activeAudience = 'staff';
+        activeRole = '';
+        const audienceRoot = document.getElementById('users-audience-tabs');
+        setAdminFilterTab(audienceRoot, 'staff');
+        renderRoleTabs();
+    }
+
     loadUsers();
 }
 
 window.Users = { create: createUserPrompt };
-
