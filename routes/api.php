@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\Admin\AdminNotificationController;
 use App\Http\Controllers\API\Admin\AdminSearch\AdminSearchController;
 use App\Http\Controllers\API\Admin\AnalyticsAdminController;
+use App\Http\Controllers\API\Admin\DashboardAdminController;
 use App\Http\Controllers\API\Admin\CategoryAdminController;
 use App\Http\Controllers\API\Admin\DiaryAdminController;
 use App\Http\Controllers\API\Admin\NotificationAdminController;
@@ -427,6 +428,7 @@ Route::prefix('v1')
                 Route::middleware('role:analytics_viewer,super_admin')->group(function (): void {
                     Route::get('/analytics',        [AnalyticsAdminController::class, 'index'])->name('analytics.index');
                     Route::get('/analytics/export', [AnalyticsAdminController::class, 'export'])->name('analytics.export');
+                    Route::get('/dashboard/attention', [DashboardAdminController::class, 'attention'])->name('dashboard.attention');
                 });
             });
         });

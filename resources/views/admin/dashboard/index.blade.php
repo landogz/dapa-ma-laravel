@@ -1,213 +1,171 @@
 @extends('admin.layout')
 
 @section('content')
-    <section id="dashboard-overview" class="space-y-6">
-        <div class="admin-shell-card p-4 sm:p-6">
-            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div>
-                    <h2 class="text-2xl font-bold text-slate-900">Dashboard</h2>
-                    <p class="mt-1 text-sm text-slate-500">Overview of admin operations.</p>
-                </div>
+    <section id="dashboard-overview" class="admin-dashboard space-y-6">
+        <div class="admin-dashboard-header flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div class="min-w-0">
+                <h2 class="text-2xl font-bold text-[var(--color-text)]" data-dashboard-greeting>Good day</h2>
+                <p class="mt-1 text-sm text-[var(--color-text-muted)]" data-dashboard-date></p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <label class="sr-only" for="dashboard-range">Trend range</label>
+                <select id="dashboard-range" class="admin-filter-select admin-dashboard-range" data-dashboard-range>
+                    <option value="1">Today</option>
+                    <option value="7" selected>7 days</option>
+                    <option value="30">30 days</option>
+                </select>
             </div>
         </div>
 
-        <div class="admin-shell-card p-4 sm:p-6">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Quick Actions</p>
-                <div class="flex flex-wrap gap-2">
-                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-post" data-action-section="posts" title="Create a new post draft">
-                        <i class="fas fa-pen-to-square mr-2"></i>
-                        New Post
-                    </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-rehab-center" data-action-section="rehab-centers" title="Add a new rehab center listing">
-                        <i class="fas fa-house-medical mr-2"></i>
-                        Add Rehab Center
-                    </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-contest" data-action-section="contests" title="Add a Song, Poster, or Video contest">
-                        <i class="fas fa-trophy mr-2"></i>
-                        Add Contest
-                    </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-blue" data-admin-action="create-iec-material" data-action-section="iec-materials" title="Add animated IEC material">
-                        <i class="fas fa-photo-film mr-2"></i>
-                        Add IEC Material
-                    </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-green" data-admin-action="create-app-translation" data-action-section="app-translations" title="Add English/Tagalog mobile string">
-                        <i class="fas fa-language mr-2"></i>
-                        Add Translation
-                    </button>
-                    <button type="button" class="admin-quick-action admin-quick-action-orange" data-admin-action="send-notification" data-action-section="notifications" title="Send an in-app notification campaign">
-                        <i class="fas fa-bell mr-2"></i>
-                        Send Notification
-                    </button>
-                </div>
-            </div>
+        <div class="admin-dashboard-quick-actions -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+            <button type="button" class="admin-primary-button shrink-0" data-admin-action="create-post" data-action-section="posts">
+                <i class="fas fa-pen-to-square mr-2" aria-hidden="true"></i>
+                New Post
+            </button>
+            <button type="button" class="admin-secondary-button shrink-0" data-admin-action="create-rehab-center" data-action-section="rehab-centers">
+                <i class="fas fa-house-medical mr-2" aria-hidden="true"></i>
+                Add Rehab Center
+            </button>
+            <button type="button" class="admin-secondary-button shrink-0" data-admin-action="create-contest" data-action-section="contests">
+                <i class="fas fa-trophy mr-2" aria-hidden="true"></i>
+                Add Contest
+            </button>
+            <button type="button" class="admin-secondary-button shrink-0" data-admin-action="create-iec-material" data-action-section="iec-materials">
+                <i class="fas fa-photo-film mr-2" aria-hidden="true"></i>
+                Add IEC Material
+            </button>
+            <button type="button" class="admin-secondary-button shrink-0" data-admin-action="create-app-translation" data-action-section="app-translations">
+                <i class="fas fa-language mr-2" aria-hidden="true"></i>
+                Add Translation
+            </button>
+            <button type="button" class="admin-secondary-button shrink-0" data-admin-action="send-notification" data-action-section="notifications">
+                <i class="fas fa-bell mr-2" aria-hidden="true"></i>
+                Send Notification
+            </button>
         </div>
 
-        <div id="function-cards" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <a href="/admin/posts" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="posts">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#FBD116]">Content</p>
-                        <p class="mt-3 text-base font-semibold">Posts</p>
-                        <p class="mt-2 text-3xl font-bold" data-overview-count="posts">--</p>
-                        <p class="admin-trend" data-overview-trend="posts">–</p>
+        <div id="function-cards-primary" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            @foreach ([
+                ['users', 'Access', 'Users', 'fa-users', '/admin/users'],
+                ['posts', 'Content', 'Posts', 'fa-file-lines', '/admin/posts'],
+                ['notifications', 'Campaigns', 'Notifications', 'fa-bell', '/admin/notifications'],
+                ['diary', 'Journal', 'Journal', 'fa-book-open', '/admin/diary'],
+            ] as [$key, $label, $title, $icon, $href])
+                <a href="{{ $href }}" class="admin-stat-card admin-stat-card-tier-primary admin-function-card admin-dashboard-summary text-left" data-card-section="{{ $key }}">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                            <p class="admin-stat-card-label">{{ $label }}</p>
+                            <p class="mt-2 text-base font-semibold text-[var(--color-text)]">{{ $title }}</p>
+                            <div class="mt-2 flex items-end justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-3xl font-bold text-[var(--color-text)]" data-overview-count="{{ $key }}">--</p>
+                                    <p class="admin-trend" data-overview-trend="{{ $key }}">–</p>
+                                </div>
+                                <canvas class="admin-stat-sparkline" data-overview-sparkline="{{ $key }}" width="80" height="24" aria-hidden="true"></canvas>
+                            </div>
+                        </div>
+                        <span class="admin-stat-card-icon" aria-hidden="true">
+                            <i class="fas {{ $icon }}"></i>
+                        </span>
                     </div>
-                    <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
-                        <i class="fas fa-file-lines text-[#FBD116]"></i>
-                    </span>
-                </div>
-            </a>
+                </a>
+            @endforeach
+        </div>
 
-            <a href="/admin/rehab-centers" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="rehab-centers">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">Directory</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">Rehab Centers</p>
-                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="rehab-centers">--</p>
-                        <p class="admin-trend" data-overview-trend="rehab-centers">–</p>
+        <div id="function-cards-secondary" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            @foreach ([
+                ['rehab-centers', 'Directory', 'Rehab Centers', 'fa-hospital-user', '/admin/rehab-centers'],
+                ['contests', 'Contests', 'Contests', 'fa-trophy', '/admin/contests'],
+                ['iec-materials', 'IEC', 'IEC Materials', 'fa-photo-film', '/admin/iec-materials'],
+                ['app-translations', 'Admin', 'App Translations', 'fa-language', '/admin/app-translations'],
+            ] as [$key, $label, $title, $icon, $href])
+                <a href="{{ $href }}" class="admin-stat-card admin-stat-card-tier-secondary admin-function-card admin-dashboard-summary text-left" data-card-section="{{ $key }}">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="admin-stat-card-label">{{ $label }}</p>
+                            <p class="mt-1.5 text-sm font-semibold text-[var(--color-text)]">{{ $title }}</p>
+                            <p class="mt-1 text-2xl font-bold text-[var(--color-text)]" data-overview-count="{{ $key }}">--</p>
+                            <p class="admin-trend" data-overview-trend="{{ $key }}">–</p>
+                        </div>
+                        <span class="admin-stat-card-icon" aria-hidden="true">
+                            <i class="fas {{ $icon }}"></i>
+                        </span>
                     </div>
-                    <span class="admin-icon-badge">
-                        <i class="fas fa-hospital-user"></i>
-                    </span>
-                </div>
-            </a>
-
-            <a href="/admin/contests" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="contests">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">Contests</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">Contests</p>
-                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="contests">--</p>
-                        <p class="admin-trend" data-overview-trend="contests">–</p>
-                    </div>
-                    <span class="admin-icon-badge">
-                        <i class="fas fa-trophy"></i>
-                    </span>
-                </div>
-            </a>
-
-
-            <a href="/admin/iec-materials" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="iec-materials">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#055498]">IEC</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">IEC Materials</p>
-                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="iec-materials">--</p>
-                        <p class="admin-trend" data-overview-trend="iec-materials">–</p>
-                    </div>
-                    <span class="admin-icon-badge">
-                        <i class="fas fa-photo-film"></i>
-                    </span>
-                </div>
-            </a>
-
-            <a href="/admin/app-translations" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="app-translations">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#123a60]">Administration</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">App Translations</p>
-                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="app-translations">--</p>
-                        <p class="admin-trend" data-overview-trend="app-translations">–</p>
-                    </div>
-                    <span class="admin-icon-badge">
-                        <i class="fas fa-language"></i>
-                    </span>
-                </div>
-            </a>
-
-            <a href="/admin/notifications" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="notifications">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#CE2028]">Campaigns</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">Notifications</p>
-                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="notifications">--</p>
-                        <p class="admin-trend" data-overview-trend="notifications">–</p>
-                    </div>
-                    <span class="admin-icon-badge">
-                        <i class="fas fa-bell"></i>
-                    </span>
-                </div>
-            </a>
-
-            <a href="/admin/users" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="users">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#123a60]">Access</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">Users</p>
-                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="users">--</p>
-                        <p class="admin-trend" data-overview-trend="users">–</p>
-                    </div>
-                    <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/50 text-[#123a60]">
-                        <i class="fas fa-users"></i>
-                    </span>
-                </div>
-            </a>
-
-            <a href="/admin/diary" class="admin-stat-card admin-function-card admin-dashboard-summary text-left" data-card-section="diary">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.16em] text-[#7C3AED]">All Users</p>
-                        <p class="mt-3 text-base font-semibold text-slate-900">Journal</p>
-                        <p class="mt-2 text-3xl font-bold text-slate-900" data-overview-count="diary">--</p>
-                        <p class="admin-trend" data-overview-trend="diary">–</p>
-                    </div>
-                    <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/50 text-[#7C3AED]">
-                        <i class="fas fa-book-open"></i>
-                    </span>
-                </div>
-            </a>
+                </a>
+            @endforeach
         </div>
 
         <div class="grid gap-6 xl:grid-cols-2">
             <div class="admin-shell-card p-4 sm:p-6" data-overview-analytics>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="admin-panel-header">
                     <div class="flex items-center gap-3">
-                        <span class="admin-icon-badge">
+                        <span class="admin-stat-card-icon" aria-hidden="true">
                             <i class="fas fa-chart-line"></i>
                         </span>
                         <div>
-                            <p class="text-base font-semibold text-slate-900">Activity Over Time</p>
-                            <p class="text-xs text-slate-500">Events in the last 30 days</p>
+                            <p class="text-base font-semibold text-[var(--color-text)]">Activity Over Time</p>
+                            <p class="text-xs text-[var(--color-text-muted)]" data-activity-subtitle>Events in the last 7 days</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 text-xs text-slate-500">
-                        <span>Range:</span>
-                        <div class="admin-range-toggle inline-flex overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">
-                            <button type="button" class="admin-range-toggle-button is-active" data-activity-range="7">7 days</button>
-                            <button type="button" class="admin-range-toggle-button" data-activity-range="30">30 days</button>
-                        </div>
+                    <div class="admin-range-toggle inline-flex overflow-hidden rounded-full border border-[var(--color-border)] bg-slate-50 text-[11px]">
+                        <button type="button" class="admin-range-toggle-button is-active" data-activity-range="7">7 days</button>
+                        <button type="button" class="admin-range-toggle-button" data-activity-range="30">30 days</button>
                     </div>
                 </div>
                 <div id="dashboard-activity-chart" class="mt-6"></div>
             </div>
 
-            <div class="admin-shell-card p-4 sm:p-6" data-overview-analytics>
-                <div class="flex items-center gap-3">
-                    <span class="admin-icon-badge">
-                        <i class="fas fa-clock-rotate-left"></i>
-                    </span>
-                    <div>
-                        <p class="text-base font-semibold text-slate-900">Recent Activity</p>
-                        <p class="text-xs text-slate-500">Latest app and content events</p>
+            <div class="space-y-6">
+                <div class="admin-shell-card p-4 sm:p-6">
+                    <div class="admin-panel-header">
+                        <div class="flex items-center gap-3">
+                            <span class="admin-stat-card-icon" aria-hidden="true">
+                                <i class="fas fa-triangle-exclamation"></i>
+                            </span>
+                            <div>
+                                <p class="text-base font-semibold text-[var(--color-text)]">Needs attention</p>
+                                <p class="text-xs text-[var(--color-text-muted)]">Actionable items across the admin</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="dashboard-needs-attention" class="mt-4 space-y-2">
+                        <div class="h-10 animate-pulse rounded-xl bg-slate-100"></div>
+                        <div class="h-10 animate-pulse rounded-xl bg-slate-100"></div>
                     </div>
                 </div>
-                <div id="dashboard-recent-activity" class="mt-6 space-y-3"></div>
+
+                <div class="admin-shell-card p-4 sm:p-6" data-overview-analytics>
+                    <div class="admin-panel-header">
+                        <div class="flex items-center gap-3">
+                            <span class="admin-stat-card-icon" aria-hidden="true">
+                                <i class="fas fa-clock-rotate-left"></i>
+                            </span>
+                            <div>
+                                <p class="text-base font-semibold text-[var(--color-text)]">Recent Activity</p>
+                                <p class="text-xs text-[var(--color-text-muted)]">Latest app and content events</p>
+                            </div>
+                        </div>
+                        <a href="/admin/analytics" class="text-xs font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]">View all</a>
+                    </div>
+                    <div id="dashboard-recent-activity" class="mt-4 space-y-2"></div>
+                </div>
             </div>
         </div>
 
         <div class="admin-shell-card p-4 sm:p-6" data-overview-analytics>
-            <div class="flex items-center justify-between gap-3">
+            <div class="admin-panel-header">
                 <div class="flex items-center gap-3">
-                    <span class="admin-icon-badge">
+                    <span class="admin-stat-card-icon" aria-hidden="true">
                         <i class="fas fa-ranking-star"></i>
                     </span>
                     <div>
-                        <p class="text-base font-semibold text-slate-900">Top Content</p>
-                        <p class="text-xs text-slate-500">Most viewed posts</p>
+                        <p class="text-base font-semibold text-[var(--color-text)]">Top Content</p>
+                        <p class="text-xs text-[var(--color-text-muted)]">Most viewed posts</p>
                     </div>
                 </div>
+                <a href="/admin/posts" class="text-xs font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]">View all</a>
             </div>
-            <div id="dashboard-top-posts" class="mt-6 grid gap-3"></div>
+            <div id="dashboard-top-posts" class="mt-4 grid gap-3"></div>
         </div>
     </section>
 @endsection

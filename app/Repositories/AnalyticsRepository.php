@@ -25,21 +25,46 @@ class AnalyticsRepository
 
     public function topPosts(int $limit = 10, int $days = 30): Collection
     {
-        return AnalyticsEvent::query()
+        $from = now()->subDays($days);
+        $previousFrom = now()->subDays($days * 2);
+        $previousTo = $from->copy();
+
+        $rows = AnalyticsEvent::query()
             ->select('post_id', DB::raw('count(*) as views'))
             ->whereNotNull('post_id')
             ->whereIn('event_type', self::VIEW_EVENT_TYPES)
-            ->where('created_at', '>=', now()->subDays($days))
+            ->where('created_at', '>=', $from)
             ->groupBy('post_id')
             ->orderByDesc('views')
             ->limit($limit)
             ->with(['post' => function ($query) {
-                $query->select('id', 'title', 'category_id')
+                $query->select('id', 'title', 'category_id', 'media_url')
                     ->with(['category:id,name'])
                     ->withCount('reviews')
                     ->withAvg('reviews', 'rating');
             }])
             ->get();
+
+        $postIds = $rows->pluck('post_id')->filter()->all();
+        $previousViews = [];
+
+        if ($postIds !== []) {
+            $previousViews = AnalyticsEvent::query()
+                ->select('post_id', DB::raw('count(*) as views'))
+                ->whereIn('post_id', $postIds)
+                ->whereIn('event_type', self::VIEW_EVENT_TYPES)
+                ->where('created_at', '>=', $previousFrom)
+                ->where('created_at', '<', $previousTo)
+                ->groupBy('post_id')
+                ->pluck('views', 'post_id')
+                ->all();
+        }
+
+        return $rows->map(function ($row) use ($previousViews) {
+            $row->previous_views = (int) ($previousViews[$row->post_id] ?? 0);
+
+            return $row;
+        });
     }
 
     public function audienceSummary(int $days = 30): array

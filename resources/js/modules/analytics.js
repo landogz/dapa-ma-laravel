@@ -619,57 +619,78 @@ function renderDailyCounts(days) {
     });
 }
 
+function niceCeiling(value) {
+    const max = Math.max(Number(value) || 0, 0);
+
+    if (max === 0) {
+        return 4;
+    }
+
+    const exp = 10 ** Math.floor(Math.log10(max));
+    const fraction = max / exp;
+    let nice = 10;
+
+    if (fraction <= 1) nice = 1;
+    else if (fraction <= 2) nice = 2;
+    else if (fraction <= 5) nice = 5;
+
+    return nice * exp;
+}
+
+function buildYTicks(ceiling, steps = 4) {
+    return Array.from({ length: steps + 1 }, (_, index) => Math.round((ceiling / steps) * index));
+}
+
 function buildActivityChartHtml(days, messages) {
     if (!days.length) {
         return buildAnalyticsEmptyState(messages.emptyTitle, messages.emptyMessage, 'fa-chart-line');
     }
 
-    const hasActivity = days.some((day) => Number(day.total) > 0);
-
-    if (!hasActivity) {
-        return buildAnalyticsEmptyState(messages.emptyTitle, messages.emptyMessage, 'fa-chart-line');
-    }
-
-    const max = Math.max(...days.map((day) => Number(day.total)), 1);
+    const rawMax = Math.max(...days.map((day) => Number(day.total) || 0), 0);
+    const ceiling = niceCeiling(rawMax);
+    const ticks = buildYTicks(ceiling, 4);
+    const plotHeight = 176;
     const showAllLabels = days.length <= 14;
-
-    const topLabel = max;
-    const midLabel = Math.round(max / 2);
 
     return `
         <div class="analytics-chart-shell flex gap-3 sm:gap-4">
             <div class="analytics-chart-y-axis flex shrink-0 gap-2">
                 <span class="analytics-chart-y-label">Events</span>
-                <div class="flex h-44 flex-col justify-between text-[11px] text-slate-400">
-                    <span>${topLabel.toLocaleString()}</span>
-                    <span>${midLabel.toLocaleString()}</span>
-                    <span>0</span>
+                <div class="analytics-chart-y-ticks flex h-44 flex-col justify-between text-[11px] text-[var(--color-text-muted)]">
+                    ${[...ticks].reverse().map((tick) => `<span>${tick.toLocaleString()}</span>`).join('')}
                 </div>
             </div>
-            <div class="analytics-chart-scroll-wrap min-w-0 flex-1">
-                <div class="analytics-chart-scroll overflow-x-auto pb-2">
-                    <div class="dashboard-activity-bars analytics-activity-bars" style="--bars:${days.length}">
+            <div class="analytics-chart-plot-wrap min-w-0 flex-1">
+                <div class="analytics-chart-plot relative h-44 w-full">
+                    <div class="analytics-chart-gridlines pointer-events-none absolute inset-0" aria-hidden="true">
+                        ${ticks.map((tick) => {
+                            const top = ceiling === 0 ? 100 : 100 - ((tick / ceiling) * 100);
+                            return `<span class="analytics-chart-gridline" style="top:${top}%"></span>`;
+                        }).join('')}
+                    </div>
+                    <div class="dashboard-activity-bars analytics-activity-bars relative z-[1] h-full w-full" style="--bars:${days.length}">
                     ${days.map((day, index) => {
                         const total = Number(day.total) || 0;
-                        const height = total === 0 ? 4 : Math.max(8, Math.round((total / max) * 176));
+                        const height = total === 0
+                            ? 2
+                            : Math.max(6, Math.round((total / ceiling) * plotHeight));
                         const label = showAllLabels || index % 2 === 0 || index === days.length - 1
                             ? formatChartDateLabel(day.date)
                             : '';
                         const shortDate = formatChartDateLabel(day.date);
                         const fullDate = formatChartDateLabel(day.date, true);
                         const countLabel = `${total.toLocaleString()} event${total === 1 ? '' : 's'}`;
-                        const tooltipLabel = `${shortDate} · ${countLabel}`;
-                        const ariaLabel = `${fullDate}: ${countLabel}`;
+                        const tooltipLabel = `${fullDate}: ${countLabel}`;
+                        const ariaLabel = tooltipLabel;
 
                         return `
                             <div
                                 class="dashboard-activity-bar analytics-activity-bar analytics-chart-column"
                                 data-chart-bar
-                                data-chart-date="${escapeHtml(shortDate)}"
-                                data-chart-count="${escapeHtml(countLabel)}"
-                                title="${escapeHtml(tooltipLabel)}"
+                                data-chart-date="${escapeHtml(fullDate)}"
+                                data-chart-count="${escapeHtml(String(total))}"
                                 tabindex="0"
-                                role="button"
+                                role="img"
                                 aria-label="${escapeHtml(ariaLabel)}"
                             >
                                 <div class="analytics-chart-hitbox">
@@ -719,14 +740,20 @@ function formatChartDateLabel(dateValue, full = false) {
     return `${month}-${day}`;
 }
 
-function renderOverviewActivity(days) {
+function renderOverviewActivity(days, rangeDays = 7) {
     const container = document.getElementById('dashboard-activity-chart');
+    const subtitle = document.querySelector('[data-activity-subtitle]');
 
     if (!container) {
         return;
     }
 
-    container.innerHTML = buildActivityChartHtml(days.slice(-30), {
+    const daysCount = Number(rangeDays) || days.length || 7;
+    if (subtitle) {
+        subtitle.textContent = `Events in the last ${daysCount} day${daysCount === 1 ? '' : 's'}`;
+    }
+
+    container.innerHTML = buildActivityChartHtml(days, {
         emptyTitle: 'No activity data available',
         emptyMessage: 'Activity will appear here once analytics events are recorded.',
         singleTitle: 'No activity data available',
@@ -792,66 +819,71 @@ function renderOverviewRecentActivity(events) {
     }
 
     if (!events.length) {
-        container.innerHTML = '<p class="text-sm text-slate-400">Recent events will appear here as users and admins start interacting with the system.</p>';
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--color-border)] bg-slate-50 px-4 py-8 text-center">
+                <span class="admin-stat-card-icon"><i class="fas fa-inbox"></i></span>
+                <p class="text-sm font-medium text-[var(--color-text)]">No recent activity yet</p>
+                <p class="text-xs text-[var(--color-text-muted)]">Events will show up here as people use the app.</p>
+            </div>
+        `;
 
         return;
     }
 
-    const groupsMap = new Map();
+    const sorted = [...events].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const groups = [];
 
-    events.forEach((event) => {
+    sorted.forEach((event) => {
         const type = String(event.event_type || '').toLowerCase();
         const postId = event.post?.id ?? event.post_id ?? '';
-        const key = `${type}|${postId}`;
-        const existing = groupsMap.get(key);
+        const createdAt = event.created_at ? new Date(event.created_at).getTime() : 0;
+        const last = groups[groups.length - 1];
+        const withinHour = last
+            && last.eventType === type
+            && String(last.postId) === String(postId)
+            && Math.abs(last.latestAtMs - createdAt) <= 60 * 60 * 1000;
 
-        if (!existing) {
-            groupsMap.set(key, {
-                eventType: type,
-                post: event.post,
-                user: event.user,
-                count: 1,
-                latestAt: event.created_at,
-            });
-        } else {
-            existing.count += 1;
-
-            if (event.created_at && new Date(event.created_at) > new Date(existing.latestAt)) {
-                existing.latestAt = event.created_at;
-                existing.post = event.post || existing.post;
-                existing.user = event.user || existing.user;
+        if (withinHour) {
+            last.count += 1;
+            if (createdAt > last.latestAtMs) {
+                last.latestAt = event.created_at;
+                last.latestAtMs = createdAt;
+                last.post = event.post || last.post;
+                last.user = event.user || last.user;
             }
+            return;
         }
+
+        groups.push({
+            eventType: type,
+            postId,
+            post: event.post,
+            user: event.user,
+            count: 1,
+            latestAt: event.created_at,
+            latestAtMs: createdAt,
+        });
     });
 
-    const groups = Array.from(groupsMap.values())
-        .sort((a, b) => new Date(b.latestAt) - new Date(a.latestAt))
-        .slice(0, 5);
-
-    container.innerHTML = groups.map((group) => {
+    container.innerHTML = groups.slice(0, 8).map((group) => {
         const meta = describeGroupedEvent(group);
+        const exact = group.latestAt ? new Date(group.latestAt).toLocaleString() : '';
 
         return `
-            <div class="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <div class="flex items-start gap-3">
-                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+            <div class="flex items-start justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-slate-50 px-3 py-3">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="admin-activity-icon ${meta.tone}" aria-hidden="true">
                         <i class="${meta.icon}"></i>
                     </span>
-                    <div class="space-y-0.5">
-                        <p class="text-sm font-semibold text-slate-900">${meta.title}</p>
-                        <p class="text-xs text-slate-500">${meta.details}</p>
+                    <div class="min-w-0 space-y-0.5">
+                        <p class="truncate text-sm font-semibold text-[var(--color-text)]">${escapeHtml(meta.title)}</p>
+                        <p class="text-xs text-[var(--color-text-muted)]">${escapeHtml(meta.details)}</p>
                     </div>
                 </div>
-                <p class="shrink-0 text-xs font-medium text-slate-400">${formatRelativeTime(group.latestAt)}</p>
+                <p class="shrink-0 text-xs font-medium text-[var(--color-text-muted)]" title="${escapeHtml(exact)}">${formatRelativeTime(group.latestAt)}</p>
             </div>
         `;
-    }).join('') + `
-        <div class="mt-3 flex justify-end">
-            <a href="/admin/analytics" class="text-xs font-semibold text-[#055498] hover:text-[#123a60]">
-                View all activity
-            </a>
-        </div>
-    `;
+    }).join('');
 }
 
 function describeGroupedEvent(group) {
@@ -861,24 +893,18 @@ function describeGroupedEvent(group) {
     const postTitle = group.post?.title || 'a post';
 
     if (type === 'post_view' || type === 'view') {
-        if (count > 1) {
-            return {
-                icon: 'fas fa-eye',
-                title: 'Post viewed',
-                details: `"${postTitle}" viewed ${count} times in recent activity.`,
-            };
-        }
-
         return {
             icon: 'fas fa-eye',
-            title: 'Post viewed',
-            details: `${userName} viewed "${postTitle}".`,
+            tone: 'is-view',
+            title: count > 1 ? `${postTitle} viewed ${count} times` : 'Post viewed',
+            details: count > 1 ? 'Grouped views within the last hour.' : `${userName} viewed this post.`,
         };
     }
 
     if (type === 'search') {
         return {
             icon: 'fas fa-magnifying-glass',
+            tone: 'is-search',
             title: 'Search performed',
             details: `${userName} searched for content in the app.`,
         };
@@ -887,21 +913,42 @@ function describeGroupedEvent(group) {
     if (type === 'bookmark') {
         return {
             icon: 'fas fa-bookmark',
-            title: 'Post bookmarked',
-            details: `${userName} bookmarked "${postTitle}".`,
+            tone: 'is-bookmark',
+            title: count > 1 ? `${postTitle} bookmarked ${count} times` : 'Post bookmarked',
+            details: count > 1 ? 'Grouped bookmarks within the last hour.' : `${userName} bookmarked this post.`,
         };
     }
 
     if (type === 'share') {
         return {
             icon: 'fas fa-share-nodes',
+            tone: 'is-share',
             title: 'Post shared',
             details: `${userName} shared "${postTitle}".`,
         };
     }
 
+    if (type === 'signup' || type === 'register' || type === 'user_registered') {
+        return {
+            icon: 'fas fa-user-plus',
+            tone: 'is-signup',
+            title: count > 1 ? `${count} new signups` : 'New signup',
+            details: count > 1 ? 'Grouped signups within the last hour.' : `${userName} joined the app.`,
+        };
+    }
+
+    if (type.includes('notification') || type === 'admin_push') {
+        return {
+            icon: 'fas fa-bell',
+            tone: 'is-notification',
+            title: 'Notification sent',
+            details: 'An in-app campaign reached users.',
+        };
+    }
+
     return {
         icon: 'fas fa-bolt',
+        tone: 'is-default',
         title: 'App activity',
         details: `${userName} triggered "${group.eventType ?? 'an event'}".`,
     };
@@ -947,25 +994,49 @@ function renderOverviewTopPosts(posts) {
     }
 
     if (posts.length === 0) {
-        container.innerHTML = '<p class="text-sm text-slate-400">No post engagement data available yet. Recent content performance will appear here once users start engaging.</p>';
+        container.innerHTML = `
+            <div class="rounded-xl border border-dashed border-[var(--color-border)] bg-slate-50 px-4 py-8 text-center text-sm text-[var(--color-text-muted)]">
+                No post engagement data available yet.
+            </div>
+        `;
 
         return;
     }
 
-    container.innerHTML = posts.slice(0, 5).map((post, index) => {
-        const { average, count } = getPostRatingMetrics(post.post ?? {});
+    container.innerHTML = posts.slice(0, 5).map((row) => {
+        const post = row.post ?? {};
+        const views = Number(row.views) || 0;
+        const previous = Number(row.previous_views) || 0;
+        const deltaPct = previous > 0
+            ? Math.round(((views - previous) / previous) * 100)
+            : (views > 0 ? 100 : 0);
+        const trendLabel = previous === 0 && views === 0
+            ? 'no change'
+            : deltaPct > 0
+                ? `up ${deltaPct}%`
+                : deltaPct < 0
+                    ? `down ${Math.abs(deltaPct)}%`
+                    : 'no change';
+        const trendClass = deltaPct > 0 ? 'admin-trend-up' : deltaPct < 0 ? 'admin-trend-down' : 'admin-trend-neutral';
+        const thumb = post.media_url
+            ? `<img src="${escapeHtml(post.media_url)}" alt="" class="h-10 w-10 rounded-lg object-cover">`
+            : `<span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)]"><i class="fas fa-image"></i></span>`;
+        const href = post.id ? `/admin/posts?post=${encodeURIComponent(post.id)}` : '/admin/posts';
 
         return `
-        <div class="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <div class="flex items-center gap-4">
-                <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#055498]/10 text-sm font-bold text-[#055498]">${index + 1}</span>
-                <div>
-                    <p class="text-sm font-semibold text-slate-900">${post.post?.title ?? 'Untitled Post'}</p>
-                    <p class="text-xs text-slate-500">Viewed content${count > 0 ? ` · ${average.toFixed(1)} ★` : ''}</p>
+        <a href="${href}" class="flex items-center justify-between gap-4 rounded-xl border border-[var(--color-border)] bg-slate-50 px-3 py-3 transition hover:border-[var(--color-primary)]/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2">
+            <div class="flex min-w-0 items-center gap-3">
+                ${thumb}
+                <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-[var(--color-text)]">${escapeHtml(post.title ?? 'Untitled Post')}</p>
+                    <p class="text-xs text-[var(--color-text-muted)]">
+                        ${formatViewCount(views)} views
+                        <span class="${trendClass}"> · ${trendLabel}</span>
+                    </p>
                 </div>
             </div>
-            <span class="text-sm font-semibold text-[#055498]">${formatViewCount(post.views)}</span>
-        </div>
+            <i class="fas fa-chevron-right text-xs text-[var(--color-text-muted)]" aria-hidden="true"></i>
+        </a>
     `;
     }).join('');
 }
@@ -987,6 +1058,7 @@ function initializeOverviewActivity(days) {
 
     const applyRange = (range) => {
         let subset = days;
+        const rangeDays = Number(range) || 30;
 
         if (range === '1') {
             subset = days.slice(-1);
@@ -996,7 +1068,7 @@ function initializeOverviewActivity(days) {
             subset = days.slice(-30);
         }
 
-        renderOverviewActivity(subset);
+        renderOverviewActivity(subset, rangeDays);
     };
 
     controls.forEach((button) => {

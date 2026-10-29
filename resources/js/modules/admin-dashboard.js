@@ -110,7 +110,7 @@ export async function initAdminPage(pageName) {
     }
 
     bindQuickActions();
-    initializePageContent(pageName, allowedSections);
+    initializePageContent(pageName, allowedSections, profile);
     startAdminFilterSelectWatcher(appRoot);
 }
 
@@ -120,8 +120,36 @@ function bindShell(appRoot) {
     const sidebarBackdrop = document.getElementById('admin-sidebar-backdrop');
     const sidebar = document.getElementById('admin-sidebar');
     const sidebarLinks = document.querySelectorAll('#admin-sidebar a');
+    const collapseToggle = document.getElementById('sidebar-collapse-toggle');
+    const sidebarCollapsedKey = 'dape-admin-sidebar-collapsed';
 
     const isDesktopViewport = () => window.matchMedia('(min-width: 1024px)').matches;
+
+    const applyCollapsed = (collapsed) => {
+        appRoot.classList.toggle('sidebar-collapsed', Boolean(collapsed) && isDesktopViewport());
+        const icon = collapseToggle?.querySelector('i');
+        if (icon) {
+            icon.className = collapsed ? 'fas fa-angles-right' : 'fas fa-angles-left';
+        }
+        collapseToggle?.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        collapseToggle?.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    };
+
+    try {
+        applyCollapsed(window.localStorage.getItem(sidebarCollapsedKey) === '1');
+    } catch {
+        applyCollapsed(false);
+    }
+
+    collapseToggle?.addEventListener('click', () => {
+        const next = !appRoot.classList.contains('sidebar-collapsed');
+        applyCollapsed(next);
+        try {
+            window.localStorage.setItem(sidebarCollapsedKey, next ? '1' : '0');
+        } catch {
+            // ignore
+        }
+    });
 
     const setSidebarOpen = (isOpen) => {
         const shouldOpen = isOpen && !isDesktopViewport();
@@ -164,6 +192,13 @@ function bindShell(appRoot) {
     window.addEventListener('resize', () => {
         if (isDesktopViewport()) {
             setSidebarOpen(false);
+            try {
+                applyCollapsed(window.localStorage.getItem(sidebarCollapsedKey) === '1');
+            } catch {
+                applyCollapsed(false);
+            }
+        } else {
+            appRoot.classList.remove('sidebar-collapsed');
         }
     });
 
@@ -390,10 +425,12 @@ async function guardPageAccess(pageName, allowedSections) {
     return false;
 }
 
-function initializePageContent(pageName, allowedSections) {
+function initializePageContent(pageName, allowedSections, profile = null) {
     switch (pageName) {
         case 'admin-dashboard':
+            initializeDashboardChrome(profile);
             loadOverviewCounts(allowedSections);
+            loadNeedsAttention(allowedSections);
 
             if (allowedSections.includes('analytics')) {
                 initAnalyticsModule();
@@ -617,6 +654,52 @@ function formatRole(role) {
         .join(' ');
 }
 
+function getDashboardRangeLabel() {
+    const range = document.querySelector('[data-dashboard-range]')?.value || '7';
+
+    if (range === '1') return 'today';
+    if (range === '30') return 'this month';
+
+    return 'this week';
+}
+
+function initializeDashboardChrome(profile) {
+    const greetingEl = document.querySelector('[data-dashboard-greeting]');
+    const dateEl = document.querySelector('[data-dashboard-date]');
+    const firstName = profile?.first_name
+        || String(profile?.name || 'there').split(/\s+/)[0]
+        || 'there';
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+    if (greetingEl) {
+        greetingEl.textContent = `${greeting}, ${firstName}`;
+    }
+
+    if (dateEl) {
+        dateEl.textContent = new Date().toLocaleDateString(undefined, {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+        });
+    }
+
+    const rangeSelect = document.querySelector('[data-dashboard-range]');
+    if (rangeSelect && rangeSelect.dataset.bound !== '1') {
+        rangeSelect.dataset.bound = '1';
+        rangeSelect.addEventListener('change', () => {
+            document.querySelectorAll('[data-overview-trend]').forEach((el) => {
+                const key = el.getAttribute('data-overview-trend');
+                const countEl = document.querySelector(`[data-overview-count="${key}"]`);
+                const total = Number(String(countEl?.textContent || '0').replace(/,/g, '')) || 0;
+                // TODO: replace localStorage delta with server period stats when available.
+                updateTrend(key, total, total);
+            });
+        });
+    }
+}
+
 function updateTrend(key, total, previous) {
     const elements = document.querySelectorAll(`[data-overview-trend="${key}"]`);
 
@@ -624,23 +707,125 @@ function updateTrend(key, total, previous) {
         return;
     }
 
+    // TODO: compute true period deltas from API; currently uses last-visit snapshot delta.
     const previousValue = typeof previous === 'number' ? previous : total;
     const delta = Number(total) - Number(previousValue);
+    const period = getDashboardRangeLabel();
 
     elements.forEach((element) => {
         element.classList.remove('admin-trend-up', 'admin-trend-down', 'admin-trend-neutral');
 
         if (delta > 0) {
             element.classList.add('admin-trend', 'admin-trend-up');
-            element.textContent = `↑ ${delta} since last check`;
+            element.innerHTML = `<i class="fas fa-arrow-up" aria-hidden="true"></i> +${delta.toLocaleString()} ${period}`;
         } else if (delta < 0) {
             element.classList.add('admin-trend', 'admin-trend-down');
-            element.textContent = `↓ ${Math.abs(delta)} since last check`;
+            element.innerHTML = `<i class="fas fa-arrow-down" aria-hidden="true"></i> −${Math.abs(delta).toLocaleString()} ${period}`;
         } else {
             element.classList.add('admin-trend', 'admin-trend-neutral');
-            element.textContent = 'No change since last check';
+            element.innerHTML = `No change ${period}`;
         }
     });
+
+    pushSparklineSample(key, Number(total) || 0);
+}
+
+function pushSparklineSample(key, total) {
+    const canvas = document.querySelector(`[data-overview-sparkline="${key}"]`);
+    if (!(canvas instanceof HTMLCanvasElement)) {
+        return;
+    }
+
+    const storageKey = 'dape-admin-overview-series';
+    let series = {};
+
+    try {
+        series = JSON.parse(window.localStorage.getItem(storageKey) || '{}') || {};
+    } catch {
+        series = {};
+    }
+
+    const values = Array.isArray(series[key]) ? series[key].map(Number) : [];
+    if (values.length === 0 || values[values.length - 1] !== total) {
+        values.push(total);
+    }
+    series[key] = values.slice(-7);
+
+    try {
+        window.localStorage.setItem(storageKey, JSON.stringify(series));
+    } catch {
+        // ignore
+    }
+
+    drawSparkline(canvas, series[key]);
+}
+
+function drawSparkline(canvas, values) {
+    const width = canvas.width || 80;
+    const height = canvas.height || 24;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, width, height);
+    const points = values.length ? values : [0];
+    const min = Math.min(...points);
+    const max = Math.max(...points);
+    const span = Math.max(max - min, 1);
+    const step = points.length > 1 ? width / (points.length - 1) : width;
+
+    ctx.strokeStyle = '#055498';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    points.forEach((value, index) => {
+        const x = index * step;
+        const y = height - (((value - min) / span) * (height - 4)) - 2;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+}
+
+async function loadNeedsAttention(allowedSections) {
+    const container = document.getElementById('dashboard-needs-attention');
+    if (!container) return;
+
+    try {
+        const { data } = await window.axios.get('/admin/dashboard/attention');
+        const items = (data.data?.items ?? []).filter((item) => {
+            const section = String(item.href || '').replace('/admin/', '').split('?')[0];
+            if (section === 'posts') return allowedSections.includes('posts');
+            if (section === 'care-checks') return allowedSections.includes('care-checks');
+            if (section === 'app-translations') return allowedSections.includes('app-translations');
+            if (section === 'hope-events') return allowedSections.includes('hope-events');
+            return true;
+        });
+
+        if (!items.length) {
+            container.innerHTML = `
+                <div class="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
+                    <span class="admin-stat-card-icon !bg-emerald-100 !text-emerald-700"><i class="fas fa-check"></i></span>
+                    <span>All caught up</span>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = items.map((item) => `
+            <a href="${item.href}" class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-slate-50 px-3 py-3 transition hover:border-[var(--color-primary)]/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2">
+                <span class="flex min-w-0 items-center gap-3">
+                    <span class="admin-stat-card-icon"><i class="${item.icon}"></i></span>
+                    <span class="truncate text-sm font-medium text-[var(--color-text)]">${item.label}</span>
+                </span>
+                <span class="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-[var(--color-primary-soft)] px-2 text-xs font-bold text-[var(--color-primary)]">${Number(item.count).toLocaleString()}</span>
+            </a>
+        `).join('');
+    } catch {
+        container.innerHTML = `
+            <div class="rounded-xl border border-dashed border-[var(--color-border)] px-3 py-4 text-sm text-[var(--color-text-muted)]">
+                Attention items unavailable right now.
+            </div>
+        `;
+    }
 }
 
 function updateNotificationBadge(total) {
