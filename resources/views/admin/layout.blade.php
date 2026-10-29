@@ -19,9 +19,9 @@
         <div id="admin-sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-950/50 lg:hidden"></div>
 
         <aside id="admin-sidebar" class="fixed inset-y-0 left-0 top-0 z-40 flex min-h-screen w-72 -translate-x-full flex-col overflow-y-auto bg-[#123a60] px-3 py-4 text-white shadow-xl transition-transform duration-300 lg:sticky lg:translate-x-0" data-admin-sidebar>
-            <div class="shrink-0 px-2">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg shadow-[#055498]/25">
+            <div class="admin-sidebar-brand shrink-0 px-2">
+                <div class="admin-sidebar-brand-row flex items-center gap-3">
+                    <div class="admin-sidebar-logo flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg shadow-[#055498]/25">
                         <img src="{{ asset('ddb.svg') }}" alt="DDB logo" class="h-9 w-9 object-contain">
                     </div>
                     <div class="admin-sidebar-brand-text min-w-0 flex-1">
@@ -31,7 +31,7 @@
                     <button
                         type="button"
                         id="sidebar-collapse-toggle"
-                        class="admin-sidebar-collapse-toggle hidden lg:inline-flex"
+                        class="admin-sidebar-collapse-toggle"
                         aria-label="Collapse sidebar"
                         title="Collapse sidebar"
                     >

@@ -3472,13 +3472,21 @@ select.admin-filter-select:not(.admin-choice-select-native),
 .admin-activity-icon.is-default { background: var(--color-primary-soft); color: var(--color-primary); }
 
 .admin-sidebar-collapse-toggle {
+    display: none;
     height: 2rem;
     width: 2rem;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
     border-radius: 0.5rem;
     color: rgba(255, 255, 255, 0.8);
     transition: background 0.15s ease;
+}
+
+@media (min-width: 1024px) {
+    .admin-sidebar-collapse-toggle {
+        display: inline-flex;
+    }
 }
 
 .admin-sidebar-collapse-toggle:hover {
@@ -3492,12 +3500,35 @@ select.admin-filter-select:not(.admin-choice-select-native),
 @media (min-width: 1024px) {
     #admin-app.sidebar-collapsed #admin-sidebar {
         width: var(--admin-sidebar-collapsed-width);
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+        overflow-x: hidden;
     }
 
     #admin-app.sidebar-collapsed .admin-main-offset {
         padding-left: 0;
+    }
+
+    #admin-app.sidebar-collapsed .admin-sidebar-brand {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    #admin-app.sidebar-collapsed .admin-sidebar-brand-row {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    #admin-app.sidebar-collapsed .admin-sidebar-logo {
+        height: 2.5rem;
+        width: 2.5rem;
+    }
+
+    #admin-app.sidebar-collapsed .admin-sidebar-logo img {
+        height: 1.75rem;
+        width: 1.75rem;
     }
 
     #admin-app.sidebar-collapsed .admin-sidebar-brand-text,
@@ -3513,8 +3544,17 @@ select.admin-filter-select:not(.admin-choice-select-native),
     }
 
     #admin-app.sidebar-collapsed .admin-sidebar-collapse-toggle {
-        margin-left: auto;
-        margin-right: auto;
+        display: inline-flex;
+        margin: 0;
+        height: 2.25rem;
+        width: 2.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+    }
+
+    #admin-app.sidebar-collapsed .admin-sidebar-collapse-toggle:hover {
+        background: rgba(255, 255, 255, 0.16);
     }
 }
 
