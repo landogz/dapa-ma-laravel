@@ -11,6 +11,7 @@ use App\Services\AdminNotificationService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 class UserAdminController extends Controller
@@ -23,12 +24,22 @@ class UserAdminController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $perPage = (int) $request->integer('per_page', 20);
+        $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
+        $filters = [
+            'audience' => $request->query('audience'),
+            'role' => $request->query('role'),
+            'q' => $request->query('q', $request->query('search')),
+            'status' => $request->query('status'),
+        ];
+
+        $result = $this->userService->listPaginated($perPage, $filters);
+        $paginator = $result['paginator'];
 
         return response()->json([
             'status'  => true,
             'message' => 'Users fetched.',
-            'data'    => $this->userService->listPaginated($perPage),
+            'data'    => $paginator,
+            'summary' => $result['summary'],
         ]);
     }
 
@@ -50,6 +61,7 @@ class UserAdminController extends Controller
                 'name'  => $user->name,
                 'email' => $user->email,
                 'role'  => $user->role,
+                'is_active' => (bool) $user->is_active,
             ],
         ], Response::HTTP_CREATED);
     }
@@ -106,6 +118,75 @@ class UserAdminController extends Controller
                 'name'  => $updated->name,
                 'email' => $updated->email,
                 'role'  => $updated->role,
+                'is_active' => (bool) $updated->is_active,
+            ],
+        ]);
+    }
+
+    public function forcePassword(Request $request, User $user): JsonResponse
+    {
+        $actor = $request->user();
+
+        if (! $actor instanceof User) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized.',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        try {
+            $updated = $this->userService->forcePasswordChange($actor, $user);
+        } catch (ValidationException $exception) {
+            return $this->validationErrorResponse($exception);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => "{$updated->name} must change password on next login.",
+            'data' => [
+                'id' => $updated->id,
+                'must_change_password' => true,
+            ],
+        ]);
+    }
+
+    public function suspend(Request $request, User $user): JsonResponse
+    {
+        $actor = $request->user();
+
+        if (! $actor instanceof User) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized.',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        try {
+            $updated = $this->userService->suspend($actor, $user);
+        } catch (ValidationException $exception) {
+            return $this->validationErrorResponse($exception);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => "{$updated->name} has been suspended.",
+            'data' => [
+                'id' => $updated->id,
+                'is_active' => false,
+            ],
+        ]);
+    }
+
+    public function activate(Request $request, User $user): JsonResponse
+    {
+        $updated = $this->userService->activate($user);
+
+        return response()->json([
+            'status' => true,
+            'message' => "{$updated->name} has been enabled.",
+            'data' => [
+                'id' => $updated->id,
+                'is_active' => true,
             ],
         ]);
     }
@@ -122,7 +203,8 @@ class UserAdminController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if ($this->isLastSuperAdmin($user)) {
+        if ($this->userService->isLastActiveSuperAdmin($user)
+            || ($user->role === 'super_admin' && $this->isLastSuperAdmin($user))) {
             return response()->json([
                 'status'  => false,
                 'message' => 'The last super admin account cannot be deleted.',
@@ -147,5 +229,17 @@ class UserAdminController extends Controller
     {
         return $user->role === 'super_admin'
             && User::query()->where('role', 'super_admin')->count() <= 1;
+    }
+
+    private function validationErrorResponse(ValidationException $exception): JsonResponse
+    {
+        $messages = $exception->errors();
+        $first = collect($messages)->flatten()->first() ?? 'Unable to complete this action.';
+
+        return response()->json([
+            'status' => false,
+            'message' => $first,
+            'errors' => $messages,
+        ], Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 }

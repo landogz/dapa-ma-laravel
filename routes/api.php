@@ -184,7 +184,7 @@ Route::prefix('v1')
             ->name('care-support.resources');
 
         // ── Authenticated ─────────────────────────────────────────────────
-        Route::middleware(['auth:sanctum', 'password.current'])->group(function (): void {
+        Route::middleware(['auth:sanctum', 'user.active', 'password.current'])->group(function (): void {
 
             Route::get('/geocode/search', [GeocodeController::class, 'search'])
                 ->middleware('throttle:30,1')
@@ -274,6 +274,9 @@ Route::prefix('v1')
                     Route::post('/users',                    [UserAdminController::class, 'store'])->name('users.store');
                     Route::put('/users/{user}',              [UserAdminController::class, 'update'])->name('users.update');
                     Route::put('/users/{user}/role',         [UserAdminController::class, 'updateRole'])->name('users.role');
+                    Route::post('/users/{user}/force-password', [UserAdminController::class, 'forcePassword'])->name('users.force-password');
+                    Route::post('/users/{user}/suspend',     [UserAdminController::class, 'suspend'])->name('users.suspend');
+                    Route::post('/users/{user}/activate',    [UserAdminController::class, 'activate'])->name('users.activate');
                     Route::delete('/users/{user}',           [UserAdminController::class, 'destroy'])->name('users.destroy');
                     Route::get('/diary-entries',             [DiaryAdminController::class, 'index'])->name('diary-entries.index');
                     Route::get('/diary-users',               [DiaryAdminController::class, 'users'])->name('diary-users.index');

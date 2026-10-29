@@ -1356,6 +1356,148 @@ table.dataTable tbody tr.is-context-target > *,
     font-style: italic;
 }
 
+.users-metrics-strip .users-metric-card.is-active {
+    box-shadow: 0 0 0 2px rgba(5, 84, 152, 0.28), 0 8px 20px rgba(5, 84, 152, 0.12);
+    border-color: rgba(5, 84, 152, 0.35);
+}
+
+.users-metric-icon-danger {
+    background: rgba(206, 32, 40, 0.12) !important;
+    color: #CE2028 !important;
+}
+
+.admin-user-status-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.admin-user-status-pill.is-success {
+    background: rgba(22, 163, 74, 0.12);
+    color: #15803d;
+}
+
+.admin-user-status-pill.is-danger {
+    background: rgba(206, 32, 40, 0.12);
+    color: #CE2028;
+}
+
+.admin-user-status-pill.is-gold {
+    background: rgba(251, 209, 22, 0.28);
+    color: #123a60;
+}
+
+.admin-user-status-pill.is-muted {
+    background: rgba(148, 163, 184, 0.18);
+    color: #64748b;
+}
+
+.admin-user-status-pill.is-slate {
+    background: rgba(100, 116, 139, 0.14);
+    color: #475569;
+}
+
+#users-table tbody tr.users-row-suspended,
+#users-table tbody tr.users-row-suspended td {
+    background: rgba(206, 32, 40, 0.04);
+}
+
+#users-table tbody tr.users-row-suspended .admin-user-identity-name,
+#users-table .admin-table-mobile-card.is-suspended .admin-table-mobile-title {
+    color: #64748b;
+}
+
+.users-account-drawer {
+    text-align: left;
+}
+
+.users-account-drawer-hero {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+}
+
+.users-account-drawer-name {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #123a60;
+}
+
+.users-account-drawer-email {
+    margin: 0.15rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    word-break: break-word;
+}
+
+.users-account-drawer-duty {
+    margin: 1rem 0 0;
+    padding: 0.75rem 0.875rem;
+    border-radius: 0.75rem;
+    background: rgba(5, 84, 152, 0.06);
+    color: #123a60;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+}
+
+.users-account-drawer-meta {
+    display: grid;
+    gap: 0.65rem;
+    margin: 1rem 0 0;
+}
+
+.users-account-drawer-meta > div {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+.users-account-drawer-meta dt {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+}
+
+.users-account-drawer-meta dd {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text);
+}
+
+.users-account-drawer-note {
+    margin: 1rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+}
+
+.users-account-drawer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.users-account-drawer-actions .admin-secondary-button {
+    min-height: 44px;
+}
+
+@media (max-width: 639px) {
+    .users-account-drawer-meta > div {
+        grid-template-columns: 1fr;
+        gap: 0.15rem;
+    }
+}
+
 .dt-container .dt-col-avatar {
     width: 4rem;
     min-width: 4rem;

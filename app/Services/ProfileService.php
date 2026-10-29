@@ -34,11 +34,13 @@ class ProfileService
             'onboarding_completed_at' => $user->onboarding_completed_at?->toIso8601String(),
             'email' => $user->email,
             'role' => $user->role,
+            'is_active' => (bool) ($user->is_active ?? true),
             'profile_image_url' => $this->profileImageUrl($user),
             'about' => $user->about,
             'journal_custom_feelings' => CustomFeelings::forUser($user),
             'must_change_password' => $this->passwordService->requiresChange($user),
             'password_expired' => $this->passwordService->isExpired($user),
+            'last_login_at' => $user->last_login_at?->toIso8601String(),
             'created_at' => $user->created_at?->toIso8601String(),
         ];
     }

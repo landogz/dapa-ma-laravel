@@ -39,6 +39,7 @@ class User extends Authenticatable
         'must_change_password',
         'password_changed_at',
         'role',
+        'is_active',
         'fcm_token',
         'fcm_platform',
         'profile_image_url',
@@ -77,6 +78,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'must_change_password' => 'boolean',
             'password_changed_at' => 'datetime',
+            'is_active' => 'boolean',
         ];
     }
 

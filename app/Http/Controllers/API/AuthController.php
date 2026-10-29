@@ -98,7 +98,20 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user  = $request->user();
+        $user = $request->user();
+
+        if ($user->is_active === false) {
+            Auth::logout();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Your account has been suspended. Contact an administrator.',
+                'data' => [
+                    'is_active' => false,
+                ],
+            ], 403);
+        }
+
         $user->forceFill(['last_login_at' => now()])->save();
 
         $verification = $this->loginVerificationService->sendCode($user);

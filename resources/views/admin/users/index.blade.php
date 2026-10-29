@@ -19,6 +19,14 @@
                     role="tablist"
                     aria-label="Filter by role"
                 ></div>
+
+                <p class="admin-filter-rail-title">Status</p>
+                <div
+                    id="users-status-tabs"
+                    class="admin-filter-tabs"
+                    role="tablist"
+                    aria-label="Filter by status"
+                ></div>
             </aside>
 
             <div class="admin-filter-main">
@@ -37,6 +45,58 @@
                             Add User
                         </button>
                     </div>
+                </div>
+
+                <div
+                    id="users-metrics"
+                    class="users-metrics-strip mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5"
+                    aria-label="User account metrics"
+                >
+                    <button type="button" class="admin-stat-card users-metric-card text-left" data-users-metric="staff" aria-pressed="false">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="admin-stat-card-label">Staff accounts</p>
+                                <p class="mt-2 text-2xl font-bold text-[#123a60]" data-users-metric-value="staff">—</p>
+                            </div>
+                            <span class="admin-stat-card-icon" aria-hidden="true"><i class="fas fa-user-tie"></i></span>
+                        </div>
+                    </button>
+                    <button type="button" class="admin-stat-card users-metric-card text-left" data-users-metric="app" aria-pressed="false">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="admin-stat-card-label">App users</p>
+                                <p class="mt-2 text-2xl font-bold text-[#123a60]" data-users-metric-value="app">—</p>
+                            </div>
+                            <span class="admin-stat-card-icon" aria-hidden="true"><i class="fas fa-mobile-screen-button"></i></span>
+                        </div>
+                    </button>
+                    <button type="button" class="admin-stat-card users-metric-card text-left" data-users-metric="never" aria-pressed="false">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="admin-stat-card-label">Never logged in</p>
+                                <p class="mt-2 text-2xl font-bold text-[#123a60]" data-users-metric-value="never_logged_in">—</p>
+                            </div>
+                            <span class="admin-stat-card-icon" aria-hidden="true"><i class="fas fa-clock"></i></span>
+                        </div>
+                    </button>
+                    <button type="button" class="admin-stat-card users-metric-card text-left" data-users-metric="password_due" aria-pressed="false">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="admin-stat-card-label">Must change password</p>
+                                <p class="mt-2 text-2xl font-bold text-[#123a60]" data-users-metric-value="must_change_password">—</p>
+                            </div>
+                            <span class="admin-stat-card-icon" aria-hidden="true"><i class="fas fa-key"></i></span>
+                        </div>
+                    </button>
+                    <button type="button" class="admin-stat-card users-metric-card text-left col-span-2 sm:col-span-1" data-users-metric="suspended" aria-pressed="false">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="admin-stat-card-label">Suspended</p>
+                                <p class="mt-2 text-2xl font-bold text-[#CE2028]" data-users-metric-value="suspended">—</p>
+                            </div>
+                            <span class="admin-stat-card-icon users-metric-icon-danger" aria-hidden="true"><i class="fas fa-ban"></i></span>
+                        </div>
+                    </button>
                 </div>
 
                 <div class="admin-table-shell mt-6">

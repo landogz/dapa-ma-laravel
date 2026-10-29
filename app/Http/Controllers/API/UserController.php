@@ -18,12 +18,12 @@ class UserController extends Controller
     {
         $perPage = (int) $request->integer('per_page', 15);
 
-        $users = $this->userService->listPaginated($perPage);
+        $result = $this->userService->listPaginated($perPage);
 
         return response()->json([
             'status' => true,
             'message' => 'Users fetched successfully.',
-            'data' => $users,
+            'data' => $result['paginator'],
         ]);
     }
 }
