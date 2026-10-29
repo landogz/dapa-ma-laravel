@@ -170,16 +170,25 @@ function renderRoleTabs() {
         return;
     }
 
-    const roles = activeAudience === 'app' ? ['app_user'] : STAFF_ROLES;
+    // App users have a single role — hide the redundant role strip.
+    if (activeAudience === 'app') {
+        activeRole = '';
+        roleRoot.hidden = true;
+        roleRoot.replaceChildren();
+        delete roleRoot.dataset.tabsBound;
+        return;
+    }
+
+    roleRoot.hidden = false;
     const items = [
         {
             value: '',
             label: 'All',
             icon: 'fas fa-users',
-            hint: activeAudience === 'app' ? 'All app accounts' : 'All staff roles',
+            hint: 'All staff roles',
             count: 0,
         },
-        ...roles.map((role) => ({
+        ...STAFF_ROLES.map((role) => ({
             value: role,
             label: ROLE_META[role]?.short ?? formatRole(role),
             icon: ROLE_META[role]?.icon ?? 'fas fa-user',
