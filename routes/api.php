@@ -389,6 +389,7 @@ Route::prefix('v1')
                     Route::post('/inbox/{notification}/read', [AdminNotificationController::class, 'markAsRead'])->name('admin-inbox.read');
                     Route::get('/dashboard/attention', [DashboardAdminController::class, 'attention'])->name('dashboard.attention');
                     Route::get('/dashboard/trends', [DashboardAdminController::class, 'trends'])->name('dashboard.trends');
+                    Route::get('/dashboard/overview', [DashboardAdminController::class, 'overview'])->name('dashboard.overview');
                 });
 
                 // Super Admin + Publisher — rehab centers, trainings, contests, IEC materials

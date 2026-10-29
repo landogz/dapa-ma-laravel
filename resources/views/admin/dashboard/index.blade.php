@@ -50,6 +50,10 @@
                 ['posts', 'Content', 'Posts', 'fa-file-lines', '/admin/posts'],
                 ['notifications', 'Campaigns', 'Notifications', 'fa-bell', '/admin/notifications'],
                 ['diary', 'Journal', 'Journal', 'fa-book-open', '/admin/diary'],
+                ['analytics-views', 'Reach', 'Post views', 'fa-eye', '/admin/analytics'],
+                ['analytics-bookmarks', 'Engagement', 'Bookmarks', 'fa-bookmark', '/admin/analytics'],
+                ['analytics-shares', 'Reach', 'Shares', 'fa-share-nodes', '/admin/analytics'],
+                ['analytics-engagement', 'Engagement', 'Engagement rate', 'fa-chart-pie', '/admin/analytics'],
             ] as [$key, $label, $title, $icon, $href])
                 <a href="{{ $href }}" class="admin-stat-card admin-stat-card-tier-primary admin-function-card admin-dashboard-summary text-left" data-card-section="{{ $key }}">
                     <div class="flex items-start justify-between gap-3">
@@ -59,9 +63,13 @@
                             <div class="mt-2 flex items-end justify-between gap-3">
                                 <div class="min-w-0">
                                     <p class="text-3xl font-bold text-[var(--color-text)]" data-overview-count="{{ $key }}">--</p>
-                                    <p class="admin-trend admin-trend-neutral" data-overview-trend="{{ $key }}">No change this week</p>
+                                    @unless (str_starts_with($key, 'analytics-'))
+                                        <p class="admin-trend admin-trend-neutral" data-overview-trend="{{ $key }}">No change this week</p>
+                                    @endunless
                                 </div>
-                                <canvas class="admin-stat-sparkline hidden" data-overview-sparkline="{{ $key }}" width="80" height="24" aria-hidden="true"></canvas>
+                                @unless (str_starts_with($key, 'analytics-'))
+                                    <canvas class="admin-stat-sparkline hidden" data-overview-sparkline="{{ $key }}" width="80" height="24" aria-hidden="true"></canvas>
+                                @endunless
                             </div>
                         </div>
                         <span class="admin-stat-card-icon" aria-hidden="true">
@@ -142,7 +150,7 @@
                                 <p class="text-xs text-[var(--color-text-muted)]">Latest app and content events</p>
                             </div>
                         </div>
-                        <a href="/admin/analytics" class="text-xs font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]">View all</a>
+                        <a href="/admin/analytics" class="text-xs font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]" data-analytics-link>View all</a>
                     </div>
                     <div id="dashboard-recent-activity" class="mt-4 space-y-2"></div>
                 </div>
@@ -160,7 +168,7 @@
                         <p class="text-xs text-[var(--color-text-muted)]">Most viewed posts</p>
                     </div>
                 </div>
-                <a href="/admin/posts" class="text-xs font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]">View all</a>
+                <a href="/admin/posts" class="text-xs font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]" data-card-section="posts">View all</a>
             </div>
             <div id="dashboard-top-posts" class="mt-4 grid gap-3"></div>
         </div>

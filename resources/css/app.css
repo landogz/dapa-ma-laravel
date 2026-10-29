@@ -3440,6 +3440,27 @@ select.admin-filter-select:not(.admin-choice-select-native),
     min-height: 100%;
 }
 
+.admin-activity-panel.hidden,
+#function-cards-primary.hidden,
+#function-cards-secondary.hidden,
+[data-overview-analytics].hidden,
+[data-analytics-link].hidden {
+    display: none !important;
+}
+
+#function-cards-primary.dashboard-cards-single,
+#function-cards-secondary.dashboard-cards-single {
+    grid-template-columns: minmax(0, 24rem);
+}
+
+@media (min-width: 640px) {
+    #function-cards-primary.dashboard-cards-duo,
+    #function-cards-secondary.dashboard-cards-duo {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-width: 48rem;
+    }
+}
+
 .admin-activity-chart-area {
     flex: 1 1 auto;
     display: flex;

@@ -40,6 +40,129 @@ export function initAnalyticsModule() {
     loadAnalytics();
 }
 
+/**
+ * Dashboard overview widgets for every admin role (uses /admin/dashboard/overview).
+ */
+export function initDashboardOverview() {
+    bindDashboardOverviewRange();
+    loadDashboardOverview();
+}
+
+export function loadDashboardOverview() {
+    const chart = document.getElementById('dashboard-activity-chart');
+    const topPosts = document.getElementById('dashboard-top-posts');
+    const recent = document.getElementById('dashboard-recent-activity');
+
+    if (!chart && !topPosts && !recent) {
+        return;
+    }
+
+    if (topPosts) {
+        topPosts.innerHTML = buildTopPostsSkeleton();
+    }
+
+    if (recent) {
+        recent.innerHTML = `
+            <div class="space-y-2">
+                <div class="h-12 animate-pulse rounded-xl bg-slate-100"></div>
+                <div class="h-12 animate-pulse rounded-xl bg-slate-100"></div>
+            </div>
+        `;
+    }
+
+    if (chart) {
+        chart.innerHTML = `
+            <div class="flex min-h-[220px] flex-1 items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] bg-slate-50 px-4 text-sm text-[var(--color-text-muted)]">
+                Loading activity…
+            </div>
+        `;
+    }
+
+    const range = getSelectedAnalyticsRange();
+
+    axios.get('/admin/dashboard/overview', { params: { range } })
+        .then(({ data }) => {
+            const payload = data.data ?? {};
+            const dailyCounts = Array.isArray(payload.daily_counts) ? payload.daily_counts : [];
+            const topPostsData = Array.isArray(payload.top_posts) ? payload.top_posts : [];
+            const recentEvents = Array.isArray(payload.recent_events) ? payload.recent_events : [];
+            const eventTypes = Array.isArray(payload.by_event_type) ? payload.by_event_type : [];
+
+            cachedDailyCounts = dailyCounts;
+            cachedTopPosts = topPostsData;
+            cachedRecentEvents = recentEvents;
+
+            initializeOverviewActivity(dailyCounts);
+            renderOverviewDistribution(eventTypes);
+            renderOverviewTopPosts(topPostsData);
+            renderOverviewRecentActivity(recentEvents);
+            renderRoleSummaryMetrics(payload);
+        })
+        .catch((error) => {
+            if (chart) {
+                chart.innerHTML = `
+                    <div class="flex min-h-[220px] flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--color-border)] bg-slate-50 px-4 text-center">
+                        <p class="text-sm font-semibold text-[var(--color-text)]">Activity unavailable</p>
+                        <p class="text-xs text-[var(--color-text-muted)]">${escapeHtml(error.response?.data?.message ?? 'Unable to load activity right now.')}</p>
+                    </div>
+                `;
+            }
+
+            if (topPosts) {
+                topPosts.innerHTML = `
+                    <div class="rounded-xl border border-dashed border-[var(--color-border)] px-3 py-4 text-sm text-[var(--color-text-muted)]">
+                        Top content unavailable right now.
+                    </div>
+                `;
+            }
+
+            if (recent) {
+                recent.innerHTML = `
+                    <div class="rounded-xl border border-dashed border-[var(--color-border)] px-3 py-4 text-sm text-[var(--color-text-muted)]">
+                        Recent activity unavailable right now.
+                    </div>
+                `;
+            }
+        });
+}
+
+function bindDashboardOverviewRange() {
+    const dashboardRange = document.querySelector('[data-dashboard-range]');
+    if (!dashboardRange || dashboardRange.dataset.overviewBound === '1') {
+        return;
+    }
+
+    dashboardRange.dataset.overviewBound = '1';
+    dashboardRange.addEventListener('change', () => {
+        if (document.getElementById('dashboard-activity-chart')) {
+            loadDashboardOverview();
+        }
+    });
+}
+
+function renderRoleSummaryMetrics(payload) {
+    const funnel = payload?.funnel ?? {};
+    const comparison = payload?.period_comparison?.current ?? {};
+
+    const map = {
+        analytics_views: Number(funnel.views ?? comparison.views ?? 0),
+        analytics_bookmarks: Number(funnel.bookmarks ?? comparison.bookmarks ?? 0),
+        analytics_shares: Number(funnel.shares ?? comparison.shares ?? 0),
+        analytics_engagement: Number(funnel.engagement ?? 0),
+    };
+
+    Object.entries(map).forEach(([key, value]) => {
+        document.querySelectorAll(`[data-overview-count="${key}"]`).forEach((el) => {
+            if (key === 'analytics_engagement') {
+                el.textContent = `${value.toLocaleString()}%`;
+                return;
+            }
+
+            el.textContent = value.toLocaleString();
+        });
+    });
+}
+
 function bindAnalyticsExport() {
     const button = document.querySelector('[data-admin-action="export-analytics"]');
     if (!button || button.dataset.boundExport === '1') {

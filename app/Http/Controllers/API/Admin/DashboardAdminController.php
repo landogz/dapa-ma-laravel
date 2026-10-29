@@ -9,6 +9,7 @@ use App\Models\HopeEvent;
 use App\Models\Notification;
 use App\Models\Post;
 use App\Models\User;
+use App\Services\AnalyticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -17,6 +18,42 @@ use Illuminate\Support\Facades\Schema;
 
 class DashboardAdminController extends Controller
 {
+    public function __construct(
+        private readonly AnalyticsService $analyticsService,
+    ) {
+    }
+
+    /**
+     * Lightweight overview for every admin role (not only analytics_viewer).
+     */
+    public function overview(Request $request): JsonResponse
+    {
+        $range = (string) $request->query('range', '7');
+        $days = match ($range) {
+            '1', 'today' => 1,
+            '30', '30d', 'month' => 30,
+            default => 7,
+        };
+
+        $payload = $this->analyticsService->dashboard($days);
+        $topPosts = collect($payload['top_posts'] ?? [])->take(5)->values()->all();
+        $recentEvents = collect($payload['recent_events'] ?? [])->take(8)->values()->all();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Dashboard overview fetched.',
+            'data' => [
+                'range_days' => $payload['range_days'] ?? $days,
+                'daily_counts' => $payload['daily_counts'] ?? [],
+                'by_event_type' => $payload['by_event_type'] ?? [],
+                'top_posts' => $topPosts,
+                'recent_events' => $recentEvents,
+                'period_comparison' => $payload['period_comparison'] ?? null,
+                'funnel' => $payload['funnel'] ?? null,
+            ],
+        ]);
+    }
+
     public function attention(): JsonResponse
     {
         $draftPosts = Post::query()

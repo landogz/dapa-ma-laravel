@@ -1,5 +1,5 @@
 import Swal from 'sweetalert2';
-import { initAnalyticsModule } from './analytics';
+import { initAnalyticsModule, initDashboardOverview } from './analytics';
 import { initDiaryModule } from './diary';
 import { logout } from './auth';
 import { initNotificationsModule } from './notifications';
@@ -22,11 +22,52 @@ import { initHopeEventsModule } from './hope-events/index';
 import { initUsersModule } from './users';
 import { initAdminMegaMenu } from './admin-mega-menu/index';
 
+const ANALYTICS_METRIC_SECTIONS = [
+    'analytics-views',
+    'analytics-bookmarks',
+    'analytics-shares',
+    'analytics-engagement',
+];
+
 const ADMIN_ROLE_SECTIONS = {
-    super_admin: ['posts', 'rehab-centers', 'contests', 'iec-materials', 'app-translations', 'notifications', 'analytics', 'users', 'diary', 'care-toolkit', 'care-checks', 'care-support', 'hope-directory', 'hope-events', 'settings', 'lookups', 'word-blocking'],
+    super_admin: [
+        'posts',
+        'rehab-centers',
+        'contests',
+        'iec-materials',
+        'app-translations',
+        'notifications',
+        'analytics',
+        'users',
+        'diary',
+        'care-toolkit',
+        'care-checks',
+        'care-support',
+        'hope-directory',
+        'hope-events',
+        'settings',
+        'lookups',
+        'word-blocking',
+    ],
     editor: ['posts'],
-    publisher: ['posts', 'rehab-centers', 'contests', 'iec-materials', 'app-translations', 'notifications', 'care-toolkit', 'care-checks', 'care-support', 'hope-directory', 'hope-events', 'settings', 'lookups', 'word-blocking'],
-    analytics_viewer: ['analytics'],
+    publisher: [
+        'posts',
+        'rehab-centers',
+        'contests',
+        'iec-materials',
+        'app-translations',
+        'notifications',
+        'care-toolkit',
+        'care-checks',
+        'care-support',
+        'hope-directory',
+        'hope-events',
+        'settings',
+        'lookups',
+        'word-blocking',
+    ],
+    // Analytics viewers get overview metric cards + the analytics page.
+    analytics_viewer: ['analytics', ...ANALYTICS_METRIC_SECTIONS],
 };
 
 const PAGE_SECTION_REQUIREMENTS = {
@@ -322,8 +363,32 @@ function revealNavigation(allowedSections) {
         action.classList.toggle('hidden', !canView);
     });
 
+    // Overview panels (activity / recent / top content) are available to every admin role.
+    // Only the deep-link to the full Analytics page stays permission-gated.
     document.querySelectorAll('[data-overview-analytics]').forEach((panel) => {
-        panel.classList.toggle('hidden', !allowedSections.includes('analytics'));
+        panel.classList.remove('hidden');
+    });
+
+    document.querySelectorAll('[data-analytics-link]').forEach((link) => {
+        link.classList.toggle('hidden', !allowedSections.includes('analytics'));
+    });
+
+    compactDashboardCardGrids();
+}
+
+function compactDashboardCardGrids() {
+    ['function-cards-primary', 'function-cards-secondary'].forEach((id) => {
+        const grid = document.getElementById(id);
+        if (!grid) {
+            return;
+        }
+
+        const visibleCards = [...grid.querySelectorAll('[data-card-section]')]
+            .filter((card) => !card.classList.contains('hidden'));
+
+        grid.classList.toggle('hidden', visibleCards.length === 0);
+        grid.classList.toggle('dashboard-cards-single', visibleCards.length === 1);
+        grid.classList.toggle('dashboard-cards-duo', visibleCards.length === 2);
     });
 }
 
@@ -443,10 +508,11 @@ function initializePageContent(pageName, allowedSections, profile = null) {
             loadOverviewCounts(allowedSections);
             loadOverviewTrends(allowedSections);
             loadNeedsAttention(allowedSections);
-
-            if (allowedSections.includes('analytics')) {
-                initAnalyticsModule();
-            }
+            // Every role gets Activity / Recent / Top Content via the shared overview API.
+            initDashboardOverview();
+            break;
+        case 'admin-analytics':
+            initAnalyticsModule();
             break;
         case 'admin-posts':
             initPostsModule();
@@ -465,9 +531,6 @@ function initializePageContent(pageName, allowedSections, profile = null) {
             break;
         case 'admin-notifications':
             initNotificationsModule();
-            break;
-        case 'admin-analytics':
-            initAnalyticsModule();
             break;
         case 'admin-users':
             initUsersModule();
