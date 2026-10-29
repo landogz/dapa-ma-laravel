@@ -18,26 +18,20 @@
     <div id="admin-app" class="relative min-h-screen">
         <div id="admin-sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-950/50 lg:hidden"></div>
 
-        <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-40 flex h-dvh max-h-dvh w-72 -translate-x-full flex-col overflow-hidden bg-[#123a60] px-5 py-6 text-white shadow-xl transition-transform duration-300 lg:translate-x-0">
+        <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-40 flex h-dvh max-h-dvh w-72 -translate-x-full flex-col overflow-hidden bg-[#123a60] px-5 py-5 text-white shadow-xl transition-transform duration-300 lg:translate-x-0">
             <div class="shrink-0">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-[#055498]/25">
-                        <img src="{{ asset('ddb.svg') }}" alt="DDB logo" class="h-10 w-10 object-contain">
+                    <div class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg shadow-[#055498]/25">
+                        <img src="{{ asset('ddb.svg') }}" alt="DDB logo" class="h-9 w-9 object-contain">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#FBD116]">DAPE-MA</p>
-                        <p class="text-sm font-semibold text-white">Admin Control Panel</p>
+                        <p class="truncate text-sm font-semibold text-white">Admin Control Panel</p>
                     </div>
-                </div>
-
-                <div class="mt-8 rounded-2xl border border-[#055498] bg-white/5 p-4">
-                    <p class="text-xs uppercase tracking-[0.2em] text-slate-300">Signed in as</p>
-                    <p data-admin-name class="mt-2 text-base font-semibold text-white">Loading...</p>
-                    <p data-admin-role class="text-sm text-[#FBD116]">Loading role...</p>
                 </div>
             </div>
 
-            <nav data-admin-nav aria-hidden="true" class="admin-sidebar-nav pointer-events-none mt-6 min-h-0 flex-1 space-y-0 overflow-y-auto overscroll-contain pr-1 text-sm opacity-0 transition-opacity duration-200">
+            <nav data-admin-nav aria-hidden="true" class="admin-sidebar-nav pointer-events-none mt-5 min-h-0 flex-1 space-y-0 overflow-y-auto overscroll-contain pr-1 text-sm opacity-0 transition-opacity duration-200">
                 <div class="admin-nav-group">
                     <p class="admin-nav-group-label">Overview</p>
                     <a href="/admin/dashboard" class="admin-nav-link {{ ($activePage ?? 'dashboard') === 'dashboard' ? 'admin-nav-link-active' : '' }}">
@@ -47,7 +41,7 @@
                 </div>
 
                 <div class="admin-nav-group">
-                    <p class="admin-nav-group-label">Content</p>
+                    <p class="admin-nav-group-label">Publish</p>
                     <a href="/admin/posts" class="admin-nav-link {{ ($activePage ?? '') === 'posts' ? 'admin-nav-link-active' : '' }}" data-nav-section="posts">
                         <i class="fas fa-file-pen w-5 text-[#FBD116]"></i>
                         <span>Posts</span>
@@ -60,18 +54,18 @@
                         <i class="fas fa-photo-film w-5 text-[#FBD116]"></i>
                         <span>IEC Materials</span>
                     </a>
-                </div>
-
-                <div class="admin-nav-group">
-                    <p class="admin-nav-group-label">Services</p>
-                    <a href="/admin/rehab-centers" class="admin-nav-link {{ ($activePage ?? '') === 'rehab-centers' ? 'admin-nav-link-active' : '' }}" data-nav-section="rehab-centers">
-                        <i class="fas fa-hospital w-5 text-[#FBD116]"></i>
-                        <span>Rehab Centers</span>
+                    <a href="/admin/trainings" class="admin-nav-link {{ ($activePage ?? '') === 'trainings' ? 'admin-nav-link-active' : '' }}" data-nav-section="trainings">
+                        <i class="fas fa-chalkboard-user w-5 text-[#FBD116]"></i>
+                        <span>Trainings</span>
                     </a>
                 </div>
 
                 <div class="admin-nav-group">
-                    <p class="admin-nav-group-label">Care</p>
+                    <p class="admin-nav-group-label">Find help</p>
+                    <a href="/admin/rehab-centers" class="admin-nav-link {{ ($activePage ?? '') === 'rehab-centers' ? 'admin-nav-link-active' : '' }}" data-nav-section="rehab-centers">
+                        <i class="fas fa-hospital w-5 text-[#FBD116]"></i>
+                        <span>Rehab Centers</span>
+                    </a>
                     <a href="/admin/care-toolkit" class="admin-nav-link {{ ($activePage ?? '') === 'care-toolkit' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-toolkit">
                         <i class="fas fa-heart-pulse w-5 text-[#FBD116]"></i>
                         <span>Care Toolkit</span>
@@ -103,7 +97,7 @@
                 </div>
 
                 <div class="admin-nav-group">
-                    <p class="admin-nav-group-label">Reach</p>
+                    <p class="admin-nav-group-label">Engage</p>
                     <a href="/admin/notifications" class="admin-nav-link {{ ($activePage ?? '') === 'notifications' ? 'admin-nav-link-active' : '' }}" data-nav-section="notifications">
                         <i class="fas fa-bell w-5 text-[#FBD116]"></i>
                         <span>Notifications</span>
@@ -115,7 +109,7 @@
                 </div>
 
                 <div class="admin-nav-group">
-                    <p class="admin-nav-group-label">Administration</p>
+                    <p class="admin-nav-group-label">System</p>
                     <a href="/admin/users" class="admin-nav-link {{ ($activePage ?? '') === 'users' ? 'admin-nav-link-active' : '' }}" data-nav-section="users">
                         <i class="fas fa-users w-5 text-[#FBD116]"></i>
                         <span>Users</span>
@@ -138,6 +132,17 @@
                     </a>
                 </div>
             </nav>
+
+            <div class="mt-3 shrink-0 border-t border-white/10 pt-3">
+                <a
+                    href="/admin/profile"
+                    class="admin-sidebar-identity block rounded-xl border border-[#055498] bg-white/5 px-3 py-2.5 transition hover:bg-white/10 {{ ($activePage ?? '') === 'profile' ? 'ring-1 ring-[#FBD116]/60' : '' }}"
+                >
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-300">Signed in as</p>
+                    <p data-admin-name class="mt-1 truncate text-sm font-semibold text-white">Loading...</p>
+                    <p data-admin-role class="truncate text-xs text-[#FBD116]">Loading role...</p>
+                </a>
+            </div>
         </aside>
 
         <div class="lg:pl-72">
