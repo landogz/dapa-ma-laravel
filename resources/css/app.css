@@ -3461,6 +3461,32 @@ select.admin-filter-select:not(.admin-choice-select-native),
     resize: vertical;
 }
 
+.post-view-review-notes {
+    margin-top: 0.85rem;
+    border-radius: 0.85rem;
+    border: 1px solid rgba(251, 209, 22, 0.55);
+    background: rgba(251, 209, 22, 0.18);
+    padding: 0.75rem 0.9rem;
+    text-align: left;
+}
+
+.post-view-review-notes-label {
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #123a60;
+}
+
+.post-view-review-notes-body {
+    margin: 0.35rem 0 0;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: #123a60;
+    white-space: pre-wrap;
+}
+
 .admin-swal-input::placeholder,
 .admin-swal-textarea::placeholder {
     color: #94a3b8;

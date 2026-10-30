@@ -310,8 +310,8 @@ Route::prefix('v1')
                     Route::put('/posts/{post}/submit', [PostAdminController::class, 'submit'])->name('posts.submit');
                 });
 
-                // Publisher — review and scheduling
-                Route::middleware('role:publisher')->group(function (): void {
+                // Publisher + Super Admin — review and scheduling
+                Route::middleware('role:publisher,super_admin')->group(function (): void {
                     Route::put('/posts/{post}/reject',   [PostAdminController::class, 'reject'])->name('posts.reject');
                     Route::put('/posts/{post}/schedule', [PostAdminController::class, 'schedule'])->name('posts.schedule');
                     Route::put('/posts/{post}/publish',  [PostAdminController::class, 'publish'])->name('posts.publish');

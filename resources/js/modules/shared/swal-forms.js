@@ -669,14 +669,18 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
 
     if (!confirmDialog && subtitle == null && typeof html === 'string') {
         const descriptionMatch = html.match(
-            /class=["'][^"']*admin-swal-description[^"']*["'][^>]*>([\s\S]*?)<\/p>/i,
+            /<p[^>]*class=["'][^"']*admin-swal-description[^"']*["'][^>]*>[\s\S]*?<\/p>/i,
         );
         if (descriptionMatch) {
-            subtitle = descriptionMatch[1]
+            const innerMatch = descriptionMatch[0].match(/>([\s\S]*?)<\/p>/i);
+            subtitle = (innerMatch?.[1] ?? '')
                 .replaceAll(/<[^>]+>/g, '')
                 .replaceAll('&nbsp;', ' ')
                 .trim();
-            if (danger || options.icon) {
+            // Lift copy into the header, but keep fields (e.g. Reject Post notes).
+            // Never replace the whole form with a blank body when danger/icon is set.
+            html = html.replace(descriptionMatch[0], '');
+            if (!htmlLooksLikeForm(html) && (danger || options.icon)) {
                 html = ' ';
             }
         }

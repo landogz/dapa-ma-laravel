@@ -2,6 +2,12 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { getStoredUser } from './auth';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
+import {
+    applyAdminFilterTabCounts,
+    bindAdminFilterTabs,
+    renderAdminFilterTabs,
+    setAdminFilterTab,
+} from './shared/filter-tabs';
 import { buildSwalForm, buildSwalOptions, confirmWithSwal, formatApiValidationMessage } from './shared/swal-forms';
 import { getRichTextValue, isRichTextEmpty } from './rich-text-editor';
 import { renderRatingBadge, renderStars } from './shared/ratings';
@@ -12,10 +18,22 @@ import { bindPostCommentDeletes, confirmDeletePostComment } from './post-comment
 let postsTable;
 let currentUserRole = null;
 const postsById = new Map();
+let allPostsCache = [];
 let categoryOptionsCache = null;
 let postsTableMode = null;
 let postsViewportBound = false;
 let postsActionsBound = false;
+let postsFiltersBound = false;
+let activeStatusFilter = '';
+
+const STATUS_FILTER_TABS = [
+    { value: '', label: 'All', icon: 'fas fa-layer-group', hint: 'Every status' },
+    { value: 'draft', label: 'Draft', icon: 'fas fa-pen', hint: 'Editor drafts & rejected' },
+    { value: 'pending_review', label: 'Pending', icon: 'fas fa-clock', hint: 'Awaiting publisher' },
+    { value: 'scheduled', label: 'Scheduled', icon: 'fas fa-calendar-check', hint: 'Approved, not live' },
+    { value: 'published', label: 'Published', icon: 'fas fa-circle-check', hint: 'Live in the app' },
+    { value: 'archived', label: 'Archived', icon: 'fas fa-box-archive', hint: 'Removed from feed' },
+];
 
 export function initPostsModule() {
     const tableEl = document.getElementById('posts-table');
@@ -23,6 +41,7 @@ export function initPostsModule() {
 
     currentUserRole = getStoredUser()?.role ?? null;
     syncPostsPageActions();
+    bindPostsStatusFilters();
     bindPostTableActions(tableEl);
 
     if (postsTable && postsTableMode === getPostsTableMode()) {
@@ -40,6 +59,21 @@ export function initPostsModule() {
     bindPostsViewportListener(tableEl);
 }
 
+function bindPostsStatusFilters() {
+    const root = document.getElementById('posts-status-tabs');
+    if (!root || postsFiltersBound) {
+        return;
+    }
+
+    postsFiltersBound = true;
+    renderAdminFilterTabs(root, STATUS_FILTER_TABS.map((tab) => ({ ...tab, count: 0 })));
+    setAdminFilterTab(root, activeStatusFilter);
+    bindAdminFilterTabs(root, (value) => {
+        activeStatusFilter = value || '';
+        renderPostsTable();
+    });
+}
+
 export function loadPosts() {
     if (!postsTable) return;
 
@@ -53,15 +87,14 @@ export function loadPosts() {
                         ? payload.data
                         : [];
 
-                postsTable.clear();
+                allPostsCache = collection;
                 postsById.clear();
-
                 collection.forEach((post) => {
                     postsById.set(String(post.id), post);
-                    postsTable.row.add(buildPostRowData(post));
                 });
 
-                postsTable.draw();
+                updatePostsStatusCounts();
+                renderPostsTable();
                 openPostFromQueryParam();
             } catch (renderError) {
                 // eslint-disable-next-line no-console
@@ -92,6 +125,31 @@ export function loadPosts() {
                 text: message,
             });
         });
+}
+
+function updatePostsStatusCounts() {
+    const counts = { '': allPostsCache.length };
+    allPostsCache.forEach((post) => {
+        const key = String(post.status || '');
+        counts[key] = (counts[key] ?? 0) + 1;
+    });
+    applyAdminFilterTabCounts(document.getElementById('posts-status-tabs'), counts);
+}
+
+function renderPostsTable() {
+    if (!postsTable) {
+        return;
+    }
+
+    const rows = activeStatusFilter
+        ? allPostsCache.filter((post) => String(post.status) === activeStatusFilter)
+        : allPostsCache;
+
+    postsTable.clear();
+    rows.forEach((post) => {
+        postsTable.row.add(buildPostRowData(post));
+    });
+    postsTable.draw();
 }
 
 export async function promptCreateDraft() {
@@ -170,6 +228,7 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
                         <span class="post-view-dot" aria-hidden="true">·</span>
                         <span>${escapeHtml(formatDateTime(post.publish_date) || 'Not scheduled')}</span>
                     </p>
+                    ${renderReviewNotesBanner(post)}
                     <div class="post-view-metrics" role="list">
                         <div class="post-view-metric" role="listitem">
                             <i class="fas fa-heart" aria-hidden="true"></i>
@@ -594,8 +653,8 @@ export function submitPostForReview(postId) {
 export function rejectPost(postId) {
     Swal.fire(buildSwalOptions({
         title: 'Reject Post',
+        subtitle: 'Send this draft back with clear review notes for the editor.',
         html: buildSwalForm({
-            description: 'Send this draft back with clear review notes for the editor.',
             fields: [
                 {
                     id: 'post-review-notes',
@@ -608,9 +667,12 @@ export function rejectPost(postId) {
         showCancelButton: true,
         confirmButtonText: 'Reject',
         preConfirm: () => {
-            const notes = document.getElementById('post-review-notes')?.value.trim();
+            const notes = Swal.getPopup()
+                ?.querySelector('#post-review-notes')
+                ?.value
+                ?.trim();
 
-            if (!notes?.trim()) {
+            if (!notes) {
                 Swal.showValidationMessage('Review notes are required.');
 
                 return false;
@@ -622,7 +684,9 @@ export function rejectPost(postId) {
         if (!isConfirmed) return;
         axios.put(`/admin/posts/${postId}/reject`, { review_notes: value })
             .then(({ data }) => {
-                showSuccessToast(data.message, 'Rejected');
+                showSuccessToast(data.message ?? 'Post returned to draft for the editor.', 'Rejected');
+                activeStatusFilter = 'draft';
+                setAdminFilterTab(document.getElementById('posts-status-tabs'), 'draft');
                 loadPosts();
             })
             .catch(({ response }) => {
@@ -735,7 +799,33 @@ function statusBadge(status) {
         archived:       'bg-[#CE2028]/10 text-[#CE2028]',
     };
     const cls = colors[status] ?? 'bg-gray-100 text-gray-700';
-    return `<span class="admin-status-badge ${cls}">${status.replace('_', ' ')}</span>`;
+    return `<span class="admin-status-badge ${cls}">${String(status || 'unknown').replaceAll('_', ' ')}</span>`;
+}
+
+function renderReviewNotesBanner(post) {
+    const notes = String(post?.review_notes ?? '').trim();
+    if (!notes) {
+        return '';
+    }
+
+    return `
+        <div class="post-view-review-notes" role="status">
+            <p class="post-view-review-notes-label">Review notes</p>
+            <p class="post-view-review-notes-body">${escapeHtml(notes)}</p>
+        </div>
+    `;
+}
+
+function renderStatusCell(post) {
+    const notes = String(post?.review_notes ?? '').trim();
+    const needsRevision = post.status === 'draft' && notes !== '';
+
+    return `
+        <div class="flex min-w-0 flex-col gap-1">
+            ${statusBadge(post.status)}
+            ${needsRevision ? '<span class="admin-status-badge bg-[#FBD116]/20 text-[#123a60]">Needs revision</span>' : ''}
+        </div>
+    `;
 }
 
 function actionButtons(post) {
@@ -940,7 +1030,7 @@ function buildPostRowData(post) {
                             ${escapeHtml(post.title)}
                         </button>
                     </div>
-                    ${statusBadge(post.status)}
+                    ${renderStatusCell(post)}
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Category:</span> ${escapeHtml(post.category?.name ?? 'Uncategorized')}</p>
@@ -950,6 +1040,9 @@ function buildPostRowData(post) {
                     <p><span>Comments:</span> ${isPostCommentsEnabled(post) ? 'Enabled' : 'Disabled'}</p>
                     <p><span>Engagement:</span> ${Number(post.likes_count ?? 0)} reactions · ${Number(post.comments_count ?? 0)} comments</p>
                     <p><span>Rating:</span> ${renderRatingBadge(post, { compact: true })}</p>
+                    ${String(post.review_notes ?? '').trim()
+                        ? `<p><span>Review notes:</span> ${escapeHtml(String(post.review_notes).trim())}</p>`
+                        : ''}
                 </div>
             </div>`,
             renderPostActions(post, true),
@@ -960,7 +1053,7 @@ function buildPostRowData(post) {
         post.id,
         titleLink,
         escapeHtml(post.category?.name ?? '—'),
-        statusBadge(post.status),
+        renderStatusCell(post),
         escapeHtml(post.author?.name ?? '—'),
         escapeHtml(formatDateTime(post.publish_date) || '—'),
         commentsEnabledBadge(post),
