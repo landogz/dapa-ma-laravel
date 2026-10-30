@@ -504,6 +504,18 @@
     "tl": "Sarado na ang pag-submit"
   },
   {
+    "key": "submissionsClosedWindow",
+    "group": "ddb_services",
+    "en": "Submissions are closed. Window: {start} – {end}.",
+    "tl": "Sarado na ang pag-submit. Panahon: {start} – {end}."
+  },
+  {
+    "key": "submissionsClosedUntil",
+    "group": "ddb_services",
+    "en": "Submissions are closed. Ended on {end}.",
+    "tl": "Sarado na ang pag-submit. Natapos noong {end}."
+  },
+  {
     "key": "publishedEntries",
     "group": "ddb_services",
     "en": "Published entries",

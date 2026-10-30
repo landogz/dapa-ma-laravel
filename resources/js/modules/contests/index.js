@@ -192,6 +192,7 @@ function buildContestFormHtml(existing) {
                 <div class="admin-swal-field">
                     <label class="admin-swal-label" for="ct-end">Submission ends</label>
                     <input id="ct-end" class="admin-swal-input" type="date" value="${escapeHtml(formatDateInput(existing?.submission_ends_at))}">
+                    <p class="mt-1 text-xs text-slate-500">Mobile accepts entries only when Status is Open, Visibility is Active, and today (Asia/Manila) is within these dates.</p>
                 </div>
                 <div class="admin-swal-field">
                     <label class="admin-swal-label" for="ct-status">Status *</label>
@@ -255,6 +256,14 @@ function showContestForm(existing) {
 
             if (start && end && end < start) {
                 Swal.showValidationMessage('End date must be on or after start date.');
+                return false;
+            }
+
+            const today = manilaTodayString();
+            if (status === 'open' && end && end < today) {
+                Swal.showValidationMessage(
+                    'Submission end date is already past (Asia/Manila). Extend it so the mobile app can accept entries while Status is Open.',
+                );
                 return false;
             }
 
@@ -504,12 +513,13 @@ function buildRowData(contest) {
                         <p class="admin-table-mobile-kicker">${escapeHtml(categoryLabel(contest.category))} #${escapeHtml(String(contest.id))}</p>
                         <p class="admin-table-mobile-title">${escapeHtml(contest.title)}</p>
                     </div>
-                    ${statusBadge(contest.status)}
+                    ${contestStatusCell(contest)}
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Entries:</span> ${entriesMarkup}</p>
                     <p><span>Pending:</span> ${pendingMarkup}</p>
                     <p><span>Year:</span> ${escapeHtml(contest.contest_year != null ? String(contest.contest_year) : '—')}</p>
+                    <p><span>Window:</span> ${escapeHtml(submissionWindowLabel(contest))}</p>
                 </div>
             </div>`,
             mobileActions,
@@ -520,12 +530,46 @@ function buildRowData(contest) {
         contest.id,
         escapeHtml(categoryLabel(contest.category)),
         escapeHtml(contest.title),
-        statusBadge(contest.status),
+        contestStatusCell(contest),
         entriesMarkup,
         pendingMarkup,
         escapeHtml(contest.contest_year != null ? String(contest.contest_year) : '—'),
         desktopActions,
     ];
+}
+
+function contestStatusCell(contest) {
+    const accepting = contest.is_open_for_submission === true
+        || contest.is_open_for_submission === 1
+        || contest.is_open_for_submission === '1';
+
+    return `
+        <div class="flex min-w-0 flex-col gap-1">
+            ${statusBadge(contest.status)}
+            ${accepting
+                ? '<span class="admin-status-badge admin-status-open">Accepting entries</span>'
+                : '<span class="admin-status-badge admin-status-closed" title="Status Open is not enough — check submission dates and Active visibility">Not accepting</span>'}
+        </div>
+    `;
+}
+
+function submissionWindowLabel(contest) {
+    const start = formatDateInput(contest.submission_starts_at) || '—';
+    const end = formatDateInput(contest.submission_ends_at) || '—';
+    return `${start} → ${end}`;
+}
+
+function manilaTodayString() {
+    try {
+        return new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Manila',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).format(new Date());
+    } catch {
+        return new Date().toISOString().slice(0, 10);
+    }
 }
 
 function formatDateInput(value) {

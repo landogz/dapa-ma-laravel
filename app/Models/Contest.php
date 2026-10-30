@@ -46,22 +46,34 @@ class Contest extends Model
 
     public function getIsOpenForSubmissionAttribute(): bool
     {
-        if (! $this->is_active || $this->status !== 'open') {
-            return false;
+        return $this->submissionClosedReason() === null;
+    }
+
+    /**
+     * Null when the contest currently accepts entries; otherwise a mobile/admin-facing reason.
+     */
+    public function submissionClosedReason(): ?string
+    {
+        if (! $this->is_active) {
+            return 'This contest is hidden and not accepting submissions.';
+        }
+
+        if ($this->status !== 'open') {
+            return 'This contest is not open for submissions.';
         }
 
         // Calendar-day window in PH local time (admin date pickers are local dates).
         $today = now('Asia/Manila')->toDateString();
 
         if ($this->submission_starts_at && $today < $this->submission_starts_at->toDateString()) {
-            return false;
+            return 'Submissions open on '.$this->submission_starts_at->toDateString().'.';
         }
 
         if ($this->submission_ends_at && $today > $this->submission_ends_at->toDateString()) {
-            return false;
+            return 'The submission window ended on '.$this->submission_ends_at->toDateString().'. Extend the end date in Admin → Contests to accept entries again.';
         }
 
-        return true;
+        return null;
     }
 
     public function getEntriesCountAttribute(): int

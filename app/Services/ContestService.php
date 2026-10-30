@@ -96,7 +96,7 @@ class ContestService
     ): ContestEntry {
         if (! $contest->is_open_for_submission) {
             throw ValidationException::withMessages([
-                'contest' => ['This contest is not open for submissions.'],
+                'contest' => [$contest->submissionClosedReason() ?? 'This contest is not open for submissions.'],
             ]);
         }
 

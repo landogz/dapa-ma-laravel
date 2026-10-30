@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\Contest\ContestSubmissionWindow;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreContestRequest extends FormRequest
 {
@@ -28,5 +30,12 @@ class StoreContestRequest extends FormRequest
             'cover_image_url' => ['nullable', 'url', 'max:512'],
             'is_active' => ['required', 'boolean'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            ContestSubmissionWindow::validateOpenStatusDates($validator, $this->all());
+        });
     }
 }
