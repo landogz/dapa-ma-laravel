@@ -115,6 +115,7 @@ const SECTION_PATHS = {
 };
 
 let inboxFilter = 'unread';
+let inboxExpanded = false;
 
 export async function initAdminPage(pageName) {
     const appRoot = document.getElementById('admin-app');
@@ -459,6 +460,8 @@ function bindNotificationsBell() {
     };
 
     const openPanel = async () => {
+        inboxFilter = 'unread';
+        inboxExpanded = false;
         await loadAdminInbox(panel);
         panel.classList.remove('hidden');
         isOpen = true;
@@ -973,83 +976,25 @@ async function loadAdminInbox(panel) {
         const filter = inboxFilter || 'unread';
         const { data } = await window.axios.get('/admin/inbox', {
             params: {
-                per_page: 10,
+                per_page: inboxExpanded || filter === 'all' ? 50 : 10,
                 unread_only: filter === 'unread' ? 1 : 0,
             },
         });
         const items = data.data?.data ?? [];
+        const total = Number(data.data?.total ?? items.length);
 
-        if (!items.length) {
-            panel.innerHTML = `
-                <div class="admin-notifications-header">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Notifications</p>
-                </div>
-                <div class="admin-notifications-empty">
-                    No ${filter === 'unread' ? 'unread ' : ''}notifications. Actions like post submissions, rejections, schedules, and role updates will appear here.
-                </div>
-            `;
-
-            return;
-        }
-
+        panel.classList.toggle('is-expanded', inboxExpanded || filter === 'all');
         panel.innerHTML = `
-            <div class="admin-notifications-header">
-                <div class="flex flex-col gap-1">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Notifications</p>
-                    <div class="inline-flex overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">
-                        <button type="button"
-                                class="px-3 py-0.5 ${filter === 'unread' ? 'bg-white text-[#055498] font-semibold' : 'text-slate-500'}"
-                                data-admin-inbox-filter="unread">
-                            Unread
-                        </button>
-                        <button type="button"
-                                class="px-3 py-0.5 ${filter === 'all' ? 'bg-white text-[#055498] font-semibold' : 'text-slate-500'}"
-                                data-admin-inbox-filter="all">
-                            All
-                        </button>
-                    </div>
-                </div>
-                <button type="button" class="text-[11px] font-semibold text-[#055498] hover:text-[#123a60]" data-admin-inbox-mark-all>Mark all as read</button>
-            </div>
-            <div class="admin-notifications-items">
-                ${items.map(renderInboxItem).join('')}
-            </div>
+            ${renderInboxHeader(filter, { showMarkAll: items.length > 0 })}
+            ${items.length
+                ? `<div class="admin-notifications-items">${items.map(renderInboxItem).join('')}</div>`
+                : `<div class="admin-notifications-empty">
+                    No ${filter === 'unread' ? 'unread ' : ''}notifications. Actions like post submissions, rejections, schedules, and role updates will appear here.
+                   </div>`}
+            ${renderInboxFooter({ filter, total, shown: items.length })}
         `;
 
-        panel.querySelectorAll('[data-admin-inbox-filter]').forEach((button) => {
-            button.addEventListener('click', async () => {
-                inboxFilter = button.getAttribute('data-admin-inbox-filter') || 'unread';
-                await loadAdminInbox(panel);
-            });
-        });
-
-        panel.querySelector('[data-admin-inbox-mark-all]')?.addEventListener('click', async () => {
-            try {
-                await window.axios.post('/admin/inbox/read-all');
-                await refreshInboxBadge();
-                panel.classList.add('hidden');
-            } catch {
-                // ignore errors in badge update here
-            }
-        });
-
-        panel.querySelectorAll('[data-admin-inbox-item]').forEach((row) => {
-            row.addEventListener('click', async () => {
-                const id = row.getAttribute('data-admin-inbox-item');
-                const url = row.getAttribute('data-admin-inbox-url');
-
-                try {
-                    await window.axios.post(`/admin/inbox/${id}/read`);
-                    await refreshInboxBadge();
-                } catch {
-                    // best-effort; do not block navigation
-                }
-
-                if (url) {
-                    window.location.href = url;
-                }
-            });
-        });
+        bindInboxPanelInteractions(panel);
     } catch {
         panel.innerHTML = `
             <div class="admin-notifications-header">
@@ -1058,13 +1003,143 @@ async function loadAdminInbox(panel) {
             <div class="admin-notifications-empty text-[#CE2028]">
                 Failed to load notifications. Please try again.
             </div>
+            ${renderInboxFooter({ filter: inboxFilter || 'unread', total: 0, shown: 0 })}
         `;
+        bindInboxPanelInteractions(panel);
     }
+}
+
+function renderInboxFooter({ filter, total = 0, shown = 0 } = {}) {
+    const viewingAll = filter === 'all' && inboxExpanded;
+    const label = viewingAll
+        ? (total > shown ? `Showing ${shown} of ${total}` : 'Showing all notifications')
+        : 'View all';
+
+    return `
+        <div class="admin-notifications-footer">
+            <button type="button"
+                    class="admin-notifications-view-all"
+                    data-admin-inbox-view-all
+                    ${viewingAll && total <= shown ? 'disabled' : ''}>
+                ${label}
+            </button>
+        </div>
+    `;
+}
+
+function renderInboxHeader(filter, { showMarkAll = false } = {}) {
+    return `
+        <div class="admin-notifications-header">
+            <div class="flex flex-col gap-1">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Notifications</p>
+                <div class="inline-flex overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">
+                    <button type="button"
+                            class="min-h-8 px-3 py-0.5 ${filter === 'unread' ? 'bg-white text-[#055498] font-semibold' : 'text-slate-500'}"
+                            data-admin-inbox-filter="unread">
+                        Unread
+                    </button>
+                    <button type="button"
+                            class="min-h-8 px-3 py-0.5 ${filter === 'all' ? 'bg-white text-[#055498] font-semibold' : 'text-slate-500'}"
+                            data-admin-inbox-filter="all">
+                        All
+                    </button>
+                </div>
+            </div>
+            ${showMarkAll
+                ? '<button type="button" class="min-h-8 text-[11px] font-semibold text-[#055498] hover:text-[#123a60]" data-admin-inbox-mark-all>Mark all as read</button>'
+                : ''}
+        </div>
+    `;
+}
+
+function bindInboxPanelInteractions(panel) {
+    panel.querySelectorAll('[data-admin-inbox-filter]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            inboxFilter = button.getAttribute('data-admin-inbox-filter') || 'unread';
+            if (inboxFilter === 'unread') {
+                inboxExpanded = false;
+            }
+            await loadAdminInbox(panel);
+        });
+    });
+
+    panel.querySelector('[data-admin-inbox-mark-all]')?.addEventListener('click', async (event) => {
+        event.stopPropagation();
+
+        try {
+            await window.axios.post('/admin/inbox/read-all');
+            await refreshInboxBadge();
+            await loadAdminInbox(panel);
+        } catch {
+            // best-effort
+        }
+    });
+
+    panel.querySelector('[data-admin-inbox-view-all]')?.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        inboxFilter = 'all';
+        inboxExpanded = true;
+        await loadAdminInbox(panel);
+    });
+
+    panel.querySelectorAll('[data-admin-inbox-item]').forEach((row) => {
+        row.addEventListener('click', async () => {
+            const id = row.getAttribute('data-admin-inbox-item');
+            const url = row.getAttribute('data-admin-inbox-url') || '';
+            const postId = row.getAttribute('data-admin-inbox-post-id') || '';
+
+            try {
+                await window.axios.post(`/admin/inbox/${id}/read`);
+                await refreshInboxBadge();
+            } catch {
+                // best-effort; do not block navigation
+            }
+
+            panel.classList.add('hidden');
+            await openInboxDestination({ url, postId });
+        });
+    });
+}
+
+async function openInboxDestination({ url = '', postId = '' } = {}) {
+    const targetPostId = String(postId || '').trim()
+        || (url.match(/[?&]post=(\d+)/)?.[1] ?? '');
+
+    if (targetPostId) {
+        const onPostsPage = window.location.pathname.replace(/\/+$/, '') === '/admin/posts';
+
+        if (onPostsPage && typeof window.Posts?.viewPost === 'function') {
+            const nextUrl = new URL(window.location.href);
+            nextUrl.searchParams.set('post', targetPostId);
+            window.history.replaceState({}, '', nextUrl.toString());
+            await window.Posts.viewPost(targetPostId);
+            return;
+        }
+
+        window.location.href = `/admin/posts?post=${encodeURIComponent(targetPostId)}`;
+        return;
+    }
+
+    if (url) {
+        window.location.href = url;
+    }
+}
+
+function escapeInboxHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }
 
 function renderInboxItem(item) {
     const isUnread = !item.read_at;
-    const url = item.data?.admin_url ?? '';
+    const postId = item.data?.post_id ? String(item.data.post_id) : '';
+    const url = item.data?.admin_url
+        || (postId ? `/admin/posts?post=${postId}` : '');
     const createdAt = item.created_at ?? '';
     const actor = item.data?.actor_name ?? '';
     const postTitle = item.data?.post_title ?? '';
@@ -1073,11 +1148,11 @@ function renderInboxItem(item) {
     const metaPieces = [];
 
     if (actor) {
-        metaPieces.push(actor);
+        metaPieces.push(escapeInboxHtml(actor));
     }
 
     if (postTitle) {
-        metaPieces.push(`“${postTitle}”`);
+        metaPieces.push(`“${escapeInboxHtml(postTitle)}”`);
     }
 
     const metaText = metaPieces.join(' • ');
@@ -1085,39 +1160,50 @@ function renderInboxItem(item) {
 
     let typeLabel = 'Notification';
     let typeClass = 'bg-slate-100 text-slate-600';
+    let icon = 'fas fa-bell';
 
     if (type === 'post_submitted') {
         typeLabel = 'Draft submitted';
         typeClass = 'bg-[#055498]/10 text-[#055498]';
+        icon = 'fas fa-paper-plane';
     } else if (type === 'post_rejected') {
         typeLabel = 'Rejected';
         typeClass = 'bg-[#FBD116]/15 text-[#123a60]';
+        icon = 'fas fa-rotate-left';
     } else if (type === 'post_scheduled') {
         typeLabel = 'Scheduled';
         typeClass = 'bg-emerald-100 text-emerald-700';
+        icon = 'fas fa-calendar-check';
+    } else if (type === 'post_published') {
+        typeLabel = 'Published';
+        typeClass = 'bg-emerald-100 text-emerald-700';
+        icon = 'fas fa-circle-check';
     } else if (type === 'user_created') {
         typeLabel = 'New account';
         typeClass = 'bg-sky-100 text-sky-700';
+        icon = 'fas fa-user-plus';
     } else if (type === 'user_role_changed') {
         typeLabel = 'Role updated';
         typeClass = 'bg-purple-100 text-purple-700';
+        icon = 'fas fa-user-shield';
     }
 
     return `
         <button type="button"
                 class="admin-notifications-item ${isUnread ? 'admin-notifications-item-unread' : ''}"
-                data-admin-inbox-item="${item.id}"
-                data-admin-inbox-url="${url}">
-            <span class="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#055498]/10 text-[#055498]">
-                <i class="fas fa-circle-exclamation text-[11px]"></i>
+                data-admin-inbox-item="${escapeInboxHtml(item.id)}"
+                data-admin-inbox-url="${escapeInboxHtml(url)}"
+                data-admin-inbox-post-id="${escapeInboxHtml(postId)}">
+            <span class="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#055498]/10 text-[#055498]">
+                <i class="${icon} text-[11px]" aria-hidden="true"></i>
             </span>
-            <div class="flex-1 text-left">
-                <p class="admin-notifications-title">${item.title}</p>
+            <div class="flex-1 min-w-0 text-left">
+                <p class="admin-notifications-title">${escapeInboxHtml(item.title)}</p>
                 <div class="mt-0.5 flex flex-wrap items-center gap-1">
                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${typeClass}">${typeLabel}</span>
                     ${metaText ? `<span class="admin-notifications-meta">${metaText}</span>` : ''}
                 </div>
-                <p class="admin-notifications-meta">${timeLabel}</p>
+                <p class="admin-notifications-meta">${escapeInboxHtml(timeLabel)}</p>
             </div>
         </button>
     `;

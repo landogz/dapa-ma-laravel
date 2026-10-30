@@ -207,7 +207,7 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
     const reviewsCount = Number(post.reviews_count ?? reviews.length ?? 0);
     const averageRating = Number(post.reviews_avg_rating ?? post.average_rating ?? 0);
     const hasEngagement = likesCount > 0 || commentsCount > 0 || reviewsCount > 0;
-    const canEdit = canEditPost(post);
+    const toolbarHtml = renderPostViewToolbar(post);
 
     Swal.fire({
         title: '',
@@ -265,31 +265,77 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
                         ${post.body || '<p class="post-view-empty">No content yet.</p>'}
                     </div>
                     ${hasEngagement ? renderPostEngagementPanel({ likes, comments, reviews, likesCount, commentsCount, reviewsCount, postId: post.id }) : ''}
+                    ${toolbarHtml}
                 </div>
             </div>
         `,
-        showCancelButton: canEdit,
+        showCancelButton: false,
         confirmButtonText: 'Close',
-        cancelButtonText: 'Edit post',
         confirmButtonColor: '#055498',
-        cancelButtonColor: '#123a60',
-        reverseButtons: true,
         customClass: {
             popup: 'post-view-popup',
             htmlContainer: 'post-view-html',
             actions: 'post-view-actions',
             confirmButton: 'post-view-btn-close',
-            cancelButton: 'post-view-btn-edit',
         },
         didOpen: (popup) => {
             bindPostEngagementTabs();
             bindPostCommentDeletes(popup, deletePostComment);
             activatePostEngagementTab(engagementTab);
+            bindPostViewToolbar(popup, post.id);
         },
-    }).then(({ isDismissed, dismiss }) => {
-        if (isDismissed && dismiss === Swal.DismissReason.cancel && canEdit) {
-            promptEditPost(post.id);
-        }
+    });
+}
+
+function renderPostViewToolbar(post) {
+    const actions = getAvailableActions(post).filter((action) => action.handler !== 'viewPost');
+
+    if (!actions.length) {
+        return '';
+    }
+
+    return `
+        <div class="post-view-toolbar" role="toolbar" aria-label="Post actions">
+            ${actions.map((action) => {
+                const tone = action.className?.includes('danger')
+                    ? 'is-danger'
+                    : action.className?.includes('warning')
+                        ? 'is-warning'
+                        : action.handler === 'editPost' || action.handler === 'publishNow' || action.handler === 'schedulePost'
+                            ? 'is-primary'
+                            : 'is-secondary';
+
+                return `
+                    <button
+                        type="button"
+                        class="post-view-toolbar-btn ${tone}"
+                        data-post-view-action="${escapeHtml(action.handler)}"
+                        aria-label="${escapeHtml(action.tooltip || action.label)}"
+                        title="${escapeHtml(action.tooltip || action.label)}"
+                    >
+                        <i class="${escapeHtml(action.icon)}" aria-hidden="true"></i>
+                        <span>${escapeHtml(action.label)}</span>
+                    </button>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+function bindPostViewToolbar(popup, postId) {
+    popup.querySelectorAll('[data-post-view-action]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const handlerName = button.getAttribute('data-post-view-action');
+            const handler = window.Posts?.[handlerName];
+
+            if (typeof handler !== 'function') {
+                return;
+            }
+
+            Swal.close();
+            await Promise.resolve();
+            handler(postId);
+        });
     });
 }
 

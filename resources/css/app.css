@@ -5153,8 +5153,8 @@ select.admin-filter-select:not(.admin-choice-select-native),
     right: 0;
     top: 3rem;
     z-index: 40;
-    width: 22rem;
-    max-height: 24rem;
+    width: min(22rem, calc(100vw - 1rem));
+    max-height: min(24rem, 70vh);
     overflow-y: auto;
     border-radius: 1rem;
     border: 1px solid #e5e7eb;
@@ -5168,12 +5168,13 @@ select.admin-filter-select:not(.admin-choice-select-native),
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.5rem;
     padding: 0.5rem 1rem;
     border-bottom: 1px solid #e5e7eb;
 }
 
 .admin-notifications-items {
-    max-height: 20rem;
+    max-height: min(20rem, 55vh);
     overflow-y: auto;
 }
 
@@ -5187,6 +5188,7 @@ select.admin-filter-select:not(.admin-choice-select-native),
     display: flex;
     gap: 0.75rem;
     width: 100%;
+    min-height: 2.75rem;
     padding: 0.6rem 1rem;
     border: 0;
     background: transparent;
@@ -5213,6 +5215,45 @@ select.admin-filter-select:not(.admin-choice-select-native),
     margin-top: 0.15rem;
     font-size: 0.75rem;
     color: #6b7280;
+}
+
+.admin-notifications-footer {
+    border-top: 1px solid #e5e7eb;
+    padding: 0.35rem 0.5rem;
+}
+
+.admin-notifications-view-all {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 2.75rem;
+    border: 0;
+    border-radius: 0.65rem;
+    background: transparent;
+    color: #055498;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-notifications-view-all:hover:not(:disabled) {
+    background: rgba(5, 84, 152, 0.08);
+    color: #123a60;
+}
+
+.admin-notifications-view-all:disabled {
+    color: #94a3b8;
+    cursor: default;
+}
+
+.admin-notifications-panel.is-expanded {
+    max-height: min(32rem, 80vh);
+}
+
+.admin-notifications-panel.is-expanded .admin-notifications-items {
+    max-height: min(26rem, 60vh);
 }
 
 .admin-notifications-meta {
@@ -5388,8 +5429,8 @@ select.admin-filter-select:not(.admin-choice-select-native),
     right: 0;
     top: 3rem;
     z-index: 40;
-    width: 22rem;
-    max-height: 24rem;
+    width: min(22rem, calc(100vw - 1rem));
+    max-height: min(24rem, 70vh);
     overflow-y: auto;
     border-radius: 1rem;
     border: 1px solid #e5e7eb;
@@ -5403,12 +5444,13 @@ select.admin-filter-select:not(.admin-choice-select-native),
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.5rem;
     padding: 0.5rem 1rem;
     border-bottom: 1px solid #e5e7eb;
 }
 
 .admin-notifications-items {
-    max-height: 20rem;
+    max-height: min(20rem, 55vh);
     overflow-y: auto;
 }
 
@@ -5422,6 +5464,7 @@ select.admin-filter-select:not(.admin-choice-select-native),
     display: flex;
     gap: 0.75rem;
     width: 100%;
+    min-height: 2.75rem;
     padding: 0.6rem 1rem;
     border: 0;
     background: transparent;
@@ -5448,6 +5491,45 @@ select.admin-filter-select:not(.admin-choice-select-native),
     margin-top: 0.15rem;
     font-size: 0.75rem;
     color: #6b7280;
+}
+
+.admin-notifications-footer {
+    border-top: 1px solid #e5e7eb;
+    padding: 0.35rem 0.5rem;
+}
+
+.admin-notifications-view-all {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 2.75rem;
+    border: 0;
+    border-radius: 0.65rem;
+    background: transparent;
+    color: #055498;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-notifications-view-all:hover:not(:disabled) {
+    background: rgba(5, 84, 152, 0.08);
+    color: #123a60;
+}
+
+.admin-notifications-view-all:disabled {
+    color: #94a3b8;
+    cursor: default;
+}
+
+.admin-notifications-panel.is-expanded {
+    max-height: min(32rem, 80vh);
+}
+
+.admin-notifications-panel.is-expanded .admin-notifications-items {
+    max-height: min(26rem, 60vh);
 }
 
 .admin-notifications-meta {
@@ -6480,6 +6562,66 @@ body.admin-mega-open {
     padding: 0.55rem 1.1rem !important;
 }
 
+.post-view-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.15rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eef2f7;
+}
+
+.post-view-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 0.7rem;
+    border: 1px solid #dbe3ee;
+    background: #f8fafc;
+    color: #123a60;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.post-view-toolbar-btn:hover {
+    border-color: #055498;
+    background: #eff6ff;
+    color: #055498;
+}
+
+.post-view-toolbar-btn.is-primary {
+    background: linear-gradient(135deg, #055498 0%, #123a60 100%);
+    border-color: transparent;
+    color: #ffffff;
+}
+
+.post-view-toolbar-btn.is-primary:hover {
+    background: #123a60;
+    color: #ffffff;
+}
+
+.post-view-toolbar-btn.is-warning {
+    background: rgba(251, 209, 22, 0.18);
+    border-color: #d4a017;
+    color: #123a60;
+}
+
+.post-view-toolbar-btn.is-danger {
+    background: rgba(206, 32, 40, 0.08);
+    border-color: #ce2028;
+    color: #ce2028;
+}
+
+.post-view-toolbar-btn.is-danger:hover {
+    background: #ce2028;
+    color: #ffffff;
+}
+
 button.admin-table-mobile-title {
     background: transparent;
     border: 0;
@@ -6500,6 +6642,11 @@ button.admin-table-mobile-title:hover,
     .post-view-actions {
         padding-left: 1rem !important;
         padding-right: 1rem !important;
+    }
+
+    .post-view-toolbar-btn {
+        flex: 1 1 calc(50% - 0.25rem);
+        min-width: 8.5rem;
     }
 
     .post-view-people > li {

@@ -184,7 +184,7 @@
                         >
                             <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
                         </button>
-                        <button type="button" class="admin-secondary-button admin-icon-button relative hidden lg:inline-flex" aria-label="Notifications" data-admin-notifications-button>
+                        <button type="button" class="admin-secondary-button admin-icon-button relative inline-flex" aria-label="Notifications" data-admin-notifications-button>
                             <span class="relative inline-flex items-center justify-center">
                                 <i class="fas fa-bell text-slate-500"></i>
                                 <span class="admin-notification-dot hidden" data-admin-notifications-dot></span>

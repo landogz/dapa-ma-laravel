@@ -51,12 +51,7 @@ class AdminNotificationService
             'type' => 'post_rejected',
             'title' => 'Post rejected for revision',
             'body' => $reviewNotes,
-            'data' => [
-                'post_id' => $post->id,
-                'post_title' => $post->title,
-                'actor_name' => $publisher->name,
-                'admin_url' => '/admin/posts',
-            ],
+            'data' => $this->postPayload($post, $publisher->name),
         ]);
     }
 
@@ -68,36 +63,40 @@ class AdminNotificationService
             return;
         }
 
+        $isLive = $post->status === 'published';
+
         $this->repository->createForUser($author, [
-            'type' => 'post_scheduled',
-            'title' => 'Post approved and scheduled',
-            'body' => sprintf(
-                'Your post "%s" was scheduled to publish on %s by %s.',
-                $post->title,
-                optional($post->publish_date)->format('M d, Y H:i') ?? 'a future date',
-                $publisher->name,
-            ),
-            'data' => [
-                'post_id' => $post->id,
-                'post_title' => $post->title,
-                'actor_name' => $publisher->name,
-                'admin_url' => '/admin/posts',
-            ],
+            'type' => $isLive ? 'post_published' : 'post_scheduled',
+            'title' => $isLive ? 'Post published' : 'Post approved and scheduled',
+            'body' => $isLive
+                ? sprintf(
+                    'Your post "%s" was published by %s.',
+                    $post->title,
+                    $publisher->name,
+                )
+                : sprintf(
+                    'Your post "%s" was scheduled to publish on %s by %s.',
+                    $post->title,
+                    optional($post->publish_date)->format('M d, Y H:i') ?? 'a future date',
+                    $publisher->name,
+                ),
+            'data' => $this->postPayload($post, $publisher->name),
         ]);
     }
 
     public function notifyPostSubmitted(Post $post, User $editor): void
     {
-        $publishers = User::query()
-            ->where('role', 'publisher')
+        $recipients = User::query()
+            ->whereIn('role', ['publisher', 'super_admin'])
+            ->where('id', '!=', $editor->id)
             ->get();
 
-        if ($publishers->isEmpty()) {
+        if ($recipients->isEmpty()) {
             return;
         }
 
-        foreach ($publishers as $publisher) {
-            $this->repository->createForUser($publisher, [
+        foreach ($recipients as $recipient) {
+            $this->repository->createForUser($recipient, [
                 'type' => 'post_submitted',
                 'title' => 'Post submitted for review',
                 'body' => sprintf(
@@ -105,14 +104,22 @@ class AdminNotificationService
                     $editor->name,
                     $post->title,
                 ),
-                'data' => [
-                    'post_id' => $post->id,
-                    'post_title' => $post->title,
-                    'actor_name' => $editor->name,
-                    'admin_url' => '/admin/posts',
-                ],
+                'data' => $this->postPayload($post, $editor->name),
             ]);
         }
+    }
+
+    /**
+     * @return array{post_id:int, post_title:string, actor_name:string, admin_url:string}
+     */
+    private function postPayload(Post $post, string $actorName): array
+    {
+        return [
+            'post_id' => $post->id,
+            'post_title' => $post->title,
+            'actor_name' => $actorName,
+            'admin_url' => '/admin/posts?post='.$post->id,
+        ];
     }
 
     public function notifyUserCreated(User $user, User $actor): void
