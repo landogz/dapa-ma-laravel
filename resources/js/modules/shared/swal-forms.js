@@ -76,6 +76,7 @@ function renderField(field) {
                     <textarea id="${field.id}" class="admin-swal-textarea admin-swal-richtext" data-rich-text${richPlaceholder}>${escapeHtml(field.value ?? '')}</textarea>
                 </div>
                 ${hint}
+                ${fieldErrorMarkup(field.id)}
             </div>
         `;
     }
@@ -86,6 +87,7 @@ function renderField(field) {
                 ${label}
                 <textarea id="${field.id}" class="admin-swal-textarea"${placeholder}>${escapeHtml(field.value ?? '')}</textarea>
                 ${hint}
+                ${fieldErrorMarkup(field.id)}
             </div>
         `;
     }
@@ -119,6 +121,7 @@ function renderField(field) {
                     ${renderOptions(field.options, field.value)}
                 </select>
                 ${hint}
+                ${fieldErrorMarkup(field.id)}
             </div>
         `;
     }
@@ -155,6 +158,7 @@ function renderField(field) {
                 ${previewBlock}
                 <input id="${field.id}" class="admin-swal-input" type="file"${field.accept ? ` accept="${escapeHtml(field.accept)}"` : ''} data-image-preview-input="${showPreview ? 'true' : 'false'}"${previewUrl ? ` data-preview-fallback="${previewUrl}"` : ''}>
                 ${hint}
+                ${fieldErrorMarkup(field.id)}
             </div>
         `;
     }
@@ -167,6 +171,7 @@ function renderField(field) {
                     <input id="${field.id}" class="admin-swal-input" type="text" data-address-autocomplete autocomplete="off"${placeholder}${value}>
                 </div>
                 ${hint}
+                ${fieldErrorMarkup(field.id)}
             </div>
         `;
     }
@@ -183,6 +188,7 @@ function renderField(field) {
                 ${label}
                 <input id="${field.id}" class="admin-swal-input" type="tel" inputmode="tel" data-phone-ph autocomplete="tel"${multiple}${shortCodes}${placeholder}${value}>
                 ${phoneHint}
+                ${fieldErrorMarkup(field.id)}
             </div>
         `;
     }
@@ -212,6 +218,7 @@ function renderField(field) {
                     </button>
                 </div>
                 ${passwordHint}
+                ${fieldErrorMarkup(field.id)}
             </div>
         `;
     }
@@ -227,6 +234,7 @@ function renderField(field) {
                     <input type="hidden" id="${field.id}" name="${field.id}" value="${escapeHtml(field.value ?? '')}">
                 </div>
                 ${hint}
+                ${fieldErrorMarkup(field.id)}
             </div>
         `;
     }
@@ -264,6 +272,7 @@ function renderField(field) {
                     ${presets ? `<div class="admin-swal-color-presets" role="group" aria-label="Brand colors">${presets}</div>` : ''}
                 </div>
                 ${hint}
+                ${fieldErrorMarkup(field.id)}
             </div>
         `;
     }
@@ -273,6 +282,7 @@ function renderField(field) {
             ${label}
             <input id="${field.id}" class="admin-swal-input" type="${field.type ?? 'text'}"${placeholder}${value}${min}>
             ${hint}
+            ${fieldErrorMarkup(field.id)}
         </div>
     `;
 }
@@ -451,6 +461,262 @@ export function formatApiValidationMessage(response, fallback = 'Unable to save.
     }
 
     return response?.data?.message ?? fallback;
+}
+
+function fieldErrorMarkup(fieldId = '') {
+    return `<p class="admin-swal-field-error" data-swal-field-error="${escapeHtml(fieldId)}" hidden></p>`;
+}
+
+export function clearSwalFieldErrors(root = Swal.getPopup()) {
+    if (!root) {
+        return;
+    }
+
+    root.querySelectorAll('.is-invalid').forEach((el) => {
+        el.classList.remove('is-invalid');
+        el.removeAttribute('aria-invalid');
+    });
+
+    root.querySelectorAll('.admin-swal-field.is-invalid-field').forEach((el) => {
+        el.classList.remove('is-invalid-field');
+    });
+
+    root.querySelectorAll('[data-swal-field-error]').forEach((el) => {
+        el.hidden = true;
+        el.textContent = '';
+    });
+}
+
+function resolveFieldControl(fieldId, root = Swal.getPopup()) {
+    if (!root || !fieldId) {
+        return null;
+    }
+
+    return root.querySelector(`#${CSS.escape(String(fieldId))}`);
+}
+
+function isControlVisiblyEmpty(control) {
+    if (!control) {
+        return true;
+    }
+
+    if (control.matches('[data-rich-text], .admin-swal-richtext')) {
+        const html = String(control.value ?? '')
+            .replace(/<p>(&nbsp;|\s|<br\s*\/?>)*<\/p>/gi, '')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .trim();
+        return html === '';
+    }
+
+    if (control.type === 'checkbox' || control.type === 'radio') {
+        return !control.checked;
+    }
+
+    if (control.type === 'file') {
+        return !control.files?.length;
+    }
+
+    return String(control.value ?? '').trim() === '';
+}
+
+export function markSwalFieldInvalid(fieldId, message = '') {
+    const popup = Swal.getPopup();
+    const control = resolveFieldControl(fieldId, popup);
+    if (!control) {
+        return;
+    }
+
+    const field = control.closest('.admin-swal-field') || control.parentElement;
+    control.classList.add('is-invalid');
+    control.setAttribute('aria-invalid', 'true');
+    field?.classList.add('is-invalid-field');
+
+    const richWrap = field?.querySelector('.admin-rich-text, .ck-editor, .ck.ck-editor');
+    richWrap?.classList.add('is-invalid');
+
+    const select = field?.querySelector('select.admin-swal-select, select.admin-swal-input');
+    select?.classList.add('is-invalid');
+
+    let errorEl = field?.querySelector(`[data-swal-field-error="${CSS.escape(String(fieldId))}"]`)
+        || field?.querySelector('[data-swal-field-error]');
+
+    if (!errorEl && field) {
+        errorEl = document.createElement('p');
+        errorEl.className = 'admin-swal-field-error';
+        errorEl.setAttribute('data-swal-field-error', String(fieldId));
+        field.appendChild(errorEl);
+    }
+
+    if (errorEl) {
+        const labelText = field?.querySelector('.admin-swal-label, .admin-swal-checkbox-title')?.textContent
+            ?.replace(/\*/g, '')
+            .trim() || 'This field';
+        errorEl.textContent = message || `${labelText} is required.`;
+        errorEl.hidden = false;
+    }
+}
+
+function findControlIdForErrorKey(key, root = Swal.getPopup()) {
+    if (!root || !key) {
+        return null;
+    }
+
+    const normalized = String(key).replace(/\./g, '_');
+    const candidates = [
+        normalized,
+        normalized.replace(/_id$/, ''),
+        `post-${normalized}`,
+        `post-${normalized.replace(/_id$/, '')}`,
+        normalized.replaceAll('_', '-'),
+    ];
+
+    for (const id of candidates) {
+        if (root.querySelector(`#${CSS.escape(id)}`)) {
+            return id;
+        }
+    }
+
+    const match = Array.from(root.querySelectorAll('input[id], textarea[id], select[id]'))
+        .find((el) => {
+            const id = el.id.toLowerCase();
+            return id === normalized.toLowerCase()
+                || id.endsWith(`-${normalized.toLowerCase()}`)
+                || id.endsWith(`_${normalized.toLowerCase()}`)
+                || id.includes(normalized.toLowerCase().replaceAll('_', '-'));
+        });
+
+    return match?.id ?? null;
+}
+
+function inferInvalidFieldIds(message, root = Swal.getPopup()) {
+    if (!root) {
+        return [];
+    }
+
+    const msg = String(message ?? '').toLowerCase();
+    const ids = [];
+
+    root.querySelectorAll('.admin-swal-field').forEach((field) => {
+        const label = field.querySelector('.admin-swal-label, .admin-swal-checkbox-title')?.textContent ?? '';
+        const control = field.querySelector('input[id], textarea[id], select[id]');
+        if (!control?.id) {
+            return;
+        }
+
+        const labelWords = label
+            .replace(/\*/g, ' ')
+            .toLowerCase()
+            .split(/[^a-z0-9]+/)
+            .filter((word) => word.length > 2 && !['the', 'and', 'for', 'with', 'from'].includes(word));
+
+        const mentioned = labelWords.some((word) => msg.includes(word));
+        const requiredEmpty = label.includes('*') && isControlVisiblyEmpty(control);
+
+        if ((mentioned && isControlVisiblyEmpty(control)) || (mentioned && requiredEmpty) || (requiredEmpty && /required|must|need/i.test(msg))) {
+            if (mentioned || (requiredEmpty && /required/i.test(msg))) {
+                ids.push(control.id);
+            }
+        }
+    });
+
+    // Prefer fields mentioned in the message when several required fields are empty.
+    const mentionedOnly = ids.filter((id) => {
+        const field = resolveFieldControl(id, root)?.closest('.admin-swal-field');
+        const label = field?.querySelector('.admin-swal-label, .admin-swal-checkbox-title')?.textContent ?? '';
+        const words = label.replace(/\*/g, ' ').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+        return words.some((word) => msg.includes(word));
+    });
+
+    return [...new Set(mentionedOnly.length > 0 ? mentionedOnly : ids)];
+}
+
+/**
+ * Show the Swal validation banner and mark the related fields with a red indicator.
+ * @param {string} message
+ * @param {string[]|Record<string,string>} [fields] Field ids, or id → message map
+ * @param {object} [apiResponse] Optional Axios-style response with data.errors
+ */
+export function failSwalValidation(message, fields = [], apiResponse = null) {
+    const popup = Swal.getPopup();
+    clearSwalFieldErrors(popup);
+
+    const fieldMessages = {};
+    let fieldIds = [];
+
+    if (Array.isArray(fields)) {
+        fieldIds = fields.filter(Boolean);
+    } else if (fields && typeof fields === 'object') {
+        Object.entries(fields).forEach(([id, msg]) => {
+            fieldIds.push(id);
+            fieldMessages[id] = msg;
+        });
+    }
+
+    const apiErrors = apiResponse?.data?.errors;
+    if (apiErrors && typeof apiErrors === 'object') {
+        Object.entries(apiErrors).forEach(([key, msgs]) => {
+            const id = findControlIdForErrorKey(key, popup);
+            if (!id) {
+                return;
+            }
+            fieldIds.push(id);
+            fieldMessages[id] = Array.isArray(msgs) ? msgs[0] : String(msgs);
+        });
+    }
+
+    if (fieldIds.length === 0) {
+        fieldIds = inferInvalidFieldIds(message, popup);
+    }
+
+    [...new Set(fieldIds)].forEach((id) => {
+        markSwalFieldInvalid(id, fieldMessages[id] || '');
+    });
+
+    if (popup) {
+        popup.dataset.swalSkippingFieldMark = '1';
+    }
+
+    Swal.showValidationMessage(message);
+
+    if (popup) {
+        delete popup.dataset.swalSkippingFieldMark;
+    }
+
+    const firstInvalid = popup?.querySelector('.is-invalid, .is-invalid-field');
+    firstInvalid?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+    return false;
+}
+
+function bindSwalFieldErrorClearing(root = Swal.getPopup()) {
+    if (!root || root.dataset.swalFieldErrorsBound === '1') {
+        return;
+    }
+
+    root.dataset.swalFieldErrorsBound = '1';
+
+    const clearOne = (event) => {
+        const control = event.target?.closest?.('input, textarea, select');
+        if (!control) {
+            return;
+        }
+
+        control.classList.remove('is-invalid');
+        control.removeAttribute('aria-invalid');
+        const field = control.closest('.admin-swal-field');
+        field?.classList.remove('is-invalid-field');
+        field?.querySelector('.admin-rich-text, .ck-editor')?.classList.remove('is-invalid');
+        const errorEl = field?.querySelector(`[data-swal-field-error="${CSS.escape(control.id)}"]`)
+            || field?.querySelector('[data-swal-field-error]');
+        if (errorEl) {
+            errorEl.hidden = true;
+            errorEl.textContent = '';
+        }
+    };
+
+    root.addEventListener('input', clearOne, true);
+    root.addEventListener('change', clearOne, true);
 }
 
 function htmlLooksLikeForm(html) {
@@ -719,10 +985,13 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
             if (!confirmDialog) {
                 const popup = Swal.getPopup();
                 if (popup) {
+                    clearSwalFieldErrors(popup);
                     const passwordError = assertPasswordFields(popup);
                     if (passwordError) {
-                        Swal.showValidationMessage(passwordError);
-                        return false;
+                        const passwordIds = Array.from(popup.querySelectorAll('[data-password-policy], [data-password-confirm]'))
+                            .map((el) => el.id)
+                            .filter(Boolean);
+                        return failSwalValidation(passwordError, passwordIds);
                     }
                 }
             }
@@ -742,6 +1011,7 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
             bindPhilippinePhoneFields(popup);
             bindPasswordPolicyFields(popup);
             await bindRichTextEditors(popup);
+            bindSwalFieldErrorClearing(popup);
 
             if (confirmDialog) {
                 mountConfirmDialog(popup);
@@ -829,6 +1099,20 @@ export function enableAdminSwalHeaders() {
     }
 
     const originalFire = Swal.fire;
+    const originalShowValidationMessage = Swal.showValidationMessage.bind(Swal);
+
+    // Every Swal.showValidationMessage call also paints matching fields red.
+    Swal.showValidationMessage = (html) => {
+        const popup = Swal.getPopup();
+        if (popup && !popup.dataset.swalSkippingFieldMark) {
+            clearSwalFieldErrors(popup);
+            const text = String(html ?? '').replace(/<[^>]+>/g, ' ');
+            inferInvalidFieldIds(text, popup).forEach((id) => markSwalFieldInvalid(id));
+            const firstInvalid = popup.querySelector('.is-invalid, .is-invalid-field');
+            firstInvalid?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+        return originalShowValidationMessage(html);
+    };
 
     Swal.fire = function patchedAdminSwalFire(options, ...rest) {
         // Preserve Swal.mixin subclasses (Toast, etc.) so mixin defaults like toast:true apply.

@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -12,12 +13,16 @@ use Illuminate\Support\Str;
 
 class PostRepository
 {
-    public function paginateAdmin(int $perPage = 20): LengthAwarePaginator
+    public function paginateAdmin(int $perPage = 20, ?User $actor = null): LengthAwarePaginator
     {
         return Post::query()
             ->with(['category', 'author'])
             ->withCount(['likes', 'comments', 'reviews'])
             ->withAvg('reviews', 'rating')
+            ->when(
+                $actor?->role === 'publisher',
+                fn (Builder $q) => $q->whereIn('status', ['pending_review', 'archived']),
+            )
             ->latest()
             ->paginate($perPage);
     }

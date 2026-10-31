@@ -3,13 +3,15 @@
 namespace App\Repositories;
 
 use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class NotificationRepository
 {
-    public function paginate(int $perPage = 20, array $filters = []): LengthAwarePaginator
+    public function paginate(int $perPage = 20, array $filters = [], ?User $actor = null): LengthAwarePaginator
     {
         $query = Notification::query()
+            ->visibleInAdminFor($actor)
             ->with(['sender:id,name,email', 'post:id,title', 'hopeEvent:id,title'])
             ->latest('sent_at')
             ->latest('id');

@@ -44,6 +44,9 @@ class User extends Authenticatable
         'fcm_platform',
         'profile_image_url',
         'about',
+        'region',
+        'province',
+        'city',
         'journal_custom_feelings',
     ];
 

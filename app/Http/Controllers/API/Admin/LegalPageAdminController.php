@@ -40,16 +40,19 @@ class LegalPageAdminController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Legal pages fetched.',
-            'data' => $this->legalPageService->listForAdmin(),
+            'data' => $this->legalPageService->listForAdmin(request()->user()),
         ]);
     }
 
     public function show(string $slug): JsonResponse
     {
+        $page = $this->legalPageService->findForAdmin($slug);
+        $this->assertVisibleToAdmin(request(), $page);
+
         return response()->json([
             'status' => true,
             'message' => 'Legal page fetched.',
-            'data' => $this->legalPageService->findForAdmin($slug),
+            'data' => $page,
         ]);
     }
 

@@ -13,6 +13,7 @@ import { initResetPasswordPage } from './modules/password-reset/index';
 import { bindForgotPasswordFlow } from './modules/password-reset/forgot-flow';
 import { initPublicPostShow } from './modules/public/post-show';
 import { initPublicSharePage } from './modules/public/share-page';
+import { initPublicAnalytics } from './modules/public-analytics';
 import { bindPasswordPolicyFields } from './modules/password-validation';
 
 axios.defaults.baseURL = '/api/v1';
@@ -93,13 +94,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (page === 'public-post-show') {
         initPublicPostShow();
+        initPublicAnalytics();
         return;
     }
 
     if (page === 'public-share') {
         initPublicSharePage();
+        initPublicAnalytics();
         return;
     }
+
+    initPublicAnalytics();
 
     if (page?.startsWith('admin-')) {
         requireAuthentication();

@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\AppOption;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -12,8 +13,10 @@ class AppOptionRepository
         int $perPage = 100,
         ?string $search = null,
         ?string $group = null,
+        ?User $actor = null,
     ): LengthAwarePaginator {
         return AppOption::query()
+            ->visibleInAdminFor($actor)
             ->when($group, fn ($q) => $q->where('group', $group))
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {

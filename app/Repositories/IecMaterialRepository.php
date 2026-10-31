@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\IecMaterial;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class IecMaterialRepository
@@ -13,8 +14,10 @@ class IecMaterialRepository
         ?string $topic = null,
         ?string $mediaType = null,
         bool $activeOnly = true,
+        ?User $actor = null,
     ): LengthAwarePaginator {
         return IecMaterial::query()
+            ->visibleInAdminFor($actor)
             ->when($activeOnly, fn ($q) => $q->where('is_active', true)->published())
             ->when($topic, fn ($q) => $q->where('topic', $topic))
             ->when($mediaType, fn ($q) => $q->where('media_type', $mediaType))

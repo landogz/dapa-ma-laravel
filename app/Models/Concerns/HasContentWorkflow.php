@@ -48,6 +48,27 @@ trait HasContentWorkflow
         return $query->where($this->getTable().'.workflow_status', ContentWorkflowStatus::PENDING);
     }
 
+    /**
+     * Publishers only see the review queue (pending). Editors/super_admin see all statuses.
+     */
+    public function scopeVisibleInAdminFor(Builder $query, ?User $user): Builder
+    {
+        if ($user?->role === 'publisher') {
+            return $query->where($this->getTable().'.workflow_status', ContentWorkflowStatus::PENDING);
+        }
+
+        return $query;
+    }
+
+    public function isVisibleToAdmin(?User $user): bool
+    {
+        if ($user?->role === 'publisher') {
+            return $this->isWorkflowPending();
+        }
+
+        return true;
+    }
+
     public function isWorkflowDraft(): bool
     {
         return ($this->workflow_status ?? ContentWorkflowStatus::PUBLISHED) === ContentWorkflowStatus::DRAFT;

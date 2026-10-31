@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\CareSupportResource;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -12,8 +13,10 @@ class CareSupportResourceRepository
         int $perPage = 50,
         ?string $search = null,
         ?string $category = null,
+        ?User $actor = null,
     ): LengthAwarePaginator {
         return CareSupportResource::query()
+            ->visibleInAdminFor($actor)
             ->when($category, fn ($q) => $q->where('category', $category))
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {

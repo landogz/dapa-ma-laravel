@@ -17,9 +17,9 @@ class LegalPageService
     ) {
     }
 
-    public function listForAdmin(): Collection
+    public function listForAdmin(?User $actor = null): Collection
     {
-        return $this->legalPageRepository->all();
+        return $this->legalPageRepository->allForAdmin($actor);
     }
 
     public function findForAdmin(string $slug): LegalPage

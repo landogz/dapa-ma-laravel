@@ -33,7 +33,8 @@ class DatabaseSeeder extends Seeder
             BookmarkSeeder::class,
             NotificationSeeder::class,
             ReviewSeeder::class,
-            AnalyticsEventSeeder::class,
+            // Do not seed fabricated analytics events into environments used for reporting.
+            AnalyticsPlatformSeeder::class,
             DailyVerseSeeder::class,
         ]);
     }

@@ -2,6 +2,12 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { getPostRatingMetrics, renderRatingBadge, renderStars } from './shared/ratings';
 import { showErrorToast, showSuccessToast } from './shared/toast';
+import {
+    bindAdvancedAnalyticsActions,
+    bindAnalyticsTabs,
+    getAnalyticsQueryParams,
+    renderExtendedKpis,
+} from './analytics-advanced';
 
 const METRIC_COLORS = {
     total: '#055498',
@@ -34,6 +40,8 @@ let recentSearchBound = false;
 
 export function initAnalyticsModule() {
     initializeAnalyticsRange();
+    bindAnalyticsTabs();
+    bindAdvancedAnalyticsActions(() => loadAnalytics());
     bindAnalyticsExport();
     bindAnalyticsRefresh();
     bindRecentActivitySearch();
@@ -204,10 +212,10 @@ export function loadAnalytics() {
         analyticsTopPostsContainer.innerHTML = buildTopPostsSkeleton();
     }
 
-    const range = getSelectedAnalyticsRange();
+    const params = getAnalyticsQueryParams();
     setAnalyticsLoading(true);
 
-    axios.get('/admin/analytics', { params: { range } })
+    axios.get('/admin/analytics', { params })
         .then(({ data }) => {
             const payload = data.data ?? {};
             const eventTypes = payload.by_event_type ?? [];
@@ -231,6 +239,7 @@ export function loadAnalytics() {
             cachedDailyCounts = Array.isArray(dailyCounts) ? dailyCounts : [];
             cachedRecentEvents = Array.isArray(recentEvents) ? recentEvents : [];
 
+            renderExtendedKpis(payload.kpis ?? {}, payload.metric_tooltips ?? {});
             renderAnalyticsSummary(periodComparison, generatedAt, eventTypes, audience, funnel);
             renderRatingsSummary(ratings, periodComparison?.label ?? 'previous period');
             renderMetricSparklines(dailyByEventType, dailyCounts);
@@ -462,8 +471,16 @@ export function exportAnalyticsCsvWithRange() {
         inputLabel: 'Select date range',
         inputOptions: {
             today: 'Today',
+            yesterday: 'Yesterday',
             '7': 'Last 7 days',
+            '14': 'Last 14 days',
             '30': 'Last 30 days',
+            '60': 'Last 60 days',
+            '90': 'Last 90 days',
+            this_month: 'This month',
+            last_month: 'Last month',
+            this_year: 'This year',
+            all_time: 'All time',
         },
         inputValue: '30',
         showCancelButton: true,
@@ -1280,6 +1297,11 @@ function buildTopPostsSkeleton() {
 }
 
 function getSelectedAnalyticsRange() {
+    const advanced = document.getElementById('analytics-range-select');
+    if (advanced?.value) {
+        return advanced.value;
+    }
+
     const dashboardRange = document.querySelector('[data-dashboard-range]');
     if (dashboardRange?.value) {
         return dashboardRange.value;
@@ -1292,11 +1314,16 @@ function getSelectedAnalyticsRange() {
 
 function initializeAnalyticsRange() {
     const buttons = document.querySelectorAll('[data-analytics-range]');
+    const select = document.getElementById('analytics-range-select');
 
     buttons.forEach((button) => {
         button.addEventListener('click', () => {
             buttons.forEach((other) => other.classList.remove('is-active'));
             button.classList.add('is-active');
+            const value = button.getAttribute('data-analytics-range') || '7';
+            if (select) {
+                select.value = value === 'today' ? 'today' : value;
+            }
             loadAnalytics();
         });
     });

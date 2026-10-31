@@ -25,8 +25,9 @@ class AppOptionService
         int $perPage = 100,
         ?string $search = null,
         ?string $group = null,
+        ?User $actor = null,
     ): LengthAwarePaginator {
-        return $this->repository->paginate($perPage, $search, $group);
+        return $this->repository->paginate($perPage, $search, $group, $actor);
     }
 
     public function find(int $id): AppOption

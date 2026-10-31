@@ -24,8 +24,9 @@ class HopeEventService
         ?string $search = null,
         ?string $audience = null,
         bool $activeOnly = true,
+        ?User $actor = null,
     ): LengthAwarePaginator {
-        return $this->repository->paginate($perPage, $search, $audience, $activeOnly);
+        return $this->repository->paginate($perPage, $search, $audience, $activeOnly, $actor);
     }
 
     public function listForSelection(): Collection

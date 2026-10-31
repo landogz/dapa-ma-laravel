@@ -37,6 +37,9 @@ class ProfileService
             'is_active' => (bool) ($user->is_active ?? true),
             'profile_image_url' => $this->profileImageUrl($user),
             'about' => $user->about,
+            'region' => $user->region,
+            'province' => $user->province,
+            'city' => $user->city,
             'journal_custom_feelings' => CustomFeelings::forUser($user),
             'must_change_password' => $this->passwordService->requiresChange($user),
             'password_expired' => $this->passwordService->isExpired($user),
@@ -89,6 +92,13 @@ class ProfileService
         if (array_key_exists('about', $data)) {
             $about = is_string($data['about']) ? trim($data['about']) : '';
             $payload['about'] = $about === '' ? null : $about;
+        }
+
+        foreach (['region', 'province', 'city'] as $locationField) {
+            if (array_key_exists($locationField, $data)) {
+                $value = is_string($data[$locationField]) ? trim($data[$locationField]) : '';
+                $payload[$locationField] = $value === '' ? null : $value;
+            }
         }
 
         if (array_key_exists('journal_custom_feelings', $data)) {

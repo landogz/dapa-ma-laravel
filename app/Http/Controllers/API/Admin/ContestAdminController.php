@@ -56,12 +56,15 @@ class ContestAdminController extends Controller
                 $category,
                 false,
                 false,
+                $request->user(),
             ),
         ]);
     }
 
     public function show(Contest $contest): JsonResponse
     {
+        $this->assertVisibleToAdmin(request(), $contest);
+
         return response()->json([
             'status' => true,
             'data' => $this->contestService->findContest($contest->id),

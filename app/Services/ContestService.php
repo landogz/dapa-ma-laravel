@@ -27,6 +27,7 @@ class ContestService
         ?string $category = null,
         bool $activeOnly = true,
         bool $publicOnly = false,
+        ?User $actor = null,
     ): LengthAwarePaginator {
         return $this->contestRepository->paginateContests(
             $perPage,
@@ -35,6 +36,7 @@ class ContestService
             $category,
             $activeOnly,
             $publicOnly,
+            $actor,
         );
     }
 

@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Contest;
 use App\Models\ContestEntry;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -16,8 +17,10 @@ class ContestRepository
         ?string $category = null,
         bool $activeOnly = true,
         bool $publicOnly = false,
+        ?User $actor = null,
     ): LengthAwarePaginator {
         return Contest::query()
+            ->visibleInAdminFor($actor)
             ->withCount([
                 'entries',
                 'entries as pending_count' => fn ($q) => $q->where('status', 'pending'),

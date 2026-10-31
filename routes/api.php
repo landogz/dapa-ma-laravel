@@ -315,6 +315,7 @@ Route::prefix('v1')
                     Route::put('/posts/{post}/reject',   [PostAdminController::class, 'reject'])->name('posts.reject');
                     Route::put('/posts/{post}/schedule', [PostAdminController::class, 'schedule'])->name('posts.schedule');
                     Route::put('/posts/{post}/publish',  [PostAdminController::class, 'publish'])->name('posts.publish');
+                    Route::put('/posts/{post}/restore',  [PostAdminController::class, 'restore'])->name('posts.restore');
                 });
 
                 // Workflow modules — read (Editor, Publisher, Super Admin)
@@ -521,8 +522,21 @@ Route::prefix('v1')
 
                 // Analytics Viewer + Super Admin
                 Route::middleware('role:analytics_viewer,super_admin')->group(function (): void {
-                    Route::get('/analytics',        [AnalyticsAdminController::class, 'index'])->name('analytics.index');
+                    Route::get('/analytics', [AnalyticsAdminController::class, 'index'])->name('analytics.index');
                     Route::get('/analytics/export', [AnalyticsAdminController::class, 'export'])->name('analytics.export');
+                    Route::get('/analytics/users', [AnalyticsAdminController::class, 'users'])->name('analytics.users');
+                    Route::get('/analytics/users/{user}', [AnalyticsAdminController::class, 'userShow'])->name('analytics.users.show');
+                    Route::get('/analytics/posts/{post}', [AnalyticsAdminController::class, 'postShow'])->name('analytics.posts.show');
+                    Route::get('/analytics/posts/{post}/engagers', [AnalyticsAdminController::class, 'postEngagers'])->name('analytics.posts.engagers');
+                    Route::get('/analytics/retention', [AnalyticsAdminController::class, 'retention'])->name('analytics.retention');
+                    Route::get('/analytics/leaderboard', [AnalyticsAdminController::class, 'leaderboard'])->name('analytics.leaderboard');
+                    Route::get('/analytics/geography', [AnalyticsAdminController::class, 'geography'])->name('analytics.geography');
+                    Route::get('/analytics/journeys', [AnalyticsAdminController::class, 'journeys'])->name('analytics.journeys');
+                    Route::get('/analytics/alerts', [AnalyticsAdminController::class, 'alerts'])->name('analytics.alerts');
+                    Route::put('/analytics/alerts/{alert}', [AnalyticsAdminController::class, 'updateAlert'])->name('analytics.alerts.update');
+                    Route::get('/analytics/exports', [AnalyticsAdminController::class, 'exports'])->name('analytics.exports.index');
+                    Route::post('/analytics/exports', [AnalyticsAdminController::class, 'requestExport'])->name('analytics.exports.store');
+                    Route::get('/analytics/exports/{export}/download', [AnalyticsAdminController::class, 'downloadExport'])->name('analytics.exports.download');
                 });
             });
         });

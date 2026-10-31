@@ -737,8 +737,31 @@
     }
 
     .admin-swal-input.is-invalid,
-    .admin-swal-textarea.is-invalid {
+    .admin-swal-textarea.is-invalid,
+    .admin-swal-select.is-invalid,
+    select.admin-swal-input.is-invalid {
         @apply border-[#CE2028] ring-4 ring-[#CE2028]/15;
+    }
+
+    .admin-swal-field.is-invalid-field > .admin-swal-label {
+        @apply text-[#CE2028];
+    }
+
+    .admin-swal-field-error {
+        @apply mt-1 text-sm font-medium text-[#CE2028];
+    }
+
+    .admin-swal-field-error[hidden] {
+        @apply hidden;
+    }
+
+    .admin-rich-text.is-invalid .ck-editor,
+    .admin-rich-text.is-invalid .ck.ck-editor,
+    .ck-editor.is-invalid,
+    .admin-rich-text.is-invalid .ck-editor__editable,
+    .admin-rich-text.is-invalid .ck-content {
+        border-color: #CE2028 !important;
+        box-shadow: 0 0 0 4px rgba(206, 32, 40, 0.15) !important;
     }
 
     .phone-validation-error {

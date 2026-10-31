@@ -62,13 +62,23 @@ export function workflowStatusBadge(status) {
     return `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone}">${workflowStatusLabel(value)}</span>`;
 }
 
-export function workflowFilterTabs() {
+export function workflowFilterTabs(role = currentAdminRole()) {
+    if (isPublisherRole(role)) {
+        return [
+            { value: WORKFLOW_PENDING, label: 'Pending', icon: 'fas fa-clock', hint: 'Awaiting your review' },
+        ];
+    }
+
     return [
         { value: '', label: 'All', icon: 'fas fa-layer-group', hint: 'Every status' },
         { value: WORKFLOW_DRAFT, label: 'Draft', icon: 'fas fa-pen', hint: 'Editor drafts & rejected' },
         { value: WORKFLOW_PENDING, label: 'Pending', icon: 'fas fa-clock', hint: 'Awaiting publisher' },
         { value: WORKFLOW_PUBLISHED, label: 'Published', icon: 'fas fa-circle-check', hint: 'Live in the app' },
     ];
+}
+
+export function defaultWorkflowFilter(role = currentAdminRole()) {
+    return isPublisherRole(role) ? WORKFLOW_PENDING : '';
 }
 
 export function renderReviewNotesBanner(item) {
@@ -325,12 +335,18 @@ export function ensureWorkflowStatusFilter({
     tabsRoot,
     selectMount,
     onChange,
-    initialValue = '',
+    initialValue = null,
 } = {}) {
+    const resolvedInitial = initialValue == null ? defaultWorkflowFilter() : initialValue;
+    const tabs = workflowFilterTabs();
+
     if (tabsRoot) {
-        renderAdminFilterTabs(tabsRoot, workflowFilterTabs());
+        renderAdminFilterTabs(tabsRoot, tabs);
         bindAdminFilterTabs(tabsRoot, onChange);
-        setAdminFilterTab(tabsRoot, initialValue);
+        setAdminFilterTab(tabsRoot, resolvedInitial);
+        if (typeof onChange === 'function' && isPublisherRole()) {
+            onChange(resolvedInitial);
+        }
         return;
     }
 
@@ -344,7 +360,7 @@ export function ensureWorkflowStatusFilter({
     wrapper.innerHTML = `
         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500" for="${selectId}">Workflow status</label>
         <select id="${selectId}" data-workflow-status-filter class="admin-swal-input max-w-xs min-h-11 w-full sm:w-auto">
-            ${workflowFilterTabs().map((tab) => (
+            ${tabs.map((tab) => (
                 `<option value="${escapeWorkflowHtml(tab.value)}">${escapeWorkflowHtml(tab.label)}</option>`
             )).join('')}
         </select>
@@ -352,8 +368,11 @@ export function ensureWorkflowStatusFilter({
     selectMount.prepend(wrapper);
 
     const select = wrapper.querySelector('[data-workflow-status-filter]');
-    select.value = initialValue;
+    select.value = resolvedInitial;
     select.addEventListener('change', () => onChange(select.value ?? ''));
+    if (typeof onChange === 'function' && isPublisherRole()) {
+        onChange(resolvedInitial);
+    }
 }
 
 export function applyWorkflowStatusCounts(tabsRoot, rows) {

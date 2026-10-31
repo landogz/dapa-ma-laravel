@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\AppTranslation;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -17,8 +18,10 @@ class AppTranslationRepository
         ?string $group = null,
         ?bool $activeOnly = null,
         ?array $keys = null,
+        ?User $actor = null,
     ): LengthAwarePaginator {
         return AppTranslation::query()
+            ->visibleInAdminFor($actor)
             ->where(function ($query): void {
                 $query->whereNull('group')->orWhere('group', '!=', 'bible');
             })

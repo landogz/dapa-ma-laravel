@@ -15,6 +15,13 @@ trait HandlesContentWorkflow
 
     abstract protected function contentWorkflowService(): ContentWorkflowService;
 
+    protected function assertVisibleToAdmin(Request $request, Model $model): void
+    {
+        if (method_exists($model, 'isVisibleToAdmin') && ! $model->isVisibleToAdmin($request->user())) {
+            abort(404);
+        }
+    }
+
     public function submit(Request $request, Model $model): JsonResponse
     {
         try {

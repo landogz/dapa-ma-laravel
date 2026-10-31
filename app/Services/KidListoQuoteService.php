@@ -16,9 +16,9 @@ class KidListoQuoteService
     ) {
     }
 
-    public function list(int $perPage = 50, ?string $search = null): LengthAwarePaginator
+    public function list(int $perPage = 50, ?string $search = null, ?User $actor = null): LengthAwarePaginator
     {
-        return $this->kidListoQuoteRepository->paginate($perPage, $search);
+        return $this->kidListoQuoteRepository->paginate($perPage, $search, $actor);
     }
 
     public function find(int $id): KidListoQuote

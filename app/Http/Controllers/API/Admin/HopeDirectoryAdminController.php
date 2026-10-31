@@ -44,6 +44,7 @@ class HopeDirectoryAdminController extends Controller
             $request->string('search')->toString() ?: null,
             $request->string('category')->toString() ?: null,
             false,
+            $request->user(),
         );
 
         return response()->json([
@@ -57,6 +58,8 @@ class HopeDirectoryAdminController extends Controller
 
     public function show(HopeDirectoryOrganization $hopeDirectory): JsonResponse
     {
+        $this->assertVisibleToAdmin(request(), $hopeDirectory);
+
         return response()->json([
             'status' => true,
             'data'   => $hopeDirectory->toAdminArray(),

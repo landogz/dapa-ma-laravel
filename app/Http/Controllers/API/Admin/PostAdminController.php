@@ -25,7 +25,7 @@ class PostAdminController extends Controller
 
         return response()->json([
             'status' => true,
-            'data'   => $this->postService->listAdmin($perPage),
+            'data'   => $this->postService->listAdmin($perPage, $request->user()),
         ]);
     }
 
@@ -43,7 +43,7 @@ class PostAdminController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Post loaded successfully.',
-            'data'    => $this->postService->findAdminDetail($post->id),
+            'data'    => $this->postService->findAdminDetail($post->id, request()->user()),
         ]);
     }
 
@@ -126,6 +126,17 @@ class PostAdminController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Post archived.',
+            'data'    => $post,
+        ]);
+    }
+
+    public function restore(Post $post): JsonResponse
+    {
+        $post = $this->postService->restore($post);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Post restored to published.',
             'data'    => $post,
         ]);
     }

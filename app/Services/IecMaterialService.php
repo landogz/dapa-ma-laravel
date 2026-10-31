@@ -24,6 +24,7 @@ class IecMaterialService
         ?string $topic = null,
         ?string $mediaType = null,
         bool $activeOnly = true,
+        ?User $actor = null,
     ): LengthAwarePaginator {
         return $this->iecMaterialRepository->paginate(
             $perPage,
@@ -31,6 +32,7 @@ class IecMaterialService
             $topic,
             $mediaType,
             $activeOnly,
+            $actor,
         );
     }
 

@@ -24,9 +24,9 @@ class NotificationService
     ) {
     }
 
-    public function list(int $perPage = 20, array $filters = []): LengthAwarePaginator
+    public function list(int $perPage = 20, array $filters = [], ?User $actor = null): LengthAwarePaginator
     {
-        return $this->notificationRepository->paginate($perPage, $filters);
+        return $this->notificationRepository->paginate($perPage, $filters, $actor);
     }
 
     public function show(int $id): Notification

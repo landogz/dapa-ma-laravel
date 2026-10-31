@@ -8,10 +8,19 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
+/**
+ * Local/demo only — never fabricate analytics events in production reporting DBs.
+ */
 class AnalyticsEventSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            $this->command?->warn('Skipping AnalyticsEventSeeder outside local/testing.');
+
+            return;
+        }
+
         $posts = Post::query()->where('status', 'published')->get();
 
         if ($posts->isEmpty()) {
@@ -28,10 +37,10 @@ class AnalyticsEventSeeder extends Seeder
             foreach (range(1, 5) as $index) {
                 AnalyticsEvent::query()->create([
                     'event_type' => $eventTypes[array_rand($eventTypes)],
-                    'post_id'    => $post->id,
-                    'user_id'    => $user?->id,
+                    'post_id' => $post->id,
+                    'user_id' => $user?->id,
                     'session_id' => Str::uuid()->toString(),
-                    'platform'   => $platforms[array_rand($platforms)],
+                    'platform' => $platforms[array_rand($platforms)],
                     'created_at' => now()->subDays(random_int(0, 6))->subHours(random_int(0, 23)),
                     'updated_at' => now(),
                 ]);

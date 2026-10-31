@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\CareToolkitQuestion;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -12,8 +13,10 @@ class CareToolkitQuestionRepository
         int $perPage = 50,
         ?string $search = null,
         ?string $toolkitType = null,
+        ?User $actor = null,
     ): LengthAwarePaginator {
         return CareToolkitQuestion::query()
+            ->visibleInAdminFor($actor)
             ->when($toolkitType, fn ($q) => $q->where('toolkit_type', $toolkitType))
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {

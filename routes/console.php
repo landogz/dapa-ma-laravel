@@ -19,3 +19,7 @@ Schedule::command('dape-ma:publish-scheduled-posts')
     ->everyMinute()
     ->withoutOverlapping()
     ->runInBackground();
+
+Schedule::command('analytics:detect-anomalies')
+    ->hourly()
+    ->withoutOverlapping();

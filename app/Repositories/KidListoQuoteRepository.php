@@ -3,13 +3,15 @@
 namespace App\Repositories;
 
 use App\Models\KidListoQuote;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class KidListoQuoteRepository
 {
-    public function paginate(int $perPage = 50, ?string $search = null): LengthAwarePaginator
+    public function paginate(int $perPage = 50, ?string $search = null, ?User $actor = null): LengthAwarePaginator
     {
         return KidListoQuote::query()
+            ->visibleInAdminFor($actor)
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('message_en', 'like', "%{$search}%")

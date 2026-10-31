@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\LegalPage;
+use App\Models\User;
 use Illuminate\Support\Collection;
 
 class LegalPageRepository
@@ -12,6 +13,13 @@ class LegalPageRepository
         'privacy_policy' => 2,
         'privacy_notice' => 3,
     ];
+
+    public function allForAdmin(?User $actor = null): Collection
+    {
+        return $this->sorted(
+            LegalPage::query()->visibleInAdminFor($actor)->get(),
+        );
+    }
 
     public function all(): Collection
     {

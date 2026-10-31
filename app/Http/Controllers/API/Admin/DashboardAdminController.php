@@ -35,7 +35,7 @@ class DashboardAdminController extends Controller
             default => 7,
         };
 
-        $payload = $this->analyticsService->dashboard($days);
+        $payload = $this->analyticsService->dashboardForDays($days);
         $topPosts = collect($payload['top_posts'] ?? [])->take(5)->values()->all();
         $recentEvents = collect($payload['recent_events'] ?? [])->take(8)->values()->all();
 

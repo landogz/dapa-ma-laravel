@@ -8,7 +8,13 @@ import {
     renderAdminFilterTabs,
     setAdminFilterTab,
 } from './shared/filter-tabs';
-import { buildSwalForm, buildSwalOptions, confirmWithSwal, formatApiValidationMessage } from './shared/swal-forms';
+import {
+    buildSwalForm,
+    buildSwalOptions,
+    confirmWithSwal,
+    failSwalValidation,
+    formatApiValidationMessage,
+} from './shared/swal-forms';
 import { getRichTextValue, isRichTextEmpty } from './rich-text-editor';
 import { renderRatingBadge, renderStars } from './shared/ratings';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression, buildAdminActionButton } from './shared/table-actions';
@@ -26,7 +32,7 @@ let postsActionsBound = false;
 let postsFiltersBound = false;
 let activeStatusFilter = '';
 
-const STATUS_FILTER_TABS = [
+const STATUS_FILTER_TABS_ALL = [
     { value: '', label: 'All', icon: 'fas fa-layer-group', hint: 'Every status' },
     { value: 'draft', label: 'Draft', icon: 'fas fa-pen', hint: 'Editor drafts & rejected' },
     { value: 'pending_review', label: 'Pending', icon: 'fas fa-clock', hint: 'Awaiting publisher' },
@@ -35,11 +41,25 @@ const STATUS_FILTER_TABS = [
     { value: 'archived', label: 'Archived', icon: 'fas fa-box-archive', hint: 'Removed from feed' },
 ];
 
+function postsStatusFilterTabs(role = currentUserRole) {
+    if (role === 'publisher') {
+        return [
+            { value: 'pending_review', label: 'Pending', icon: 'fas fa-clock', hint: 'Awaiting your review' },
+            { value: 'archived', label: 'Archived', icon: 'fas fa-box-archive', hint: 'Removed from feed — restore to publish again' },
+        ];
+    }
+
+    return STATUS_FILTER_TABS_ALL;
+}
+
 export function initPostsModule() {
     const tableEl = document.getElementById('posts-table');
     if (!tableEl) return;
 
     currentUserRole = getStoredUser()?.role ?? null;
+    if (currentUserRole === 'publisher') {
+        activeStatusFilter = 'pending_review';
+    }
     syncPostsPageActions();
     bindPostsStatusFilters();
     bindPostTableActions(tableEl);
@@ -66,7 +86,7 @@ function bindPostsStatusFilters() {
     }
 
     postsFiltersBound = true;
-    renderAdminFilterTabs(root, STATUS_FILTER_TABS.map((tab) => ({ ...tab, count: 0 })));
+    renderAdminFilterTabs(root, postsStatusFilterTabs().map((tab) => ({ ...tab, count: 0 })));
     setAdminFilterTab(root, activeStatusFilter);
     bindAdminFilterTabs(root, (value) => {
         activeStatusFilter = value || '';
@@ -719,9 +739,7 @@ export function rejectPost(postId) {
                 ?.trim();
 
             if (!notes) {
-                Swal.showValidationMessage('Review notes are required.');
-
-                return false;
+                return failSwalValidation('Review notes are required.', ['post-review-notes']);
             }
 
             return notes;
@@ -759,8 +777,7 @@ export function schedulePost(postId) {
         preConfirm: () => {
             const val = document.getElementById('swal-publish-date')?.value;
             if (!val) {
-                Swal.showValidationMessage('Please pick a publish date and time.');
-                return false;
+                return failSwalValidation('Please pick a publish date and time.', ['swal-publish-date']);
             }
             return val;
         },
@@ -812,6 +829,29 @@ export function archivePost(postId) {
             })
             .catch(({ response }) => {
                 showErrorToast(response?.data?.message ?? 'Archive failed.', 'Error');
+            });
+    });
+}
+
+export function restorePost(postId) {
+    confirmWithSwal({
+        icon: 'question',
+        title: 'Restore Post?',
+        text: 'This will publish the post again and show it in the public feed.',
+        confirmButtonText: 'Restore',
+    }).then(({ isConfirmed }) => {
+        if (!isConfirmed) return;
+        axios.put(`/admin/posts/${postId}/restore`)
+            .then(({ data }) => {
+                showSuccessToast(data.message ?? 'Post restored.', 'Restored');
+                if (currentUserRole !== 'publisher') {
+                    activeStatusFilter = 'published';
+                    setAdminFilterTab(document.getElementById('posts-status-tabs'), activeStatusFilter);
+                }
+                loadPosts();
+            })
+            .catch(({ response }) => {
+                showErrorToast(response?.data?.message ?? 'Restore failed.', 'Error');
             });
     });
 }
@@ -1327,8 +1367,10 @@ async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonT
             if (payload.status === 'scheduled') {
                 const publishDate = document.getElementById('post-publish-date')?.value;
                 if (!publishDate) {
-                    Swal.showValidationMessage('Pick a go-live date and time for a scheduled post.');
-                    return false;
+                    return failSwalValidation(
+                        'Pick a go-live date and time for a scheduled post.',
+                        ['post-publish-date'],
+                    );
                 }
                 payload.publish_date = publishDate;
             }
@@ -1341,21 +1383,28 @@ async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonT
             payload.is_featured = Boolean(document.getElementById('post-is-featured')?.checked);
 
             if (!payload.title || isRichTextEmpty(payload.body) || !categoryValue || Number.isNaN(payload.category_id) || payload.category_id < 1) {
-                Swal.showValidationMessage('Title, body, and category are required.');
-                return false;
+                const missing = [];
+                if (!payload.title) missing.push('post-title');
+                if (isRichTextEmpty(payload.body)) missing.push('post-body');
+                if (!categoryValue || Number.isNaN(payload.category_id) || payload.category_id < 1) {
+                    missing.push('post-category-id');
+                }
+                return failSwalValidation('Title, body, and category are required.', missing);
             }
 
             if (payload.youtube_url && !isValidHttpUrl(payload.youtube_url)) {
-                Swal.showValidationMessage('The YouTube URL field must be a valid URL.');
-                return false;
+                return failSwalValidation('The YouTube URL field must be a valid URL.', ['post-youtube-url']);
             }
 
             try {
                 const { data } = await submitPostPayload(payload, { postId });
                 return data;
             } catch (error) {
-                Swal.showValidationMessage(formatApiValidationMessage(error.response));
-                return false;
+                return failSwalValidation(
+                    formatApiValidationMessage(error.response),
+                    [],
+                    error.response,
+                );
             }
         },
     }));
@@ -1544,6 +1593,16 @@ function getAvailableActions(post) {
         });
     }
 
+    if (canRestorePost(post)) {
+        actions.push({
+            handler: 'restorePost',
+            label: 'Restore',
+            tooltip: 'Restore to published',
+            icon: 'fas fa-rotate-left',
+            className: 'admin-table-action-primary',
+        });
+    }
+
     if (canDeletePost(post)) {
         actions.push({
             handler: 'deletePost',
@@ -1590,6 +1649,11 @@ function canArchivePost(post) {
         && ['published', 'scheduled'].includes(post.status);
 }
 
+function canRestorePost(post) {
+    return (currentUserRole === 'publisher' || currentUserRole === 'super_admin')
+        && post.status === 'archived';
+}
+
 function canDeletePost(_post) {
     return currentUserRole === 'super_admin';
 }
@@ -1604,6 +1668,7 @@ window.Posts = {
     publishNow,
     rejectPost,
     archivePost,
+    restorePost,
     deletePost,
     deleteComment: deletePostComment,
 };

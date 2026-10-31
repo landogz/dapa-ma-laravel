@@ -69,6 +69,7 @@ class AppTranslationAdminController extends Controller
                 $group,
                 $active,
                 $keys,
+                $request->user(),
             )->through(fn (AppTranslation $row) => Visual::formatAdmin($row)),
             'meta' => [
                 'groups' => $this->appTranslationService->groups()->values(),
@@ -84,6 +85,8 @@ class AppTranslationAdminController extends Controller
 
     public function show(AppTranslation $appTranslation): JsonResponse
     {
+        $this->assertVisibleToAdmin(request(), $appTranslation);
+
         return response()->json([
             'status' => true,
             'data' => Visual::formatAdmin($appTranslation),

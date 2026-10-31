@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Repositories\AnalyticsRepository;
+use App\Support\Analytics\AnalyticsDateRange;
 use Carbon\Carbon;
 
 class AnalyticsService
@@ -12,48 +13,63 @@ class AnalyticsService
     ) {
     }
 
-    public function dashboard(int $days = 30): array
+    public function dashboard(AnalyticsDateRange $range): array
     {
-        $periodComparison = $this->analyticsRepository->periodComparison($days);
+        $periodComparison = $this->analyticsRepository->periodComparison($range);
         $current = $periodComparison['current'] ?? [];
-        $dailyCounts = $this->analyticsRepository->dailyEventCountsFilled($days);
-        $audience = $this->analyticsRepository->audienceSummary($days);
+        $dailyCounts = $this->analyticsRepository->dailyEventCountsFilled($range);
+        $audience = $this->analyticsRepository->audienceSummary($range);
         $peakDay = collect($dailyCounts)->sortByDesc('total')->first();
         $audience['peak_day'] = [
-            'date'  => $peakDay['date'] ?? null,
+            'date' => $peakDay['date'] ?? null,
             'total' => (int) ($peakDay['total'] ?? 0),
         ];
-        $hourlyCounts = $this->analyticsRepository->hourlyCounts($days);
-        $weekdayCounts = $this->analyticsRepository->weekdayCounts($days);
-        $devices = $this->analyticsRepository->deviceBreakdown($days);
-        $ratings = $this->analyticsRepository->ratingSummary($days);
+        $hourlyCounts = $this->analyticsRepository->hourlyCounts($range);
+        $weekdayCounts = $this->analyticsRepository->weekdayCounts($range);
+        $devices = $this->analyticsRepository->deviceBreakdown($range);
+        $ratings = $this->analyticsRepository->ratingSummary($range);
+        $extras = $this->analyticsRepository->kpiExtras($range);
         $views = (int) ($current['views'] ?? 0);
         $bookmarks = (int) ($current['bookmarks'] ?? 0);
         $shares = (int) ($current['shares'] ?? 0);
+        $relational = (int) ($extras['relational_engagements'] ?? 0);
 
         $payload = [
-            'range_days'           => $days,
-            'by_event_type'        => $this->analyticsRepository->countByEventType($days),
-            'top_posts'            => $this->analyticsRepository->topPosts(10, $days),
-            'top_rated_posts'      => $this->analyticsRepository->topRatedPosts(10),
-            'top_categories'       => $this->analyticsRepository->topCategories(6, $days),
-            'ratings'              => $ratings,
-            'rating_distribution'  => $this->analyticsRepository->ratingDistribution(),
-            'daily_counts'         => $dailyCounts,
-            'daily_by_event_type'  => $this->analyticsRepository->dailyCountsByEventType($days),
-            'hourly_counts'        => $hourlyCounts,
-            'weekday_counts'       => $weekdayCounts,
-            'period_comparison'    => $periodComparison,
-            'audience'             => $audience,
-            'funnel'               => [
-                'views'      => $views,
-                'bookmarks'  => $bookmarks,
-                'shares'     => $shares,
+            'range' => $range->toArray(),
+            'range_days' => $range->daySpan(),
+            'by_event_type' => $this->analyticsRepository->countByEventType($range),
+            'top_posts' => $this->analyticsRepository->topPosts($range, 10),
+            'top_rated_posts' => $this->analyticsRepository->topRatedPosts(10),
+            'top_categories' => $this->analyticsRepository->topCategories($range, 6),
+            'ratings' => $ratings,
+            'rating_distribution' => $this->analyticsRepository->ratingDistribution(),
+            'daily_counts' => $dailyCounts,
+            'daily_by_event_type' => $this->analyticsRepository->dailyCountsByEventType($range),
+            'hourly_counts' => $hourlyCounts,
+            'weekday_counts' => $weekdayCounts,
+            'period_comparison' => $periodComparison,
+            'audience' => $audience,
+            'kpis' => $extras,
+            'funnel' => [
+                'views' => $views,
+                'bookmarks' => $bookmarks,
+                'shares' => $shares,
                 'engagement' => $views > 0 ? round((($bookmarks + $shares) / $views) * 100, 1) : 0,
+                'relational_engagements' => $relational,
+                'formula' => '(bookmarks + shares) / views × 100; relational engagements also include likes/comments/bookmark rows',
             ],
-            'recent_events'        => $this->analyticsRepository->recentEvents(40, $days),
-            'devices'              => $devices,
-            'generated_at'         => now()->toIso8601String(),
+            'recent_events' => $this->analyticsRepository->recentEvents($range, 40),
+            'devices' => $devices,
+            'screen_breakdown' => $this->analyticsRepository->screenBreakdown($range),
+            'generated_at' => now()->toIso8601String(),
+            'metric_tooltips' => [
+                'views' => 'Exact post_view / view / page_view events only (likes are not counted as views).',
+                'dau' => 'Distinct users with a session or event in the last 1 day.',
+                'wau' => 'Distinct users with a session or event in the last 7 days.',
+                'mau' => 'Distinct users with a session or event in the last 30 days.',
+                'app_opens' => 'Count of app_open events in the selected range (available after mobile instrumentation deploy).',
+                'avg_session_duration_seconds' => 'Average duration from analytics_sessions in the selected range.',
+            ],
         ];
 
         $payload['insights'] = $this->buildInsights($payload);
@@ -61,10 +77,29 @@ class AnalyticsService
         return $payload;
     }
 
-    public function exportCsv(int $days = 30): string
+    /**
+     * Backward-compatible helper used by the admin dashboard overview.
+     */
+    public function dashboardForDays(int $days = 30): array
     {
-        $rows   = $this->analyticsRepository->allForExport($days);
-        $header = ['id', 'event_type', 'post_id', 'post_title', 'user_id', 'user_email', 'platform', 'session_id', 'created_at'];
+        $range = AnalyticsDateRange::fromRequest([
+            'range' => match (true) {
+                $days <= 1 => 'today',
+                $days <= 7 => '7',
+                default => '30',
+            },
+        ]);
+
+        return $this->dashboard($range);
+    }
+
+    public function exportCsv(AnalyticsDateRange $range): string
+    {
+        $rows = $this->analyticsRepository->allForExport($range);
+        $header = [
+            'id', 'event_type', 'post_id', 'post_title', 'user_id', 'user_email',
+            'platform', 'session_id', 'screen_name', 'resource_type', 'resource_id', 'occurred_at', 'created_at',
+        ];
 
         $lines = [$this->csvRow($header)];
 
@@ -78,16 +113,20 @@ class AnalyticsService
                 $row->user->email ?? '',
                 $row->platform ?? '',
                 $row->session_id ?? '',
+                $row->screen_name ?? '',
+                $row->resource_type ?? '',
+                $row->resource_id ?? '',
+                optional($row->occurred_at)?->toIso8601String() ?? '',
                 optional($row->created_at)?->toIso8601String() ?? '',
             ]);
         }
 
-        return "\u{FEFF}" . implode("\n", $lines);
+        return "\u{FEFF}".implode("\n", $lines);
     }
 
     private function csvRow(array $columns): string
     {
-        return implode(',', array_map(fn ($v) => '"' . str_replace('"', '""', (string) $v) . '"', $columns));
+        return implode(',', array_map(fn ($v) => '"'.str_replace('"', '""', (string) $v).'"', $columns));
     }
 
     private function buildInsights(array $dashboard): array
@@ -108,11 +147,7 @@ class AnalyticsService
             $insights[] = [
                 'tone' => 'up',
                 'icon' => 'fa-arrow-trend-up',
-                'text' => sprintf(
-                    '%s views recorded; none in %s.',
-                    number_format($viewsCurrent),
-                    $label
-                ),
+                'text' => sprintf('%s views recorded; none in %s.', number_format($viewsCurrent), $label),
             ];
         } elseif ($viewsDelta !== 0) {
             $insights[] = [
@@ -128,7 +163,6 @@ class AnalyticsService
         }
 
         $peakHour = collect($dashboard['hourly_counts'] ?? [])->sortByDesc('total')->first();
-
         if ($peakHour && (int) ($peakHour['total'] ?? 0) > 0) {
             $insights[] = [
                 'tone' => 'info',
@@ -142,7 +176,6 @@ class AnalyticsService
         }
 
         $peakDay = $audience['peak_day'] ?? [];
-
         if ((int) ($peakDay['total'] ?? 0) > 0 && ! empty($peakDay['date'])) {
             $insights[] = [
                 'tone' => 'info',
@@ -157,16 +190,13 @@ class AnalyticsService
 
         $devices = $dashboard['devices'] ?? [];
         $deviceTotal = (int) ($devices['total'] ?? 0);
-
         if ($deviceTotal > 0) {
             $leader = collect([
                 ['label' => 'Android', 'total' => (int) ($devices['android'] ?? 0)],
                 ['label' => 'iOS', 'total' => (int) ($devices['ios'] ?? 0)],
                 ['label' => 'Web', 'total' => (int) ($devices['web'] ?? 0)],
             ])->sortByDesc('total')->first();
-
             $share = $deviceTotal > 0 ? (int) round((($leader['total'] ?? 0) / $deviceTotal) * 100) : 0;
-
             $insights[] = [
                 'tone' => 'info',
                 'icon' => 'fa-mobile-screen',
@@ -176,7 +206,6 @@ class AnalyticsService
 
         $uniqueUsers = (int) ($audience['unique_users'] ?? 0);
         $uniqueSessions = (int) ($audience['unique_sessions'] ?? 0);
-
         if ($uniqueUsers > 0) {
             $insights[] = [
                 'tone' => 'info',
@@ -193,7 +222,6 @@ class AnalyticsService
         }
 
         $engagement = (float) ($funnel['engagement'] ?? 0);
-
         if ($engagement > 0) {
             $insights[] = [
                 'tone' => $engagement >= 8 ? 'up' : 'neutral',

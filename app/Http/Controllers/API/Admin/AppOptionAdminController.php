@@ -43,6 +43,7 @@ class AppOptionAdminController extends Controller
             min(500, max(1, (int) $request->integer('per_page', 200))),
             $request->string('search')->toString() ?: null,
             $request->string('group')->toString() ?: null,
+            $request->user(),
         );
 
         return response()->json([
@@ -55,6 +56,8 @@ class AppOptionAdminController extends Controller
 
     public function show(AppOption $appOption): JsonResponse
     {
+        $this->assertVisibleToAdmin(request(), $appOption);
+
         return response()->json([
             'status' => true,
             'data' => $appOption->toAdminArray(),

@@ -7,6 +7,7 @@ import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey, setAdminFil
 import {
     attachWorkflowWindowHandlers,
     buildWorkflowTableActions,
+    defaultWorkflowFilter,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
@@ -44,6 +45,8 @@ const STATUS_OPTIONS = [
 export function initContestsModule() {
     const tableEl = document.getElementById('contests-table');
     if (!tableEl) return;
+
+    contestsWorkflowFilter = defaultWorkflowFilter();
 
     const focus = readAdminPageFocus();
     if (focus.group) {

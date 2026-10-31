@@ -43,6 +43,7 @@ class CareSupportResourceAdminController extends Controller
             min(500, max(1, (int) $request->integer('per_page', 200))),
             $request->string('search')->toString() ?: null,
             $request->string('category')->toString() ?: null,
+            $request->user(),
         );
 
         return response()->json([
@@ -56,6 +57,8 @@ class CareSupportResourceAdminController extends Controller
 
     public function show(CareSupportResource $careSupportResource): JsonResponse
     {
+        $this->assertVisibleToAdmin(request(), $careSupportResource);
+
         return response()->json([
             'status' => true,
             'data'   => $careSupportResource->toAdminArray(),

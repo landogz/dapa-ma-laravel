@@ -21,9 +21,9 @@ class BlockedWordService
     ) {
     }
 
-    public function listAdmin(int $perPage, array $filters = []): LengthAwarePaginator
+    public function listAdmin(int $perPage, array $filters = [], ?User $actor = null): LengthAwarePaginator
     {
-        return $this->blockedWordRepository->paginate($perPage, $filters);
+        return $this->blockedWordRepository->paginate($perPage, $filters, $actor);
     }
 
     public function find(int $id): BlockedWord

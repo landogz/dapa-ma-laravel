@@ -44,6 +44,7 @@ class HopeEventAdminController extends Controller
             $request->string('search')->toString() ?: null,
             $request->string('audience')->toString() ?: null,
             false,
+            $request->user(),
         );
 
         return response()->json([
@@ -70,6 +71,8 @@ class HopeEventAdminController extends Controller
 
     public function show(HopeEvent $hopeEvent): JsonResponse
     {
+        $this->assertVisibleToAdmin(request(), $hopeEvent);
+
         return response()->json([
             'status' => true,
             'data'   => $hopeEvent->toAdminArray(),

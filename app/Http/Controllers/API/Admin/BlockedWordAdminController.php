@@ -50,6 +50,7 @@ class BlockedWordAdminController extends Controller
         $paginator = $this->blockedWordService->listAdmin(
             (int) ($validated['per_page'] ?? 200),
             $filters,
+            $request->user(),
         );
 
         return response()->json([
@@ -64,6 +65,8 @@ class BlockedWordAdminController extends Controller
 
     public function show(BlockedWord $blockedWord): JsonResponse
     {
+        $this->assertVisibleToAdmin(request(), $blockedWord);
+
         return response()->json([
             'status' => true,
             'message' => 'Blocked word fetched successfully.',

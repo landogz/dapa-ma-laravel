@@ -20,8 +20,9 @@ class CareToolkitQuestionService
         int $perPage = 50,
         ?string $search = null,
         ?string $toolkitType = null,
+        ?User $actor = null,
     ): LengthAwarePaginator {
-        return $this->repository->paginate($perPage, $search, $toolkitType);
+        return $this->repository->paginate($perPage, $search, $toolkitType, $actor);
     }
 
     public function find(int $id): CareToolkitQuestion

@@ -20,8 +20,9 @@ class CareSupportResourceService
         int $perPage = 50,
         ?string $search = null,
         ?string $category = null,
+        ?User $actor = null,
     ): LengthAwarePaginator {
-        return $this->repository->paginate($perPage, $search, $category);
+        return $this->repository->paginate($perPage, $search, $category, $actor);
     }
 
     public function find(int $id): CareSupportResource

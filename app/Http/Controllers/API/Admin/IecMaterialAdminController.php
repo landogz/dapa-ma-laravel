@@ -47,12 +47,15 @@ class IecMaterialAdminController extends Controller
                 $request->string('topic')->toString() ?: null,
                 $request->string('media_type')->toString() ?: null,
                 false,
+                $request->user(),
             ),
         ]);
     }
 
     public function show(IecMaterial $iecMaterial): JsonResponse
     {
+        $this->assertVisibleToAdmin(request(), $iecMaterial);
+
         return response()->json([
             'status' => true,
             'data' => $iecMaterial,

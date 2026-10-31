@@ -3,14 +3,16 @@
 namespace App\Repositories\BlockedWord;
 
 use App\Models\BlockedWord;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class BlockedWordRepository
 {
-    public function paginate(int $perPage, array $filters = []): LengthAwarePaginator
+    public function paginate(int $perPage, array $filters = [], ?User $actor = null): LengthAwarePaginator
     {
         return BlockedWord::query()
+            ->visibleInAdminFor($actor)
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where('word', 'like', '%'.$search.'%');
             })

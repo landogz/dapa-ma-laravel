@@ -43,6 +43,7 @@ class CareToolkitQuestionAdminController extends Controller
             min(500, max(1, (int) $request->integer('per_page', 200))),
             $request->string('search')->toString() ?: null,
             $request->string('toolkit_type')->toString() ?: null,
+            $request->user(),
         );
 
         return response()->json([
@@ -56,6 +57,8 @@ class CareToolkitQuestionAdminController extends Controller
 
     public function show(CareToolkitQuestion $careToolkitQuestion): JsonResponse
     {
+        $this->assertVisibleToAdmin(request(), $careToolkitQuestion);
+
         return response()->json([
             'status' => true,
             'data'   => $careToolkitQuestion->toAdminArray(),

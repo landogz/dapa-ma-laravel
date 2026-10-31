@@ -50,7 +50,7 @@ class NotificationAdminController extends Controller
             'search' => $validated['search'] ?? null,
         ];
 
-        $paginator = $this->notificationService->list($perPage, $filters);
+        $paginator = $this->notificationService->list($perPage, $filters, $request->user());
 
         return response()->json([
             'status' => true,
@@ -78,6 +78,8 @@ class NotificationAdminController extends Controller
 
     public function show(Notification $notification): JsonResponse
     {
+        $this->assertVisibleToAdmin(request(), $notification);
+
         return response()->json([
             'status' => true,
             'message' => 'Notification fetched successfully.',

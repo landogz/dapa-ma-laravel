@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\HopeDirectoryOrganization;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class HopeDirectoryRepository
@@ -12,8 +13,10 @@ class HopeDirectoryRepository
         ?string $search = null,
         ?string $category = null,
         bool $activeOnly = true,
+        ?User $actor = null,
     ): LengthAwarePaginator {
         $query = HopeDirectoryOrganization::query()
+            ->visibleInAdminFor($actor)
             ->when($activeOnly, fn ($q) => $q->where('is_active', true)->published())
             ->when($category, fn ($q) => $q->where('category', $category))
             ->when($search, function ($q) use ($search) {

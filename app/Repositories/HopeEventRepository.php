@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\HopeEvent;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -24,8 +25,10 @@ class HopeEventRepository
         ?string $search = null,
         ?string $audience = null,
         bool $activeOnly = true,
+        ?User $actor = null,
     ): LengthAwarePaginator {
         $query = HopeEvent::query()
+            ->visibleInAdminFor($actor)
             ->when($activeOnly, fn ($q) => $q->where('is_active', true)->published())
             ->when($audience, fn ($q) => $q->where('audience', $audience))
             ->when($search, function ($q) use ($search) {

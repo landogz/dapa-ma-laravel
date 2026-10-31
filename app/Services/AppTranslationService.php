@@ -29,8 +29,9 @@ class AppTranslationService
         ?string $group = null,
         ?bool $activeOnly = null,
         ?array $keys = null,
+        ?User $actor = null,
     ): LengthAwarePaginator {
-        return $this->appTranslationRepository->paginate($perPage, $search, $group, $activeOnly, $keys);
+        return $this->appTranslationRepository->paginate($perPage, $search, $group, $activeOnly, $keys, $actor);
     }
 
     public function find(int $id): AppTranslation

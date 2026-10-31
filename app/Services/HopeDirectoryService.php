@@ -23,8 +23,9 @@ class HopeDirectoryService
         ?string $search = null,
         ?string $category = null,
         bool $activeOnly = true,
+        ?User $actor = null,
     ): LengthAwarePaginator {
-        return $this->repository->paginate($perPage, $search, $category, $activeOnly);
+        return $this->repository->paginate($perPage, $search, $category, $activeOnly, $actor);
     }
 
     public function create(array $data, User $actor): HopeDirectoryOrganization

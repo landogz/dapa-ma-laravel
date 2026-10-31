@@ -28,9 +28,9 @@ class PostService
         $this->userNotificationService = $userNotificationService;
     }
 
-    public function listAdmin(int $perPage = 20): LengthAwarePaginator
+    public function listAdmin(int $perPage = 20, ?User $actor = null): LengthAwarePaginator
     {
-        return $this->postRepository->paginateAdmin($perPage);
+        return $this->postRepository->paginateAdmin($perPage, $actor);
     }
 
     public function listPublished(
@@ -56,9 +56,15 @@ class PostService
         return $this->postRepository->findPublic($key);
     }
 
-    public function findAdminDetail(int $id): Post
+    public function findAdminDetail(int $id, ?User $actor = null): Post
     {
-        return $this->postRepository->findAdminDetail($id);
+        $post = $this->postRepository->findAdminDetail($id);
+
+        if ($actor?->role === 'publisher' && ! in_array($post->status, ['pending_review', 'archived'], true)) {
+            abort(404);
+        }
+
+        return $post;
     }
 
     public function createDraft(array $data, User $author): Post
@@ -197,6 +203,17 @@ class PostService
         $this->assertStatus($post, ['published', 'scheduled']);
 
         return $this->postRepository->update($post, ['status' => 'archived']);
+    }
+
+    public function restore(Post $post): Post
+    {
+        $this->assertStatus($post, ['archived']);
+
+        return $this->postRepository->update($post, [
+            'status'       => 'published',
+            'publish_date' => $post->publish_date ?? Carbon::now(),
+            'review_notes' => null,
+        ]);
     }
 
     public function delete(Post $post): void

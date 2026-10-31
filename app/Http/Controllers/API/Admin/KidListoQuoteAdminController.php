@@ -45,12 +45,15 @@ class KidListoQuoteAdminController extends Controller
             'data' => $this->kidListoQuoteService->list(
                 (int) $request->integer('per_page', 200),
                 $request->string('search')->toString() ?: null,
+                $request->user(),
             ),
         ]);
     }
 
     public function show(KidListoQuote $kidListoQuote): JsonResponse
     {
+        $this->assertVisibleToAdmin(request(), $kidListoQuote);
+
         return response()->json([
             'status' => true,
             'data' => $kidListoQuote,
