@@ -2,9 +2,8 @@
 
 namespace App\Http\Requests\CareCheck;
 
-use App\Models\CareCheckResult;
+use App\Support\Care\CareToolkitType;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreCareCheckRequest extends FormRequest
 {
@@ -16,7 +15,7 @@ class StoreCareCheckRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'check_type' => ['required', 'string', Rule::in(CareCheckResult::TYPES)],
+            'check_type' => ['required', 'string', CareToolkitType::activeValidationRule()],
             'answers' => ['required', 'array', 'min:1'],
             'answers.*.question_id' => ['required', 'integer', 'min:1'],
             'answers.*.value' => ['required'],

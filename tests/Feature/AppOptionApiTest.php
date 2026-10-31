@@ -24,6 +24,7 @@ class AppOptionApiTest extends TestCase
         $groups = collect($response->json('data'));
         $this->assertTrue($groups->pluck('key')->contains('persona'));
         $this->assertTrue($groups->pluck('key')->contains('journal_impact'));
+        $this->assertTrue($groups->pluck('key')->contains('care_toolkit'));
 
         $persona = $groups->firstWhere('key', 'persona');
         $this->assertSame('multiple', $persona['selection'] ?? null);
@@ -33,6 +34,12 @@ class AppOptionApiTest extends TestCase
         $keys = collect($impact['options'] ?? [])->pluck('key');
         $this->assertTrue($keys->contains('connection_circle'));
         $this->assertTrue($keys->contains('cravings_urges'));
+
+        $toolkits = $groups->firstWhere('key', 'care_toolkit');
+        $toolkitKeys = collect($toolkits['options'] ?? [])->pluck('key');
+        $this->assertTrue($toolkitKeys->contains('stress'));
+        $this->assertTrue($toolkitKeys->contains('anxiety'));
+        $this->assertTrue($toolkitKeys->contains('sleep'));
     }
 
     public function test_public_sky_option_includes_accent(): void

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\CareToolkitQuestion;
+use App\Support\Care\CareToolkitType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,7 +17,7 @@ class StoreCareToolkitQuestionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'toolkit_type' => ['required', 'string', Rule::in(CareToolkitQuestion::TYPES)],
+            'toolkit_type' => ['required', 'string', CareToolkitType::validationRule()],
             'answer_type'  => ['required', 'string', Rule::in(CareToolkitQuestion::ANSWER_TYPES)],
             'question_en'  => ['required', 'string', 'max:2000'],
             'question_tl'  => ['required', 'string', 'max:2000'],

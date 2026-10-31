@@ -4,11 +4,10 @@ namespace App\Http\Controllers\API\CareCheck;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CareCheck\StoreCareCheckRequest;
-use App\Models\CareCheckResult;
 use App\Services\CareCheck\CareCheckService;
+use App\Support\Care\CareToolkitType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 
 class CareCheckController extends Controller
@@ -22,7 +21,7 @@ class CareCheckController extends Controller
     {
         $validated = $request->validate([
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],
-            'type' => ['sometimes', 'nullable', 'string', Rule::in(CareCheckResult::TYPES)],
+            'type' => ['sometimes', 'nullable', 'string', CareToolkitType::validationRule()],
         ]);
 
         $paginator = $this->careCheckService->listForUser(
@@ -43,7 +42,7 @@ class CareCheckController extends Controller
     public function latest(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'type' => ['required', 'string', Rule::in(CareCheckResult::TYPES)],
+            'type' => ['required', 'string', CareToolkitType::validationRule()],
         ]);
 
         $result = $this->careCheckService->latestForUser(

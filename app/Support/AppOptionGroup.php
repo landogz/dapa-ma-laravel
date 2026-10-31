@@ -14,6 +14,8 @@ final class AppOptionGroup
 
     public const JOURNAL_IMPACT = 'journal_impact';
 
+    public const CARE_TOOLKIT = 'care_toolkit';
+
     public const SELECTION_SINGLE = 'single';
 
     public const SELECTION_MULTIPLE = 'multiple';
@@ -29,6 +31,7 @@ final class AppOptionGroup
             self::JOURNAL_SKY,
             self::JOURNAL_FEELING,
             self::JOURNAL_IMPACT,
+            self::CARE_TOOLKIT,
         ];
     }
 
@@ -72,6 +75,12 @@ final class AppOptionGroup
                 'subtitle' => 'Journal impact areas such as Connection & Circle',
                 'selection' => self::SELECTION_SINGLE,
                 'surface' => 'Journal',
+            ],
+            self::CARE_TOOLKIT => [
+                'title' => 'Care toolkits',
+                'subtitle' => 'Self-care Toolkit checks — set Active to show on mobile, Inactive to hide',
+                'selection' => self::SELECTION_SINGLE,
+                'surface' => 'Care',
             ],
         ];
     }
@@ -139,6 +148,38 @@ final class AppOptionGroup
             self::row(self::JOURNAL_IMPACT, 'routine_sleep', 'Routine & Sleep', 'Routine at tulog', 3, 'bedtime_outlined'),
             self::row(self::JOURNAL_IMPACT, 'environment_triggers', 'Environment & Triggers', 'Kapaligiran at triggers', 4, 'place_outlined'),
             self::row(self::JOURNAL_IMPACT, 'self_care_reflection', 'Self-Care & Reflection', 'Self-care at refleksiyon', 5, 'self_improvement_outlined'),
+
+            // Care Self-care Toolkit checks (keys must match toolkit_type / check_type)
+            self::row(
+                self::CARE_TOOLKIT,
+                'stress',
+                'Stress Check',
+                'Stress Check',
+                1,
+                'bolt_outlined',
+                'Understand your stress level',
+                'Unawain ang antas ng stress mo',
+            ),
+            self::row(
+                self::CARE_TOOLKIT,
+                'anxiety',
+                'Anxiety Check',
+                'Anxiety Check',
+                2,
+                'favorite_outline',
+                'Check in on anxious feelings',
+                'Suriin ang pakiramdam ng pagkabalisa',
+            ),
+            self::row(
+                self::CARE_TOOLKIT,
+                'sleep',
+                'Sleep Quality',
+                'Kalidad ng Tulog',
+                3,
+                'bedtime_outlined',
+                'See how well you are resting',
+                'Tingnan kung gaano kahusay ang iyong pahinga',
+            ),
         ];
     }
 
@@ -182,6 +223,8 @@ final class AppOptionGroup
             'fitness_center_outlined' => 'fas fa-dumbbell',
             'restaurant_outlined' => 'fas fa-utensils',
             'label_outline' => 'fas fa-tag',
+            'bolt_outlined' => 'fas fa-bolt',
+            'psychology_outlined' => 'fas fa-brain',
             default => 'fas fa-icons',
         };
     }
@@ -222,6 +265,8 @@ final class AppOptionGroup
             ['value' => 'fitness_center_outlined', 'label' => 'Fitness'],
             ['value' => 'restaurant_outlined', 'label' => 'Food'],
             ['value' => 'label_outline', 'label' => 'Label'],
+            ['value' => 'bolt_outlined', 'label' => 'Bolt'],
+            ['value' => 'psychology_outlined', 'label' => 'Mind'],
         ];
 
         return array_map(static function (array $item): array {

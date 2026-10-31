@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\API\Admin\CareCheck;
 
 use App\Http\Controllers\Controller;
-use App\Models\CareCheckResult;
 use App\Services\CareCheck\CareCheckService;
+use App\Support\Care\CareToolkitType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -20,7 +20,7 @@ class CareCheckAdminController extends Controller
     {
         $validated = $request->validate([
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:500'],
-            'check_type' => ['sometimes', 'nullable', 'string', Rule::in(CareCheckResult::TYPES)],
+            'check_type' => ['sometimes', 'nullable', 'string', CareToolkitType::validationRule()],
             'display_tier' => ['sometimes', 'nullable', 'string', Rule::in(['low', 'high'])],
             'search' => ['sometimes', 'nullable', 'string', 'max:200'],
         ]);

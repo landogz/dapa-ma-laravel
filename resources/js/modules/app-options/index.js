@@ -162,6 +162,7 @@ function fillGroupTabs() {
         journal_sky: 'fas fa-palette',
         journal_feeling: 'fas fa-face-smile',
         journal_impact: 'fas fa-sun',
+        care_toolkit: 'fas fa-heart-pulse',
     };
     renderAdminFilterTabs(tabs, [
         { value: '', label: 'All catalogs', icon: 'fas fa-layer-group', count: total },

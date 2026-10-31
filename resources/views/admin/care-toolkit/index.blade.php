@@ -34,7 +34,8 @@
 
                 <div class="mt-4 rounded-2xl border border-[#055498]/15 bg-[#055498]/5 px-4 py-3 text-sm text-slate-600">
                     <i class="fas fa-mobile-screen-button mr-2 text-[#055498]"></i>
-                    Questions appear in the mobile <strong>Self-care Toolkit</strong> (swipeable Care Bits cards). Leave custom options blank to use the default scale for each answer type.
+                    Questions appear in the mobile <strong>Self-care Toolkit</strong>. Turn each toolkit Active or Inactive under
+                    <strong>Lookups → Care toolkits</strong>. Leave custom options blank to use the default scale for each answer type.
                 </div>
 
                 <div class="admin-table-shell mt-6">

@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\CareToolkitQuestion;
 use App\Services\CareToolkitQuestionService;
+use App\Support\Care\CareToolkitType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class CareToolkitQuestionController extends Controller
 {
@@ -19,7 +18,7 @@ class CareToolkitQuestionController extends Controller
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'type'   => ['required', 'string', Rule::in(CareToolkitQuestion::TYPES)],
+            'type'   => ['required', 'string', CareToolkitType::activeValidationRule()],
             'locale' => ['nullable', 'string', 'max:8'],
         ]);
 
