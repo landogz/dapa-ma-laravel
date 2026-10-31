@@ -16,6 +16,7 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    itemForEditorForm,
     openItemFromQuery,
     renderReviewNotesBanner,
     syncWorkflowCreateButton,
@@ -213,7 +214,7 @@ export function createAppOption() {
 
 export function editAppOption(id) {
     axios.get(`/admin/app-options/${id}`)
-        .then(({ data }) => showOptionForm(data.data))
+        .then(({ data }) => showOptionForm(itemForEditorForm(data.data)))
         .catch(() => showErrorToast('Failed to load option.'));
 }
 
@@ -247,7 +248,7 @@ function buildRowData(row) {
     const status = row.is_active
         ? '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>'
         : '<span class="admin-status-badge rehab-status-badge rehab-status-badge-inactive">Inactive</span>';
-    const workflowBadge = workflowStatusBadge(row.workflow_status);
+    const workflowBadge = workflowStatusBadge(row.workflow_status, row);
 
     const actions = buildWorkflowTableActions(row, 'AppOptions', {
         basePath: '/admin/app-options',

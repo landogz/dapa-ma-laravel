@@ -88,7 +88,15 @@ class AppOption extends Model
             'icon' => $this->icon,
             'accent_color' => $this->accent_color,
             'sort_order' => $this->sort_order,
-            'is_active' => $this->is_active,
+            'is_active' => (bool) $this->is_active,
+            'workflow_status' => $this->workflow_status,
+            'revision_status' => $this->revision_status,
+            'review_notes' => $this->review_notes,
+            'pending_revision' => $this->pending_revision,
+            'authored_by' => $this->authored_by,
+            'submitted_at' => optional($this->submitted_at)?->toIso8601String(),
+            'reviewed_by' => $this->reviewed_by,
+            'reviewed_at' => optional($this->reviewed_at)?->toIso8601String(),
             'updated_at' => optional($this->updated_at)?->toIso8601String(),
         ];
     }

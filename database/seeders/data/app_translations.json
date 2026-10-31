@@ -1494,6 +1494,12 @@
     "tl": "Self-care Toolkit"
   },
   {
+    "key": "careToolkitEmpty",
+    "group": "care",
+    "en": "No care checks are available right now.",
+    "tl": "Walang available na care check sa ngayon."
+  },
+  {
     "key": "careToolkitHero",
     "group": "care",
     "en": "Tools to help you understand how you feel, build healthy habits, and know when to reach out.",
