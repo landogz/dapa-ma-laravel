@@ -44,7 +44,7 @@ const CATEGORY_TABS = [
     { value: 'settings', label: 'Settings', icon: 'fas fa-gear' },
     { value: 'contests', label: 'Contests', icon: 'fas fa-trophy' },
     { value: 'word-blocking', label: 'Word Blocking', icon: 'fas fa-ban' },
-    { value: 'rehab-centers', label: 'Rehab Centers', icon: 'fas fa-hospital' },
+    { value: 'rehab-centers', label: 'Treatment Rehabilitation Center', icon: 'fas fa-hospital' },
     { value: 'care-toolkit', label: 'Care Toolkit', icon: 'fas fa-heart' },
     { value: 'diary', label: 'Journal', icon: 'fas fa-book' },
 ];

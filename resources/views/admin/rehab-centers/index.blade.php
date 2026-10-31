@@ -8,13 +8,13 @@
                     <i class="fas fa-house-medical"></i>
                 </span>
                 <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-3">
-                    <h2 class="admin-shell-title text-base sm:text-lg">Rehab center directory</h2>
+                    <h2 class="admin-shell-title text-base sm:text-lg">Treatment Rehabilitation Center</h2>
                     <p class="mt-0.5 text-xs sm:mt-0 sm:text-sm admin-shell-subtitle">Create and update live listings.</p>
                 </div>
             </div>
             <div class="admin-page-actions admin-page-actions-centered xl:self-center">
                 <button type="button" class="admin-primary-button xl:w-auto" data-admin-action="create-rehab-center">
-                    Add Rehab Center
+                    Add Center
                 </button>
             </div>
         </div>
@@ -23,10 +23,10 @@
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h3 class="text-sm font-semibold text-slate-800 sm:text-base">Facility map</h3>
-                    <p class="text-xs text-slate-500 sm:text-sm">Pinned locations for all rehab centers in the directory.</p>
+                    <p class="text-xs text-slate-500 sm:text-sm">Pinned locations for all treatment rehabilitation centers in the directory.</p>
                 </div>
             </div>
-            <div id="rehab-centers-overview-map" class="rehab-centers-overview-map" role="application" aria-label="Rehab centers overview map"></div>
+            <div id="rehab-centers-overview-map" class="rehab-centers-overview-map" role="application" aria-label="Treatment rehabilitation centers overview map"></div>
         </div>
 
         <div class="admin-table-shell mt-6">

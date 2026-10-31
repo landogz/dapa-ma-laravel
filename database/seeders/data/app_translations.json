@@ -68,8 +68,8 @@
   {
     "key": "ddbServicesSubtitle",
     "group": "ddb_services",
-    "en": "Browse DDB trainings, rehab centers, IEC materials, and contests.",
-    "tl": "Tingnan ang mga training, rehab center, IEC materials, at contests ng DDB."
+    "en": "Browse DDB trainings, treatment rehabilitation centers, IEC materials, and contests.",
+    "tl": "Tingnan ang mga training, treatment rehabilitation center, IEC materials, at contests ng DDB."
   },
   {
     "key": "contestsTitle",
@@ -3806,8 +3806,8 @@
   {
     "key": "rehabCentersTitle",
     "group": "rehab",
-    "en": "Rehab Centers",
-    "tl": "Mga Rehab Center"
+    "en": "Treatment Rehabilitation Center",
+    "tl": "Treatment Rehabilitation Center"
   },
   {
     "key": "allRegions",
@@ -3818,8 +3818,8 @@
   {
     "key": "searchRehabHint",
     "group": "rehab",
-    "en": "Search rehab centers...",
-    "tl": "Maghanap ng rehab center..."
+    "en": "Search treatment rehabilitation centers...",
+    "tl": "Maghanap ng treatment rehabilitation center..."
   },
   {
     "key": "rateAndReview",
@@ -3968,8 +3968,8 @@
   {
     "key": "noRehabFound",
     "group": "rehab",
-    "en": "No rehab centers found",
-    "tl": "Walang nahanap na rehab center"
+    "en": "No treatment rehabilitation centers found",
+    "tl": "Walang nahanap na treatment rehabilitation center"
   },
   {
     "key": "tryDifferentSearch",
@@ -4791,14 +4791,14 @@
   {
     "key": "hopeRehabTile",
     "group": "hope",
-    "en": "Rehab Centers",
-    "tl": "Rehab Centers"
+    "en": "Treatment Rehabilitation Center",
+    "tl": "Treatment Rehabilitation Center"
   },
   {
     "key": "hopeRehabTileBody",
     "group": "hope",
-    "en": "Find rehab facilities",
-    "tl": "Hanapin ang rehab facilities"
+    "en": "Find treatment rehabilitation facilities",
+    "tl": "Hanapin ang treatment rehabilitation facilities"
   },
   {
     "key": "hopeLearnPhase2",

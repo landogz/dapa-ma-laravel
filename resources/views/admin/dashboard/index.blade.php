@@ -24,7 +24,7 @@
             </button>
             <button type="button" class="admin-secondary-button shrink-0" data-admin-action="create-rehab-center" data-action-section="rehab-centers">
                 <i class="fas fa-house-medical mr-2" aria-hidden="true"></i>
-                Add Rehab Center
+                Add Center
             </button>
             <button type="button" class="admin-secondary-button shrink-0" data-admin-action="create-contest" data-action-section="contests">
                 <i class="fas fa-trophy mr-2" aria-hidden="true"></i>
@@ -82,7 +82,7 @@
 
         <div id="function-cards-secondary" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             @foreach ([
-                ['rehab-centers', 'Directory', 'Rehab Centers', 'fa-hospital-user', '/admin/rehab-centers'],
+                ['rehab-centers', 'Directory', 'Treatment Rehabilitation Center', 'fa-hospital-user', '/admin/rehab-centers'],
                 ['contests', 'Contests', 'Contests', 'fa-trophy', '/admin/contests'],
                 ['iec-materials', 'IEC', 'IEC Materials', 'fa-photo-film', '/admin/iec-materials'],
                 ['app-translations', 'Admin', 'App Translations', 'fa-language', '/admin/app-translations'],

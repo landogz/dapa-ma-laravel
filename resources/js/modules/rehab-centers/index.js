@@ -200,7 +200,7 @@ function showRehabForm(existing) {
     const isEdit = Boolean(existing);
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit Rehab Center' : 'Add Rehab Center',
+        title: isEdit ? 'Edit Treatment Rehabilitation Center' : 'Add Treatment Rehabilitation Center',
         customClass: {
             popup: 'admin-swal-popup admin-swal-popup-map',
             htmlContainer: 'admin-swal-html',
@@ -306,8 +306,8 @@ async function initializeRehabTable(tableEl) {
     rehabTableMode = nextMode;
     rehabTable = await createAdminDataTable(tableEl, getAdminDataTableOptions({
         searchLabel: 'Search centers:',
-        searchPlaceholder: 'Search rehab centers',
-        infoLabel: 'Showing _START_ to _END_ of _TOTAL_ rehab centers',
+        searchPlaceholder: 'Search treatment rehabilitation centers',
+        infoLabel: 'Showing _START_ to _END_ of _TOTAL_ centers',
         columns: buildColumns(nextMode),
         pageLength: nextMode === 'mobile' ? 5 : 10,
         scrollX: nextMode !== 'mobile',

@@ -70,7 +70,7 @@ Route::get('/admin/dashboard', fn () => AdminPage::render('admin.dashboard.index
 
 Route::get('/admin/posts', fn () => AdminPage::render('admin.posts.index', 'posts', 'Posts'));
 
-Route::get('/admin/rehab-centers', fn () => AdminPage::render('admin.rehab-centers.index', 'rehab-centers', 'Rehab Centers'));
+Route::get('/admin/rehab-centers', fn () => AdminPage::render('admin.rehab-centers.index', 'rehab-centers', 'Treatment Rehabilitation Center'));
 
 Route::get('/admin/trainings', fn () => redirect('/admin/hope-events', 301));
 

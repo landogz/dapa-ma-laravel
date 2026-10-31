@@ -69,7 +69,7 @@
                     <p class="admin-nav-group-label">Find help</p>
                     <a href="/admin/rehab-centers" class="admin-nav-link {{ ($activePage ?? '') === 'rehab-centers' ? 'admin-nav-link-active' : '' }}" data-nav-section="rehab-centers">
                         <i class="fas fa-hospital w-5 text-[#FBD116]"></i>
-                        <span>Rehab Centers</span>
+                        <span>Treatment Rehabilitation Center</span>
                     </a>
                     <a href="/admin/care-toolkit" class="admin-nav-link {{ ($activePage ?? '') === 'care-toolkit' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-toolkit">
                         <i class="fas fa-heart-pulse w-5 text-[#FBD116]"></i>
