@@ -10,6 +10,7 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    itemForEditorForm,
     openItemFromQuery,
     renderReviewNotesBanner,
     syncWorkflowCreateButton,
@@ -245,7 +246,8 @@ function buildRowData(row) {
     ];
 }
 
-function showQuestionForm(existing) {
+function showQuestionForm(existingRaw) {
+    const existing = existingRaw ? itemForEditorForm(existingRaw) : null;
     const isEdit = Boolean(existing);
     const optionsEn = Array.isArray(existing?.options_en)
         ? existing.options_en.join('\n')
@@ -253,11 +255,15 @@ function showQuestionForm(existing) {
     const optionsTl = Array.isArray(existing?.options_tl)
         ? existing.options_tl.join('\n')
         : '';
+    const reviewItem = existingRaw?.pending_revision ? existingRaw : null;
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit Care Toolkit Question' : 'Add Care Toolkit Question',
-        html: `${renderReviewNotesBanner(existing)}${buildSwalForm({
+        title: isEdit
+            ? (reviewItem ? 'Review Care Toolkit changes' : 'Edit Care Toolkit Question')
+            : 'Add Care Toolkit Question',
+        html: `${renderReviewNotesBanner(existingRaw)}${buildSwalForm({
             description: 'These questions power Stress, Anxiety, and Sleep checks in the mobile Self-care Toolkit.',
+            reviewItem,
             fields: [
                 {
                     id: 'ctq-toolkit-type',
@@ -366,7 +372,7 @@ function showQuestionForm(existing) {
             }
 
             const request = isEdit
-                ? axios.put(`/admin/care-toolkit-questions/${existing.id}`, payload)
+                ? axios.put(`/admin/care-toolkit-questions/${existingRaw.id}`, payload)
                 : axios.post('/admin/care-toolkit-questions', payload);
 
             return request

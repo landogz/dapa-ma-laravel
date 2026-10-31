@@ -187,6 +187,7 @@ async function openLegalEditor(slugOrId) {
             description: editingPublished
                 ? 'Editor changes are saved as an update draft. The live published page stays unchanged until a publisher approves it.'
                 : 'Updates appear in the mobile Settings screens (English and Tagalog).',
+            reviewItem: page?.pending_revision ? page : null,
             fields: [
                 {
                     id: 'legal-title-en',
@@ -392,6 +393,7 @@ function showQuoteForm(existing) {
             description: editingPublished
                 ? 'Changes are saved as an update draft. The live published quote stays unchanged until a publisher approves it.'
                 : 'Motivational quotes are shown randomly on the mobile Kid Listo screen.',
+            reviewItem: existing?.pending_revision ? existing : null,
             fields: [
                 {
                     id: 'klq-message-en',

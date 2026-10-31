@@ -10,6 +10,28 @@ import {
 } from './filter-tabs';
 import { showErrorToast, showSuccessToast } from './toast';
 import { getStoredUser } from '../auth';
+import {
+    annotateSwalFieldsForPendingReview,
+    formatWorkflowValuePreview,
+    getRevisionFieldDiffs,
+    hasPendingRevisionPayload as hasPendingRevisionPayloadFromDiff,
+    highlightChangedFieldsInPopup,
+    humanizeWorkflowAttribute,
+    inferAttributeFromFieldId,
+    normalizeWorkflowCompareValue,
+    renderPendingChangesBanner,
+} from './workflow-revision-diff';
+
+export {
+    annotateSwalFieldsForPendingReview,
+    formatWorkflowValuePreview,
+    getRevisionFieldDiffs,
+    highlightChangedFieldsInPopup,
+    humanizeWorkflowAttribute,
+    inferAttributeFromFieldId,
+    normalizeWorkflowCompareValue,
+    renderPendingChangesBanner,
+};
 
 export const WORKFLOW_DRAFT = 'draft';
 export const WORKFLOW_PENDING = 'pending_review';
@@ -62,7 +84,7 @@ export function isPublishedUpdatePending(item) {
 }
 
 export function hasPendingRevisionPayload(item) {
-    return Boolean(item?.pending_revision) && typeof item.pending_revision === 'object';
+    return hasPendingRevisionPayloadFromDiff(item);
 }
 
 export function itemForEditorForm(item) {
@@ -168,6 +190,18 @@ export function workflowActionDefs(item, {
     }
 
     if (canReviewWorkflow(role) && (status === WORKFLOW_PENDING || isPublishedUpdatePending(item))) {
+        if (!actions.some((action) => action.key === 'edit')) {
+            actions.push({
+                key: 'edit',
+                label: 'Review',
+                tooltip: isPublishedUpdatePending(item)
+                    ? 'Review highlighted field changes'
+                    : 'Review before publishing',
+                icon: 'fas fa-clipboard-check',
+                className: 'admin-table-action-primary',
+            });
+        }
+
         actions.push({
             key: 'publish',
             label: isPublishedUpdatePending(item) ? 'Approve update' : 'Publish',
@@ -227,12 +261,19 @@ export async function submitForReview(basePath, id, { onSuccess, isPublishedUpda
     }
 }
 
-export async function publishContent(basePath, id, { onSuccess, isPublishedUpdate = false } = {}) {
+export async function publishContent(basePath, id, { onSuccess, isPublishedUpdate = false, item = null } = {}) {
+    const changedFields = isPublishedUpdate && item
+        ? getRevisionFieldDiffs(item).map((key) => humanizeWorkflowAttribute(key))
+        : [];
+    const changedSummary = changedFields.length
+        ? ` Changed fields: ${changedFields.join(', ')}.`
+        : '';
+
     const { isConfirmed } = await confirmWithSwal({
         icon: 'question',
         title: isPublishedUpdate ? 'Approve this update?' : 'Publish this item?',
         text: isPublishedUpdate
-            ? 'This will replace the live published version with the proposed update.'
+            ? `This will replace the live published version with the proposed update.${changedSummary}`
             : 'It will become available in the mobile app (when otherwise active).',
         confirmButtonText: isPublishedUpdate ? 'Approve update' : 'Publish',
     });

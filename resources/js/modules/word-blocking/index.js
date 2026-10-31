@@ -10,6 +10,7 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    itemForEditorForm,
     openItemFromQuery,
     renderReviewNotesBanner,
     syncWorkflowCreateButton,
@@ -206,19 +207,25 @@ function buildRowData(row) {
     return [word, status, workflowBadge, escapeHtml(updated), desktopActions];
 }
 
-function showWordForm(existing) {
+function showWordForm(existingRaw) {
+    const existing = existingRaw ? itemForEditorForm(existingRaw) : null;
     const isEdit = Boolean(existing);
+    const reviewItem = existingRaw?.pending_revision ? existingRaw : null;
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit blocked word' : 'Add blocked word',
-        html: `${renderReviewNotesBanner(existing)}${buildSwalForm({
+        title: isEdit
+            ? (reviewItem ? 'Review blocked word changes' : 'Edit blocked word')
+            : 'Add blocked word',
+        html: `${renderReviewNotesBanner(existingRaw)}${buildSwalForm({
             description: 'The app replaces this whole word with **** in comments, journal notes, profiles, and other user text.',
+            reviewItem,
             fields: [
                 {
                     id: 'blocked-word-value',
                     label: 'Word *',
                     value: existing?.word ?? '',
                     placeholder: 'example',
+                    attribute: 'word',
                 },
                 {
                     id: 'blocked-word-active',
@@ -229,6 +236,7 @@ function showWordForm(existing) {
                         { value: '1', label: 'Active' },
                         { value: '0', label: 'Inactive' },
                     ],
+                    attribute: 'is_active',
                 },
             ],
         })}`,
@@ -249,7 +257,7 @@ function showWordForm(existing) {
             return;
         }
         const request = isEdit
-            ? axios.put(`/admin/blocked-words/${existing.id}`, value)
+            ? axios.put(`/admin/blocked-words/${existingRaw.id}`, value)
             : axios.post('/admin/blocked-words', value);
 
         request.then(({ data }) => {

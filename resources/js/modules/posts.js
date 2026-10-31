@@ -19,6 +19,10 @@ import { getRichTextValue, isRichTextEmpty } from './rich-text-editor';
 import { renderRatingBadge, renderStars } from './shared/ratings';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression, buildAdminActionButton } from './shared/table-actions';
 import { showSuccessToast, showErrorToast } from './shared/toast';
+import {
+    getRevisionFieldDiffs,
+    humanizeWorkflowAttribute,
+} from './shared/workflow-revision-diff';
 import { bindPostCommentDeletes, confirmDeletePostComment } from './post-comments';
 
 let postsTable;
@@ -279,6 +283,7 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
     const displayPost = (isPublishedUpdatePending(post) || isPublishedUpdateDraft(post))
         ? postForEditorForm(post)
         : post;
+    const changedDiffs = hasPendingRevisionPayload(post) ? getRevisionFieldDiffs(post) : [];
     const revisionBanner = hasPendingRevisionPayload(post)
         ? `<div class="post-view-review-notes" role="status">
                 <p class="post-view-review-notes-label">${
@@ -287,6 +292,12 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
                         : 'Draft update (live published post is unchanged)'
                 }</p>
                 <p class="post-view-review-notes-body">The public feed still shows the live version until a publisher approves this update.</p>
+                ${changedDiffs.length ? `
+                    <p class="post-view-review-notes-label mt-2 text-[#CE2028]">Fields to review</p>
+                    <div class="mt-1.5 flex flex-wrap gap-1.5">
+                        ${changedDiffs.map((key) => `<span class="admin-swal-changed-chip">${escapeHtml(humanizeWorkflowAttribute(key))}</span>`).join('')}
+                    </div>
+                ` : ''}
            </div>`
         : '';
 
@@ -643,17 +654,25 @@ export async function promptEditPost(postId) {
     }
 
     const editingPublished = String(post.status) === 'published' && currentUserRole === 'editor';
+    const reviewingUpdate = hasPendingRevisionPayload(post);
+    const publisherReviewOnly = reviewingUpdate
+        && currentUserRole === 'publisher';
     const result = await openPostEditorSwal({
-        title: editingPublished ? 'Edit published post' : 'Edit Post',
+        title: reviewingUpdate
+            ? 'Review post changes'
+            : (editingPublished ? 'Edit published post' : 'Edit Post'),
         post: postForEditorForm(post),
         categoryOptions,
-        confirmButtonText: editingPublished ? 'Save update draft' : 'Save Changes',
+        confirmButtonText: publisherReviewOnly
+            ? 'Done reviewing'
+            : (editingPublished ? 'Save update draft' : 'Save Changes'),
         showStatus: currentUserRole === 'super_admin',
         postId,
         editingPublished,
+        reviewItem: reviewingUpdate ? post : null,
     });
 
-    if (!result.isConfirmed || !result.value) {
+    if (!result.isConfirmed || !result.value || result.value.reviewedOnly) {
         return;
     }
 
@@ -868,12 +887,18 @@ export function schedulePost(postId) {
 export function publishNow(postId) {
     const post = postsById.get(String(postId));
     const isPublishedUpdate = isPublishedUpdatePending(post);
+    const changedFields = isPublishedUpdate
+        ? getRevisionFieldDiffs(post).map((key) => humanizeWorkflowAttribute(key))
+        : [];
+    const changedSummary = changedFields.length
+        ? ` Changed fields: ${changedFields.join(', ')}.`
+        : '';
 
     confirmWithSwal({
         icon: 'question',
         title: isPublishedUpdate ? 'Approve this update?' : 'Publish this post now?',
         text: isPublishedUpdate
-            ? 'This will replace the live published post with the proposed update.'
+            ? `This will replace the live published post with the proposed update.${changedSummary}`
             : 'This will approve and publish the post immediately.',
         confirmButtonText: isPublishedUpdate ? 'Approve update' : 'Publish now',
     }).then(({ isConfirmed }) => {
@@ -1332,7 +1357,12 @@ function formatDateTime(value) {
     });
 }
 
-function buildPostForm(post = null, categoryOptions = [], { showStatus = false, isSuperAdmin = false, editingPublished = false } = {}) {
+function buildPostForm(post = null, categoryOptions = [], {
+    showStatus = false,
+    isSuperAdmin = false,
+    editingPublished = false,
+    reviewItem = null,
+} = {}) {
     const fields = [
         {
             id: 'post-media-file',
@@ -1341,6 +1371,7 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
             accept: 'image/*',
             showPreview: true,
             previewUrl: post?.media_url ?? '',
+            attribute: 'media_url',
             hint: post?.media_url
                 ? 'Choose a new image only if you want to replace the current upload.'
                 : 'Upload a JPG, PNG, WEBP, or GIF image up to 5MB.',
@@ -1350,16 +1381,25 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
             label: 'Featured post',
             type: 'checkbox',
             checked: isPostFeatured(post),
+            attribute: 'is_featured',
             hint: 'Featured posts appear in the mobile app carousel when more than one is selected.',
         },
-        { id: 'post-title', label: 'Title *', placeholder: 'Enter post title', value: post?.title ?? '' },
-        { id: 'post-body', label: 'Body / rich text content *', type: 'richtext', placeholder: 'Write the main content', value: post?.body ?? '' },
+        { id: 'post-title', label: 'Title *', placeholder: 'Enter post title', value: post?.title ?? '', attribute: 'title' },
+        {
+            id: 'post-body',
+            label: 'Body / rich text content *',
+            type: 'richtext',
+            placeholder: 'Write the main content',
+            value: post?.body ?? '',
+            attribute: 'body',
+        },
         {
             id: 'post-category-id',
             label: 'Category *',
             type: 'select',
             value: post?.category_id ?? '',
             options: categoryOptions,
+            attribute: 'category_id',
         },
     ];
 
@@ -1395,9 +1435,16 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
                 { value: '1', label: 'Enabled — users can comment' },
                 { value: '0', label: 'Disabled — comments turned off' },
             ],
+            attribute: 'comments_enabled',
             hint: 'You can change this anytime from the post actions menu.',
         },
-        { id: 'post-youtube-url', label: 'YouTube URL', placeholder: 'Paste YouTube link', value: post?.youtube_url ?? '' },
+        {
+            id: 'post-youtube-url',
+            label: 'YouTube URL',
+            placeholder: 'Paste YouTube link',
+            value: post?.youtube_url ?? '',
+            attribute: 'youtube_url',
+        },
     );
 
     return buildSwalForm({
@@ -1411,6 +1458,7 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
                 ? 'Super admin posts are published immediately after creation.'
                 : 'Create a new content draft for review and scheduling.'),
         fields,
+        reviewItem,
     });
 }
 
@@ -1422,19 +1470,30 @@ async function openPostEditorSwal({
     showStatus = false,
     postId = null,
     editingPublished = false,
+    reviewItem = null,
 }) {
     const isSuperAdmin = currentUserRole === 'super_admin';
+    const publisherReviewOnly = confirmButtonText === 'Done reviewing';
 
     return Swal.fire(buildSwalOptions({
         title,
-        html: buildPostForm(post, categoryOptions, { showStatus, isSuperAdmin, editingPublished }),
-        showCancelButton: true,
+        html: buildPostForm(post, categoryOptions, {
+            showStatus,
+            isSuperAdmin,
+            editingPublished,
+            reviewItem,
+        }),
+        showCancelButton: !publisherReviewOnly,
         confirmButtonText,
         focusConfirm: false,
         didOpen: () => {
             bindScheduledPublishDateField();
         },
         preConfirm: async () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const categoryValue = document.getElementById('post-category-id')?.value ?? '';
             const mediaFile = document.getElementById('post-media-file')?.files?.[0] ?? null;
             const titleValue = document.getElementById('post-title')?.value.trim();
@@ -1636,6 +1695,19 @@ function getAvailableActions(post) {
             label: commentsOn ? 'Disable comments' : 'Enable comments',
             tooltip: commentsOn ? 'Disable comments' : 'Enable comments',
             icon: commentsOn ? 'fas fa-comment-slash' : 'fas fa-comment-dots',
+            className: 'admin-table-action-primary',
+        });
+    } else if (
+        (currentUserRole === 'publisher' || currentUserRole === 'super_admin')
+        && (post.status === 'pending_review' || isPublishedUpdatePending(post))
+    ) {
+        actions.push({
+            handler: 'editPost',
+            label: 'Review',
+            tooltip: isPublishedUpdatePending(post)
+                ? 'Review highlighted field changes'
+                : 'Review before publishing',
+            icon: 'fas fa-clipboard-check',
             className: 'admin-table-action-primary',
         });
     }

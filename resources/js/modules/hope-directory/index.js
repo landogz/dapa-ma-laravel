@@ -10,13 +10,28 @@ import {
     canCreateWorkflowDraft,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    itemForEditorForm,
     openItemFromQuery,
+    renderPendingChangesBanner,
     renderReviewNotesBanner,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
+import { highlightChangedFieldsInPopup } from '../shared/workflow-revision-diff';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { assertPhoneFields } from '../phone-validation';
+
+const HOPE_DIRECTORY_REVIEW_FIELD_MAP = {
+    'hd-name': 'name',
+    'hd-description': 'description',
+    'hd-category': 'category',
+    'hd-active': 'is_active',
+    'hd-sort': 'sort_order',
+    'hd-address': 'address',
+    'hd-phone': 'phone',
+    'hd-email': 'email',
+    'hd-logo': 'logo_url',
+};
 
 let directoryTable;
 let directoryTableMode;
@@ -261,14 +276,20 @@ function bindRowActions() {
     // Row actions use onclick handlers on window.HopeDirectory.
 }
 
-function buildFormHtml(row) {
+function buildFormHtml(row, reviewItem = null) {
     const logoPreview = row?.logo_url
         ? `<img class="admin-swal-media-preview" src="${escapeAttr(row.logo_url)}" alt="Current logo">`
         : '';
+    const reviewFields = Object.entries(HOPE_DIRECTORY_REVIEW_FIELD_MAP).map(([id, attribute]) => ({
+        id,
+        attribute,
+        label: attribute.replaceAll('_', ' '),
+    }));
 
     return `
         <div class="admin-swal-form">
-            ${renderReviewNotesBanner(row)}
+            ${renderReviewNotesBanner(reviewItem || row)}
+            ${renderPendingChangesBanner(reviewItem, reviewFields)}
             <div class="admin-swal-section">
                 <p class="admin-swal-section-title">Organization</p>
                 <div class="admin-swal-fields">
@@ -345,21 +366,28 @@ function buildFormHtml(row) {
     `;
 }
 
-function showForm(row) {
-    if (!row?.id && !canCreateWorkflowDraft()) {
+function showForm(rowRaw) {
+    if (!rowRaw?.id && !canCreateWorkflowDraft()) {
         showErrorToast('Publishers cannot create new drafts.', 'Not allowed');
         return;
     }
 
+    const row = rowRaw ? itemForEditorForm(rowRaw) : null;
     const isEdit = Boolean(row);
+    const reviewItem = rowRaw?.pending_revision ? rowRaw : null;
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit Organization' : 'Add Organization',
+        title: isEdit
+            ? (reviewItem ? 'Review organization changes' : 'Edit Organization')
+            : 'Add Organization',
         subtitle: 'Partners listed in the DAPE Hope Official Directory.',
-        html: buildFormHtml(row),
+        html: buildFormHtml(row, reviewItem),
         confirmButtonText: isEdit ? 'Save Changes' : 'Create Organization',
         cancelButtonText: 'Cancel',
         width: '42rem',
+        didOpen: (popup) => {
+            highlightChangedFieldsInPopup(popup, reviewItem, HOPE_DIRECTORY_REVIEW_FIELD_MAP);
+        },
         preConfirm: () => {
             const name = document.getElementById('hd-name')?.value.trim();
             if (!name) {
@@ -396,7 +424,7 @@ function showForm(row) {
         });
 
         const request = isEdit
-            ? axios.post(`/admin/hope-directory/${row.id}`, form)
+            ? axios.post(`/admin/hope-directory/${rowRaw.id}`, form)
             : axios.post('/admin/hope-directory', form);
 
         request

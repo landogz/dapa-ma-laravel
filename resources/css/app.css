@@ -3201,6 +3201,54 @@ select.admin-filter-select:not(.admin-choice-select-native),
     }
 }
 
+.admin-swal-field--changed {
+    position: relative;
+    border: 1.5px solid rgba(206, 32, 40, 0.45);
+    border-radius: 0.9rem;
+    background: rgba(206, 32, 40, 0.06);
+    padding: 0.75rem 0.85rem;
+    box-shadow: inset 3px 0 0 #CE2028;
+}
+
+.admin-swal-changed-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    background: #CE2028;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.45rem;
+    line-height: 1.2;
+}
+
+.admin-swal-changed-hint {
+    margin: 0.35rem 0 0;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    color: #a01a1f;
+}
+
+.admin-swal-changed-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    border: 1px solid rgba(206, 32, 40, 0.35);
+    background: #fff;
+    color: #CE2028;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+}
+
+@media (max-width: 639px) {
+    .admin-swal-field--changed {
+        padding: 0.7rem 0.75rem;
+    }
+}
+
 .admin-swal-field {
     display: grid;
     gap: 0.4rem;
@@ -3455,6 +3503,10 @@ select.admin-filter-select:not(.admin-choice-select-native),
 }
 
 .admin-swal-label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
     color: #334155;
     font-size: 0.875rem;
     font-weight: 600;

@@ -8,6 +8,11 @@ import {
     PASSWORD_POLICY_HINT,
 } from '../password-validation';
 import { bindRichTextEditors, destroyRichTextEditors, isBodyRichTextField } from '../rich-text-editor';
+import {
+    annotateSwalFieldsForPendingReview,
+    hasPendingRevisionPayload,
+    renderPendingChangesBanner,
+} from './workflow-revision-diff';
 import { bindPasswordToggles } from './password-toggle';
 import { bindSvgIconPickers } from './svg-icon-picker';
 
@@ -57,12 +62,37 @@ function renderOptions(options = [], selectedValue = '') {
         .join('');
 }
 
+function fieldShellClass(field) {
+    return field.changed ? 'admin-swal-field admin-swal-field--changed' : 'admin-swal-field';
+}
+
+function fieldChangedBadge(field) {
+    if (!field.changed) {
+        return '';
+    }
+
+    return '<span class="admin-swal-changed-badge">Changed</span>';
+}
+
+function fieldChangedHint(field) {
+    if (!field.changed) {
+        return '';
+    }
+
+    const text = field.changedHint
+        || (field.changedFrom ? `Changed — live value: ${field.changedFrom}` : 'Changed from the live published version');
+
+    return `<p class="admin-swal-changed-hint">${escapeHtml(text)}</p>`;
+}
+
 function renderField(field) {
-    const label = `<label class="admin-swal-label" for="${field.id}">${escapeHtml(field.label)}</label>`;
+    const label = `<label class="admin-swal-label" for="${field.id}"><span>${escapeHtml(field.label)}</span>${fieldChangedBadge(field)}</label>`;
     const placeholder = field.placeholder ? ` placeholder="${escapeHtml(field.placeholder)}"` : '';
     const value = field.value ? ` value="${escapeHtml(field.value)}"` : '';
     const min = field.min ? ` min="${escapeHtml(field.min)}"` : '';
     const hint = field.hint ? `<p class="admin-swal-hint">${escapeHtml(field.hint)}</p>` : '';
+    const changedHint = fieldChangedHint(field);
+    const shellClass = fieldShellClass(field);
 
     if (isBodyRichTextField(field)) {
         const richPlaceholder = field.placeholder
@@ -70,12 +100,13 @@ function renderField(field) {
             : ' placeholder="Write the main content"';
 
         return `
-            <div class="admin-swal-field">
+            <div class="${shellClass}">
                 ${label}
                 <div class="admin-rich-text">
                     <textarea id="${field.id}" class="admin-swal-textarea admin-swal-richtext" data-rich-text${richPlaceholder}>${escapeHtml(field.value ?? '')}</textarea>
                 </div>
                 ${hint}
+                ${changedHint}
                 ${fieldErrorMarkup(field.id)}
             </div>
         `;
@@ -83,10 +114,11 @@ function renderField(field) {
 
     if (field.type === 'textarea') {
         return `
-            <div class="admin-swal-field">
+            <div class="${shellClass}">
                 ${label}
                 <textarea id="${field.id}" class="admin-swal-textarea"${placeholder}>${escapeHtml(field.value ?? '')}</textarea>
                 ${hint}
+                ${changedHint}
                 ${fieldErrorMarkup(field.id)}
             </div>
         `;
@@ -101,12 +133,13 @@ function renderField(field) {
             : '';
 
         return `
-            <div class="admin-swal-field">
+            <div class="${shellClass}">
                 <label class="admin-swal-checkbox" for="${field.id}">
                     <input id="${field.id}" class="admin-swal-checkbox-input" type="checkbox" value="1"${checked}>
                     <span class="admin-swal-checkbox-copy">
-                        <span class="admin-swal-checkbox-title">${escapeHtml(field.label)}</span>
+                        <span class="admin-swal-checkbox-title">${escapeHtml(field.label)}${fieldChangedBadge(field)}</span>
                         ${hint}
+                        ${changedHint}
                     </span>
                 </label>
             </div>
@@ -115,12 +148,13 @@ function renderField(field) {
 
     if (field.type === 'select') {
         return `
-            <div class="admin-swal-field">
+            <div class="${shellClass}">
                 ${label}
                 <select id="${field.id}" class="admin-swal-select">
                     ${renderOptions(field.options, field.value)}
                 </select>
                 ${hint}
+                ${changedHint}
                 ${fieldErrorMarkup(field.id)}
             </div>
         `;
@@ -153,11 +187,12 @@ function renderField(field) {
             : '';
 
         return `
-            <div class="admin-swal-field">
+            <div class="${shellClass}">
                 ${label}
                 ${previewBlock}
                 <input id="${field.id}" class="admin-swal-input" type="file"${field.accept ? ` accept="${escapeHtml(field.accept)}"` : ''} data-image-preview-input="${showPreview ? 'true' : 'false'}"${previewUrl ? ` data-preview-fallback="${previewUrl}"` : ''}>
                 ${hint}
+                ${changedHint}
                 ${fieldErrorMarkup(field.id)}
             </div>
         `;
@@ -165,12 +200,13 @@ function renderField(field) {
 
     if (field.type === 'address') {
         return `
-            <div class="admin-swal-field">
+            <div class="${shellClass}">
                 ${label}
                 <div class="address-autocomplete">
                     <input id="${field.id}" class="admin-swal-input" type="text" data-address-autocomplete autocomplete="off"${placeholder}${value}>
                 </div>
                 ${hint}
+                ${changedHint}
                 ${fieldErrorMarkup(field.id)}
             </div>
         `;
@@ -184,10 +220,11 @@ function renderField(field) {
             : '<p class="admin-swal-hint">Philippine numbers only, e.g. 09XX XXX XXXX or +63…</p>';
 
         return `
-            <div class="admin-swal-field">
+            <div class="${shellClass}">
                 ${label}
                 <input id="${field.id}" class="admin-swal-input" type="tel" inputmode="tel" data-phone-ph autocomplete="tel"${multiple}${shortCodes}${placeholder}${value}>
                 ${phoneHint}
+                ${changedHint}
                 ${fieldErrorMarkup(field.id)}
             </div>
         `;
@@ -209,7 +246,7 @@ function renderField(field) {
                 : `<p class="admin-swal-hint password-policy-hint" data-password-hint>${PASSWORD_POLICY_HINT}</p>`);
 
         return `
-            <div class="admin-swal-field">
+            <div class="${shellClass}">
                 ${label}
                 <div class="admin-swal-password-wrap">
                     <input id="${field.id}" class="admin-swal-input admin-swal-input-password" type="password"${placeholder}${value}${min} autocomplete="${autocomplete}"${policyAttr}${optional}${confirmFor}>
@@ -218,6 +255,7 @@ function renderField(field) {
                     </button>
                 </div>
                 ${passwordHint}
+                ${changedHint}
                 ${fieldErrorMarkup(field.id)}
             </div>
         `;
@@ -228,12 +266,13 @@ function renderField(field) {
         const noneLabel = field.noneLabel != null ? field.noneLabel : 'None (use default art)';
 
         return `
-            <div class="admin-swal-field">
+            <div class="${shellClass}">
                 ${label}
                 <div class="admin-svg-icon-picker" data-svg-icon-picker data-iconset="outline" data-resettable="1" data-icon-choices="${choicesJson}" data-none-label="${escapeHtml(noneLabel)}">
                     <input type="hidden" id="${field.id}" name="${field.id}" value="${escapeHtml(field.value ?? '')}">
                 </div>
                 ${hint}
+                ${changedHint}
                 ${fieldErrorMarkup(field.id)}
             </div>
         `;
@@ -258,7 +297,7 @@ function renderField(field) {
             .join('');
 
         return `
-            <div class="admin-swal-field">
+            <div class="${shellClass}">
                 ${label}
                 <div class="admin-swal-color" data-color-field>
                     <div class="admin-swal-color-row">
@@ -272,24 +311,34 @@ function renderField(field) {
                     ${presets ? `<div class="admin-swal-color-presets" role="group" aria-label="Brand colors">${presets}</div>` : ''}
                 </div>
                 ${hint}
+                ${changedHint}
                 ${fieldErrorMarkup(field.id)}
             </div>
         `;
     }
 
     return `
-        <div class="admin-swal-field">
+        <div class="${shellClass}">
             ${label}
             <input id="${field.id}" class="admin-swal-input" type="${field.type ?? 'text'}"${placeholder}${value}${min}>
             ${hint}
+            ${changedHint}
             ${fieldErrorMarkup(field.id)}
         </div>
     `;
 }
 
-export function buildSwalForm({ description = '', rules = '', fields = [] }) {
+export function buildSwalForm({ description = '', rules = '', fields = [], reviewItem = null } = {}) {
+    const preparedFields = hasPendingRevisionPayload(reviewItem)
+        ? annotateSwalFieldsForPendingReview(fields, reviewItem)
+        : fields;
+    const reviewBanner = hasPendingRevisionPayload(reviewItem)
+        ? renderPendingChangesBanner(reviewItem, preparedFields)
+        : '';
+
     return `
         <div class="admin-swal-form">
+            ${reviewBanner}
             ${description ? `<p class="admin-swal-description" data-swal-subtitle="${escapeHtml(description)}" hidden>${escapeHtml(description)}</p>` : ''}
             ${rules ? `
                 <div class="admin-swal-rules">
@@ -298,7 +347,7 @@ export function buildSwalForm({ description = '', rules = '', fields = [] }) {
                 </div>
             ` : ''}
             <div class="admin-swal-fields">
-                ${fields.map(renderField).join('')}
+                ${preparedFields.map(renderField).join('')}
             </div>
         </div>
     `;

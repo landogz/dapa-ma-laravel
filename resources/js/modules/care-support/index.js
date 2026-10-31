@@ -16,6 +16,7 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    itemForEditorForm,
     openItemFromQuery,
     renderReviewNotesBanner,
     syncWorkflowCreateButton,
@@ -295,15 +296,20 @@ function buildRowData(row) {
     ];
 }
 
-function showResourceForm(existing) {
+function showResourceForm(existingRaw) {
+    const existing = existingRaw ? itemForEditorForm(existingRaw) : null;
     const isEdit = Boolean(existing);
     const bodyEn = Array.isArray(existing?.body_en) ? existing.body_en.join('\n') : '';
     const bodyTl = Array.isArray(existing?.body_tl) ? existing.body_tl.join('\n') : '';
+    const reviewItem = existingRaw?.pending_revision ? existingRaw : null;
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit Care Support Resource' : 'Add Care Support Resource',
-        html: `${renderReviewNotesBanner(existing)}${buildSwalForm({
+        title: isEdit
+            ? (reviewItem ? 'Review Care Support changes' : 'Edit Care Support Resource')
+            : 'Add Care Support Resource',
+        html: `${renderReviewNotesBanner(existingRaw)}${buildSwalForm({
             description: 'Hotlines need a phone number. Counseling usually needs a description and optional website. Crisis resources can include modal body paragraphs (one per line).',
+            reviewItem,
             fields: [
                 {
                     id: 'csr-category',
@@ -470,7 +476,7 @@ function showResourceForm(existing) {
             }
 
             const request = isEdit
-                ? axios.put(`/admin/care-support-resources/${existing.id}`, payload)
+                ? axios.put(`/admin/care-support-resources/${existingRaw.id}`, payload)
                 : axios.post('/admin/care-support-resources', payload);
 
             return request

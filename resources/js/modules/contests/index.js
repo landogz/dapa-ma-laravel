@@ -11,13 +11,29 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    itemForEditorForm,
     openItemFromQuery,
+    renderPendingChangesBanner,
     renderReviewNotesBanner,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
+import { highlightChangedFieldsInPopup } from '../shared/workflow-revision-diff';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { readAdminPageFocus } from '../shared/page-focus';
+
+const CONTEST_REVIEW_FIELD_MAP = {
+    'ct-title': 'title',
+    'ct-theme': 'theme',
+    'ct-year': 'contest_year',
+    'ct-start': 'submission_starts_at',
+    'ct-end': 'submission_ends_at',
+    'ct-status': 'status',
+    'ct-active': 'is_active',
+    'ct-category': 'category',
+    'ct-allowed': 'allowed_entry_types',
+    'ct-description': 'description',
+};
 
 let contestsTable;
 let contestsDataTableClass;
@@ -165,7 +181,7 @@ function categoryLabel(value) {
     return CATEGORY_OPTIONS.find((item) => item.value === value)?.label ?? value ?? '—';
 }
 
-function buildContestFormHtml(existing) {
+function buildContestFormHtml(existing, reviewItem = null) {
     const statusValue = existing?.status ?? 'open';
     const activeValue = existing?.is_active === false ? '0' : '1';
     const categoryValue = existing?.category ?? '';
@@ -178,10 +194,16 @@ function buildContestFormHtml(existing) {
         const selected = categoryValue === option.value ? 'selected' : '';
         return `<option value="${escapeHtml(option.value)}" ${selected}>${escapeHtml(option.label)}</option>`;
     }).join('');
+    const reviewFields = Object.entries(CONTEST_REVIEW_FIELD_MAP).map(([id, attribute]) => ({
+        id,
+        attribute,
+        label: humanizeContestField(attribute),
+    }));
 
     return `
         <div class="admin-swal-form">
-            ${renderReviewNotesBanner(existing)}
+            ${renderReviewNotesBanner(reviewItem || existing)}
+            ${renderPendingChangesBanner(reviewItem, reviewFields)}
             <div class="admin-swal-fields">
                 <div class="admin-swal-field">
                     <label class="admin-swal-label" for="ct-category">Category *</label>
@@ -253,19 +275,30 @@ function syncAllowedFieldVisibility() {
     }
 }
 
-function showContestForm(existing) {
+function humanizeContestField(attribute) {
+    return String(attribute || '')
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function showContestForm(existingRaw) {
+    const existing = existingRaw ? itemForEditorForm(existingRaw) : null;
     const isEdit = Boolean(existing);
+    const reviewItem = existingRaw?.pending_revision ? existingRaw : null;
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit Contest' : 'Add Contest',
+        title: isEdit
+            ? (reviewItem ? 'Review contest changes' : 'Edit Contest')
+            : 'Add Contest',
         subtitle: 'Choose Song, Poster, or Video category, then configure the contest.',
-        html: buildContestFormHtml(existing),
+        html: buildContestFormHtml(existing, reviewItem),
         confirmButtonText: isEdit ? 'Save changes' : 'Create contest',
         cancelButtonText: 'Cancel',
         width: '42rem',
-        didOpen: () => {
+        didOpen: (popup) => {
             syncAllowedFieldVisibility();
             document.getElementById('ct-category')?.addEventListener('change', syncAllowedFieldVisibility);
+            highlightChangedFieldsInPopup(popup, reviewItem, CONTEST_REVIEW_FIELD_MAP);
         },
         preConfirm: () => {
             const title = document.getElementById('ct-title')?.value.trim();
@@ -313,7 +346,7 @@ function showContestForm(existing) {
         if (!isConfirmed) return;
 
         const request = isEdit
-            ? axios.put(`/admin/contests/${existing.id}`, value)
+            ? axios.put(`/admin/contests/${existingRaw.id}`, value)
             : axios.post('/admin/contests', value);
 
         request.then(({ data }) => {

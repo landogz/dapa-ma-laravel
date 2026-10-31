@@ -9,13 +9,21 @@ import {
 } from '../shared/swal-forms';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
-import { bindAdminFilterTabs, renderAdminFilterTabs, setAdminFilterTab } from '../shared/filter-tabs';
+import {
+    applyAdminFilterTabCounts,
+    bindAdminFilterTabs,
+    countByKey,
+    renderAdminFilterTabs,
+    setAdminFilterTab,
+} from '../shared/filter-tabs';
 import {
     attachWorkflowWindowHandlers,
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    isPublisherRole,
+    isSuperAdminRole,
     itemForEditorForm,
     openItemFromQuery,
     renderReviewNotesBanner,
@@ -185,10 +193,10 @@ export function loadAppOptions() {
         return;
     }
 
+    // Always load every catalog so sidebar badges can match the active workflow filter.
     axios.get('/admin/app-options', {
         params: {
             per_page: 500,
-            group: currentGroupFilter || undefined,
         },
     })
         .then(({ data }) => {
@@ -197,9 +205,25 @@ export function loadAppOptions() {
                 currentGroupFilter = '';
             }
             iconChoices = data.meta?.icons ?? iconChoices;
-            fillGroupTabs();
 
-            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
+            const workflowRows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
+            const groupCounts = countByKey(workflowRows, (row) => row.group);
+            groupMeta = groupMeta.map((group) => ({
+                ...group,
+                count: groupCounts[group.key] ?? 0,
+            }));
+            fillGroupTabs();
+            applyAdminFilterTabCounts(
+                document.getElementById('app-option-group-tabs'),
+                {
+                    '': groupCounts[''] ?? workflowRows.length,
+                    ...Object.fromEntries(groupMeta.map((group) => [group.key, group.count ?? 0])),
+                },
+            );
+
+            const rows = currentGroupFilter
+                ? workflowRows.filter((row) => row.group === currentGroupFilter)
+                : workflowRows;
             optionsTable.clear();
             rows.forEach((row) => optionsTable.row.add(buildRowData(row)));
             optionsTable.draw();
@@ -375,8 +399,18 @@ function showOptionForm(existingRaw) {
         },
     );
 
+    const reviewingUpdate = Boolean(existingRaw && (
+        String(existingRaw.revision_status || '') === 'pending_review'
+        || (existingRaw.pending_revision && typeof existingRaw.pending_revision === 'object')
+    ));
+    const publisherReviewOnly = reviewingUpdate && isPublisherRole() && !isSuperAdminRole();
+
     Swal.fire(buildSwalOptions({
-        title: isEdit ? (editingPublished ? 'Edit published option' : 'Edit option') : 'Add option',
+        title: isEdit
+            ? (reviewingUpdate
+                ? 'Review option changes'
+                : (editingPublished ? 'Edit published option' : 'Edit option'))
+            : 'Add option',
         html: `${renderReviewNotesBanner(existingRaw)}${buildSwalForm({
             description: editingPublished
                 ? 'Changes are saved as an update draft. The live published option stays unchanged until a publisher approves it.'
@@ -384,10 +418,17 @@ function showOptionForm(existingRaw) {
                     ? `Key “${existing.key}” stays the same so existing answers still match. English and Tagalog labels appear in the mobile app.`
                     : 'English and Tagalog labels appear in the mobile app. Leave Key blank to generate it from the English label.'),
             fields,
+            reviewItem: reviewingUpdate ? existingRaw : null,
         })}`,
-        confirmButtonText: editingPublished ? 'Save update draft' : (isEdit ? 'Save changes' : 'Create option'),
-        showCancelButton: true,
+        confirmButtonText: publisherReviewOnly
+            ? 'Done reviewing'
+            : (editingPublished ? 'Save update draft' : (isEdit ? 'Save changes' : 'Create option')),
+        showCancelButton: !publisherReviewOnly,
         preConfirm: () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const group = document.getElementById('ao-group')?.value;
             const labelEn = document.getElementById('ao-label-en')?.value?.trim() ?? '';
             const labelTl = document.getElementById('ao-label-tl')?.value?.trim() ?? '';
@@ -441,7 +482,7 @@ function showOptionForm(existingRaw) {
                 });
         },
     }, { size: 'lg' })).then(({ isConfirmed, value }) => {
-        if (!isConfirmed || !value) {
+        if (!isConfirmed || !value || value.reviewedOnly) {
             return;
         }
         showSuccessToast(

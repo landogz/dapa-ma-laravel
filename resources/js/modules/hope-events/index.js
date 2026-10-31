@@ -10,12 +10,25 @@ import {
     canCreateWorkflowDraft,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    highlightChangedFieldsInPopup,
+    itemForEditorForm,
     openItemFromQuery,
+    renderPendingChangesBanner,
     renderReviewNotesBanner,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
+
+const HOPE_EVENT_REVIEW_FIELD_MAP = {
+    'he-title': 'title',
+    'he-summary': 'summary',
+    'he-audience': 'audience',
+    'he-start': 'starts_at',
+    'he-end': 'ends_at',
+    'he-location': 'location',
+    'he-active': 'is_active',
+};
 
 let eventsTable;
 let eventsTableMode;
@@ -272,7 +285,7 @@ function bindRowActions() {
     // Row actions use onclick handlers on window.HopeEvents.
 }
 
-function buildFormHtml(row) {
+function buildFormHtml(row, reviewItem = null) {
     const forYou = Array.isArray(row?.for_you_items) ? row.for_you_items.join('\n') : '';
     const highlights = Array.isArray(row?.highlights)
         ? row.highlights.map((h) => (typeof h === 'string' ? h : h.label)).filter(Boolean).join('\n')
@@ -280,10 +293,16 @@ function buildFormHtml(row) {
     const coverPreview = row?.cover_url
         ? `<img class="admin-swal-media-preview" src="${escapeAttr(row.cover_url)}" alt="Current cover">`
         : '';
+    const reviewFields = Object.entries(HOPE_EVENT_REVIEW_FIELD_MAP).map(([id, attribute]) => ({
+        id,
+        attribute,
+        label: attribute.replaceAll('_', ' '),
+    }));
 
     return `
         <div class="admin-swal-form">
-            ${renderReviewNotesBanner(row)}
+            ${renderReviewNotesBanner(reviewItem || row)}
+            ${renderPendingChangesBanner(reviewItem, reviewFields)}
             <div class="admin-swal-section">
                 <p class="admin-swal-section-title">Basics</p>
                 <div class="admin-swal-fields">
@@ -623,22 +642,29 @@ function collectFaqs() {
         .filter((faq) => faq.question && faq.answer);
 }
 
-function showForm(row) {
-    if (!row?.id && !canCreateWorkflowDraft()) {
+function showForm(rowRaw) {
+    if (!rowRaw?.id && !canCreateWorkflowDraft()) {
         showErrorToast('Publishers cannot create new drafts.', 'Not allowed');
         return;
     }
 
+    const row = rowRaw ? itemForEditorForm(rowRaw) : null;
     const isEdit = Boolean(row?.id);
+    const reviewItem = rowRaw?.pending_revision ? rowRaw : null;
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit Event' : 'Add Event',
+        title: isEdit
+            ? (reviewItem ? 'Review event changes' : 'Edit Event')
+            : 'Add Event',
         subtitle: 'Configure schedule, speakers, FAQs, and content for the DAPE Hope Events screen.',
-        html: buildFormHtml(row),
+        html: buildFormHtml(row, reviewItem),
         confirmButtonText: isEdit ? 'Save Changes' : 'Create Event',
         cancelButtonText: 'Cancel',
         width: '46rem',
-        didOpen: () => mountRepeatableLists(row),
+        didOpen: (popup) => {
+            mountRepeatableLists(row);
+            highlightChangedFieldsInPopup(popup, reviewItem, HOPE_EVENT_REVIEW_FIELD_MAP);
+        },
         preConfirm: () => {
             const title = document.getElementById('he-title')?.value.trim();
             if (!title) {
@@ -738,7 +764,7 @@ function showForm(row) {
         });
 
         const request = isEdit
-            ? axios.post(`/admin/hope-events/${row.id}`, form)
+            ? axios.post(`/admin/hope-events/${rowRaw.id}`, form)
             : axios.post('/admin/hope-events', form);
 
         request
