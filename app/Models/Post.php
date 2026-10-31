@@ -21,6 +21,8 @@ class Post extends Model
         'is_featured',
         'status',
         'review_notes',
+        'pending_revision',
+        'revision_status',
         'publish_date',
         'author_id',
     ];
@@ -29,7 +31,34 @@ class Post extends Model
         'comments_enabled' => 'boolean',
         'is_featured' => 'boolean',
         'publish_date' => 'datetime',
+        'pending_revision' => 'array',
     ];
+
+    public function hasPendingRevision(): bool
+    {
+        return filled($this->revision_status) && is_array($this->pending_revision) && $this->pending_revision !== [];
+    }
+
+    public function isRevisionAwaitingPublisher(): bool
+    {
+        return $this->status === 'published' && $this->revision_status === 'pending_review';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function liveContentSnapshot(): array
+    {
+        return [
+            'title' => $this->title,
+            'body' => $this->body,
+            'category_id' => $this->category_id,
+            'media_url' => $this->media_url,
+            'youtube_url' => $this->youtube_url,
+            'comments_enabled' => (bool) $this->comments_enabled,
+            'is_featured' => (bool) $this->is_featured,
+        ];
+    }
 
     public function category(): BelongsTo
     {

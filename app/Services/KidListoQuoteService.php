@@ -35,11 +35,19 @@ class KidListoQuoteService
 
     public function update(KidListoQuote $quote, array $data, User $actor): KidListoQuote
     {
-        $payload = $this->contentWorkflow->prepareUpdatePayload(
-            $quote,
-            $actor,
-            $this->normalize($data),
-        );
+        try {
+            $payload = $this->contentWorkflow->prepareUpdatePayload(
+                $quote,
+                $actor,
+                $this->normalize($data),
+            );
+        } catch (\InvalidArgumentException $e) {
+            abort(422, $e->getMessage());
+        }
+
+        if ($payload === []) {
+            return $quote->fresh() ?? $quote;
+        }
 
         return $this->kidListoQuoteRepository->update($quote, $payload);
     }

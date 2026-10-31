@@ -3,7 +3,13 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildSwalForm, buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
-import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
+import {
+    applyAdminFilterTabCounts,
+    bindAdminFilterTabs,
+    countByKey,
+    renderAdminFilterTabs,
+    setAdminFilterTab,
+} from '../shared/filter-tabs';
 import {
     attachWorkflowWindowHandlers,
     buildWorkflowTableActions,
@@ -24,13 +30,24 @@ let hasBoundViewportListener = false;
 let currentCategoryFilter = '';
 let categoryCounts = null;
 let workflowStatusFilter = '';
+let categoryOptions = [
+    { value: 'hotline', label: '24/7 Hotlines' },
+    { value: 'counseling', label: 'Counseling' },
+    { value: 'crisis_emergency', label: 'Crisis emergency' },
+    { value: 'crisis_resource', label: 'Crisis resources' },
+];
 
-const CATEGORY_LABELS = {
-    hotline: 'Hotline',
-    counseling: 'Counseling',
-    crisis_emergency: 'Crisis emergency',
-    crisis_resource: 'Crisis resource',
+const CATEGORY_ICONS = {
+    hotline: 'fas fa-phone',
+    counseling: 'fas fa-comments',
+    crisis_emergency: 'fas fa-kit-medical',
+    crisis_resource: 'fas fa-life-ring',
 };
+
+function categoryLabel(key) {
+    return categoryOptions.find((option) => option.value === key)?.label
+        ?? String(key || '—').replaceAll('_', ' ');
+}
 
 export function initCareSupportModule() {
     const tableEl = document.getElementById('care-support-resources-table');
@@ -46,7 +63,7 @@ export function initCareSupportModule() {
         loadCareSupportResources();
     });
 
-    initializeSupportTable(tableEl).then(() => {
+    initializeSupportTable(tableEl).then(async () => {
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
         syncWorkflowCreateButton('[data-admin-action="create-care-support-resource"]');
@@ -59,8 +76,45 @@ export function initCareSupportModule() {
             },
         });
         openItemFromQuery('item', (id) => editCareSupportResource(id));
+        await loadCareSupportCategories();
         loadCareSupportResources();
     });
+}
+
+async function loadCareSupportCategories() {
+    try {
+        const { data } = await axios.get('/admin/app-options', {
+            params: { group: 'care_support', per_page: 50 },
+        });
+        const rows = (data.data?.data ?? []).filter((row) => row.is_active !== false);
+        if (rows.length > 0) {
+            categoryOptions = rows
+                .slice()
+                .sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0))
+                .map((row) => ({
+                    value: row.key,
+                    label: row.label_en || row.key,
+                }));
+        }
+    } catch {
+        // Keep hardcoded defaults when Lookups catalog is unavailable.
+    }
+
+    const tabs = document.getElementById('care-support-category-tabs');
+    if (!tabs) {
+        return;
+    }
+
+    renderAdminFilterTabs(tabs, [
+        { value: '', label: 'All categories', icon: 'fas fa-layer-group', count: 0 },
+        ...categoryOptions.map((option) => ({
+            value: option.value,
+            label: option.label,
+            icon: CATEGORY_ICONS[option.value] || 'fas fa-folder',
+            count: 0,
+        })),
+    ]);
+    setAdminFilterTab(tabs, currentCategoryFilter);
 }
 
 async function initializeSupportTable(tableElement) {
@@ -197,7 +251,7 @@ export function removeCareSupportResource(id) {
 
 function buildRowData(row) {
     const title = escapeHtml(truncate(row.title_en, 70));
-    const category = escapeHtml(CATEGORY_LABELS[row.category] ?? row.category);
+    const category = escapeHtml(categoryLabel(row.category));
     const contact = escapeHtml(row.phone || row.web_url || '—');
     const status = row.is_active
         ? '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>'
@@ -255,13 +309,11 @@ function showResourceForm(existing) {
                     id: 'csr-category',
                     label: 'Category *',
                     type: 'select',
-                    value: existing?.category ?? 'hotline',
-                    options: [
-                        { value: 'hotline', label: '24/7 Hotline' },
-                        { value: 'counseling', label: 'Counseling' },
-                        { value: 'crisis_emergency', label: 'Crisis emergency banner' },
-                        { value: 'crisis_resource', label: 'Crisis info resource' },
-                    ],
+                    value: existing?.category ?? categoryOptions[0]?.value ?? 'hotline',
+                    options: categoryOptions.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                    })),
                 },
                 {
                     id: 'csr-title-en',

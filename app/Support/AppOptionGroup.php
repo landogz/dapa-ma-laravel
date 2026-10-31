@@ -16,6 +16,8 @@ final class AppOptionGroup
 
     public const CARE_TOOLKIT = 'care_toolkit';
 
+    public const CARE_SUPPORT = 'care_support';
+
     public const SELECTION_SINGLE = 'single';
 
     public const SELECTION_MULTIPLE = 'multiple';
@@ -32,6 +34,7 @@ final class AppOptionGroup
             self::JOURNAL_FEELING,
             self::JOURNAL_IMPACT,
             self::CARE_TOOLKIT,
+            self::CARE_SUPPORT,
         ];
     }
 
@@ -79,6 +82,12 @@ final class AppOptionGroup
             self::CARE_TOOLKIT => [
                 'title' => 'Care toolkits',
                 'subtitle' => 'Self-care Toolkit checks — set Active to show on mobile, Inactive to hide',
+                'selection' => self::SELECTION_SINGLE,
+                'surface' => 'Care',
+            ],
+            self::CARE_SUPPORT => [
+                'title' => 'Care Support',
+                'subtitle' => 'Get Support filters — 24/7 Hotlines, Counseling, Crisis emergency, Crisis resources',
                 'selection' => self::SELECTION_SINGLE,
                 'surface' => 'Care',
             ],
@@ -180,6 +189,48 @@ final class AppOptionGroup
                 'See how well you are resting',
                 'Tingnan kung gaano kahusay ang iyong pahinga',
             ),
+
+            // Care Get Support categories (keys must match care_support_resources.category)
+            self::row(
+                self::CARE_SUPPORT,
+                'hotline',
+                '24/7 Hotlines',
+                '24/7 Hotlines',
+                1,
+                'phone_outlined',
+                'Crisis and support hotlines',
+                'Mga hotline para sa krisis at suporta',
+            ),
+            self::row(
+                self::CARE_SUPPORT,
+                'counseling',
+                'Counseling',
+                'Counseling',
+                2,
+                'chat_outlined',
+                'Counseling and talk support',
+                'Counseling at usapang tulong',
+            ),
+            self::row(
+                self::CARE_SUPPORT,
+                'crisis_emergency',
+                'Crisis emergency',
+                'Crisis emergency',
+                3,
+                'medical_services_outlined',
+                'Emergency crisis banner',
+                'Banner para sa emergency crisis',
+            ),
+            self::row(
+                self::CARE_SUPPORT,
+                'crisis_resource',
+                'Crisis resources',
+                'Crisis resources',
+                4,
+                'life_ring_outlined',
+                'Crisis information resources',
+                'Mga resource para sa crisis',
+            ),
         ];
     }
 
@@ -225,6 +276,9 @@ final class AppOptionGroup
             'label_outline' => 'fas fa-tag',
             'bolt_outlined' => 'fas fa-bolt',
             'psychology_outlined' => 'fas fa-brain',
+            'phone_outlined' => 'fas fa-phone',
+            'chat_outlined' => 'fas fa-comments',
+            'life_ring_outlined' => 'fas fa-life-ring',
             default => 'fas fa-icons',
         };
     }
@@ -267,6 +321,9 @@ final class AppOptionGroup
             ['value' => 'label_outline', 'label' => 'Label'],
             ['value' => 'bolt_outlined', 'label' => 'Bolt'],
             ['value' => 'psychology_outlined', 'label' => 'Mind'],
+            ['value' => 'phone_outlined', 'label' => 'Phone'],
+            ['value' => 'chat_outlined', 'label' => 'Chat'],
+            ['value' => 'life_ring_outlined', 'label' => 'Life ring'],
         ];
 
         return array_map(static function (array $item): array {

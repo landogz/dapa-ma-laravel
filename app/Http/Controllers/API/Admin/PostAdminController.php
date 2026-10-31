@@ -63,14 +63,21 @@ class PostAdminController extends Controller
 
     public function update(UpdatePostRequest $request, Post $post): JsonResponse
     {
+        $wasPublishedLive = $post->status === 'published';
         $post = $this->postService->updateDraft($post, $request->validated(), $request->user());
         $isSuperAdmin = $request->user()?->role === 'super_admin';
+        $savedAsRevision = ! $isSuperAdmin
+            && $wasPublishedLive
+            && $post->status === 'published'
+            && $post->revision_status === 'draft';
 
         return response()->json([
             'status'  => true,
-            'message' => $isSuperAdmin && $post->status === 'published'
-                ? 'Post updated and published.'
-                : 'Post updated.',
+            'message' => $savedAsRevision
+                ? 'Update saved as a draft revision. The live published post is unchanged until a publisher approves it.'
+                : ($isSuperAdmin && $post->status === 'published'
+                    ? 'Post updated and published.'
+                    : 'Post updated.'),
             'data'    => $post,
         ]);
     }
@@ -78,21 +85,27 @@ class PostAdminController extends Controller
     public function submit(Post $post): JsonResponse
     {
         $post = $this->postService->submitForReview($post, request()->user());
+        $isUpdate = $post->isRevisionAwaitingPublisher();
 
         return response()->json([
             'status'  => true,
-            'message' => 'Post submitted for review.',
+            'message' => $isUpdate
+                ? 'Update submitted for publisher review. The live post stays unchanged until approved.'
+                : 'Post submitted for review.',
             'data'    => $post,
         ]);
     }
 
     public function reject(RejectPostRequest $request, Post $post): JsonResponse
     {
+        $wasLiveUpdate = $post->isRevisionAwaitingPublisher();
         $post = $this->postService->reject($post, $request->validated('review_notes'), $request->user());
 
         return response()->json([
             'status'  => true,
-            'message' => 'Post rejected and returned to editor.',
+            'message' => $wasLiveUpdate
+                ? 'Update returned to the editor for revision. The live published post is unchanged.'
+                : 'Post returned to draft for revision.',
             'data'    => $post,
         ]);
     }
@@ -110,11 +123,14 @@ class PostAdminController extends Controller
 
     public function publish(Post $post): JsonResponse
     {
+        $wasLiveUpdate = $post->isRevisionAwaitingPublisher();
         $post = $this->postService->publishNow($post, request()->user());
 
         return response()->json([
             'status'  => true,
-            'message' => 'Post published.',
+            'message' => $wasLiveUpdate
+                ? 'Update approved. The published post is now updated.'
+                : 'Post published.',
             'data'    => $post,
         ]);
     }

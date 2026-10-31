@@ -7,11 +7,13 @@ import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../s
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { highlightAdminPageMatches, readAdminPageFocus } from '../shared/page-focus';
 import {
-    attachWorkflowWindowHandlers,
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    isPublishedUpdateDraft,
+    isPublishedUpdatePending,
+    itemForEditorForm,
     openItemFromQuery,
     publishContent,
     rejectContent,
@@ -48,6 +50,7 @@ let quotesDataTableClass;
 let quotesTableMode;
 let hasBoundQuotesViewportListener = false;
 let quotesWorkflowFilter = '';
+const quotesById = new Map();
 
 export function initSettingsModule() {
     const listEl = document.querySelector('[data-settings-legal-list]');
@@ -105,7 +108,7 @@ function renderLegalTile(page) {
     const activeBadge = page.is_active
         ? '<span class="admin-settings-tile-badge admin-settings-tile-badge-active">Active</span>'
         : '<span class="admin-settings-tile-badge">Hidden</span>';
-    const workflowBadge = workflowStatusBadge(page.workflow_status);
+    const workflowBadge = workflowStatusBadge(page.workflow_status, page);
 
     return `
         <button
@@ -152,74 +155,90 @@ function buildLegalWorkflowActionsHtml(page, slug) {
     return `<div class="mb-3 flex flex-wrap gap-2">${buttons}</div>`;
 }
 
-async function openLegalEditor(slug) {
+async function openLegalEditor(slugOrId) {
     let page;
 
     try {
-        const { data } = await axios.get(`/admin/legal-pages/${slug}`);
+        const { data } = await axios.get(`/admin/legal-pages/${slugOrId}`);
         page = data.data;
     } catch (error) {
-        showErrorToast(error.response?.data?.message ?? 'Unable to load page.');
+        showErrorToast(
+            error.response?.status === 404
+                ? 'Legal page not found. Open it from Settings using the page tile.'
+                : (error.response?.data?.message ?? 'Unable to load page.'),
+        );
         return;
     }
 
+    // Always work with the canonical slug (inbox links may pass a numeric id).
+    const slug = page.slug || slugOrId;
+    const formPage = itemForEditorForm(page);
+    const editingPublished = String(page.workflow_status) === 'published';
     const meta = LEGAL_META[slug] ?? { fallbackTitle: slug };
+    const revisionBanner = (isPublishedUpdateDraft(page) || isPublishedUpdatePending(page))
+        ? `<div class="mb-3 rounded-xl border border-[#055498]/30 bg-[#055498]/5 px-3 py-2 text-left text-sm text-[#123a60]">
+                <p class="font-semibold">${isPublishedUpdatePending(page) ? 'Proposed update awaiting approval' : 'Draft update (live page unchanged)'}</p>
+                <p class="mt-1">The mobile app still shows the live published version until a publisher approves this update.</p>
+           </div>`
+        : '';
     const result = await Swal.fire(buildSwalOptions({
-        title: `Edit ${page.title_en || meta.fallbackTitle}`,
-        html: `${renderReviewNotesBanner(page)}${buildLegalWorkflowActionsHtml(page, slug)}${buildSwalForm({
-            description: 'Updates appear in the mobile Settings screens (English and Tagalog).',
+        title: `Edit ${formPage.title_en || meta.fallbackTitle}`,
+        html: `${renderReviewNotesBanner(page)}${revisionBanner}${buildLegalWorkflowActionsHtml(page, slug)}${buildSwalForm({
+            description: editingPublished
+                ? 'Editor changes are saved as an update draft. The live published page stays unchanged until a publisher approves it.'
+                : 'Updates appear in the mobile Settings screens (English and Tagalog).',
             fields: [
                 {
                     id: 'legal-title-en',
                     label: 'Title (English) *',
-                    value: page.title_en ?? '',
+                    value: formPage.title_en ?? '',
                 },
                 {
                     id: 'legal-title-tl',
                     label: 'Title (Tagalog) *',
-                    value: page.title_tl ?? '',
+                    value: formPage.title_tl ?? '',
                 },
                 {
                     id: 'legal-subtitle-en',
                     label: 'Subtitle (English)',
-                    value: page.subtitle_en ?? '',
+                    value: formPage.subtitle_en ?? '',
                 },
                 {
                     id: 'legal-subtitle-tl',
                     label: 'Subtitle (Tagalog)',
-                    value: page.subtitle_tl ?? '',
+                    value: formPage.subtitle_tl ?? '',
                 },
                 {
                     id: 'legal-intro-en',
                     label: 'Intro (English)',
                     type: 'textarea',
-                    value: page.intro_en ?? '',
+                    value: formPage.intro_en ?? '',
                 },
                 {
                     id: 'legal-intro-tl',
                     label: 'Intro (Tagalog)',
                     type: 'textarea',
-                    value: page.intro_tl ?? '',
+                    value: formPage.intro_tl ?? '',
                 },
                 {
                     id: 'legal-body-en',
                     label: 'Body (English) *',
                     type: 'richtext',
                     placeholder: 'Write the main content',
-                    value: page.body_en ?? '',
+                    value: formPage.body_en ?? '',
                 },
                 {
                     id: 'legal-body-tl',
                     label: 'Body (Tagalog) *',
                     type: 'richtext',
                     placeholder: 'Write the main content',
-                    value: page.body_tl ?? '',
+                    value: formPage.body_tl ?? '',
                 },
                 {
                     id: 'legal-is-active',
                     label: 'Visibility *',
                     type: 'select',
-                    value: page.is_active ? '1' : '0',
+                    value: formPage.is_active ? '1' : '0',
                     options: [
                         { value: '1', label: 'Active (shown in mobile app)' },
                         { value: '0', label: 'Hidden' },
@@ -228,7 +247,7 @@ async function openLegalEditor(slug) {
             ],
         })}`,
         showCancelButton: true,
-        confirmButtonText: 'Save Changes',
+        confirmButtonText: editingPublished ? 'Save update draft' : 'Save Changes',
         allowOutsideClick: () => !Swal.isLoading(),
         preConfirm: async () => {
             const payload = {
@@ -267,10 +286,15 @@ async function openLegalEditor(slug) {
         return;
     }
 
-    showSuccessToast(result.value.message ?? 'Legal page updated.', 'Settings saved');
+    showSuccessToast(result.value.message ?? 'Legal page updated.', editingPublished ? 'Update draft saved' : 'Settings saved');
     const listEl = document.querySelector('[data-settings-legal-list]');
     if (listEl) {
-        loadLegalPages(listEl);
+        await loadLegalPages(listEl);
+    }
+
+    // Re-open so Submit / Approve actions appear for the staged update.
+    if (editingPublished) {
+        await openLegalEditor(slug);
     }
 }
 
@@ -285,7 +309,6 @@ function initKidListoQuotesModule() {
         await initializeQuotesTable(tableEl);
         bindQuotesViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
-        attachWorkflowWindowHandlers('KidListoQuotes', '/admin/kid-listo-quotes', () => loadKidListoQuotes());
         ensureWorkflowStatusFilter({
             selectMount: tableEl.closest('.admin-table-shell'),
             onChange: (value) => {
@@ -304,7 +327,10 @@ export function loadKidListoQuotes(search = '') {
 
     axios.get('/admin/kid-listo-quotes', { params: { search, per_page: 500 } })
         .then(({ data }) => {
-            const rows = filterByWorkflowStatus(data.data?.data ?? [], quotesWorkflowFilter);
+            const allRows = data.data?.data ?? [];
+            quotesById.clear();
+            allRows.forEach((quote) => quotesById.set(String(quote.id), quote));
+            const rows = filterByWorkflowStatus(allRows, quotesWorkflowFilter);
             quotesTable.clear();
             rows.forEach((quote) => {
                 quotesTable.row.add(buildQuoteRowData(quote));
@@ -351,37 +377,47 @@ export function removeKidListoQuote(id) {
 
 function showQuoteForm(existing) {
     const isEdit = Boolean(existing);
+    const formQuote = existing ? itemForEditorForm(existing) : null;
+    const editingPublished = isEdit && String(existing.workflow_status) === 'published';
+    const revisionBanner = existing && (isPublishedUpdateDraft(existing) || isPublishedUpdatePending(existing))
+        ? `<div class="mb-3 rounded-xl border border-[#055498]/30 bg-[#055498]/5 px-3 py-2 text-left text-sm text-[#123a60]">
+                <p class="font-semibold">${isPublishedUpdatePending(existing) ? 'Proposed update awaiting approval' : 'Draft update (live quote unchanged)'}</p>
+                <p class="mt-1">The mobile app still shows the live published version until a publisher approves this update.</p>
+           </div>`
+        : '';
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit Kid Listo Quote' : 'Add Kid Listo Quote',
-        html: `${renderReviewNotesBanner(existing)}${buildSwalForm({
-            description: 'Motivational quotes are shown randomly on the mobile Kid Listo screen.',
+        title: isEdit ? (editingPublished ? 'Edit published quote' : 'Edit Kid Listo Quote') : 'Add Kid Listo Quote',
+        html: `${renderReviewNotesBanner(existing)}${revisionBanner}${buildSwalForm({
+            description: editingPublished
+                ? 'Changes are saved as an update draft. The live published quote stays unchanged until a publisher approves it.'
+                : 'Motivational quotes are shown randomly on the mobile Kid Listo screen.',
             fields: [
                 {
                     id: 'klq-message-en',
                     label: 'Message (English) *',
                     type: 'textarea',
-                    value: existing?.message_en ?? '',
+                    value: formQuote?.message_en ?? '',
                     placeholder: 'Kid Listo says: ...',
                 },
                 {
                     id: 'klq-message-tl',
                     label: 'Message (Tagalog) *',
                     type: 'textarea',
-                    value: existing?.message_tl ?? '',
+                    value: formQuote?.message_tl ?? '',
                     placeholder: 'Sabi ni Kid Listo: ...',
                 },
                 {
                     id: 'klq-attribution',
                     label: 'Attribution',
-                    value: existing?.attribution ?? 'Kid Listo',
+                    value: formQuote?.attribution ?? 'Kid Listo',
                     placeholder: 'Kid Listo',
                 },
                 {
                     id: 'klq-is-active',
                     label: 'Status *',
                     type: 'select',
-                    value: existing?.is_active === false ? '0' : '1',
+                    value: formQuote?.is_active === false ? '0' : '1',
                     options: [
                         { value: '1', label: 'Active' },
                         { value: '0', label: 'Inactive' },
@@ -390,7 +426,7 @@ function showQuoteForm(existing) {
             ],
         })}`,
         showCancelButton: true,
-        confirmButtonText: isEdit ? 'Save Changes' : 'Create Quote',
+        confirmButtonText: editingPublished ? 'Save update draft' : (isEdit ? 'Save Changes' : 'Create Quote'),
         allowOutsideClick: () => !Swal.isLoading(),
         preConfirm: async () => {
             const payload = {
@@ -426,8 +462,14 @@ function showQuoteForm(existing) {
             return;
         }
 
-        showSuccessToast(value.message ?? 'Quote saved.', isEdit ? 'Updated' : 'Created');
+        showSuccessToast(
+            value.message ?? 'Quote saved.',
+            editingPublished ? 'Update draft saved' : (isEdit ? 'Updated' : 'Created'),
+        );
         loadKidListoQuotes();
+        if (editingPublished && existing?.id) {
+            setTimeout(() => editKidListoQuote(existing.id), 250);
+        }
     });
 }
 
@@ -484,7 +526,7 @@ function buildQuoteRowData(quote) {
 
     const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
     const mobileActions = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
-    const workflowBadge = workflowStatusBadge(quote.workflow_status);
+    const workflowBadge = workflowStatusBadge(quote.workflow_status, quote);
 
     const statusBadge = quote.is_active
         ? '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>'
@@ -569,6 +611,17 @@ window.KidListoQuotes = {
     edit: editKidListoQuote,
     remove: removeKidListoQuote,
     reload: loadKidListoQuotes,
+    submitWorkflow: (id) => submitForReview('/admin/kid-listo-quotes', id, {
+        onSuccess: () => loadKidListoQuotes(),
+        isPublishedUpdate: isPublishedUpdateDraft(quotesById.get(String(id))),
+    }),
+    publishWorkflow: (id) => publishContent('/admin/kid-listo-quotes', id, {
+        onSuccess: () => loadKidListoQuotes(),
+        isPublishedUpdate: isPublishedUpdatePending(quotesById.get(String(id))),
+    }),
+    rejectWorkflow: (id) => rejectContent('/admin/kid-listo-quotes', id, {
+        onSuccess: () => loadKidListoQuotes(),
+    }),
 };
 
 window.Settings = {
@@ -579,18 +632,50 @@ window.Settings = {
         }
         loadKidListoQuotes();
     },
-    legalSubmitWorkflow: (slug) => submitForReview('/admin/legal-pages', slug, {
-        onSuccess: () => openLegalEditor(slug),
-    }),
-    legalPublishWorkflow: (slug) => publishContent('/admin/legal-pages', slug, {
-        onSuccess: () => {
-            const listEl = document.querySelector('[data-settings-legal-list]');
-            if (listEl) {
-                loadLegalPages(listEl);
-            }
-        },
-    }),
-    legalRejectWorkflow: (slug) => rejectContent('/admin/legal-pages', slug, {
-        onSuccess: () => openLegalEditor(slug),
-    }),
+    legalSubmitWorkflow: async (slugOrId) => {
+        let page = null;
+        try {
+            const { data } = await axios.get(`/admin/legal-pages/${slugOrId}`);
+            page = data.data;
+        } catch {
+            // Fall through with generic copy.
+        }
+        const slug = page?.slug || slugOrId;
+        return submitForReview('/admin/legal-pages', slug, {
+            onSuccess: () => openLegalEditor(slug),
+            isPublishedUpdate: isPublishedUpdateDraft(page),
+        });
+    },
+    legalPublishWorkflow: async (slugOrId) => {
+        let page = null;
+        try {
+            const { data } = await axios.get(`/admin/legal-pages/${slugOrId}`);
+            page = data.data;
+        } catch {
+            // Fall through with generic copy.
+        }
+        const slug = page?.slug || slugOrId;
+        return publishContent('/admin/legal-pages', slug, {
+            onSuccess: () => {
+                const listEl = document.querySelector('[data-settings-legal-list]');
+                if (listEl) {
+                    loadLegalPages(listEl);
+                }
+            },
+            isPublishedUpdate: isPublishedUpdatePending(page),
+        });
+    },
+    legalRejectWorkflow: async (slugOrId) => {
+        let page = null;
+        try {
+            const { data } = await axios.get(`/admin/legal-pages/${slugOrId}`);
+            page = data.data;
+        } catch {
+            // Fall through with generic copy.
+        }
+        const slug = page?.slug || slugOrId;
+        return rejectContent('/admin/legal-pages', slug, {
+            onSuccess: () => openLegalEditor(slug),
+        });
+    },
 };

@@ -160,6 +160,8 @@ function fillGroupTabs() {
     const icons = {
         pronouns: 'fas fa-user',
         persona: 'fas fa-id-card',
+        care_toolkit: 'fas fa-heart-pulse',
+        care_support: 'fas fa-headset',
         journal_sky: 'fas fa-palette',
         journal_feeling: 'fas fa-face-smile',
         journal_impact: 'fas fa-sun',
@@ -214,7 +216,7 @@ export function createAppOption() {
 
 export function editAppOption(id) {
     axios.get(`/admin/app-options/${id}`)
-        .then(({ data }) => showOptionForm(itemForEditorForm(data.data)))
+        .then(({ data }) => showOptionForm(data.data))
         .catch(() => showErrorToast('Failed to load option.'));
 }
 
@@ -290,8 +292,10 @@ function buildRowData(row) {
     ];
 }
 
-function showOptionForm(existing) {
+function showOptionForm(existingRaw) {
+    const existing = existingRaw ? itemForEditorForm(existingRaw) : null;
     const isEdit = Boolean(existing);
+    const editingPublished = isEdit && String(existingRaw?.workflow_status) === 'published';
     const groupOptions = (groupMeta.length ? groupMeta : [{ key: 'pronouns', title: 'Pronouns' }])
         .map((group) => ({ value: group.key, label: group.title }));
     const defaultGroup = existing?.group || currentGroupFilter || groupMeta[0]?.key || 'persona';
@@ -372,14 +376,16 @@ function showOptionForm(existing) {
     );
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit option' : 'Add option',
-        html: `${renderReviewNotesBanner(existing)}${buildSwalForm({
-            description: isEdit
-                ? `Key “${existing.key}” stays the same so existing answers still match. English and Tagalog labels appear in the mobile app.`
-                : 'English and Tagalog labels appear in the mobile app. Leave Key blank to generate it from the English label.',
+        title: isEdit ? (editingPublished ? 'Edit published option' : 'Edit option') : 'Add option',
+        html: `${renderReviewNotesBanner(existingRaw)}${buildSwalForm({
+            description: editingPublished
+                ? 'Changes are saved as an update draft. The live published option stays unchanged until a publisher approves it.'
+                : (isEdit
+                    ? `Key “${existing.key}” stays the same so existing answers still match. English and Tagalog labels appear in the mobile app.`
+                    : 'English and Tagalog labels appear in the mobile app. Leave Key blank to generate it from the English label.'),
             fields,
         })}`,
-        confirmButtonText: isEdit ? 'Save changes' : 'Create option',
+        confirmButtonText: editingPublished ? 'Save update draft' : (isEdit ? 'Save changes' : 'Create option'),
         showCancelButton: true,
         preConfirm: () => {
             const group = document.getElementById('ao-group')?.value;
@@ -419,7 +425,7 @@ function showOptionForm(existing) {
             }
 
             const request = isEdit
-                ? axios.put(`/admin/app-options/${existing.id}`, payload)
+                ? axios.put(`/admin/app-options/${existingRaw.id}`, payload)
                 : axios.post('/admin/app-options', payload);
 
             return request
@@ -438,8 +444,14 @@ function showOptionForm(existing) {
         if (!isConfirmed || !value) {
             return;
         }
-        showSuccessToast(value.message ?? 'Option saved.', 'Lookups');
+        showSuccessToast(
+            value.message ?? 'Option saved.',
+            editingPublished ? 'Update draft saved' : 'Lookups',
+        );
         loadAppOptions();
+        if (editingPublished && existingRaw?.id) {
+            setTimeout(() => editAppOption(existingRaw.id), 250);
+        }
     });
 }
 

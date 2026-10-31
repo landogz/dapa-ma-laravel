@@ -57,7 +57,13 @@ class DashboardAdminController extends Controller
     public function attention(): JsonResponse
     {
         $draftPosts = Post::query()
-            ->whereIn('status', ['draft', 'pending_review'])
+            ->where(function ($query): void {
+                $query->whereIn('status', ['draft', 'pending_review'])
+                    ->orWhere(function ($revision): void {
+                        $revision->where('status', 'published')
+                            ->whereIn('revision_status', ['draft', 'pending_review']);
+                    });
+            })
             ->count();
 
         // TODO: Care Checks have no review workflow yet — surface recent submissions as a soft cue.
@@ -245,7 +251,16 @@ class DashboardAdminController extends Controller
             }
 
             $total += (int) DB::table($table)
-                ->where('workflow_status', 'pending_review')
+                ->where(function ($query) use ($table): void {
+                    $query->where('workflow_status', 'pending_review');
+
+                    if (Schema::hasColumn($table, 'revision_status')) {
+                        $query->orWhere(function ($revision): void {
+                            $revision->where('workflow_status', 'published')
+                                ->where('revision_status', 'pending_review');
+                        });
+                    }
+                })
                 ->count();
         }
 

@@ -24,6 +24,8 @@ trait HandlesContentWorkflow
 
     public function submit(Request $request, Model $model): JsonResponse
     {
+        $wasPublishedUpdate = method_exists($model, 'isRevisionDraft') && $model->isRevisionDraft();
+
         try {
             $updated = $this->contentWorkflowService()->submit(
                 $model,
@@ -36,13 +38,18 @@ trait HandlesContentWorkflow
 
         return response()->json([
             'status' => true,
-            'message' => 'Submitted for publisher review.',
+            'message' => $wasPublishedUpdate
+                ? 'Update submitted for publisher review. The live version stays unchanged until approved.'
+                : 'Submitted for publisher review.',
             'data' => $updated,
         ]);
     }
 
     public function reject(RejectContentRequest $request, Model $model): JsonResponse
     {
+        $wasPublishedUpdate = method_exists($model, 'isRevisionAwaitingPublisher')
+            && $model->isRevisionAwaitingPublisher();
+
         try {
             $updated = $this->contentWorkflowService()->reject(
                 $model,
@@ -56,13 +63,18 @@ trait HandlesContentWorkflow
 
         return response()->json([
             'status' => true,
-            'message' => 'Returned to draft for the editor.',
+            'message' => $wasPublishedUpdate
+                ? 'Update returned for revision. The live published version is unchanged.'
+                : 'Returned to draft for the editor.',
             'data' => $updated,
         ]);
     }
 
     public function publish(Request $request, Model $model): JsonResponse
     {
+        $wasPublishedUpdate = method_exists($model, 'isRevisionAwaitingPublisher')
+            && $model->isRevisionAwaitingPublisher();
+
         try {
             $updated = $this->contentWorkflowService()->publish(
                 $model,
@@ -75,7 +87,9 @@ trait HandlesContentWorkflow
 
         return response()->json([
             'status' => true,
-            'message' => 'Published successfully.',
+            'message' => $wasPublishedUpdate
+                ? 'Update approved. The live version is now updated.'
+                : 'Published successfully.',
             'data' => $updated,
         ]);
     }

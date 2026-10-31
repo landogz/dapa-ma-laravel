@@ -51,7 +51,7 @@ class AdminNotificationService
 
         $this->repository->createForUser($author, [
             'type' => 'post_rejected',
-            'title' => 'Post rejected for revision',
+            'title' => 'Post returned for revision',
             'body' => $reviewNotes,
             'data' => $this->postPayload($post, $publisher->name),
         ]);
@@ -97,15 +97,26 @@ class AdminNotificationService
             return;
         }
 
+        $isUpdate = $post->isRevisionAwaitingPublisher();
+        $proposedTitle = is_array($post->pending_revision) && filled($post->pending_revision['title'] ?? null)
+            ? (string) $post->pending_revision['title']
+            : $post->title;
+
         foreach ($recipients as $recipient) {
             $this->repository->createForUser($recipient, [
                 'type' => 'post_submitted',
-                'title' => 'Post submitted for review',
-                'body' => sprintf(
-                    '%s submitted "%s" for publisher review.',
-                    $editor->name,
-                    $post->title,
-                ),
+                'title' => $isUpdate ? 'Post update submitted for review' : 'Post submitted for review',
+                'body' => $isUpdate
+                    ? sprintf(
+                        '%s submitted an update to "%s" for publisher review. The live post is unchanged until approved.',
+                        $editor->name,
+                        $proposedTitle,
+                    )
+                    : sprintf(
+                        '%s submitted "%s" for publisher review.',
+                        $editor->name,
+                        $post->title,
+                    ),
                 'data' => $this->postPayload($post, $editor->name),
             ]);
         }
@@ -116,6 +127,7 @@ class AdminNotificationService
         $meta = ContentWorkflowSections::get($section);
         $label = $meta['label'] ?? 'Item';
         $title = method_exists($model, 'workflowTitle') ? $model->workflowTitle() : (string) $model->getKey();
+        $isUpdate = method_exists($model, 'isRevisionAwaitingPublisher') && $model->isRevisionAwaitingPublisher();
 
         $recipients = User::query()
             ->whereIn('role', ['publisher', 'super_admin'])
@@ -125,8 +137,14 @@ class AdminNotificationService
         foreach ($recipients as $recipient) {
             $this->repository->createForUser($recipient, [
                 'type' => 'content_submitted',
-                'title' => $label.' submitted for review',
-                'body' => sprintf('%s submitted "%s" for publisher review.', $editor->name, $title),
+                'title' => $isUpdate ? $label.' update submitted for review' : $label.' submitted for review',
+                'body' => $isUpdate
+                    ? sprintf(
+                        '%s submitted an update to "%s" for publisher review. The live version is unchanged until approved.',
+                        $editor->name,
+                        $title,
+                    )
+                    : sprintf('%s submitted "%s" for publisher review.', $editor->name, $title),
                 'data' => $this->contentPayload($section, $model, $editor->name, $title),
             ]);
         }
@@ -147,7 +165,7 @@ class AdminNotificationService
 
         $this->repository->createForUser($author, [
             'type' => 'content_rejected',
-            'title' => $label.' rejected for revision',
+            'title' => $label.' returned for revision',
             'body' => $reviewNotes,
             'data' => array_merge(
                 $this->contentPayload($section, $model, $publisher->name, $title),
@@ -197,7 +215,9 @@ class AdminNotificationService
      */
     private function contentPayload(string $section, Model $model, string $actorName, string $title): array
     {
-        $id = $model->getKey();
+        $id = $section === 'legal-pages' && filled($model->getAttribute('slug'))
+            ? (string) $model->getAttribute('slug')
+            : $model->getKey();
 
         return [
             'section' => $section,

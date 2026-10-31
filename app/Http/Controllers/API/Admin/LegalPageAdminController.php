@@ -58,11 +58,18 @@ class LegalPageAdminController extends Controller
 
     public function update(UpdateLegalPageRequest $request, string $slug): JsonResponse
     {
+        $before = $this->legalPageService->findForAdmin($slug);
+        $wasPublished = $before->isWorkflowPublished();
         $page = $this->legalPageService->update($slug, $request->validated(), $request->user());
+        $savedAsRevision = $request->user()?->role === 'editor'
+            && $wasPublished
+            && $page->isRevisionDraft();
 
         return response()->json([
             'status' => true,
-            'message' => 'Legal page updated.',
+            'message' => $savedAsRevision
+                ? 'Update saved as a draft revision. The live published page is unchanged until a publisher approves it.'
+                : 'Legal page updated.',
             'data' => $page,
         ]);
     }

@@ -51,7 +51,38 @@ export function workflowStatusLabel(status) {
     }
 }
 
-export function workflowStatusBadge(status) {
+export function isPublishedUpdateDraft(item) {
+    return String(item?.workflow_status || '') === WORKFLOW_PUBLISHED
+        && String(item?.revision_status || '') === WORKFLOW_DRAFT;
+}
+
+export function isPublishedUpdatePending(item) {
+    return String(item?.workflow_status || '') === WORKFLOW_PUBLISHED
+        && String(item?.revision_status || '') === WORKFLOW_PENDING;
+}
+
+export function hasPendingRevisionPayload(item) {
+    return Boolean(item?.pending_revision) && typeof item.pending_revision === 'object';
+}
+
+export function itemForEditorForm(item) {
+    if (!hasPendingRevisionPayload(item)) {
+        return item;
+    }
+
+    return {
+        ...item,
+        ...item.pending_revision,
+        workflow_status: item.workflow_status,
+        revision_status: item.revision_status,
+        review_notes: item.review_notes,
+        pending_revision: item.pending_revision,
+        id: item.id,
+        slug: item.slug,
+    };
+}
+
+export function workflowStatusBadge(status, item = null) {
     const value = String(status || WORKFLOW_DRAFT);
     const tone = value === WORKFLOW_PUBLISHED
         ? 'bg-emerald-100 text-emerald-700'
@@ -59,7 +90,17 @@ export function workflowStatusBadge(status) {
             ? 'bg-[#055498]/10 text-[#055498]'
             : 'bg-slate-100 text-slate-600';
 
-    return `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone}">${workflowStatusLabel(value)}</span>`;
+    const base = `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone}">${workflowStatusLabel(value)}</span>`;
+
+    if (isPublishedUpdatePending(item)) {
+        return `${base}<span class="ml-1 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-[#055498]/10 text-[#055498]">Update pending</span>`;
+    }
+
+    if (isPublishedUpdateDraft(item)) {
+        return `${base}<span class="ml-1 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-[#FBD116]/20 text-[#123a60]">Update draft</span>`;
+    }
+
+    return base;
 }
 
 export function workflowFilterTabs(role = currentAdminRole()) {
@@ -89,7 +130,7 @@ export function renderReviewNotesBanner(item) {
 
     return `
         <div class="mb-3 rounded-xl border border-[#FBD116] bg-[#FBD116]/15 px-3 py-2 text-left text-sm text-[#123a60]">
-            <p class="font-semibold">Publisher review notes</p>
+            <p class="font-semibold">Revision notes from publisher</p>
             <p class="mt-1 whitespace-pre-wrap">${escapeWorkflowHtml(notes)}</p>
         </div>
     `;
@@ -102,38 +143,44 @@ export function workflowActionDefs(item, {
 } = {}) {
     const status = item?.workflow_status ?? WORKFLOW_DRAFT;
     const actions = [];
+    const canEditPublished = canCreateWorkflowDraft(role) && status === WORKFLOW_PUBLISHED;
+    const canSubmitUpdate = canCreateWorkflowDraft(role) && isPublishedUpdateDraft(item);
 
-    if (canCreateWorkflowDraft(role) && [WORKFLOW_DRAFT, WORKFLOW_PENDING].includes(status)) {
+    if (canCreateWorkflowDraft(role) && ([WORKFLOW_DRAFT, WORKFLOW_PENDING].includes(status) || canEditPublished)) {
         actions.push({
             key: 'edit',
             label: 'Edit',
-            tooltip: 'Edit draft',
+            tooltip: status === WORKFLOW_PUBLISHED ? 'Edit published (stages an update draft)' : 'Edit draft',
             icon: 'fas fa-pen-to-square',
             className: 'admin-table-action-primary',
         });
-        if (status === WORKFLOW_DRAFT) {
+        if (status === WORKFLOW_DRAFT || canSubmitUpdate) {
             actions.push({
                 key: 'submit',
                 label: 'Submit',
-                tooltip: 'Submit for review',
+                tooltip: canSubmitUpdate
+                    ? 'Submit update for publisher review'
+                    : 'Submit for review',
                 icon: 'fas fa-paper-plane',
                 className: 'admin-table-action-primary',
             });
         }
     }
 
-    if (canReviewWorkflow(role) && status === WORKFLOW_PENDING) {
+    if (canReviewWorkflow(role) && (status === WORKFLOW_PENDING || isPublishedUpdatePending(item))) {
         actions.push({
             key: 'publish',
-            label: 'Publish',
-            tooltip: 'Publish now',
+            label: isPublishedUpdatePending(item) ? 'Approve update' : 'Publish',
+            tooltip: isPublishedUpdatePending(item)
+                ? 'Apply update to the live published version'
+                : 'Publish now',
             icon: 'fas fa-circle-check',
             className: 'admin-table-action-primary',
         });
         actions.push({
             key: 'reject',
-            label: 'Reject',
-            tooltip: 'Reject with notes',
+            label: 'Revision',
+            tooltip: 'Return to draft with revision notes',
             icon: 'fas fa-rotate-left',
             className: 'admin-table-action-warning',
         });
@@ -155,11 +202,13 @@ export function workflowActionDefs(item, {
     }));
 }
 
-export async function submitForReview(basePath, id, { onSuccess } = {}) {
+export async function submitForReview(basePath, id, { onSuccess, isPublishedUpdate = false } = {}) {
     const { isConfirmed } = await confirmWithSwal({
         icon: 'question',
-        title: 'Submit for review?',
-        text: 'This will notify publishers to review this item.',
+        title: isPublishedUpdate ? 'Submit update for review?' : 'Submit for review?',
+        text: isPublishedUpdate
+            ? 'Publishers will review this update. The live published version stays unchanged until they approve it.'
+            : 'This will notify publishers to review this item.',
         confirmButtonText: 'Submit',
     });
 
@@ -178,12 +227,14 @@ export async function submitForReview(basePath, id, { onSuccess } = {}) {
     }
 }
 
-export async function publishContent(basePath, id, { onSuccess } = {}) {
+export async function publishContent(basePath, id, { onSuccess, isPublishedUpdate = false } = {}) {
     const { isConfirmed } = await confirmWithSwal({
         icon: 'question',
-        title: 'Publish this item?',
-        text: 'It will become available in the mobile app (when otherwise active).',
-        confirmButtonText: 'Publish',
+        title: isPublishedUpdate ? 'Approve this update?' : 'Publish this item?',
+        text: isPublishedUpdate
+            ? 'This will replace the live published version with the proposed update.'
+            : 'It will become available in the mobile app (when otherwise active).',
+        confirmButtonText: isPublishedUpdate ? 'Approve update' : 'Publish',
     });
 
     if (!isConfirmed) {
@@ -192,7 +243,7 @@ export async function publishContent(basePath, id, { onSuccess } = {}) {
 
     try {
         const { data } = await axios.put(`${basePath}/${id}/publish`);
-        showSuccessToast(data.message ?? 'Published.', 'Published');
+        showSuccessToast(data.message ?? 'Published.', isPublishedUpdate ? 'Update approved' : 'Published');
         onSuccess?.(data.data);
         return true;
     } catch ({ response }) {
@@ -203,24 +254,24 @@ export async function publishContent(basePath, id, { onSuccess } = {}) {
 
 export async function rejectContent(basePath, id, { onSuccess } = {}) {
     const result = await Swal.fire(buildSwalOptions({
-        title: 'Reject submission',
-        subtitle: 'Send this back to the editor with clear notes.',
+        title: 'Request revision',
+        subtitle: 'Return this to draft so the editor can fix it. Your notes will be visible to them.',
         html: buildSwalForm({
             fields: [
                 {
                     id: 'workflow-review-notes',
-                    label: 'Review notes *',
+                    label: 'Revision notes *',
                     type: 'textarea',
-                    placeholder: 'Explain what needs to be fixed',
+                    placeholder: 'Describe what the editor should fix before resubmitting…',
                 },
             ],
         }),
-        confirmButtonText: 'Reject',
+        confirmButtonText: 'Return for revision',
         showCancelButton: true,
         preConfirm: () => {
             const notes = document.getElementById('workflow-review-notes')?.value?.trim() ?? '';
             if (!notes) {
-                Swal.showValidationMessage('Review notes are required.');
+                Swal.showValidationMessage('Revision notes are required.');
                 return false;
             }
             return { review_notes: notes };
@@ -233,11 +284,11 @@ export async function rejectContent(basePath, id, { onSuccess } = {}) {
 
     try {
         const { data } = await axios.put(`${basePath}/${id}/reject`, result.value);
-        showSuccessToast(data.message ?? 'Returned to draft.', 'Rejected');
+        showSuccessToast(data.message ?? 'Returned to draft for revision.', 'Revision requested');
         onSuccess?.(data.data);
         return true;
     } catch ({ response }) {
-        showErrorToast(response?.data?.message ?? 'Reject failed.', 'Error');
+        showErrorToast(response?.data?.message ?? 'Unable to return for revision.', 'Error');
         return false;
     }
 }
@@ -247,7 +298,19 @@ export function filterByWorkflowStatus(items, statusFilter) {
         return items;
     }
 
-    return items.filter((item) => String(item.workflow_status || WORKFLOW_DRAFT) === statusFilter);
+    return items.filter((item) => {
+        if (statusFilter === WORKFLOW_PENDING) {
+            return String(item.workflow_status || WORKFLOW_DRAFT) === WORKFLOW_PENDING
+                || isPublishedUpdatePending(item);
+        }
+
+        if (statusFilter === WORKFLOW_DRAFT) {
+            return String(item.workflow_status || WORKFLOW_DRAFT) === WORKFLOW_DRAFT
+                || isPublishedUpdateDraft(item);
+        }
+
+        return String(item.workflow_status || WORKFLOW_DRAFT) === statusFilter;
+    });
 }
 
 export function openItemFromQuery(paramName, opener) {

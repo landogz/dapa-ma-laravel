@@ -45,7 +45,6 @@ function postsStatusFilterTabs(role = currentUserRole) {
     if (role === 'publisher') {
         return [
             { value: 'pending_review', label: 'Pending', icon: 'fas fa-clock', hint: 'Awaiting your review' },
-            { value: 'archived', label: 'Archived', icon: 'fas fa-box-archive', hint: 'Removed from feed — restore to publish again' },
         ];
     }
 
@@ -147,9 +146,58 @@ export function loadPosts() {
         });
 }
 
+function isPublishedUpdateDraft(post) {
+    return String(post?.status) === 'published' && String(post?.revision_status || '') === 'draft';
+}
+
+function isPublishedUpdatePending(post) {
+    return String(post?.status) === 'published' && String(post?.revision_status || '') === 'pending_review';
+}
+
+function hasPendingRevisionPayload(post) {
+    return Boolean(post?.pending_revision) && typeof post.pending_revision === 'object';
+}
+
+function postForEditorForm(post) {
+    if (!hasPendingRevisionPayload(post)) {
+        return post;
+    }
+
+    return {
+        ...post,
+        ...post.pending_revision,
+        status: post.status,
+        revision_status: post.revision_status,
+        review_notes: post.review_notes,
+        pending_revision: post.pending_revision,
+    };
+}
+
+function postMatchesStatusFilter(post, filter) {
+    if (!filter) {
+        return true;
+    }
+
+    if (filter === 'pending_review') {
+        return String(post.status) === 'pending_review' || isPublishedUpdatePending(post);
+    }
+
+    if (filter === 'draft') {
+        return String(post.status) === 'draft' || isPublishedUpdateDraft(post);
+    }
+
+    return String(post.status) === filter;
+}
+
 function updatePostsStatusCounts() {
     const counts = { '': allPostsCache.length };
     allPostsCache.forEach((post) => {
+        if (isPublishedUpdatePending(post)) {
+            counts.pending_review = (counts.pending_review ?? 0) + 1;
+        } else if (isPublishedUpdateDraft(post)) {
+            counts.draft = (counts.draft ?? 0) + 1;
+        }
+
         const key = String(post.status || '');
         counts[key] = (counts[key] ?? 0) + 1;
     });
@@ -162,7 +210,7 @@ function renderPostsTable() {
     }
 
     const rows = activeStatusFilter
-        ? allPostsCache.filter((post) => String(post.status) === activeStatusFilter)
+        ? allPostsCache.filter((post) => postMatchesStatusFilter(post, activeStatusFilter))
         : allPostsCache;
 
     postsTable.clear();
@@ -228,6 +276,19 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
     const averageRating = Number(post.reviews_avg_rating ?? post.average_rating ?? 0);
     const hasEngagement = likesCount > 0 || commentsCount > 0 || reviewsCount > 0;
     const toolbarHtml = renderPostViewToolbar(post);
+    const displayPost = (isPublishedUpdatePending(post) || isPublishedUpdateDraft(post))
+        ? postForEditorForm(post)
+        : post;
+    const revisionBanner = hasPendingRevisionPayload(post)
+        ? `<div class="post-view-review-notes" role="status">
+                <p class="post-view-review-notes-label">${
+                    isPublishedUpdatePending(post)
+                        ? 'Proposed update awaiting publisher approval'
+                        : 'Draft update (live published post is unchanged)'
+                }</p>
+                <p class="post-view-review-notes-body">The public feed still shows the live version until a publisher approves this update.</p>
+           </div>`
+        : '';
 
     Swal.fire({
         title: '',
@@ -237,10 +298,10 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
             <div class="post-view">
                 <div class="post-view-hero">
                     <div class="post-view-hero-top">
-                        ${statusBadge(post.status)}
+                        ${renderStatusCell(post)}
                         <span class="post-view-id">#${escapeHtml(String(post.id))}</span>
                     </div>
-                    <h2 class="post-view-title">${escapeHtml(post.title ?? 'Post')}</h2>
+                    <h2 class="post-view-title">${escapeHtml(displayPost.title ?? 'Post')}</h2>
                     <p class="post-view-subtitle">
                         <span>${escapeHtml(post.category?.name ?? 'Uncategorized')}</span>
                         <span class="post-view-dot" aria-hidden="true">·</span>
@@ -249,6 +310,7 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
                         <span>${escapeHtml(formatDateTime(post.publish_date) || 'Not scheduled')}</span>
                     </p>
                     ${renderReviewNotesBanner(post)}
+                    ${revisionBanner}
                     <div class="post-view-metrics" role="list">
                         <div class="post-view-metric" role="listitem">
                             <i class="fas fa-heart" aria-hidden="true"></i>
@@ -263,26 +325,26 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
                             <span><strong>${reviewsCount > 0 ? averageRating.toFixed(1) : '—'}</strong> · ${reviewsCount} ${reviewsCount === 1 ? 'rating' : 'ratings'}</span>
                         </div>
                         <div class="post-view-metric" role="listitem">
-                            <i class="fas fa-${isPostCommentsEnabled(post) ? 'comment-dots' : 'comment-slash'}" aria-hidden="true"></i>
-                            <span>${isPostCommentsEnabled(post) ? 'Comments enabled' : 'Comments disabled'}</span>
+                            <i class="fas fa-${isPostCommentsEnabled(displayPost) ? 'comment-dots' : 'comment-slash'}" aria-hidden="true"></i>
+                            <span>${isPostCommentsEnabled(displayPost) ? 'Comments enabled' : 'Comments disabled'}</span>
                         </div>
                         <div class="post-view-metric" role="listitem">
-                            <i class="fas fa-star${isPostFeatured(post) ? '' : '-half-stroke'}" aria-hidden="true"></i>
-                            <span>${isPostFeatured(post) ? 'Featured post' : 'Not featured'}</span>
+                            <i class="fas fa-star${isPostFeatured(displayPost) ? '' : '-half-stroke'}" aria-hidden="true"></i>
+                            <span>${isPostFeatured(displayPost) ? 'Featured post' : 'Not featured'}</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="post-view-content">
-                    ${post.media_url ? `<img src="${escapeHtml(post.media_url)}" alt="" class="post-view-media">` : ''}
-                    ${post.youtube_url ? `
-                        <a class="post-view-youtube" href="${escapeHtml(post.youtube_url)}" target="_blank" rel="noopener noreferrer">
+                    ${displayPost.media_url ? `<img src="${escapeHtml(displayPost.media_url)}" alt="" class="post-view-media">` : ''}
+                    ${displayPost.youtube_url ? `
+                        <a class="post-view-youtube" href="${escapeHtml(displayPost.youtube_url)}" target="_blank" rel="noopener noreferrer">
                             <i class="fas fa-play" aria-hidden="true"></i>
                             Watch on YouTube
                         </a>
                     ` : ''}
                     <div class="post-view-body diary-entry-preview">
-                        ${post.body || '<p class="post-view-empty">No content yet.</p>'}
+                        ${displayPost.body || '<p class="post-view-empty">No content yet.</p>'}
                     </div>
                     ${hasEngagement ? renderPostEngagementPanel({ likes, comments, reviews, likesCount, commentsCount, reviewsCount, postId: post.id }) : ''}
                     ${toolbarHtml}
@@ -580,20 +642,22 @@ export async function promptEditPost(postId) {
         return;
     }
 
+    const editingPublished = String(post.status) === 'published' && currentUserRole === 'editor';
     const result = await openPostEditorSwal({
-        title: 'Edit Post',
-        post,
+        title: editingPublished ? 'Edit published post' : 'Edit Post',
+        post: postForEditorForm(post),
         categoryOptions,
-        confirmButtonText: 'Save Changes',
+        confirmButtonText: editingPublished ? 'Save update draft' : 'Save Changes',
         showStatus: currentUserRole === 'super_admin',
         postId,
+        editingPublished,
     });
 
     if (!result.isConfirmed || !result.value) {
         return;
     }
 
-    showSuccessToast(result.value.message, 'Post updated');
+    showSuccessToast(result.value.message, editingPublished ? 'Update draft saved' : 'Post updated');
     loadPosts();
 }
 
@@ -698,10 +762,15 @@ export function updatePost(postId, formData) {
 }
 
 export function submitPostForReview(postId) {
+    const post = postsById.get(String(postId));
+    const isPublishedUpdate = isPublishedUpdateDraft(post);
+
     confirmWithSwal({
         icon: 'question',
-        title: 'Submit for Review?',
-        text: 'This will send the post to a Publisher for review.',
+        title: isPublishedUpdate ? 'Submit update for review?' : 'Submit for Review?',
+        text: isPublishedUpdate
+            ? 'Publishers will review this update. The live published post stays unchanged until they approve it.'
+            : 'This will send the post to a Publisher for review.',
         confirmButtonText: 'Submit',
     }).then(({ isConfirmed }) => {
         if (!isConfirmed) return;
@@ -718,20 +787,20 @@ export function submitPostForReview(postId) {
 
 export function rejectPost(postId) {
     Swal.fire(buildSwalOptions({
-        title: 'Reject Post',
-        subtitle: 'Send this draft back with clear review notes for the editor.',
+        title: 'Request revision',
+        subtitle: 'Return this to draft so the editor can fix it. Your notes will be visible to them.',
         html: buildSwalForm({
             fields: [
                 {
                     id: 'post-review-notes',
-                    label: 'Review notes *',
+                    label: 'Revision notes *',
                     type: 'textarea',
-                    placeholder: 'Explain why this post is being rejected...',
+                    placeholder: 'Describe what the editor should fix before resubmitting…',
                 },
             ],
         }),
         showCancelButton: true,
-        confirmButtonText: 'Reject',
+        confirmButtonText: 'Return for revision',
         preConfirm: () => {
             const notes = Swal.getPopup()
                 ?.querySelector('#post-review-notes')
@@ -739,7 +808,7 @@ export function rejectPost(postId) {
                 ?.trim();
 
             if (!notes) {
-                return failSwalValidation('Review notes are required.', ['post-review-notes']);
+                return failSwalValidation('Revision notes are required.', ['post-review-notes']);
             }
 
             return notes;
@@ -748,13 +817,15 @@ export function rejectPost(postId) {
         if (!isConfirmed) return;
         axios.put(`/admin/posts/${postId}/reject`, { review_notes: value })
             .then(({ data }) => {
-                showSuccessToast(data.message ?? 'Post returned to draft for the editor.', 'Rejected');
-                activeStatusFilter = 'draft';
-                setAdminFilterTab(document.getElementById('posts-status-tabs'), 'draft');
+                showSuccessToast(data.message ?? 'Post returned to draft for revision.', 'Revision requested');
+                if (currentUserRole !== 'publisher') {
+                    activeStatusFilter = 'draft';
+                    setAdminFilterTab(document.getElementById('posts-status-tabs'), 'draft');
+                }
                 loadPosts();
             })
             .catch(({ response }) => {
-                showErrorToast(response?.data?.message ?? 'Rejection failed.', 'Error');
+                showErrorToast(response?.data?.message ?? 'Unable to return for revision.', 'Error');
             });
     });
 }
@@ -795,16 +866,21 @@ export function schedulePost(postId) {
 }
 
 export function publishNow(postId) {
+    const post = postsById.get(String(postId));
+    const isPublishedUpdate = isPublishedUpdatePending(post);
+
     confirmWithSwal({
         icon: 'question',
-        title: 'Publish this post now?',
-        text: 'This will approve and publish the post immediately.',
-        confirmButtonText: 'Publish now',
+        title: isPublishedUpdate ? 'Approve this update?' : 'Publish this post now?',
+        text: isPublishedUpdate
+            ? 'This will replace the live published post with the proposed update.'
+            : 'This will approve and publish the post immediately.',
+        confirmButtonText: isPublishedUpdate ? 'Approve update' : 'Publish now',
     }).then(({ isConfirmed }) => {
         if (!isConfirmed) return;
         axios.put(`/admin/posts/${postId}/publish`)
             .then(({ data }) => {
-                showSuccessToast(data.message, 'Published');
+                showSuccessToast(data.message, isPublishedUpdate ? 'Update approved' : 'Published');
                 loadPosts();
             })
             .catch(({ response }) => {
@@ -844,10 +920,8 @@ export function restorePost(postId) {
         axios.put(`/admin/posts/${postId}/restore`)
             .then(({ data }) => {
                 showSuccessToast(data.message ?? 'Post restored.', 'Restored');
-                if (currentUserRole !== 'publisher') {
-                    activeStatusFilter = 'published';
-                    setAdminFilterTab(document.getElementById('posts-status-tabs'), activeStatusFilter);
-                }
+                activeStatusFilter = 'published';
+                setAdminFilterTab(document.getElementById('posts-status-tabs'), activeStatusFilter);
                 loadPosts();
             })
             .catch(({ response }) => {
@@ -896,7 +970,7 @@ function renderReviewNotesBanner(post) {
 
     return `
         <div class="post-view-review-notes" role="status">
-            <p class="post-view-review-notes-label">Review notes</p>
+            <p class="post-view-review-notes-label">Revision notes from publisher</p>
             <p class="post-view-review-notes-body">${escapeHtml(notes)}</p>
         </div>
     `;
@@ -904,11 +978,17 @@ function renderReviewNotesBanner(post) {
 
 function renderStatusCell(post) {
     const notes = String(post?.review_notes ?? '').trim();
-    const needsRevision = post.status === 'draft' && notes !== '';
+    const needsRevision = (post.status === 'draft' || isPublishedUpdateDraft(post)) && notes !== '';
+    const updateBadge = isPublishedUpdatePending(post)
+        ? '<span class="admin-status-badge bg-[#055498]/10 text-[#055498]">Update pending</span>'
+        : isPublishedUpdateDraft(post)
+            ? '<span class="admin-status-badge bg-[#FBD116]/20 text-[#123a60]">Update draft</span>'
+            : '';
 
     return `
         <div class="flex min-w-0 flex-col gap-1">
             ${statusBadge(post.status)}
+            ${updateBadge}
             ${needsRevision ? '<span class="admin-status-badge bg-[#FBD116]/20 text-[#123a60]">Needs revision</span>' : ''}
         </div>
     `;
@@ -1127,7 +1207,7 @@ function buildPostRowData(post) {
                     <p><span>Engagement:</span> ${Number(post.likes_count ?? 0)} reactions · ${Number(post.comments_count ?? 0)} comments</p>
                     <p><span>Rating:</span> ${renderRatingBadge(post, { compact: true })}</p>
                     ${String(post.review_notes ?? '').trim()
-                        ? `<p><span>Review notes:</span> ${escapeHtml(String(post.review_notes).trim())}</p>`
+                        ? `<p><span>Revision notes:</span> ${escapeHtml(String(post.review_notes).trim())}</p>`
                         : ''}
                 </div>
             </div>`,
@@ -1252,7 +1332,7 @@ function formatDateTime(value) {
     });
 }
 
-function buildPostForm(post = null, categoryOptions = [], { showStatus = false, isSuperAdmin = false } = {}) {
+function buildPostForm(post = null, categoryOptions = [], { showStatus = false, isSuperAdmin = false, editingPublished = false } = {}) {
     const fields = [
         {
             id: 'post-media-file',
@@ -1322,9 +1402,11 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
 
     return buildSwalForm({
         description: post
-            ? (isSuperAdmin
-                ? 'Updates from super admin are published automatically unless status is scheduled or archived.'
-                : 'Update the content and workflow details for this post.')
+            ? (editingPublished
+                ? 'Changes are saved as an update draft. The live published post stays unchanged until a publisher approves it.'
+                : (isSuperAdmin
+                    ? 'Updates from super admin are published automatically unless status is scheduled or archived.'
+                    : 'Update the content and workflow details for this post.'))
             : (isSuperAdmin
                 ? 'Super admin posts are published immediately after creation.'
                 : 'Create a new content draft for review and scheduling.'),
@@ -1332,12 +1414,20 @@ function buildPostForm(post = null, categoryOptions = [], { showStatus = false, 
     });
 }
 
-async function openPostEditorSwal({ title, post, categoryOptions, confirmButtonText, showStatus = false, postId = null }) {
+async function openPostEditorSwal({
+    title,
+    post,
+    categoryOptions,
+    confirmButtonText,
+    showStatus = false,
+    postId = null,
+    editingPublished = false,
+}) {
     const isSuperAdmin = currentUserRole === 'super_admin';
 
     return Swal.fire(buildSwalOptions({
         title,
-        html: buildPostForm(post, categoryOptions, { showStatus, isSuperAdmin }),
+        html: buildPostForm(post, categoryOptions, { showStatus, isSuperAdmin, editingPublished }),
         showCancelButton: true,
         confirmButtonText,
         focusConfirm: false,
@@ -1434,9 +1524,22 @@ function syncPostsPageActions() {
         );
     }
 
-    const insightsLink = document.querySelector('a[href="/admin/analytics"]');
-    insightsLink?.setAttribute('title', 'Open analytics dashboard');
-    insightsLink?.classList.toggle('hidden', !['super_admin', 'analytics_viewer'].includes(currentUserRole));
+    const canReviewInsights = ['super_admin', 'analytics_viewer'].includes(currentUserRole);
+    const insightsLink = document.querySelector('[data-admin-action="review-insights"]');
+    if (insightsLink) {
+        insightsLink.setAttribute('title', 'Open analytics dashboard');
+        insightsLink.classList.toggle('hidden', !canReviewInsights);
+        // Editors/publishers have no analytics access — remove so it cannot be focused or crawled.
+        if (!canReviewInsights) {
+            insightsLink.setAttribute('hidden', 'hidden');
+            insightsLink.setAttribute('aria-hidden', 'true');
+            insightsLink.tabIndex = -1;
+        } else {
+            insightsLink.removeAttribute('hidden');
+            insightsLink.removeAttribute('aria-hidden');
+            insightsLink.removeAttribute('tabindex');
+        }
+    }
 }
 
 async function loadCategoryOptions() {
@@ -1550,8 +1653,8 @@ function getAvailableActions(post) {
     if (canRejectPost(post)) {
         actions.push({
             handler: 'rejectPost',
-            label: 'Reject',
-            tooltip: 'Reject and return to draft',
+            label: 'Revision',
+            tooltip: 'Return to draft with revision notes',
             icon: 'fas fa-rotate-left',
             iconClass: 'text-[#123a60]',
             className: 'admin-table-action-warning',
@@ -1565,20 +1668,15 @@ function getAvailableActions(post) {
             tooltip: 'Approve and schedule publish date',
             icon: 'fas fa-calendar-check',
         });
-        actions.push({
-            handler: 'publishNow',
-            label: 'Publish now',
-            tooltip: 'Publish immediately',
-            icon: 'fas fa-circle-check',
-            className: 'admin-table-action-primary',
-        });
     }
 
-    if ((currentUserRole === 'publisher' || currentUserRole === 'super_admin') && post.status === 'scheduled') {
+    if (canPublishPost(post)) {
         actions.push({
             handler: 'publishNow',
-            label: 'Publish now',
-            tooltip: 'Publish immediately',
+            label: isPublishedUpdatePending(post) ? 'Approve update' : 'Publish now',
+            tooltip: isPublishedUpdatePending(post)
+                ? 'Apply update to the live published post'
+                : 'Publish immediately',
             icon: 'fas fa-circle-check',
             className: 'admin-table-action-primary',
         });
@@ -1626,22 +1724,40 @@ function canEditPost(post) {
         return ['draft', 'pending_review', 'published', 'scheduled', 'archived'].includes(post.status);
     }
 
-    return currentUserRole === 'editor' && post.status === 'draft';
+    if (currentUserRole !== 'editor') {
+        return false;
+    }
+
+    // Draft posts, or published posts (edits become a pending update draft).
+    return post.status === 'draft' || post.status === 'published';
 }
 
 function canSubmitPost(post) {
-    return (currentUserRole === 'editor' || currentUserRole === 'super_admin')
-        && post.status === 'draft';
+    if (!(currentUserRole === 'editor' || currentUserRole === 'super_admin')) {
+        return false;
+    }
+
+    return post.status === 'draft' || isPublishedUpdateDraft(post);
 }
 
 function canRejectPost(post) {
     return (currentUserRole === 'publisher' || currentUserRole === 'super_admin')
-        && post.status === 'pending_review';
+        && (post.status === 'pending_review' || isPublishedUpdatePending(post));
 }
 
 function canSchedulePost(post) {
     return (currentUserRole === 'publisher' || currentUserRole === 'super_admin')
         && post.status === 'pending_review';
+}
+
+function canPublishPost(post) {
+    if (!(currentUserRole === 'publisher' || currentUserRole === 'super_admin')) {
+        return false;
+    }
+
+    return post.status === 'pending_review'
+        || post.status === 'scheduled'
+        || isPublishedUpdatePending(post);
 }
 
 function canArchivePost(post) {
@@ -1650,8 +1766,7 @@ function canArchivePost(post) {
 }
 
 function canRestorePost(post) {
-    return (currentUserRole === 'publisher' || currentUserRole === 'super_admin')
-        && post.status === 'archived';
+    return currentUserRole === 'super_admin' && post.status === 'archived';
 }
 
 function canDeletePost(_post) {

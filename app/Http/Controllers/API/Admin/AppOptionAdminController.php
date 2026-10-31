@@ -77,11 +77,17 @@ class AppOptionAdminController extends Controller
 
     public function update(UpdateAppOptionRequest $request, AppOption $appOption): JsonResponse
     {
+        $wasPublished = $appOption->isWorkflowPublished();
         $option = $this->appOptionService->update($appOption, $request->validated(), $request->user());
+        $savedAsRevision = $request->user()?->role === 'editor'
+            && $wasPublished
+            && $option->isRevisionDraft();
 
         return response()->json([
             'status' => true,
-            'message' => 'Option updated.',
+            'message' => $savedAsRevision
+                ? 'Update saved as a draft revision. The live published option is unchanged until a publisher approves it.'
+                : 'Option updated.',
             'data' => $option->toAdminArray(),
         ]);
     }

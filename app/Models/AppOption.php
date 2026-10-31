@@ -4,12 +4,40 @@ namespace App\Models;
 
 use App\Models\Concerns\HasContentWorkflow;
 use App\Support\AppOptionGroup;
+use App\Support\ContentWorkflow\ContentWorkflowStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 
 class AppOption extends Model
 {
     use HasContentWorkflow;
+
+    /**
+     * Publishers can browse live lookup catalogs and pending review items.
+     */
+    public function scopeVisibleInAdminFor(Builder $query, ?User $user): Builder
+    {
+        if ($user?->role === 'publisher') {
+            return $query->whereIn($this->getTable().'.workflow_status', [
+                ContentWorkflowStatus::PUBLISHED,
+                ContentWorkflowStatus::PENDING,
+            ]);
+        }
+
+        return $query;
+    }
+
+    public function isVisibleToAdmin(?User $user): bool
+    {
+        if ($user?->role === 'publisher') {
+            return $this->isWorkflowPublished()
+                || $this->isWorkflowPending()
+                || $this->isRevisionAwaitingPublisher();
+        }
+
+        return true;
+    }
 
     protected $fillable = [
         'group',

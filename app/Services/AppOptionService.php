@@ -44,11 +44,19 @@ class AppOptionService
 
     public function update(AppOption $option, array $data, User $actor): AppOption
     {
-        $payload = $this->contentWorkflow->prepareUpdatePayload(
-            $option,
-            $actor,
-            $this->normalize($data, $option),
-        );
+        try {
+            $payload = $this->contentWorkflow->prepareUpdatePayload(
+                $option,
+                $actor,
+                $this->normalize($data, $option),
+            );
+        } catch (\InvalidArgumentException $e) {
+            abort(422, $e->getMessage());
+        }
+
+        if ($payload === []) {
+            return $option->fresh() ?? $option;
+        }
 
         return $this->repository->update($option, $payload);
     }

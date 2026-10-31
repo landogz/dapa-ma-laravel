@@ -19,10 +19,15 @@ class PostRepository
             ->with(['category', 'author'])
             ->withCount(['likes', 'comments', 'reviews'])
             ->withAvg('reviews', 'rating')
-            ->when(
-                $actor?->role === 'publisher',
-                fn (Builder $q) => $q->whereIn('status', ['pending_review', 'archived']),
-            )
+            ->when($actor?->role === 'publisher', function (Builder $q): void {
+                $q->where(function (Builder $inner): void {
+                    $inner->where('status', 'pending_review')
+                        ->orWhere(function (Builder $revision): void {
+                            $revision->where('status', 'published')
+                                ->where('revision_status', 'pending_review');
+                        });
+                });
+            })
             ->latest()
             ->paginate($perPage);
     }

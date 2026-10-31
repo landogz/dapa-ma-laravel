@@ -289,6 +289,7 @@ Route::prefix('v1')
                     Route::get('/diary-entries/{id}',       [DiaryAdminController::class, 'show'])->whereNumber('id')->name('diary-entries.show');
                     Route::delete('/diary-entries/{id}',    [DiaryAdminController::class, 'destroy'])->whereNumber('id')->name('diary-entries.destroy');
                     Route::put('/posts/{post}/archive',      [PostAdminController::class, 'archive'])->name('posts.archive');
+                    Route::put('/posts/{post}/restore',      [PostAdminController::class, 'restore'])->name('posts.restore');
                     Route::delete('/posts/{post}',           [PostAdminController::class, 'destroy'])->name('posts.destroy');
                 });
 
@@ -315,7 +316,6 @@ Route::prefix('v1')
                     Route::put('/posts/{post}/reject',   [PostAdminController::class, 'reject'])->name('posts.reject');
                     Route::put('/posts/{post}/schedule', [PostAdminController::class, 'schedule'])->name('posts.schedule');
                     Route::put('/posts/{post}/publish',  [PostAdminController::class, 'publish'])->name('posts.publish');
-                    Route::put('/posts/{post}/restore',  [PostAdminController::class, 'restore'])->name('posts.restore');
                 });
 
                 // Workflow modules — read (Editor, Publisher, Super Admin)
@@ -326,7 +326,7 @@ Route::prefix('v1')
 
                     Route::get('/legal-pages', [LegalPageAdminController::class, 'index'])->name('legal-pages.index');
                     Route::get('/legal-pages/{slug}', [LegalPageAdminController::class, 'show'])
-                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice')
+                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice|[0-9]+')
                         ->name('legal-pages.show');
 
                     Route::get('/blocked-words', [BlockedWordAdminController::class, 'index'])->name('blocked-words.index');
@@ -375,10 +375,10 @@ Route::prefix('v1')
                     Route::put('/notifications/{notification}/submit', [NotificationAdminController::class, 'submit'])->name('notifications.submit');
 
                     Route::put('/legal-pages/{slug}', [LegalPageAdminController::class, 'update'])
-                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice')
+                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice|[0-9]+')
                         ->name('legal-pages.update');
                     Route::put('/legal-pages/{slug}/submit', [LegalPageAdminController::class, 'submit'])
-                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice')
+                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice|[0-9]+')
                         ->name('legal-pages.submit');
 
                     Route::post('/blocked-words', [BlockedWordAdminController::class, 'store'])->name('blocked-words.store');
@@ -431,10 +431,10 @@ Route::prefix('v1')
                     Route::put('/notifications/{notification}/publish', [NotificationAdminController::class, 'publish'])->name('notifications.publish');
 
                     Route::put('/legal-pages/{slug}/reject', [LegalPageAdminController::class, 'reject'])
-                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice')
+                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice|[0-9]+')
                         ->name('legal-pages.reject');
                     Route::put('/legal-pages/{slug}/publish', [LegalPageAdminController::class, 'publish'])
-                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice')
+                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice|[0-9]+')
                         ->name('legal-pages.publish');
 
                     Route::put('/blocked-words/{blockedWord}/reject', [BlockedWordAdminController::class, 'reject'])->name('blocked-words.reject');

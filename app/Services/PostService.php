@@ -60,7 +60,7 @@ class PostService
     {
         $post = $this->postRepository->findAdminDetail($id);
 
-        if ($actor?->role === 'publisher' && ! in_array($post->status, ['pending_review', 'archived'], true)) {
+        if ($actor?->role === 'publisher' && ! $this->publisherCanView($post)) {
             abort(404);
         }
 
@@ -98,6 +98,10 @@ class PostService
 
     public function updateDraft(Post $post, array $data, ?User $actor = null): Post
     {
+        if ($actor?->role === 'editor' && $post->status === 'published') {
+            return $this->savePendingRevision($post, $data);
+        }
+
         $allowedStatuses = $actor?->role === 'super_admin'
             ? ['draft', 'pending_review', 'published', 'scheduled', 'archived']
             : ['draft', 'pending_review'];
@@ -143,6 +147,21 @@ class PostService
 
     public function submitForReview(Post $post, User $editor): Post
     {
+        if ($post->status === 'published') {
+            if (! $post->hasPendingRevision() || $post->revision_status !== 'draft') {
+                abort(422, 'Save a draft update before submitting it for publisher review.');
+            }
+
+            $post = $this->postRepository->update($post, [
+                'revision_status' => 'pending_review',
+                'review_notes' => null,
+            ]);
+
+            $this->adminNotificationService->notifyPostSubmitted($post, $editor);
+
+            return $post;
+        }
+
         $this->assertStatus($post, ['draft']);
 
         $post = $this->postRepository->update($post, ['status' => 'pending_review', 'review_notes' => null]);
@@ -154,6 +173,17 @@ class PostService
 
     public function reject(Post $post, string $reviewNotes, User $publisher): Post
     {
+        if ($post->isRevisionAwaitingPublisher()) {
+            $post = $this->postRepository->update($post, [
+                'revision_status' => 'draft',
+                'review_notes' => $reviewNotes,
+            ]);
+
+            $this->adminNotificationService->notifyPostRejected($post, $publisher, $reviewNotes);
+
+            return $post;
+        }
+
         $this->assertStatus($post, ['pending_review']);
 
         $post = $this->postRepository->update($post, [
@@ -168,6 +198,10 @@ class PostService
 
     public function schedule(Post $post, string $publishDate, User $publisher): Post
     {
+        if ($post->isRevisionAwaitingPublisher()) {
+            abort(422, 'Published updates cannot be scheduled. Approve the update to apply it now.');
+        }
+
         $this->assertStatus($post, ['pending_review']);
 
         $post = $this->postRepository->update($post, [
@@ -183,6 +217,10 @@ class PostService
 
     public function publishNow(Post $post, User $publisher): Post
     {
+        if ($post->isRevisionAwaitingPublisher()) {
+            return $this->applyPendingRevision($post, $publisher);
+        }
+
         $this->assertStatus($post, ['pending_review', 'scheduled']);
 
         $post = $this->postRepository->update($post, [
@@ -202,7 +240,12 @@ class PostService
     {
         $this->assertStatus($post, ['published', 'scheduled']);
 
-        return $this->postRepository->update($post, ['status' => 'archived']);
+        return $this->postRepository->update($post, [
+            'status' => 'archived',
+            'pending_revision' => null,
+            'revision_status' => null,
+            'review_notes' => null,
+        ]);
     }
 
     public function restore(Post $post): Post
@@ -213,6 +256,8 @@ class PostService
             'status'       => 'published',
             'publish_date' => $post->publish_date ?? Carbon::now(),
             'review_notes' => null,
+            'pending_revision' => null,
+            'revision_status' => null,
         ]);
     }
 
@@ -231,6 +276,88 @@ class PostService
         }
 
         return $count;
+    }
+
+    private function savePendingRevision(Post $post, array $data): Post
+    {
+        $revision = is_array($post->pending_revision) && $post->pending_revision !== []
+            ? $post->pending_revision
+            : $post->liveContentSnapshot();
+
+        foreach (['title', 'body', 'category_id', 'youtube_url'] as $field) {
+            if (array_key_exists($field, $data) && $data[$field] !== null) {
+                $revision[$field] = $data[$field];
+            }
+        }
+
+        if (array_key_exists('comments_enabled', $data)) {
+            $revision['comments_enabled'] = (bool) $data['comments_enabled'];
+        }
+
+        if (array_key_exists('is_featured', $data)) {
+            $revision['is_featured'] = (bool) $data['is_featured'];
+        }
+
+        if (($data['media_file'] ?? null) instanceof UploadedFile) {
+            $previousRevisionMedia = $revision['media_url'] ?? null;
+            $liveMedia = $post->media_url;
+            $newMedia = $this->storeMediaFile($data['media_file']);
+            $revision['media_url'] = $newMedia;
+
+            if ($previousRevisionMedia && $previousRevisionMedia !== $liveMedia) {
+                $this->deleteStoredMedia($previousRevisionMedia);
+            }
+        }
+
+        return $this->postRepository->update($post, [
+            'pending_revision' => $revision,
+            'revision_status' => 'draft',
+            'review_notes' => null,
+        ]);
+    }
+
+    private function applyPendingRevision(Post $post, User $publisher): Post
+    {
+        $revision = $post->pending_revision;
+
+        if (! is_array($revision) || $revision === []) {
+            abort(422, 'This published post has no pending update to approve.');
+        }
+
+        $previousLiveMedia = $post->media_url;
+        $nextMedia = array_key_exists('media_url', $revision) ? $revision['media_url'] : $previousLiveMedia;
+
+        $post = $this->postRepository->update($post, [
+            'title' => $revision['title'] ?? $post->title,
+            'body' => $revision['body'] ?? $post->body,
+            'category_id' => $revision['category_id'] ?? $post->category_id,
+            'media_url' => $nextMedia,
+            'youtube_url' => array_key_exists('youtube_url', $revision)
+                ? $revision['youtube_url']
+                : $post->youtube_url,
+            'comments_enabled' => array_key_exists('comments_enabled', $revision)
+                ? (bool) $revision['comments_enabled']
+                : (bool) $post->comments_enabled,
+            'is_featured' => array_key_exists('is_featured', $revision)
+                ? (bool) $revision['is_featured']
+                : (bool) $post->is_featured,
+            'pending_revision' => null,
+            'revision_status' => null,
+            'review_notes' => null,
+        ]);
+
+        if ($previousLiveMedia && $previousLiveMedia !== $post->media_url) {
+            $this->deleteStoredMedia($previousLiveMedia);
+        }
+
+        $this->adminNotificationService->notifyPostScheduled($post, $publisher);
+
+        return $post;
+    }
+
+    private function publisherCanView(Post $post): bool
+    {
+        return $post->status === 'pending_review' || $post->isRevisionAwaitingPublisher();
     }
 
     private function resolveSuperAdminPublishMeta(User $author, ?string $requestedStatus = null): array

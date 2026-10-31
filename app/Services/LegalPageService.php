@@ -22,9 +22,13 @@ class LegalPageService
         return $this->legalPageRepository->allForAdmin($actor);
     }
 
-    public function findForAdmin(string $slug): LegalPage
+    public function findForAdmin(string $slugOrId): LegalPage
     {
-        $page = $this->legalPageRepository->findBySlug($slug);
+        $page = $this->legalPageRepository->findBySlug($slugOrId);
+
+        if (! $page && ctype_digit((string) $slugOrId)) {
+            $page = LegalPage::query()->find((int) $slugOrId);
+        }
 
         if (! $page) {
             throw ValidationException::withMessages([
@@ -38,9 +42,18 @@ class LegalPageService
     public function update(string $slug, array $data, User $actor): LegalPage
     {
         $page = $this->findForAdmin($slug);
-        $data = $this->contentWorkflow->prepareUpdatePayload($page, $actor, $data);
 
-        return $this->legalPageRepository->update($page, $data);
+        try {
+            $payload = $this->contentWorkflow->prepareUpdatePayload($page, $actor, $data);
+        } catch (\InvalidArgumentException $e) {
+            throw ValidationException::withMessages(['workflow' => [$e->getMessage()]]);
+        }
+
+        if ($payload === []) {
+            return $page->fresh() ?? $page;
+        }
+
+        return $this->legalPageRepository->update($page, $payload);
     }
 
     /**
