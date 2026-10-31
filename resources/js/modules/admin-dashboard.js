@@ -131,6 +131,24 @@ const SECTION_PATHS = {
 
 let inboxFilter = 'unread';
 let inboxExpanded = false;
+let inboxBadgePollTimer = null;
+const INBOX_BADGE_POLL_MS = 30000;
+
+function startInboxBadgePolling() {
+    if (inboxBadgePollTimer) {
+        return;
+    }
+
+    inboxBadgePollTimer = window.setInterval(() => {
+        void refreshInboxBadge();
+    }, INBOX_BADGE_POLL_MS);
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            void refreshInboxBadge();
+        }
+    });
+}
 
 export async function initAdminPage(pageName) {
     const appRoot = document.getElementById('admin-app');
@@ -163,6 +181,7 @@ export async function initAdminPage(pageName) {
     initAdminMegaMenu(allowedSections);
 
     await refreshInboxBadge();
+    startInboxBadgePolling();
 
     const hasAccess = await guardPageAccess(pageName, allowedSections);
 
@@ -706,10 +725,6 @@ async function loadOverviewCounts(allowedSections) {
             elements.forEach((element) => {
                 element.textContent = Number(total).toLocaleString();
             });
-
-            if (item.key === 'notifications') {
-                updateNotificationBadge(total);
-            }
         } catch {
             elements.forEach((element) => {
                 element.textContent = '--';
@@ -951,38 +966,31 @@ async function loadNeedsAttention(allowedSections) {
     }
 }
 
-function updateNotificationBadge(total) {
+function updateNotificationBadge(unreadCount) {
     const dot = document.querySelector('[data-admin-notifications-dot]');
+    const button = document.querySelector('[data-admin-notifications-button]');
+    const unread = Number(unreadCount) > 0;
 
-    if (!dot) {
-        return;
+    if (dot) {
+        dot.classList.toggle('hidden', !unread);
+        dot.setAttribute('aria-hidden', unread ? 'false' : 'true');
     }
 
-    if (Number(total) > 0) {
-        dot.classList.remove('hidden');
-    } else {
-        dot.classList.add('hidden');
+    if (button) {
+        button.setAttribute(
+            'aria-label',
+            unread ? 'Notifications, unread alerts' : 'Notifications',
+        );
+        button.classList.toggle('has-unread-notifications', unread);
     }
 }
 
 async function refreshInboxBadge() {
-    const dot = document.querySelector('[data-admin-notifications-dot]');
-
-    if (!dot) {
-        return;
-    }
-
     try {
         const { data } = await window.axios.get('/admin/inbox/summary');
-        const unread = Number(data.data?.unread_count ?? 0);
-
-        if (unread > 0) {
-            dot.classList.remove('hidden');
-        } else {
-            dot.classList.add('hidden');
-        }
+        updateNotificationBadge(data.data?.unread_count ?? 0);
     } catch {
-        dot.classList.add('hidden');
+        // Keep the last known badge state if the summary request fails.
     }
 }
 
