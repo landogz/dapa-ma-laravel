@@ -23,6 +23,7 @@ import {
     getRevisionFieldDiffs,
     humanizeWorkflowAttribute,
 } from './shared/workflow-revision-diff';
+import { itemHasPublisherPendingReview, publisherReviewSwalButtons } from './shared/content-workflow';
 import { bindPostCommentDeletes, confirmDeletePostComment } from './post-comments';
 
 let postsTable;
@@ -655,24 +656,34 @@ export async function promptEditPost(postId) {
 
     const editingPublished = String(post.status) === 'published' && currentUserRole === 'editor';
     const reviewingUpdate = hasPendingRevisionPayload(post);
-    const publisherReviewOnly = reviewingUpdate
-        && currentUserRole === 'publisher';
+    const publisherReviewOnly = currentUserRole === 'publisher';
     const result = await openPostEditorSwal({
-        title: reviewingUpdate
+        title: publisherReviewOnly || reviewingUpdate
             ? 'Review post changes'
             : (editingPublished ? 'Edit published post' : 'Edit Post'),
         post: postForEditorForm(post),
         categoryOptions,
-        confirmButtonText: publisherReviewOnly
-            ? 'Done reviewing'
-            : (editingPublished ? 'Save update draft' : 'Save Changes'),
+        confirmButtonText: editingPublished ? 'Save update draft' : 'Save Changes',
         showStatus: currentUserRole === 'super_admin',
         postId,
         editingPublished,
         reviewItem: reviewingUpdate ? post : null,
+        publisherReviewOnly,
+        reviewSource: post,
     });
 
-    if (!result.isConfirmed || !result.value || result.value.reviewedOnly) {
+    if (publisherReviewOnly) {
+        if (itemHasPublisherPendingReview(post)) {
+            if (result.isConfirmed) {
+                publishNow(postId);
+            } else if (result.isDenied) {
+                rejectPost(postId);
+            }
+        }
+        return;
+    }
+
+    if (!result.isConfirmed || !result.value) {
         return;
     }
 
@@ -1471,9 +1482,10 @@ async function openPostEditorSwal({
     postId = null,
     editingPublished = false,
     reviewItem = null,
+    publisherReviewOnly = false,
+    reviewSource = null,
 }) {
     const isSuperAdmin = currentUserRole === 'super_admin';
-    const publisherReviewOnly = confirmButtonText === 'Done reviewing';
 
     return Swal.fire(buildSwalOptions({
         title,
@@ -1483,8 +1495,12 @@ async function openPostEditorSwal({
             editingPublished,
             reviewItem,
         }),
-        showCancelButton: !publisherReviewOnly,
-        confirmButtonText,
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(reviewSource ?? post)
+            : {
+                showCancelButton: true,
+                confirmButtonText,
+            }),
         focusConfirm: false,
         didOpen: () => {
             bindScheduledPublishDateField();
@@ -1805,7 +1821,8 @@ function canEditPost(post) {
 }
 
 function canSubmitPost(post) {
-    if (!(currentUserRole === 'editor' || currentUserRole === 'super_admin')) {
+    // Super admins publish directly — no publisher approval step.
+    if (currentUserRole !== 'editor') {
         return false;
     }
 
@@ -1825,6 +1842,10 @@ function canSchedulePost(post) {
 function canPublishPost(post) {
     if (!(currentUserRole === 'publisher' || currentUserRole === 'super_admin')) {
         return false;
+    }
+
+    if (currentUserRole === 'super_admin' && post.status === 'draft') {
+        return true;
     }
 
     return post.status === 'pending_review'

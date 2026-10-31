@@ -22,11 +22,14 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
-    isPublisherRole,
+    isEditorStagingPublished,
+    isPublisherReviewOnly,
     isSuperAdminRole,
     itemForEditorForm,
     openItemFromQuery,
+    publisherReviewSwalButtons,
     renderReviewNotesBanner,
+    resolvePublisherReviewSwalResult,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
@@ -319,7 +322,8 @@ function buildRowData(row) {
 function showOptionForm(existingRaw) {
     const existing = existingRaw ? itemForEditorForm(existingRaw) : null;
     const isEdit = Boolean(existing);
-    const editingPublished = isEdit && String(existingRaw?.workflow_status) === 'published';
+    const editingPublished = isEdit && isEditorStagingPublished(existingRaw);
+    const isSuperAdmin = isSuperAdminRole();
     const groupOptions = (groupMeta.length ? groupMeta : [{ key: 'pronouns', title: 'Pronouns' }])
         .map((group) => ({ value: group.key, label: group.title }));
     const defaultGroup = existing?.group || currentGroupFilter || groupMeta[0]?.key || 'persona';
@@ -401,29 +405,36 @@ function showOptionForm(existingRaw) {
 
     const reviewingUpdate = Boolean(existingRaw && (
         String(existingRaw.revision_status || '') === 'pending_review'
+        || String(existingRaw.workflow_status || '') === 'pending_review'
         || (existingRaw.pending_revision && typeof existingRaw.pending_revision === 'object')
     ));
-    const publisherReviewOnly = reviewingUpdate && isPublisherRole() && !isSuperAdminRole();
+    const publisherReviewOnly = isPublisherReviewOnly(existingRaw);
 
     Swal.fire(buildSwalOptions({
         title: isEdit
-            ? (reviewingUpdate
+            ? (publisherReviewOnly || reviewingUpdate
                 ? 'Review option changes'
                 : (editingPublished ? 'Edit published option' : 'Edit option'))
-            : 'Add option',
+            : (isSuperAdmin ? 'Add & publish option' : 'Add option'),
         html: `${renderReviewNotesBanner(existingRaw)}${buildSwalForm({
             description: editingPublished
                 ? 'Changes are saved as an update draft. The live published option stays unchanged until a publisher approves it.'
                 : (isEdit
                     ? `Key “${existing.key}” stays the same so existing answers still match. English and Tagalog labels appear in the mobile app.`
-                    : 'English and Tagalog labels appear in the mobile app. Leave Key blank to generate it from the English label.'),
+                    : (isSuperAdmin
+                        ? 'Saved as published — no publisher approval needed. English and Tagalog labels appear in the mobile app.'
+                        : 'English and Tagalog labels appear in the mobile app. Leave Key blank to generate it from the English label.')),
             fields,
-            reviewItem: reviewingUpdate ? existingRaw : null,
+            reviewItem: existingRaw?.pending_revision ? existingRaw : null,
         })}`,
-        confirmButtonText: publisherReviewOnly
-            ? 'Done reviewing'
-            : (editingPublished ? 'Save update draft' : (isEdit ? 'Save changes' : 'Create option')),
-        showCancelButton: !publisherReviewOnly,
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(existingRaw)
+            : {
+                confirmButtonText: editingPublished
+                    ? 'Save update draft'
+                    : (isEdit ? 'Save changes' : (isSuperAdmin ? 'Create & publish' : 'Create option')),
+                showCancelButton: true,
+            }),
         preConfirm: () => {
             if (publisherReviewOnly) {
                 return { reviewedOnly: true };
@@ -481,13 +492,24 @@ function showOptionForm(existingRaw) {
                     return false;
                 });
         },
-    }, { size: 'lg' })).then(({ isConfirmed, value }) => {
-        if (!isConfirmed || !value || value.reviewedOnly) {
+    }, { size: 'lg' })).then(async (result) => {
+        if (publisherReviewOnly) {
+            await resolvePublisherReviewSwalResult(result, {
+                basePath: '/admin/app-options',
+                id: existingRaw.id,
+                item: existingRaw,
+                onSuccess: () => loadAppOptions(),
+            });
+            return;
+        }
+
+        const { isConfirmed, value } = result;
+        if (!isConfirmed || !value) {
             return;
         }
         showSuccessToast(
             value.message ?? 'Option saved.',
-            editingPublished ? 'Update draft saved' : 'Lookups',
+            editingPublished ? 'Update draft saved' : (isSuperAdmin && !isEdit ? 'Published' : 'Lookups'),
         );
         loadAppOptions();
         if (editingPublished && existingRaw?.id) {

@@ -50,7 +50,7 @@ class AppOptionAdminController extends Controller
             'status' => true,
             'message' => 'App options fetched.',
             'data' => $paginator->through(fn (AppOption $option) => $option->toAdminArray()),
-            'meta' => $this->appOptionService->adminMeta(),
+            'meta' => $this->appOptionService->adminMeta($request->user()),
         ]);
     }
 
@@ -67,10 +67,13 @@ class AppOptionAdminController extends Controller
     public function store(StoreAppOptionRequest $request): JsonResponse
     {
         $option = $this->appOptionService->create($request->validated(), $request->user());
+        $isSuperAdmin = $request->user()?->role === 'super_admin';
 
         return response()->json([
             'status' => true,
-            'message' => 'Option created.',
+            'message' => $isSuperAdmin
+                ? 'Option published.'
+                : 'Option created as a draft.',
             'data' => $option->toAdminArray(),
         ], 201);
     }

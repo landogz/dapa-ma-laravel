@@ -10,10 +10,13 @@ import {
     canCreateWorkflowDraft,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    isPublisherReviewOnly,
     itemForEditorForm,
     openItemFromQuery,
+    publisherReviewSwalButtons,
     renderPendingChangesBanner,
     renderReviewNotesBanner,
+    resolvePublisherReviewSwalResult,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
@@ -375,20 +378,30 @@ function showForm(rowRaw) {
     const row = rowRaw ? itemForEditorForm(rowRaw) : null;
     const isEdit = Boolean(row);
     const reviewItem = rowRaw?.pending_revision ? rowRaw : null;
+    const publisherReviewOnly = isPublisherReviewOnly(rowRaw);
 
     Swal.fire(buildSwalOptions({
         title: isEdit
-            ? (reviewItem ? 'Review organization changes' : 'Edit Organization')
+            ? (publisherReviewOnly || reviewItem ? 'Review organization changes' : 'Edit Organization')
             : 'Add Organization',
         subtitle: 'Partners listed in the DAPE Hope Official Directory.',
         html: buildFormHtml(row, reviewItem),
-        confirmButtonText: isEdit ? 'Save Changes' : 'Create Organization',
-        cancelButtonText: 'Cancel',
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(rowRaw)
+            : {
+                confirmButtonText: isEdit ? 'Save Changes' : 'Create Organization',
+                cancelButtonText: 'Cancel',
+                showCancelButton: true,
+            }),
         width: '42rem',
         didOpen: (popup) => {
             highlightChangedFieldsInPopup(popup, reviewItem, HOPE_DIRECTORY_REVIEW_FIELD_MAP);
         },
         preConfirm: () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const name = document.getElementById('hd-name')?.value.trim();
             if (!name) {
                 Swal.showValidationMessage('Name is required.');
@@ -411,7 +424,18 @@ function showForm(rowRaw) {
                 logo: document.getElementById('hd-logo')?.files?.[0] || null,
             };
         },
-    })).then(({ isConfirmed, value }) => {
+    })).then(async (result) => {
+        if (publisherReviewOnly) {
+            await resolvePublisherReviewSwalResult(result, {
+                basePath: '/admin/hope-directory',
+                id: rowRaw.id,
+                item: rowRaw,
+                onSuccess: () => loadRows(),
+            });
+            return;
+        }
+
+        const { isConfirmed, value } = result;
         if (!isConfirmed || !value) return;
 
         const form = new FormData();

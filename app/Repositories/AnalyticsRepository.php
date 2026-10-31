@@ -112,6 +112,83 @@ class AnalyticsRepository
         return $series;
     }
 
+    /**
+     * Day-of-week × hour activity matrix for the overview heatmap.
+     *
+     * @return array{
+     *     hours: list<int>,
+     *     rows: list<array{weekday:int,label:string,total:int,cells:list<int>}>,
+     *     max: int,
+     *     peak: array{weekday:int,label:string,hour:int,total:int}|null
+     * }
+     */
+    public function hourlyHeatmap(AnalyticsDateRange $range): array
+    {
+        $hourExpression = $this->hourExpression();
+        $weekdayExpression = $this->weekdayExpression();
+        $raw = $this->eventsInRange($range)
+            ->select(
+                DB::raw("{$weekdayExpression} as weekday"),
+                DB::raw("{$hourExpression} as hour"),
+                DB::raw('count(*) as total'),
+            )
+            ->groupBy(DB::raw($weekdayExpression), DB::raw($hourExpression))
+            ->get();
+
+        $lookup = [];
+        foreach ($raw as $row) {
+            $weekday = (int) $row->weekday;
+            $hour = (int) $row->hour;
+            $lookup[$weekday][$hour] = (int) $row->total;
+        }
+
+        $labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        // Monday-first rows (matches weekday chart).
+        $order = [1, 2, 3, 4, 5, 6, 0];
+        $rows = [];
+        $max = 0;
+        $peak = null;
+
+        foreach ($order as $weekday) {
+            $cells = [];
+            $rowTotal = 0;
+            for ($hour = 0; $hour < 24; $hour++) {
+                $total = (int) ($lookup[$weekday][$hour] ?? 0);
+                $cells[] = $total;
+                $rowTotal += $total;
+                if ($total > $max) {
+                    $max = $total;
+                }
+                if ($peak === null || $total > (int) $peak['total']) {
+                    $peak = [
+                        'weekday' => $weekday,
+                        'label' => $labels[$weekday],
+                        'hour' => $hour,
+                        'total' => $total,
+                    ];
+                }
+            }
+
+            $rows[] = [
+                'weekday' => $weekday,
+                'label' => $labels[$weekday],
+                'total' => $rowTotal,
+                'cells' => $cells,
+            ];
+        }
+
+        if ($max === 0) {
+            $peak = null;
+        }
+
+        return [
+            'hours' => range(0, 23),
+            'rows' => $rows,
+            'max' => $max,
+            'peak' => $peak,
+        ];
+    }
+
     public function weekdayCounts(AnalyticsDateRange $range): array
     {
         $expression = $this->weekdayExpression();
@@ -910,11 +987,14 @@ class AnalyticsRepository
                 ->groupBy('event_type')
                 ->pluck('total', 'event_type');
 
-            $views = (int) ($events[AnalyticsEventTypes::POST_VIEW] ?? 0) + (int) ($events[AnalyticsEventTypes::LEGACY_VIEW] ?? 0);
+            $views = (int) ($events[AnalyticsEventTypes::POST_VIEW] ?? 0)
+                + (int) ($events[AnalyticsEventTypes::LEGACY_VIEW] ?? 0)
+                + (int) ($events[AnalyticsEventTypes::PAGE_VIEW] ?? 0);
             $likes = (int) ($events[AnalyticsEventTypes::POST_LIKE] ?? 0);
             $shares = (int) ($events[AnalyticsEventTypes::SHARE] ?? 0);
             $searches = (int) ($events[AnalyticsEventTypes::SEARCH] ?? 0);
             $appOpens = (int) ($events[AnalyticsEventTypes::APP_OPEN] ?? 0);
+            $visits = (int) collect($events)->sum(fn ($total) => (int) $total);
             $comments = PostComment::query()
                 ->where('user_id', $userId)
                 ->whereBetween('created_at', [$range->from, $range->to])
@@ -931,6 +1011,8 @@ class AnalyticsRepository
                 ->where('user_id', $userId)
                 ->whereBetween('started_at', [$range->from, $range->to])
                 ->sum('duration_seconds');
+            $engagements = $likes + $comments + $shares + $bookmarks;
+            $appUsage = $appOpens + $sessions;
 
             $score = 0;
             foreach ($events as $type => $total) {
@@ -941,31 +1023,44 @@ class AnalyticsRepository
             $score += $bookmarks * (int) ($weights['bookmark'] ?? 2);
 
             $metricValue = match ($metric) {
-                'views', 'page_views' => $views,
+                'visits' => $visits,
+                'app_usage', 'app_opens' => $metric === 'app_opens' ? $appOpens : $appUsage,
+                'views', 'page_views', 'content_views' => $views,
                 'likes' => $likes,
                 'comments' => $comments,
                 'shares' => $shares,
                 'downloads' => 0,
-                'app_opens' => $appOpens,
                 'sessions' => $sessions,
                 'duration' => $duration,
                 'searches' => $searches,
                 'score' => $score,
-                default => $likes + $comments + $shares + $bookmarks,
+                'engagement', 'engagements' => $engagements,
+                default => $engagements,
             };
+
+            $persona = $user->persona;
+            if (is_array($user->personas) && $user->personas !== []) {
+                $persona = implode(', ', array_map('strval', $user->personas));
+            }
 
             $rows[] = [
                 'user_id' => $user->id,
-                'name' => $user->name,
+                'name' => $user->name ?: ($user->nickname ?: 'User #'.$user->id),
+                'nickname' => $user->nickname,
+                'subtitle' => $persona ?: trim(collect([$user->city, $user->province])->filter()->implode(', ')),
+                'avatar_url' => $user->profile_image_url,
                 'age' => $this->ageFromBirthday($user->birthday),
                 'city' => $user->city,
                 'province' => $user->province,
+                'visits' => $visits,
                 'views' => $views,
                 'likes' => $likes,
                 'comments' => $comments,
                 'shares' => $shares,
                 'bookmarks' => $bookmarks,
+                'engagements' => $engagements,
                 'app_opens' => $appOpens,
+                'app_usage' => $appUsage,
                 'sessions' => $sessions,
                 'duration_seconds' => $duration,
                 'engagement_score' => $score,
@@ -981,20 +1076,164 @@ class AnalyticsRepository
 
         return [
             'metric' => $metric,
+            'metric_label' => $this->leaderboardMetricLabel($metric),
+            'metrics' => $this->leaderboardMetrics(),
             'weights' => $weights,
             'rows' => $rows,
         ];
     }
 
-    public function geographicDistribution(AnalyticsDateRange $range, string $level = 'province'): array
+    /**
+     * @return list<array{key: string, label: string, group: string}>
+     */
+    private function leaderboardMetrics(): array
     {
+        return [
+            ['key' => 'visits', 'label' => 'Visits', 'group' => 'primary'],
+            ['key' => 'app_usage', 'label' => 'App usage', 'group' => 'primary'],
+            ['key' => 'content_views', 'label' => 'Content views', 'group' => 'primary'],
+            ['key' => 'engagements', 'label' => 'Engagement', 'group' => 'primary'],
+            ['key' => 'score', 'label' => 'Engagement score', 'group' => 'advanced'],
+            ['key' => 'sessions', 'label' => 'Sessions', 'group' => 'advanced'],
+            ['key' => 'app_opens', 'label' => 'App opens', 'group' => 'advanced'],
+            ['key' => 'likes', 'label' => 'Likes', 'group' => 'advanced'],
+            ['key' => 'comments', 'label' => 'Comments', 'group' => 'advanced'],
+            ['key' => 'shares', 'label' => 'Shares', 'group' => 'advanced'],
+            ['key' => 'duration', 'label' => 'Session duration', 'group' => 'advanced'],
+        ];
+    }
+
+    private function leaderboardMetricLabel(string $metric): string
+    {
+        foreach ($this->leaderboardMetrics() as $item) {
+            if ($item['key'] === $metric) {
+                return $item['label'];
+            }
+        }
+
+        return match ($metric) {
+            'views', 'page_views' => 'Content views',
+            'engagement' => 'Engagement',
+            default => ucfirst(str_replace('_', ' ', $metric)),
+        };
+    }
+
+    /**
+     * Region + Province + City/Municipality overview from authorized profile fields.
+     *
+     * @return array<string, mixed>
+     */
+    public function geographicOverview(AnalyticsDateRange $range, int $limit = 12): array
+    {
+        $activeIds = $this->activeUserIdsInRange($range);
+        $appUsers = $this->appUserQuery();
+
+        $withAnyLocation = (clone $appUsers)
+            ->where(function ($q) {
+                $q->where(function ($inner) {
+                    $inner->whereNotNull('region')->where('region', '!=', '');
+                })->orWhere(function ($inner) {
+                    $inner->whereNotNull('province')->where('province', '!=', '');
+                })->orWhere(function ($inner) {
+                    $inner->whereNotNull('city')->where('city', '!=', '');
+                });
+            })
+            ->count();
+
+        $totalAppUsers = (clone $appUsers)->count();
+        $activeCount = (clone $appUsers)->whereIn('id', $activeIds)->count();
+
+        return [
+            'source' => 'Authorized user profile location (Region, Province, City/Municipality) — not IP geolocation.',
+            'summary' => [
+                'registered_users' => $totalAppUsers,
+                'with_location' => $withAnyLocation,
+                'missing_location' => max(0, $totalAppUsers - $withAnyLocation),
+                'active_in_range' => $activeCount,
+                'location_coverage_pct' => $totalAppUsers > 0
+                    ? round(($withAnyLocation / $totalAppUsers) * 100, 1)
+                    : 0,
+            ],
+            'region' => $this->geographicDistribution($range, 'region', $limit, $activeIds),
+            'province' => $this->geographicDistribution($range, 'province', $limit, $activeIds),
+            'city' => $this->geographicDistribution($range, 'city', $limit, $activeIds),
+            'has_location_data' => $withAnyLocation > 0,
+        ];
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, int|string>|null  $activeIds
+     * @return array<string, mixed>
+     */
+    public function geographicDistribution(
+        AnalyticsDateRange $range,
+        string $level = 'province',
+        int $limit = 100,
+        $activeIds = null,
+    ): array {
         $column = match ($level) {
             'region' => 'region',
             'city' => 'city',
             default => 'province',
         };
+        $label = match ($level) {
+            'region' => 'Region',
+            'city' => 'City / Municipality',
+            default => 'Province',
+        };
 
-        $activeIds = AnalyticsEvent::query()
+        $activeIds ??= $this->activeUserIdsInRange($range);
+        $limit = max(1, min(100, $limit));
+
+        $registered = $this->appUserQuery()
+            ->select($column.' as location', DB::raw('count(*) as total'))
+            ->groupBy($column)
+            ->get();
+
+        $rows = [];
+        $unknown = 0;
+        foreach ($registered as $row) {
+            $loc = is_string($row->location) ? trim($row->location) : '';
+            if ($loc === '') {
+                $unknown += (int) $row->total;
+                continue;
+            }
+
+            $active = $this->appUserQuery()
+                ->where($column, $loc)
+                ->whereIn('id', $activeIds)
+                ->count();
+
+            $rows[] = [
+                'location' => $loc,
+                'registered' => (int) $row->total,
+                'active' => $active,
+            ];
+        }
+
+        usort($rows, fn ($a, $b) => $b['registered'] <=> $a['registered'] ?: $b['active'] <=> $a['active']);
+        $totalRegisteredListed = array_sum(array_column($rows, 'registered'));
+        $totalActiveListed = array_sum(array_column($rows, 'active'));
+        $topRows = array_slice($rows, 0, $limit);
+
+        return [
+            'level' => $level,
+            'label' => $label,
+            'rows' => $topRows,
+            'total_locations' => count($rows),
+            'listed_registered' => $totalRegisteredListed,
+            'listed_active' => $totalActiveListed,
+            'unknown' => $unknown,
+            'has_location_data' => count($rows) > 0,
+        ];
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    private function activeUserIdsInRange(AnalyticsDateRange $range)
+    {
+        return AnalyticsEvent::query()
             ->whereNotNull('user_id')
             ->where(function ($q) use ($range) {
                 $q->whereBetween('occurred_at', [$range->from, $range->to])
@@ -1005,49 +1244,15 @@ class AnalyticsRepository
             })
             ->distinct()
             ->pluck('user_id');
+    }
 
-        $registered = User::query()
-            ->select($column.' as location', DB::raw('count(*) as total'))
+    private function appUserQuery()
+    {
+        return User::query()
             ->where(function ($q) {
                 $q->where('role', 'app_user')
                     ->orWhereNotIn('role', ['super_admin', 'editor', 'publisher', 'analytics_viewer']);
-            })
-            ->groupBy($column)
-            ->get();
-
-        $rows = [];
-        $unknown = 0;
-        foreach ($registered as $row) {
-            $loc = $row->location ?: null;
-            if ($loc === null || $loc === '') {
-                $unknown += (int) $row->total;
-                continue;
-            }
-            if ((int) $row->total < 5) {
-                // k-anonymity: fold small cells into Unknown.
-                $unknown += (int) $row->total;
-                continue;
-            }
-            $active = User::query()
-                ->where($column, $loc)
-                ->whereIn('id', $activeIds)
-                ->count();
-            $rows[] = [
-                'location' => $loc,
-                'registered' => (int) $row->total,
-                'active' => $active,
-            ];
-        }
-
-        usort($rows, fn ($a, $b) => $b['registered'] <=> $a['registered']);
-
-        return [
-            'level' => $level,
-            'rows' => $rows,
-            'unknown' => $unknown,
-            'k_anonymity' => 5,
-            'has_location_data' => User::query()->whereNotNull($column)->where($column, '!=', '')->exists(),
-        ];
+            });
     }
 
     public function funnelReport(string $funnelKey, AnalyticsDateRange $range): array

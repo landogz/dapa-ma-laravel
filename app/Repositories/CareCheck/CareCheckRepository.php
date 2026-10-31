@@ -4,8 +4,10 @@ namespace App\Repositories\CareCheck;
 
 use App\Models\CareCheckResult;
 use App\Models\User;
-use Carbon\Carbon;
+use App\Support\Analytics\AnalyticsDateRange;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class CareCheckRepository
@@ -38,18 +40,39 @@ class CareCheckRepository
 
     public function paginateAdmin(int $perPage, array $filters): LengthAwarePaginator
     {
+        return $this->adminQuery($filters)
+            ->paginate($perPage);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, CareCheckResult>
+     */
+    public function listForExport(array $filters, int $limit = 10000): Collection
+    {
+        return $this->adminQuery($filters)
+            ->limit(max(1, min(20000, $limit)))
+            ->get();
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function adminQuery(array $filters)
+    {
         return CareCheckResult::query()
             ->with('user:id,name,email')
             ->when($filters['check_type'] ?? null, fn ($q, $type) => $q->where('check_type', $type))
             ->when($filters['display_tier'] ?? null, fn ($q, $tier) => $q->where('display_tier', $tier))
+            ->when($filters['from'] ?? null, fn ($q, $from) => $q->where('created_at', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($q, $to) => $q->where('created_at', '<=', $to))
             ->when($filters['search'] ?? null, function ($q, $search) {
                 $q->whereHas('user', function ($userQuery) use ($search) {
                     $userQuery->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%");
                 });
             })
-            ->orderByDesc('created_at')
-            ->paginate($perPage);
+            ->orderByDesc('created_at');
     }
 
     public function findAdmin(int $id): CareCheckResult
@@ -57,30 +80,25 @@ class CareCheckRepository
         return CareCheckResult::query()->with('user:id,name,email')->findOrFail($id);
     }
 
-    public function summary(int $days): array
+    public function summary(AnalyticsDateRange $range): array
     {
-        $days = max(1, $days);
-        $now = Carbon::now();
-        $from = $now->copy()->subDays($days - 1)->startOfDay();
-        $previousFrom = $from->copy()->subDays($days);
-        $previousTo = $from->copy()->subSecond();
-
         $columns = ['check_type', 'display_tier', 'band', 'percent', 'user_id', 'created_at'];
 
         $rows = CareCheckResult::query()
-            ->where('created_at', '>=', $from)
+            ->whereBetween('created_at', [$range->from, $range->to])
             ->get($columns);
 
         $previousRows = CareCheckResult::query()
-            ->whereBetween('created_at', [$previousFrom, $previousTo])
+            ->whereBetween('created_at', [$range->previousFrom, $range->previousTo])
             ->get(['display_tier', 'user_id']);
 
-        $current = $this->summarizeWindow($rows, $days, $from);
+        $current = $this->summarizeWindow($rows, $range);
 
         return [
             ...$current,
-            'updated_at' => $now->toIso8601String(),
-            'period_label' => 'previous '.$days.' days',
+            'updated_at' => now()->toIso8601String(),
+            'range' => $range->toArray(),
+            'period_label' => 'previous period',
             'previous' => [
                 'total' => $previousRows->count(),
                 'unique_users' => $previousRows->pluck('user_id')->unique()->count(),
@@ -96,7 +114,7 @@ class CareCheckRepository
      * @param  \Illuminate\Support\Collection<int, CareCheckResult>  $rows
      * @return array<string, mixed>
      */
-    private function summarizeWindow($rows, int $days, Carbon $from): array
+    private function summarizeWindow($rows, AnalyticsDateRange $range): array
     {
         $byType = [];
         foreach (CareCheckResult::TYPES as $type) {
@@ -110,9 +128,12 @@ class CareCheckRepository
             ];
         }
 
+        $chartFrom = $this->chartWindowStart($range);
+        $chartTo = $range->to->copy()->endOfDay();
         $dailyMap = [];
-        for ($i = 0; $i < $days; $i++) {
-            $day = $from->copy()->addDays($i)->toDateString();
+        $cursor = $chartFrom->copy()->startOfDay();
+        while ($cursor->lte($chartTo)) {
+            $day = $cursor->toDateString();
             $dailyMap[$day] = [
                 'date' => $day,
                 'total' => 0,
@@ -120,6 +141,7 @@ class CareCheckRepository
                 'anxiety' => 0,
                 'sleep' => 0,
             ];
+            $cursor->addDay();
         }
 
         foreach ($rows as $row) {
@@ -136,7 +158,7 @@ class CareCheckRepository
         $bandCounts = $rows->groupBy(fn ($r) => $r->check_type.':'.$r->band)->map->count();
 
         return [
-            'days' => $days,
+            'days' => $range->daySpan(),
             'total' => $rows->count(),
             'unique_users' => $rows->pluck('user_id')->unique()->count(),
             'avg_percent' => $rows->avg('percent') !== null
@@ -149,7 +171,19 @@ class CareCheckRepository
             ],
             'by_band' => $bandCounts,
             'daily' => array_values($dailyMap),
+            'daily_truncated' => $range->daySpan() > 90,
         ];
+    }
+
+    private function chartWindowStart(AnalyticsDateRange $range): CarbonInterface
+    {
+        if ($range->daySpan() <= 90) {
+            return $range->from->copy()->startOfDay();
+        }
+
+        $start = $range->to->copy()->subDays(89)->startOfDay();
+
+        return $start->lt($range->from) ? $range->from->copy()->startOfDay() : $start;
     }
 
     public function typeCounts(): array

@@ -2,8 +2,8 @@
 
 @section('content')
     <section class="admin-shell-card p-4 sm:p-6">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div class="admin-section-header admin-section-header-accent flex-1 items-center gap-3 sm:gap-4">
+        <div class="admin-insights-header">
+            <div class="admin-section-header admin-section-header-accent admin-insights-header-title min-w-0 items-center gap-3 sm:gap-4">
                 <span class="admin-icon-badge">
                     <i class="fas fa-clipboard-check"></i>
                 </span>
@@ -12,24 +12,63 @@
                     <p class="mt-0.5 text-xs sm:text-sm admin-shell-subtitle">
                         Stress, Anxiety, and Sleep Quality results from the mobile Self-care Toolkit.
                     </p>
+                    <p class="mt-1 text-[11px] text-slate-400" data-care-checks-updated-at></p>
                 </div>
             </div>
-            <div class="admin-page-actions admin-page-actions-centered flex w-full flex-col gap-2 sm:flex-row sm:items-center xl:w-auto">
-                <div class="flex min-w-0 flex-wrap items-center justify-center gap-2 text-xs text-slate-500 sm:justify-start">
-                    <span>Range:</span>
-                    <div class="admin-range-toggle inline-flex min-h-11 overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">
-                        <button type="button" class="admin-range-toggle-button is-active" data-care-checks-range="7">7<span class="hidden sm:inline"> days</span></button>
-                        <button type="button" class="admin-range-toggle-button" data-care-checks-range="30">30<span class="hidden sm:inline"> days</span></button>
-                        <button type="button" class="admin-range-toggle-button" data-care-checks-range="90">90<span class="hidden sm:inline"> days</span></button>
+
+            <div class="admin-filter-bar" data-admin-filter-bar>
+                <div class="admin-filter-bar-main">
+                    <div class="admin-filter-bar-field">
+                        <label class="admin-filter-bar-label" for="care-checks-range-select">Period</label>
+                        <select id="care-checks-range-select" class="admin-filter-bar-select" aria-label="Care checks date range">
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="7" selected>Last 7 days</option>
+                            <option value="14">Last 14 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="60">Last 60 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="this_week">This week</option>
+                            <option value="last_week">Last week</option>
+                            <option value="this_month">This month</option>
+                            <option value="last_month">Last month</option>
+                            <option value="this_quarter">This quarter</option>
+                            <option value="last_quarter">Last quarter</option>
+                            <option value="this_year">This year</option>
+                            <option value="last_year">Last year</option>
+                            <option value="all_time">All time</option>
+                            <option value="custom">Custom range</option>
+                        </select>
+                    </div>
+
+                    <div class="admin-filter-bar-presets" role="group" aria-label="Quick period">
+                        <button type="button" class="admin-filter-bar-preset" data-care-checks-range="today">Today</button>
+                        <button type="button" class="admin-filter-bar-preset is-active" data-care-checks-range="7">7 days</button>
+                        <button type="button" class="admin-filter-bar-preset" data-care-checks-range="30">30 days</button>
+                    </div>
+
+                    <div class="admin-filter-bar-actions">
+                        <button type="button" class="admin-filter-bar-btn is-primary" data-admin-action="export-care-checks" aria-label="Export care checks">
+                            <i class="fas fa-file-arrow-down" aria-hidden="true"></i>
+                            <span>Export</span>
+                        </button>
                     </div>
                 </div>
-                <button type="button" class="admin-primary-button w-full sm:w-auto" data-admin-action="export-care-checks">
-                    Export CSV
-                </button>
+
+                <div id="care-checks-custom-range" class="admin-filter-bar-custom hidden">
+                    <div class="admin-filter-bar-field">
+                        <label class="admin-filter-bar-label" for="care-checks-range-from">From</label>
+                        <input id="care-checks-range-from" type="date" class="admin-filter-bar-input" aria-label="Start date">
+                    </div>
+                    <div class="admin-filter-bar-field">
+                        <label class="admin-filter-bar-label" for="care-checks-range-to">To</label>
+                        <input id="care-checks-range-to" type="date" class="admin-filter-bar-input" aria-label="End date">
+                    </div>
+                    <button type="button" id="care-checks-apply-range" class="admin-filter-bar-btn is-secondary">Apply range</button>
+                </div>
             </div>
         </div>
-        <p class="mt-3 text-xs text-slate-400" data-care-checks-updated-at></p>
-        <p class="mt-2 text-xs leading-5 text-slate-500">
+        <p class="mt-3 text-xs leading-5 text-slate-500">
             <i class="fas fa-circle-info mr-1 text-[#055498]" aria-hidden="true"></i>
             Self-reported screening for reflection only. Not a clinical diagnosis.
         </p>

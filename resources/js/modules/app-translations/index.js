@@ -10,8 +10,11 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    isPublisherReviewOnly,
     openItemFromQuery,
+    publisherReviewSwalButtons,
     renderReviewNotesBanner,
+    resolvePublisherReviewSwalResult,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
@@ -504,11 +507,19 @@ function collectPayload() {
 
 function showTranslationForm(existing) {
     const isEdit = Boolean(existing?.id);
+    const publisherReviewOnly = isPublisherReviewOnly(existing);
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit translation' : 'Add translation',
+        title: publisherReviewOnly
+            ? 'Review translation'
+            : (isEdit ? 'Edit translation' : 'Add translation'),
         html: buildFormHtml(existing),
-        confirmButtonText: isEdit ? 'Save changes' : 'Create',
-        cancelButtonText: 'Cancel',
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(existing)
+            : {
+                confirmButtonText: isEdit ? 'Save changes' : 'Create',
+                showCancelButton: true,
+                cancelButtonText: 'Cancel',
+            }),
         didOpen: (popup) => {
             const keyInput = popup.querySelector('#tr-key');
             if (isEdit && keyInput) {
@@ -517,6 +528,10 @@ function showTranslationForm(existing) {
             bindSvgIconPickers(popup);
         },
         preConfirm: () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const payload = collectPayload();
             if (!isEdit && !payload.key) {
                 Swal.showValidationMessage('Key is required.');
@@ -528,7 +543,18 @@ function showTranslationForm(existing) {
             }
             return payload;
         },
-    }, { size: 'lg' })).then(({ isConfirmed, value }) => {
+    }, { size: 'lg' })).then(async (result) => {
+        if (publisherReviewOnly) {
+            await resolvePublisherReviewSwalResult(result, {
+                basePath: '/admin/app-translations',
+                id: existing.id,
+                item: existing,
+                onSuccess: () => loadAppTranslations(),
+            });
+            return;
+        }
+
+        const { isConfirmed, value } = result;
         if (!isConfirmed || !value) return;
 
         const form = new FormData();

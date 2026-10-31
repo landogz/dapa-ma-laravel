@@ -33,8 +33,10 @@ class CareSupportResourceService
     public function create(array $data, User $actor): CareSupportResource
     {
         $payload = $this->contentWorkflow->prepareCreatePayload($actor, $this->normalize($data));
+        $created = $this->repository->create($payload);
+        $this->contentWorkflow->notifyPublishedCreate($created, $actor, 'care-support');
 
-        return $this->repository->create($payload);
+        return $created;
     }
 
     public function update(CareSupportResource $resource, array $data, User $actor): CareSupportResource

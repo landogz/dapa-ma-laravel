@@ -77,9 +77,10 @@ class AppOptionRepository
     /**
      * @return array<string, int>
      */
-    public function groupCounts(): array
+    public function groupCounts(?User $actor = null): array
     {
         return AppOption::query()
+            ->visibleInAdminFor($actor)
             ->selectRaw('`group` as group_key, COUNT(*) as total')
             ->groupBy('group')
             ->pluck('total', 'group_key')

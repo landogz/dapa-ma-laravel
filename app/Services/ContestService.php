@@ -48,8 +48,10 @@ class ContestService
     public function createContest(array $data, User $actor): Contest
     {
         $data = $this->contentWorkflow->prepareCreatePayload($actor, $data);
+        $created = $this->contestRepository->createContest($data);
+        $this->contentWorkflow->notifyPublishedCreate($created, $actor, 'contests');
 
-        return $this->contestRepository->createContest($data);
+        return $created;
     }
 
     public function updateContest(Contest $contest, array $data, User $actor): Contest

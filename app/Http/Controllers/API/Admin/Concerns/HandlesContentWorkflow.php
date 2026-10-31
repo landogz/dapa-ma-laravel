@@ -25,6 +25,7 @@ trait HandlesContentWorkflow
     public function submit(Request $request, Model $model): JsonResponse
     {
         $wasPublishedUpdate = method_exists($model, 'isRevisionDraft') && $model->isRevisionDraft();
+        $isSuperAdmin = $request->user()?->role === 'super_admin';
 
         try {
             $updated = $this->contentWorkflowService()->submit(
@@ -34,6 +35,16 @@ trait HandlesContentWorkflow
             );
         } catch (InvalidArgumentException $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        if ($isSuperAdmin) {
+            return response()->json([
+                'status' => true,
+                'message' => $wasPublishedUpdate
+                    ? 'Update published. The live version is now updated.'
+                    : 'Published successfully.',
+                'data' => $updated,
+            ]);
         }
 
         return response()->json([

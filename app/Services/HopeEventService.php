@@ -54,8 +54,10 @@ class HopeEventService
         }
 
         $payload = $this->contentWorkflow->prepareCreatePayload($actor, $payload);
+        $created = $this->repository->create($payload);
+        $this->contentWorkflow->notifyPublishedCreate($created, $actor, 'hope-events');
 
-        return $this->repository->create($payload);
+        return $created;
     }
 
     public function update(HopeEvent $event, array $data, User $actor): HopeEvent

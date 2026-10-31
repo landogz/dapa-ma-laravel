@@ -16,9 +16,12 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    isPublisherReviewOnly,
     itemForEditorForm,
     openItemFromQuery,
+    publisherReviewSwalButtons,
     renderReviewNotesBanner,
+    resolvePublisherReviewSwalResult,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
@@ -302,10 +305,11 @@ function showResourceForm(existingRaw) {
     const bodyEn = Array.isArray(existing?.body_en) ? existing.body_en.join('\n') : '';
     const bodyTl = Array.isArray(existing?.body_tl) ? existing.body_tl.join('\n') : '';
     const reviewItem = existingRaw?.pending_revision ? existingRaw : null;
+    const publisherReviewOnly = isPublisherReviewOnly(existingRaw);
 
     Swal.fire(buildSwalOptions({
         title: isEdit
-            ? (reviewItem ? 'Review Care Support changes' : 'Edit Care Support Resource')
+            ? (publisherReviewOnly || reviewItem ? 'Review Care Support changes' : 'Edit Care Support Resource')
             : 'Add Care Support Resource',
         html: `${renderReviewNotesBanner(existingRaw)}${buildSwalForm({
             description: 'Hotlines need a phone number. Counseling usually needs a description and optional website. Crisis resources can include modal body paragraphs (one per line).',
@@ -434,9 +438,17 @@ function showResourceForm(existingRaw) {
                 },
             ],
         })}`,
-        confirmButtonText: isEdit ? 'Save changes' : 'Create resource',
-        showCancelButton: true,
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(existingRaw)
+            : {
+                confirmButtonText: isEdit ? 'Save changes' : 'Create resource',
+                showCancelButton: true,
+            }),
         preConfirm: () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const titleEn = document.getElementById('csr-title-en')?.value?.trim() ?? '';
             const titleTl = document.getElementById('csr-title-tl')?.value?.trim() ?? '';
             if (!titleEn || !titleTl) {
@@ -489,7 +501,18 @@ function showResourceForm(existingRaw) {
                     return false;
                 });
         },
-    }, { size: 'lg' })).then(({ isConfirmed, value }) => {
+    }, { size: 'lg' })).then(async (result) => {
+        if (publisherReviewOnly) {
+            await resolvePublisherReviewSwalResult(result, {
+                basePath: '/admin/care-support-resources',
+                id: existingRaw.id,
+                item: existingRaw,
+                onSuccess: () => loadCareSupportResources(),
+            });
+            return;
+        }
+
+        const { isConfirmed, value } = result;
         if (!isConfirmed || !value) {
             return;
         }

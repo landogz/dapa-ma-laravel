@@ -48,12 +48,21 @@ export function bindAdvancedRangeControls(onChange) {
         customWrap.classList.toggle('hidden', select.value !== 'custom');
     };
 
+    const syncPresets = () => {
+        const value = select?.value || '7';
+        document.querySelectorAll('[data-analytics-range]').forEach((el) => {
+            el.classList.toggle('is-active', el.getAttribute('data-analytics-range') === value);
+        });
+    };
+
     select?.addEventListener('change', () => {
         syncCustom();
+        syncPresets();
         if (select.value !== 'custom') onChange?.();
     });
     applyBtn?.addEventListener('click', () => onChange?.());
     syncCustom();
+    syncPresets();
 }
 
 export async function loadAnalyticsTab(key) {
@@ -99,7 +108,7 @@ export function renderExtendedKpis(kpis = {}, tooltips = {}) {
     if (since) {
         since.textContent = kpis.sessions_tracking_since
             ? `Session metrics collecting since ${String(kpis.sessions_tracking_since).slice(0, 10)}`
-            : 'Session/DAU metrics appear after mobile app opens are recorded.';
+            : 'Session and daily active user metrics appear after mobile app opens are recorded.';
     }
 
     Object.entries(tooltips).forEach(([key, tip]) => {
@@ -355,53 +364,574 @@ async function loadJourneysTab(params) {
     `;
 }
 
+let leaderboardRows = [];
+let leaderboardMetricLabel = 'Engagement';
+let leaderboardSelectedId = null;
+
 async function loadLeaderboardTab(params) {
     const root = document.getElementById('analytics-leaderboard-table');
     if (!root) return;
-    const metric = document.getElementById('analytics-leaderboard-metric')?.value || 'engagements';
+    const metricSelect = document.getElementById('analytics-leaderboard-metric');
+    const metric = metricSelect?.value || 'engagements';
     const limit = document.getElementById('analytics-leaderboard-limit')?.value || '25';
     const { data } = await axios.get('/admin/analytics/leaderboard', { params: { ...params, metric, limit } });
-    const rows = data.data?.rows ?? [];
-    root.innerHTML = rows.length ? `
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-left text-sm">
-                <thead class="text-xs uppercase text-slate-500"><tr><th>Rank</th><th>User</th><th>Score</th><th>Views</th><th>Likes</th><th>Comments</th><th>Metric</th></tr></thead>
-                <tbody>${rows.map((r) => `
-                    <tr class="border-t border-slate-100">
-                        <td class="py-2">#${r.rank}</td>
-                        <td>${escapeHtml(r.name)} <span class="text-xs text-slate-400">#${r.user_id}</span></td>
-                        <td>${r.engagement_score}</td>
-                        <td>${r.views}</td>
-                        <td>${r.likes}</td>
-                        <td>${r.comments}</td>
-                        <td class="font-semibold">${Number(r.metric_value || 0).toLocaleString()}</td>
-                    </tr>
-                `).join('')}</tbody>
-            </table>
-        </div>
-    ` : '<p class="text-sm text-slate-400">No leaderboard rows for this range.</p>';
+    const payload = data.data ?? {};
+    leaderboardRows = Array.isArray(payload.rows) ? payload.rows : [];
+    leaderboardMetricLabel = payload.metric_label || metricLabelFromKey(metric);
+    renderLeaderboardCriteria(payload.metrics ?? [], metric);
+    if (!leaderboardRows.some((row) => Number(row.user_id) === Number(leaderboardSelectedId))) {
+        leaderboardSelectedId = leaderboardRows[0]?.user_id ?? null;
+    }
+    renderLeaderboardBoard();
 }
+
+function metricLabelFromKey(metric) {
+    const labels = {
+        visits: 'Visits',
+        app_usage: 'App usage',
+        content_views: 'Content views',
+        views: 'Content views',
+        engagements: 'Engagement',
+        engagement: 'Engagement',
+        score: 'Engagement score',
+        sessions: 'Sessions',
+        app_opens: 'App opens',
+        likes: 'Likes',
+        comments: 'Comments',
+        shares: 'Shares',
+        duration: 'Session duration',
+    };
+    return labels[metric] || String(metric || 'Metric').replaceAll('_', ' ');
+}
+
+function renderLeaderboardCriteria(metrics, activeMetric) {
+    const root = document.getElementById('analytics-leaderboard-criteria');
+    if (!root) return;
+    const primary = (Array.isArray(metrics) ? metrics : [])
+        .filter((item) => item.group === 'primary')
+        .map((item) => item.key);
+    const keys = primary.length
+        ? primary
+        : ['visits', 'app_usage', 'content_views', 'engagements'];
+    const labels = {
+        visits: 'Visits',
+        app_usage: 'App usage',
+        content_views: 'Content views',
+        engagements: 'Engagement',
+    };
+
+    root.innerHTML = keys.map((key) => `
+        <button
+            type="button"
+            class="admin-range-toggle-button min-h-11 rounded-full px-4 text-xs ${key === activeMetric ? 'is-active' : ''}"
+            data-leaderboard-metric="${escapeHtml(key)}"
+        >${escapeHtml(labels[key] || metricLabelFromKey(key))}</button>
+    `).join('');
+
+    root.querySelectorAll('[data-leaderboard-metric]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const next = button.getAttribute('data-leaderboard-metric');
+            const select = document.getElementById('analytics-leaderboard-metric');
+            if (select && next) {
+                select.value = next;
+            }
+            loadLeaderboardTab(getAnalyticsQueryParams());
+        });
+    });
+}
+
+function renderLeaderboardBoard() {
+    const root = document.getElementById('analytics-leaderboard-table');
+    if (!root) return;
+
+    if (!leaderboardRows.length) {
+        root.innerHTML = '<p class="text-sm text-slate-400">No leaderboard rows for this range.</p>';
+        return;
+    }
+
+    const podium = leaderboardRows.slice(0, 3);
+    const rest = leaderboardRows.slice(3);
+    const selected = leaderboardRows.find((row) => Number(row.user_id) === Number(leaderboardSelectedId))
+        || leaderboardRows[0];
+
+    root.innerHTML = `
+        <div class="analytics-leaderboard-layout">
+            <div class="min-w-0 space-y-4">
+                <div class="analytics-leaderboard-podium">
+                    ${podium.map((row) => renderLeaderboardPodiumCard(row)).join('')}
+                </div>
+                <div class="analytics-leaderboard-list">
+                    ${rest.length ? rest.map((row) => renderLeaderboardListRow(row)).join('') : `
+                        <p class="text-sm text-slate-400">${leaderboardRows.length <= 3 ? 'Only the top ranks are available for this range.' : ''}</p>
+                    `}
+                </div>
+            </div>
+            <aside class="analytics-leaderboard-spotlight" aria-label="Selected user stats">
+                ${renderLeaderboardSpotlight(selected)}
+            </aside>
+        </div>
+    `;
+
+    root.querySelectorAll('[data-leaderboard-user]').forEach((el) => {
+        el.addEventListener('click', () => {
+            leaderboardSelectedId = Number(el.getAttribute('data-leaderboard-user'));
+            renderLeaderboardBoard();
+        });
+    });
+}
+
+function renderLeaderboardPodiumCard(row) {
+    const rank = Number(row.rank) || 0;
+    const selected = Number(row.user_id) === Number(leaderboardSelectedId);
+    return `
+        <button
+            type="button"
+            class="analytics-leaderboard-podium-card rank-${rank} ${selected ? 'is-selected' : ''}"
+            data-leaderboard-user="${row.user_id}"
+        >
+            <span class="analytics-leaderboard-rank-badge" aria-label="Rank ${rank}">${rank}</span>
+            ${leaderboardAvatar(row, rank === 1 ? 'lg' : 'md')}
+            <p class="analytics-leaderboard-name">${escapeHtml(row.name)}</p>
+            <p class="analytics-leaderboard-subtitle">${escapeHtml(row.subtitle || 'App user')}</p>
+            <div class="analytics-leaderboard-metric-pill">
+                <span>${escapeHtml(leaderboardMetricLabel)}</span>
+                <strong>${Number(row.metric_value || 0).toLocaleString()}</strong>
+            </div>
+            <div class="analytics-leaderboard-mini-stats">
+                <span title="Visits"><i class="fas fa-shoe-prints" aria-hidden="true"></i> ${Number(row.visits || 0).toLocaleString()}</span>
+                <span title="Views"><i class="fas fa-eye" aria-hidden="true"></i> ${Number(row.views || 0).toLocaleString()}</span>
+                <span title="Engagement"><i class="fas fa-bolt" aria-hidden="true"></i> ${Number(row.engagements || 0).toLocaleString()}</span>
+            </div>
+        </button>
+    `;
+}
+
+function renderLeaderboardListRow(row) {
+    const selected = Number(row.user_id) === Number(leaderboardSelectedId);
+    return `
+        <button
+            type="button"
+            class="analytics-leaderboard-row ${selected ? 'is-selected' : ''}"
+            data-leaderboard-user="${row.user_id}"
+        >
+            <span class="analytics-leaderboard-row-rank">#${row.rank}</span>
+            ${leaderboardAvatar(row, 'sm')}
+            <span class="min-w-0 flex-1 text-left">
+                <span class="block truncate font-semibold text-slate-900">${escapeHtml(row.name)}</span>
+                <span class="block truncate text-[11px] text-slate-500">${escapeHtml(row.subtitle || 'App user')}</span>
+            </span>
+            <span class="analytics-leaderboard-row-metric">
+                <span class="text-[10px] uppercase tracking-wide text-slate-400">${escapeHtml(leaderboardMetricLabel)}</span>
+                <strong>${Number(row.metric_value || 0).toLocaleString()}</strong>
+            </span>
+            <span class="hidden text-xs text-slate-500 sm:inline-flex sm:items-center sm:gap-3">
+                <span title="App usage"><i class="fas fa-mobile-screen" aria-hidden="true"></i> ${Number(row.app_usage || 0).toLocaleString()}</span>
+                <span title="Views"><i class="fas fa-eye" aria-hidden="true"></i> ${Number(row.views || 0).toLocaleString()}</span>
+            </span>
+        </button>
+    `;
+}
+
+function renderLeaderboardSpotlight(row) {
+    if (!row) {
+        return '<p class="text-sm text-slate-400">Select a user to inspect their stats.</p>';
+    }
+
+    const durationMins = Math.round((Number(row.duration_seconds) || 0) / 60);
+    const tiles = [
+        { label: 'Rank', value: `#${row.rank}` },
+        { label: leaderboardMetricLabel, value: Number(row.metric_value || 0).toLocaleString() },
+        { label: 'Engagement score', value: Number(row.engagement_score || 0).toLocaleString() },
+    ];
+
+    return `
+        <div class="analytics-leaderboard-spotlight-card">
+            <div class="analytics-leaderboard-spotlight-head">
+                ${leaderboardAvatar(row, 'lg')}
+                <div class="min-w-0">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FBD116]">Rank #${row.rank}</p>
+                    <h4 class="truncate text-lg font-bold text-white">${escapeHtml(row.name)}</h4>
+                    <p class="truncate text-sm text-white/80">${escapeHtml(row.subtitle || 'App user')}</p>
+                </div>
+            </div>
+            <div class="analytics-leaderboard-spotlight-tiles">
+                ${tiles.map((tile) => `
+                    <article>
+                        <p>${escapeHtml(tile.label)}</p>
+                        <strong>${escapeHtml(String(tile.value))}</strong>
+                    </article>
+                `).join('')}
+            </div>
+            <div class="analytics-leaderboard-spotlight-breakdown">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Breakdown</p>
+                ${[
+                    ['Visits', row.visits],
+                    ['App usage', row.app_usage],
+                    ['Content views', row.views],
+                    ['Engagement actions', row.engagements],
+                    ['App opens', row.app_opens],
+                    ['Sessions', row.sessions],
+                    ['Session minutes', durationMins],
+                    ['Likes', row.likes],
+                    ['Comments', row.comments],
+                    ['Shares', row.shares],
+                    ['Bookmarks', row.bookmarks],
+                ].map(([label, value]) => `
+                    <div class="flex items-center justify-between gap-3 border-b border-slate-100 py-2 text-sm last:border-0">
+                        <span class="text-slate-600">${escapeHtml(label)}</span>
+                        <strong class="text-slate-900">${Number(value || 0).toLocaleString()}</strong>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function leaderboardAvatar(row, size = 'md') {
+    const name = String(row?.name || 'User');
+    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() || '').join('') || '?';
+    const sizeClass = size === 'lg' ? 'is-lg' : size === 'sm' ? 'is-sm' : 'is-md';
+    if (row?.avatar_url) {
+        return `<span class="analytics-leaderboard-avatar ${sizeClass}"><img src="${escapeHtml(row.avatar_url)}" alt="" loading="lazy"></span>`;
+    }
+    return `<span class="analytics-leaderboard-avatar ${sizeClass} is-fallback" aria-hidden="true">${escapeHtml(initials)}</span>`;
+}
+
+let geographyOverviewCache = null;
 
 async function loadGeographyTab(params) {
     const root = document.getElementById('analytics-geography-panel');
     if (!root) return;
-    const level = document.getElementById('analytics-geo-level')?.value || 'province';
-    const { data } = await axios.get('/admin/analytics/geography', { params: { ...params, level } });
-    const payload = data.data ?? {};
+    const { data } = await axios.get('/admin/analytics/geography', {
+        params: { ...params, level: 'overview', limit: 8 },
+    });
+    geographyOverviewCache = data.data ?? {};
+    renderGeographyOverview();
+}
+
+function formatCompactNumber(value) {
+    const n = Number(value) || 0;
+    if (n >= 1000000) {
+        const m = n / 1000000;
+        return `${m >= 10 ? Math.round(m) : m.toFixed(1).replace(/\.0$/, '')}M`;
+    }
+    if (n >= 1000) {
+        const k = n / 1000;
+        return `${k >= 10 ? Math.round(k) : k.toFixed(1).replace(/\.0$/, '')}K`;
+    }
+    return n.toLocaleString();
+}
+
+function geographyMetricKey() {
+    return document.getElementById('analytics-geo-metric')?.value === 'active' ? 'active' : 'registered';
+}
+
+function geographyCardStatusIcons() {
+    return `
+        <span class="analytics-demo-card-status" aria-hidden="true">
+            <i class="fas fa-triangle-exclamation text-amber-500"></i>
+            <i class="fas fa-circle-check text-emerald-500"></i>
+        </span>
+    `;
+}
+
+function classifyPhilippineIsland(location) {
+    const name = String(location || '').toLowerCase();
+    if (!name) return 'unknown';
+
+    const mindanao = [
+        'mindanao', 'zamboanga', 'region ix', 'region 9', 'region x', 'region 10',
+        'region xi', 'region 11', 'region xii', 'region 12', 'region xiii', 'region 13',
+        'northern mindanao', 'davao', 'soccsksargen', 'caraga', 'barmm', 'bangsamoro',
+        'armm', 'cotabato', 'maguindanao', 'sulu', 'tawi', 'basilan', 'bukidnon',
+        'misamis', 'lanao', 'surigao', 'agusan', 'compostela', 'sarangani', 'sultan kudarat',
+    ];
+    const visayas = [
+        'visayas', 'region vi', 'region 6', 'region vii', 'region 7', 'region viii', 'region 8',
+        'western visayas', 'central visayas', 'eastern visayas', 'negros', 'cebu', 'bohol',
+        'leyte', 'samar', 'iloilo', 'capiz', 'antique', 'guimaras', 'siquijor', 'biliran',
+        'aklan',
+    ];
+
+    if (mindanao.some((token) => name.includes(token))) return 'mindanao';
+    if (visayas.some((token) => name.includes(token))) return 'visayas';
+    return 'luzon';
+}
+
+function aggregateIslandHeat(rows, valueKey) {
+    const totals = { luzon: 0, visayas: 0, mindanao: 0 };
+    rows.forEach((row) => {
+        const island = classifyPhilippineIsland(row.location);
+        if (island === 'unknown') return;
+        totals[island] += Number(row[valueKey]) || 0;
+    });
+    const max = Math.max(totals.luzon, totals.visayas, totals.mindanao, 1);
+    return {
+        luzon: totals.luzon,
+        visayas: totals.visayas,
+        mindanao: totals.mindanao,
+        heat: {
+            luzon: totals.luzon / max,
+            visayas: totals.visayas / max,
+            mindanao: totals.mindanao / max,
+        },
+    };
+}
+
+function islandFill(intensity) {
+    const t = Math.max(0.18, Math.min(1, Number(intensity) || 0));
+    const light = { r: 186, g: 214, b: 236 };
+    const dark = { r: 5, g: 84, b: 152 };
+    const r = Math.round(light.r + (dark.r - light.r) * t);
+    const g = Math.round(light.g + (dark.g - light.g) * t);
+    const b = Math.round(light.b + (dark.b - light.b) * t);
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+function renderPhilippinesMap(rows, valueKey) {
+    const heat = aggregateIslandHeat(rows, valueKey);
+    const top = [...rows]
+        .sort((a, b) => (Number(b[valueKey]) || 0) - (Number(a[valueKey]) || 0))
+        .slice(0, 4);
+    const max = Math.max(...top.map((row) => Number(row[valueKey]) || 0), 1);
+
+    const markers = top.map((row, index) => {
+        const island = classifyPhilippineIsland(row.location);
+        const positions = {
+            luzon: [{ x: 42, y: 22 }, { x: 48, y: 34 }, { x: 36, y: 28 }, { x: 52, y: 18 }],
+            visayas: [{ x: 48, y: 52 }, { x: 56, y: 48 }, { x: 40, y: 54 }, { x: 60, y: 56 }],
+            mindanao: [{ x: 52, y: 74 }, { x: 44, y: 78 }, { x: 60, y: 72 }, { x: 48, y: 82 }],
+        };
+        const point = (positions[island] || positions.luzon)[index % 4];
+        const size = 8 + Math.round(((Number(row[valueKey]) || 0) / max) * 14);
+        return `
+            <circle class="analytics-demo-map-marker" cx="${point.x}" cy="${point.y}" r="${size / 2}"
+                fill="rgba(5, 84, 152, 0.55)" stroke="#fff" stroke-width="1.5">
+                <title>${escapeHtml(row.location)}: ${formatCompactNumber(row[valueKey])}</title>
+            </circle>
+        `;
+    }).join('');
+
+    return `
+        <div class="analytics-demo-map" role="img" aria-label="Philippines users by island group">
+            <svg viewBox="0 0 100 100" class="analytics-demo-map-svg" aria-hidden="true">
+                <defs>
+                    <linearGradient id="analytics-demo-map-sea" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#eef6fb"/>
+                        <stop offset="100%" stop-color="#e2eef7"/>
+                    </linearGradient>
+                </defs>
+                <rect width="100" height="100" rx="10" fill="url(#analytics-demo-map-sea)"/>
+                <!-- Luzon -->
+                <path d="M46 8c4-1 10 1 12 7 2 5 1 11-1 16-1 4 1 7 3 10 2 3 1 7-2 9-4 2-9 1-12-2-2-2-5-2-7 0-3 2-7 1-8-2-1-4 1-8 3-11 2-3 2-7 1-10-1-5 3-10 11-17z"
+                    fill="${islandFill(heat.heat.luzon)}" stroke="#fff" stroke-width="0.8"/>
+                <!-- Visayas -->
+                <path d="M34 50c3-2 7-1 10 1 2 1 5 0 7-1 3-2 7-1 9 1 2 2 5 3 5 6 0 3-3 5-6 5-2 0-4 2-4 4 0 2-3 4-6 3-3-1-5-3-5-6 0-2-2-3-4-3-3 0-5-3-3-6 1-2 0-3-3-4z"
+                    fill="${islandFill(heat.heat.visayas)}" stroke="#fff" stroke-width="0.8"/>
+                <path d="M58 58c2-1 5 0 6 2 1 2 0 4-2 5-2 1-4 0-5-2-1-2 0-4 1-5z"
+                    fill="${islandFill(heat.heat.visayas)}" stroke="#fff" stroke-width="0.6"/>
+                <!-- Mindanao -->
+                <path d="M40 68c6-3 14-2 18 2 4 4 6 10 4 15-2 5-8 8-14 8-6 0-12-3-14-8-2-5 0-11 4-14 1-1 1-2 2-3z"
+                    fill="${islandFill(heat.heat.mindanao)}" stroke="#fff" stroke-width="0.8"/>
+                ${markers}
+            </svg>
+            <div class="analytics-demo-map-legend">
+                <span><i style="background:${islandFill(heat.heat.luzon)}"></i>Luzon ${formatCompactNumber(heat.luzon)}</span>
+                <span><i style="background:${islandFill(heat.heat.visayas)}"></i>Visayas ${formatCompactNumber(heat.visayas)}</span>
+                <span><i style="background:${islandFill(heat.heat.mindanao)}"></i>Mindanao ${formatCompactNumber(heat.mindanao)}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderGeographyRankList(rows, valueKey, emptyMessage, options = {}) {
+    const limit = options.limit ?? 8;
+    const showBars = options.showBars !== false;
+    const compact = Boolean(options.compact);
+    const list = rows.slice(0, limit);
+    const max = Math.max(...list.map((row) => Number(row[valueKey]) || 0), 1);
+
+    if (!list.length) {
+        return `<p class="analytics-demo-empty">${escapeHtml(emptyMessage)}</p>`;
+    }
+
+    return `
+        <ul class="analytics-geo-rank-list ${compact ? 'is-compact' : ''}">
+            ${list.map((row) => {
+                const value = Number(row[valueKey]) || 0;
+                const width = Math.max(6, Math.round((value / max) * 100));
+                return `
+                    <li>
+                        <div class="analytics-geo-rank-meta">
+                            <span class="analytics-geo-rank-name" title="${escapeHtml(row.location)}">${escapeHtml(row.location)}</span>
+                            <span class="analytics-geo-rank-value">${formatCompactNumber(value)}</span>
+                        </div>
+                        ${showBars ? `
+                            <div class="analytics-geo-rank-track" aria-hidden="true">
+                                <div class="analytics-geo-rank-fill" style="width:${width}%"></div>
+                            </div>
+                        ` : ''}
+                    </li>
+                `;
+            }).join('')}
+        </ul>
+    `;
+}
+
+function renderRealtimeBars(rows, valueKey) {
+    const list = rows.slice(0, 12);
+    const max = Math.max(...list.map((row) => Number(row[valueKey]) || 0), 1);
+    if (!list.length) {
+        return `<div class="analytics-demo-realtime-bars is-empty" aria-hidden="true"></div>`;
+    }
+    return `
+        <div class="analytics-demo-realtime-bars" aria-hidden="true" title="Users by region">
+            ${list.map((row) => {
+                const value = Number(row[valueKey]) || 0;
+                const height = Math.max(8, Math.round((value / max) * 100));
+                return `<span style="height:${height}%"></span>`;
+            }).join('')}
+        </div>
+        <p class="analytics-demo-realtime-caption">Users by region</p>
+    `;
+}
+
+function renderCoverageDoughnut(summary) {
+    const withLocation = Number(summary.with_location || 0);
+    const missing = Number(summary.missing_location || 0);
+    const total = Math.max(withLocation + missing, 1);
+    const withPct = Math.round((withLocation / total) * 1000) / 10;
+    const missingPct = Math.round((missing / total) * 1000) / 10;
+    const circumference = 2 * Math.PI * 42;
+    const withLen = (withLocation / total) * circumference;
+    const missingLen = circumference - withLen;
+
+    return `
+        <div class="analytics-demo-donut-wrap">
+            <svg class="analytics-demo-donut" viewBox="0 0 120 120" aria-hidden="true">
+                <circle cx="60" cy="60" r="42" fill="none" stroke="#93c5fd" stroke-width="16"/>
+                <circle cx="60" cy="60" r="42" fill="none" stroke="#055498" stroke-width="16"
+                    stroke-dasharray="${withLen} ${missingLen}"
+                    stroke-linecap="butt" transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="analytics-demo-donut-center">
+                <strong>${Number(summary.location_coverage_pct || withPct).toLocaleString()}%</strong>
+                <span>covered</span>
+            </div>
+        </div>
+        <ul class="analytics-demo-donut-legend">
+            <li><i class="is-with"></i><span>WITH LOCATION</span><strong>${withPct}%</strong></li>
+            <li><i class="is-missing"></i><span>MISSING</span><strong>${missingPct}%</strong></li>
+        </ul>
+    `;
+}
+
+function renderGeographyOverview() {
+    const root = document.getElementById('analytics-geography-panel');
+    if (!root) return;
+
+    const payload = geographyOverviewCache ?? {};
+    const valueKey = geographyMetricKey();
+    const summary = payload.summary ?? {};
+    const regionRows = Array.isArray(payload.region?.rows) ? payload.region.rows : [];
+    const provinceRows = Array.isArray(payload.province?.rows) ? payload.province.rows : [];
+    const cityRows = Array.isArray(payload.city?.rows) ? payload.city.rows : [];
+    const activeTotal = Number(summary.active_in_range || 0);
+
     if (!payload.has_location_data) {
-        root.innerHTML = '<p class="text-sm text-slate-400">No user location profile data yet. Geographic analytics will populate once users set region/province/city.</p>';
+        root.innerHTML = `
+            <div class="analytics-demo-empty-state">
+                <p class="text-sm font-semibold text-slate-700">No profile locations yet</p>
+                <p class="mt-1 text-sm text-slate-500">Geographic analytics will populate once app users set Region, Province, and City/Municipality on their authorized profiles.</p>
+            </div>
+        `;
         return;
     }
-    const rows = payload.rows ?? [];
+
     root.innerHTML = `
-        <p class="mb-2 text-xs text-slate-500">Cells with fewer than ${payload.k_anonymity ?? 5} users are folded into Unknown (${Number(payload.unknown || 0).toLocaleString()}).</p>
-        <div class="space-y-2">
-            ${rows.map((r) => `
-                <div class="flex items-center justify-between border-b border-slate-100 py-2 text-sm">
-                    <span class="font-medium">${escapeHtml(r.location)}</span>
-                    <span class="text-slate-500">${Number(r.registered || 0).toLocaleString()} registered · ${Number(r.active || 0).toLocaleString()} active</span>
-                </div>
-            `).join('') || '<p class="text-sm text-slate-400">No geographic rows.</p>'}
+        <div class="analytics-demo-overview">
+            <div class="analytics-demo-top">
+                <article class="analytics-demo-card analytics-demo-card--hero">
+                    <header class="analytics-demo-card-header">
+                        <h4>Users by Region</h4>
+                        ${geographyCardStatusIcons()}
+                    </header>
+                    <div class="analytics-demo-hero-body">
+                        ${renderPhilippinesMap(regionRows, valueKey)}
+                        <div class="analytics-demo-hero-list">
+                            ${renderGeographyRankList(regionRows, valueKey, 'No region values on profiles yet.')}
+                        </div>
+                    </div>
+                    <footer class="analytics-demo-card-footer">
+                        <span class="analytics-demo-link">View regions →</span>
+                    </footer>
+                </article>
+
+                <article class="analytics-demo-card analytics-demo-card--realtime">
+                    <header class="analytics-demo-card-header">
+                        <h4>Active in selected range</h4>
+                        ${geographyCardStatusIcons()}
+                    </header>
+                    <div class="analytics-demo-realtime-body">
+                        <p class="analytics-demo-realtime-value">${formatCompactNumber(activeTotal)}</p>
+                        ${renderRealtimeBars(regionRows, valueKey)}
+                        <div class="analytics-demo-realtime-top">
+                            <p class="analytics-demo-realtime-top-label">Top Regions</p>
+                            ${renderGeographyRankList(regionRows, valueKey, 'No active regions yet.', {
+                                limit: 5,
+                                showBars: false,
+                                compact: true,
+                            })}
+                        </div>
+                    </div>
+                    <footer class="analytics-demo-card-footer">
+                        <span class="analytics-demo-link">View activity →</span>
+                    </footer>
+                </article>
+            </div>
+
+            <div class="analytics-demo-bottom">
+                <article class="analytics-demo-card">
+                    <header class="analytics-demo-card-header">
+                        <h4>Users by City</h4>
+                        ${geographyCardStatusIcons()}
+                    </header>
+                    <div class="analytics-demo-card-body">
+                        ${renderGeographyRankList(cityRows, valueKey, 'No city/municipality values on profiles yet.')}
+                    </div>
+                    <footer class="analytics-demo-card-footer">
+                        <span class="analytics-demo-link">View cities →</span>
+                    </footer>
+                </article>
+
+                <article class="analytics-demo-card analytics-demo-card--donut">
+                    <header class="analytics-demo-card-header">
+                        <h4>Location coverage</h4>
+                        ${geographyCardStatusIcons()}
+                    </header>
+                    <div class="analytics-demo-card-body analytics-demo-card-body--donut">
+                        ${renderCoverageDoughnut(summary)}
+                    </div>
+                    <footer class="analytics-demo-card-footer">
+                        <span class="analytics-demo-link">View coverage →</span>
+                    </footer>
+                </article>
+
+                <article class="analytics-demo-card">
+                    <header class="analytics-demo-card-header">
+                        <h4>Users by Province</h4>
+                        ${geographyCardStatusIcons()}
+                    </header>
+                    <div class="analytics-demo-card-body">
+                        ${renderGeographyRankList(provinceRows, valueKey, 'No province values on profiles yet.')}
+                    </div>
+                    <footer class="analytics-demo-card-footer">
+                        <span class="analytics-demo-link">View provinces →</span>
+                    </footer>
+                </article>
+            </div>
+
+            <p class="analytics-demo-source">${escapeHtml(payload.source || 'Authorized user profile location.')}</p>
         </div>
     `;
 }
@@ -484,7 +1014,16 @@ export function bindAdvancedAnalyticsActions(reloadOverview) {
     document.getElementById('analytics-content-apply')?.addEventListener('click', () => loadContentTab(getAnalyticsQueryParams()));
     document.getElementById('analytics-retention-apply')?.addEventListener('click', () => loadRetentionTab(getAnalyticsQueryParams()));
     document.getElementById('analytics-leaderboard-apply')?.addEventListener('click', () => loadLeaderboardTab(getAnalyticsQueryParams()));
+    document.getElementById('analytics-leaderboard-metric')?.addEventListener('change', () => loadLeaderboardTab(getAnalyticsQueryParams()));
+    document.getElementById('analytics-leaderboard-limit')?.addEventListener('change', () => loadLeaderboardTab(getAnalyticsQueryParams()));
     document.getElementById('analytics-geo-apply')?.addEventListener('click', () => loadGeographyTab(getAnalyticsQueryParams()));
+    document.getElementById('analytics-geo-metric')?.addEventListener('change', () => {
+        if (geographyOverviewCache) {
+            renderGeographyOverview();
+            return;
+        }
+        loadGeographyTab(getAnalyticsQueryParams());
+    });
     document.getElementById('analytics-alerts-apply')?.addEventListener('click', () => loadAlertsTab());
     document.getElementById('analytics-export-queue')?.addEventListener('click', async () => {
         try {

@@ -8,6 +8,7 @@ use App\Models\AnalyticsAnomalyAlert;
 use App\Models\AnalyticsExport;
 use App\Models\AnalyticsFunnelDefinition;
 use App\Repositories\AnalyticsRepository;
+use App\Services\Analytics\AnalyticsReportExporter;
 use App\Services\AnalyticsService;
 use App\Support\Analytics\AnalyticsDateRange;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +24,7 @@ class AnalyticsAdminController extends Controller
     public function __construct(
         private readonly AnalyticsService $analyticsService,
         private readonly AnalyticsRepository $analyticsRepository,
+        private readonly AnalyticsReportExporter $analyticsReportExporter,
     ) {
     }
 
@@ -48,12 +50,20 @@ class AnalyticsAdminController extends Controller
             return response()->json(['status' => false, 'message' => $e->getMessage()], 422);
         }
 
-        $csv = $this->analyticsService->exportCsv($range);
-        $filename = 'dape-ma-analytics-'.$range->key.'-'.now()->format('Y-m-d').'.csv';
+        $validated = $request->validate([
+            'report_type' => ['nullable', 'string'],
+            'format' => ['nullable', Rule::in(['csv', 'xlsx', 'pdf'])],
+        ]);
 
-        return response($csv, 200, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        $file = $this->analyticsReportExporter->export(
+            (string) ($validated['report_type'] ?? 'events'),
+            (string) ($validated['format'] ?? 'csv'),
+            $range,
+        );
+
+        return response($file['body'], 200, [
+            'Content-Type' => $file['content_type'],
+            'Content-Disposition' => 'attachment; filename="'.$file['filename'].'"',
         ]);
     }
 
@@ -142,13 +152,25 @@ class AnalyticsAdminController extends Controller
     public function geography(Request $request): JsonResponse
     {
         $range = $this->resolveRange($request);
-        $level = in_array($request->query('level'), ['region', 'province', 'city'], true)
-            ? $request->query('level')
-            : 'province';
+        $level = (string) $request->query('level', 'overview');
+
+        if (in_array($level, ['region', 'province', 'city'], true)) {
+            return response()->json([
+                'status' => true,
+                'data' => $this->analyticsRepository->geographicDistribution(
+                    $range,
+                    $level,
+                    (int) $request->query('limit', 100),
+                ),
+            ]);
+        }
 
         return response()->json([
             'status' => true,
-            'data' => $this->analyticsRepository->geographicDistribution($range, $level),
+            'data' => $this->analyticsRepository->geographicOverview(
+                $range,
+                (int) $request->query('limit', 12),
+            ),
         ]);
     }
 
@@ -215,8 +237,9 @@ class AnalyticsAdminController extends Controller
     {
         $validated = $request->validate([
             'report_type' => ['required', 'string', Rule::in([
-                'summary', 'users', 'traffic', 'mobile', 'posts', 'user_activity',
-                'sessions', 'retention', 'journeys', 'leaderboard', 'geography', 'alerts', 'complete',
+                'summary', 'events', 'users', 'traffic', 'mobile', 'posts', 'content', 'user_activity',
+                'sessions', 'retention', 'journeys', 'leaderboard', 'geography', 'demographics',
+                'alerts', 'complete',
             ])],
             'format' => ['required', Rule::in(['csv', 'xlsx', 'pdf'])],
             'range' => ['nullable', 'string'],

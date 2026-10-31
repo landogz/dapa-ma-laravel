@@ -27,6 +27,7 @@ function normalizePlace(item = {}) {
         lng: Number.isFinite(longitude) ? longitude : null,
         region: String(item.region ?? '').trim(),
         province: String(item.province ?? '').trim(),
+        city: String(item.city ?? '').trim(),
     };
 }
 

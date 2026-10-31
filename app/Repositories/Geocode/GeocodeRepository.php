@@ -101,20 +101,31 @@ class GeocodeRepository
 
         $address = is_array($item['address'] ?? null) ? $item['address'] : [];
 
+        $region = trim((string) ($address['state'] ?? $address['region'] ?? ''));
+        $province = trim((string) ($address['province'] ?? $address['county'] ?? ''));
+        $city = trim((string) (
+            $address['city']
+            ?? $address['town']
+            ?? $address['municipality']
+            ?? $address['city_district']
+            ?? $address['village']
+            ?? $address['suburb']
+            ?? ''
+        ));
+
+        // NCR and some PH results omit province; keep city for analytics without duplicating into province.
+        if ($province === '' && $city !== '' && ! str_contains(mb_strtolower($region), 'capital')) {
+            $province = $city;
+        }
+
         return [
             'label' => $label,
             'address' => $label,
             'latitude' => $lat,
             'longitude' => $lng,
-            'region' => trim((string) ($address['state'] ?? $address['region'] ?? '')),
-            'province' => trim((string) (
-                $address['province']
-                ?? $address['county']
-                ?? $address['city']
-                ?? $address['town']
-                ?? $address['municipality']
-                ?? ''
-            )),
+            'region' => $region,
+            'province' => $province,
+            'city' => $city,
         ];
     }
 }

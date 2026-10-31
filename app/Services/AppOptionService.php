@@ -107,9 +107,9 @@ class AppOptionService
     /**
      * @return array<string, mixed>
      */
-    public function adminMeta(): array
+    public function adminMeta(?User $actor = null): array
     {
-        $counts = $this->repository->groupCounts();
+        $counts = $this->repository->groupCounts($actor);
 
         return [
             'groups' => collect(AppOptionGroup::meta())

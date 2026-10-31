@@ -5609,5 +5609,77 @@
     "group": "care",
     "en": "Done coloring",
     "tl": "Tapos na magkulay"
+  },
+  {
+    "key": "locationLabel",
+    "group": "profile",
+    "en": "Location",
+    "tl": "Lokasyon"
+  },
+  {
+    "key": "locationHint",
+    "group": "profile",
+    "en": "Add Region, Province, and City",
+    "tl": "Idagdag ang Rehiyon, Lalawigan, at Lungsod"
+  },
+  {
+    "key": "useCurrentLocation",
+    "group": "profile",
+    "en": "Use current location",
+    "tl": "Gamitin ang kasalukuyang lokasyon"
+  },
+  {
+    "key": "detectingLocation",
+    "group": "profile",
+    "en": "Detecting location…",
+    "tl": "Tinutukoy ang lokasyon…"
+  },
+  {
+    "key": "locationUpdated",
+    "group": "profile",
+    "en": "Location updated",
+    "tl": "Na-update ang lokasyon"
+  },
+  {
+    "key": "clearLocation",
+    "group": "profile",
+    "en": "Clear location",
+    "tl": "Alisin ang lokasyon"
+  },
+  {
+    "key": "locationPermissionDenied",
+    "group": "profile",
+    "en": "Location permission is required to detect your place.",
+    "tl": "Kailangan ang pahintulot sa lokasyon para matukoy ang iyong lugar."
+  },
+  {
+    "key": "locationPermissionDeniedForever",
+    "group": "profile",
+    "en": "Location access is blocked. Enable it in Settings, then try again.",
+    "tl": "Naka-block ang access sa lokasyon. I-enable ito sa Settings, tapos subukan ulit."
+  },
+  {
+    "key": "locationServicesDisabled",
+    "group": "profile",
+    "en": "Turn on Location Services, then try again.",
+    "tl": "I-on ang Location Services, tapos subukan ulit."
+  },
+  {
+    "key": "locationDetectFailed",
+    "group": "profile",
+    "en": "Could not detect your location. Try again or enter it manually.",
+    "tl": "Hindi matukoy ang lokasyon. Subukan ulit o ilagay nang manual."
+  },
+  {
+    "key": "provinceLabel",
+    "group": "profile",
+    "en": "Province",
+    "tl": "Lalawigan"
+  },
+  {
+    "key": "cityLabel",
+    "group": "profile",
+    "en": "City / Municipality",
+    "tl": "Lungsod / Munisipyo"
   }
 ]

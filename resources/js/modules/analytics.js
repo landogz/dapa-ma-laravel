@@ -1,6 +1,13 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { getPostRatingMetrics, renderRatingBadge, renderStars } from './shared/ratings';
+import {
+    bindExportFormatPills,
+    buildExportDialogHtml,
+    buildSwalFieldsHtml,
+    buildSwalOptions,
+    syncExportCustomRangePanel,
+} from './shared/swal-forms';
 import { showErrorToast, showSuccessToast } from './shared/toast';
 import {
     bindAdvancedAnalyticsActions,
@@ -233,6 +240,7 @@ export function loadAnalytics() {
             const audience = payload.audience ?? {};
             const funnel = payload.funnel ?? {};
             const hourlyCounts = payload.hourly_counts ?? [];
+            const hourlyHeatmap = payload.hourly_heatmap ?? null;
             const weekdayCounts = payload.weekday_counts ?? [];
             const insights = payload.insights ?? [];
 
@@ -250,7 +258,7 @@ export function loadAnalytics() {
             renderTopRatedPosts(topRatedPosts);
             renderTopCategories(topCategories);
             renderDailyCounts(dailyCounts, audience);
-            renderHourlyHeatmap(hourlyCounts);
+            renderHourlyHeatmap(hourlyHeatmap, hourlyCounts);
             renderWeekdayChart(weekdayCounts);
             renderRatingDistribution(ratingDistribution);
             renderAudienceSplit(audience);
@@ -464,48 +472,169 @@ function categorizeEventType(eventType) {
     return '';
 }
 
+const ANALYTICS_TAB_EXPORT_REPORT = {
+    overview: { type: 'summary', label: 'Overview summary' },
+    users: { type: 'users', label: 'Users' },
+    mobile: { type: 'mobile', label: 'Mobile / devices' },
+    content: { type: 'content', label: 'Content performance' },
+    retention: { type: 'retention', label: 'Retention cohorts' },
+    journeys: { type: 'journeys', label: 'Journeys / funnel' },
+    leaderboard: { type: 'leaderboard', label: 'Top users leaderboard' },
+    geography: { type: 'demographics', label: 'Demographics / Geography' },
+    alerts: { type: 'alerts', label: 'Anomaly alerts' },
+    reports: { type: 'complete', label: 'Complete pack' },
+};
+
+function getActiveAnalyticsTab() {
+    return document.querySelector('[data-analytics-tab].is-active')?.getAttribute('data-analytics-tab')
+        || 'overview';
+}
+
+function getExportReportForActiveTab(tab = getActiveAnalyticsTab()) {
+    return ANALYTICS_TAB_EXPORT_REPORT[tab] || ANALYTICS_TAB_EXPORT_REPORT.overview;
+}
+
+function escapeExportHtml(value = '') {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
 export function exportAnalyticsCsvWithRange() {
-    Swal.fire({
-        title: 'Export Analytics',
-        input: 'select',
-        inputLabel: 'Select date range',
-        inputOptions: {
-            today: 'Today',
-            yesterday: 'Yesterday',
-            '7': 'Last 7 days',
-            '14': 'Last 14 days',
-            '30': 'Last 30 days',
-            '60': 'Last 60 days',
-            '90': 'Last 90 days',
-            this_month: 'This month',
-            last_month: 'Last month',
-            this_year: 'This year',
-            all_time: 'All time',
-        },
-        inputValue: '30',
-        showCancelButton: true,
-        confirmButtonText: 'Download CSV',
+    const currentRange = document.getElementById('analytics-range-select')?.value || '7';
+    const pageFrom = document.getElementById('analytics-range-from')?.value || '';
+    const pageTo = document.getElementById('analytics-range-to')?.value || '';
+    const initialRange = currentRange || '7';
+    const showCustomRange = initialRange === 'custom';
+    const activeTab = getActiveAnalyticsTab();
+    const report = getExportReportForActiveTab(activeTab);
+    const tabLabel = document.querySelector(`[data-analytics-tab="${activeTab}"]`)?.textContent?.trim()
+        || 'Overview';
+    const demographicsNote = report.type === 'demographics'
+        ? 'Uses authorized profile Region, Province, and City/Municipality.'
+        : '';
+
+    Swal.fire(buildSwalOptions({
+        title: 'Export analytics',
+        subtitle: `Exports the ${tabLabel} tab for the selected period.`,
+        confirmButtonText: 'Download',
         customClass: {
-            popup: 'admin-swal-popup',
-            title: 'admin-swal-title',
-            htmlContainer: 'admin-swal-html',
-            actions: 'admin-swal-actions',
-            confirmButton: 'admin-swal-button admin-swal-button-primary',
-            cancelButton: 'admin-swal-button',
-            validationMessage: 'admin-swal-validation',
+            popup: 'admin-swal-popup-export',
         },
-    }).then(async (result) => {
-        if (!result.isConfirmed) {
+        html: buildExportDialogHtml({
+            intro: demographicsNote,
+            formatId: 'analytics-export-file-format',
+            formatValue: 'csv',
+            formatOptions: [
+                { value: 'csv', label: 'CSV', icon: 'fas fa-file-csv' },
+                { value: 'xlsx', label: 'Excel', icon: 'fas fa-file-excel' },
+                { value: 'pdf', label: 'PDF', icon: 'fas fa-file-pdf' },
+            ],
+            fieldsHtml: `
+                <div class="admin-export-section-card">
+                    <p class="admin-export-dialog-label">Section</p>
+                    <div class="admin-export-section-row">
+                        <span class="admin-export-section-badge">${escapeExportHtml(tabLabel)}</span>
+                        <span class="admin-export-section-meta">${escapeExportHtml(report.label)}</span>
+                    </div>
+                    <input type="hidden" id="analytics-export-report-type" value="${escapeExportHtml(report.type)}">
+                </div>
+                ${buildSwalFieldsHtml([
+                    {
+                        id: 'analytics-export-range',
+                        label: 'Date range',
+                        type: 'select',
+                        value: initialRange,
+                        options: [
+                            { value: 'today', label: 'Today' },
+                            { value: 'yesterday', label: 'Yesterday' },
+                            { value: '7', label: 'Last 7 days' },
+                            { value: '14', label: 'Last 14 days' },
+                            { value: '30', label: 'Last 30 days' },
+                            { value: '60', label: 'Last 60 days' },
+                            { value: '90', label: 'Last 90 days' },
+                            { value: 'this_month', label: 'This month' },
+                            { value: 'last_month', label: 'Last month' },
+                            { value: 'this_year', label: 'This year' },
+                            { value: 'all_time', label: 'All time' },
+                            { value: 'custom', label: 'Custom range' },
+                        ],
+                    },
+                ])}
+            `,
+            showCustomRange,
+            customRangeHtml: buildSwalFieldsHtml([
+                {
+                    id: 'analytics-export-from',
+                    label: 'From',
+                    type: 'date',
+                    value: pageFrom || '',
+                },
+                {
+                    id: 'analytics-export-to',
+                    label: 'To',
+                    type: 'date',
+                    value: pageTo || '',
+                },
+            ], 'admin-export-custom-grid'),
+        }),
+        didOpen: (popup) => {
+            bindExportFormatPills(popup, 'analytics-export-file-format');
+            syncExportCustomRangePanel(popup, 'analytics-export-range');
+            popup.querySelector('#analytics-export-range')?.addEventListener('change', () => {
+                syncExportCustomRangePanel(popup, 'analytics-export-range');
+            });
+        },
+        preConfirm: () => {
+            const reportType = document.getElementById('analytics-export-report-type')?.value || report.type;
+            const format = document.getElementById('analytics-export-file-format')?.value || 'csv';
+            const range = document.getElementById('analytics-export-range')?.value || '7';
+            const from = document.getElementById('analytics-export-from')?.value || '';
+            const to = document.getElementById('analytics-export-to')?.value || '';
+
+            if (!reportType || !format || !range) {
+                Swal.showValidationMessage('Choose a format and date range.');
+                return false;
+            }
+
+            if (range === 'custom') {
+                if (!from || !to) {
+                    Swal.showValidationMessage('Enter both start and end dates for a custom range.');
+                    return false;
+                }
+                if (from > to) {
+                    Swal.showValidationMessage('Start date must be on or before the end date.');
+                    return false;
+                }
+            }
+
+            return { reportType, format, range, from, to };
+        },
+    }, { size: 'md' })).then(async (result) => {
+        if (!result.isConfirmed || !result.value) {
             return;
         }
 
-        const range = result.value || '30';
+        const { reportType, format, range, from, to } = result.value;
         const exportButton = document.querySelector('[data-admin-action="export-analytics"]');
         exportButton?.setAttribute('disabled', 'true');
 
         try {
+            const params = {
+                range,
+                report_type: reportType,
+                format,
+            };
+            if (range === 'custom') {
+                params.from = from;
+                params.to = to;
+            }
+
             const response = await axios.get('/admin/analytics/export', {
-                params: { range },
+                params,
                 responseType: 'blob',
             });
 
@@ -523,18 +652,29 @@ export function exportAnalyticsCsvWithRange() {
                 return;
             }
 
+            const disposition = String(response.headers?.['content-disposition'] ?? '');
+            const matchedName = disposition.match(/filename=\"?([^\";]+)\"?/i);
+            const extension = format === 'xlsx' ? 'xlsx' : format;
+            const fallbackName = `dape-ma-analytics-${reportType}-${new Date().toISOString().slice(0, 10)}.${extension}`;
+            const filename = matchedName?.[1] || fallbackName;
+
+            const mime = format === 'pdf'
+                ? 'application/pdf'
+                : format === 'xlsx'
+                    ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    : 'text/csv;charset=utf-8;';
             const blob = payload instanceof Blob
                 ? payload
-                : new Blob([payload], { type: 'text/csv;charset=utf-8;' });
+                : new Blob([payload], { type: mime });
             const downloadUrl = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
             anchor.href = downloadUrl;
-            anchor.download = `dape-ma-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+            anchor.download = filename;
             document.body.appendChild(anchor);
             anchor.click();
             anchor.remove();
             window.URL.revokeObjectURL(downloadUrl);
-            showSuccessToast('Analytics CSV downloaded.', 'Export ready');
+            showSuccessToast(`${format.toUpperCase()} download started.`, 'Export ready');
         } catch (error) {
             showErrorToast(await messageFromExportError(error), 'Export failed');
         } finally {
@@ -1520,51 +1660,122 @@ function renderTopCategories(categories) {
     }).join('');
 }
 
-function renderHourlyHeatmap(hours) {
+function renderHourlyHeatmap(matrix, fallbackHours = []) {
     const container = document.getElementById('analytics-hourly-heatmap');
+    const peakLabel = document.querySelector('[data-analytics-hourly-peak]');
 
     if (!container) {
         return;
     }
 
-    if (!Array.isArray(hours) || hours.length === 0) {
+    const rows = Array.isArray(matrix?.rows) ? matrix.rows : [];
+    const hours = Array.isArray(matrix?.hours) && matrix.hours.length
+        ? matrix.hours
+        : Array.from({ length: 24 }, (_, hour) => hour);
+    const max = Math.max(Number(matrix?.max) || 0, ...rows.flatMap((row) => (row.cells || []).map(Number)), 0);
+    const peak = matrix?.peak ?? null;
+
+    if (!rows.length || max === 0) {
+        // Fallback: single-row 24h strip when matrix is empty but totals exist.
+        if (Array.isArray(fallbackHours) && fallbackHours.some((row) => Number(row.total) > 0)) {
+            renderHourlyHeatmapFallback(container, fallbackHours, peakLabel);
+            return;
+        }
+
+        if (peakLabel) {
+            peakLabel.textContent = '—';
+        }
         container.innerHTML = buildAnalyticsEmptyState(
             'No hourly pattern yet',
-            'A 24-hour heatmap will appear once events are recorded.',
+            'A weekday × hour heatmap will appear once events are recorded.',
             'fa-clock',
         );
-
         return;
     }
 
+    if (peakLabel && peak) {
+        peakLabel.textContent = `Peak ${peak.label} ${formatHourFull(peak.hour)} · ${Number(peak.total).toLocaleString()}`;
+    } else if (peakLabel) {
+        peakLabel.textContent = '—';
+    }
+
+    container.innerHTML = `
+        <div class="analytics-cohort-heat">
+            <div class="analytics-cohort-heat-scroll">
+                <table class="analytics-cohort-heat-table" aria-label="Hourly activity by weekday">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="analytics-cohort-heat-corner">
+                                <span class="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Day</span>
+                                <span class="block text-[10px] font-medium text-slate-400">Events</span>
+                            </th>
+                            ${hours.map((hour) => `
+                                <th scope="col" class="analytics-cohort-heat-hour" title="${escapeHtml(formatHourFull(hour))}">
+                                    ${escapeHtml(formatHourCompact(hour))}
+                                </th>
+                            `).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map((row) => {
+                            const cells = Array.isArray(row.cells) ? row.cells : [];
+                            return `
+                                <tr>
+                                    <th scope="row" class="analytics-cohort-heat-day">
+                                        <span class="analytics-cohort-heat-day-label">${escapeHtml(row.label || '—')}</span>
+                                        <span class="analytics-cohort-heat-day-size">${Number(row.total || 0).toLocaleString()}</span>
+                                    </th>
+                                    ${hours.map((hour, index) => {
+                                        const total = Number(cells[index] ?? 0);
+                                        const ratio = max > 0 ? total / max : 0;
+                                        const style = heatCellStyle(ratio, total);
+                                        const aria = `${row.label} ${formatHourFull(hour)}: ${total.toLocaleString()} events`;
+                                        return `
+                                            <td class="analytics-cohort-heat-cell" style="${style}" title="${escapeHtml(aria)}" aria-label="${escapeHtml(aria)}">
+                                                ${total > 0 ? total.toLocaleString() : ''}
+                                            </td>
+                                        `;
+                                    }).join('')}
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <div class="analytics-cohort-heat-legend" aria-hidden="true">
+                <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Low</span>
+                <div class="analytics-cohort-heat-scale"></div>
+                <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">High</span>
+            </div>
+        </div>
+        <p class="mt-3 text-[11px] text-slate-500">
+            Cell color is relative to the busiest weekday×hour cell in this range
+            ${peak ? ` · Peak ${escapeHtml(peak.label)} ${escapeHtml(formatHourFull(peak.hour))} (${Number(peak.total).toLocaleString()} events)` : ''}
+        </p>
+    `;
+}
+
+function renderHourlyHeatmapFallback(container, hours, peakLabel) {
     const max = Math.max(...hours.map((row) => Number(row.total) || 0), 0);
-
-    if (max === 0) {
-        container.innerHTML = buildAnalyticsEmptyState(
-            'No hourly pattern yet',
-            'A 24-hour heatmap will appear once events are recorded.',
-            'fa-clock',
-        );
-
-        return;
-    }
-
     const peak = hours.reduce((best, row) => (
         Number(row.total) > Number(best.total) ? row : best
     ), hours[0]);
+
+    if (peakLabel) {
+        peakLabel.textContent = `Peak ${formatHourFull(peak.hour)} · ${Number(peak.total).toLocaleString()}`;
+    }
 
     container.innerHTML = `
         <div class="overflow-x-auto pb-1">
             <div class="analytics-heat-grid">
                 ${hours.map((row) => {
                     const total = Number(row.total) || 0;
-                    const intensity = heatIntensity(total, max);
-                    const hourLabel = formatHourCompact(row.hour);
+                    const ratio = max > 0 ? total / max : 0;
+                    const style = heatCellStyle(ratio, total);
                     const aria = `${formatHourFull(row.hour)}: ${total.toLocaleString()} events`;
-
                     return `
-                        <div class="analytics-heat-cell analytics-heat-${intensity}" title="${escapeHtml(aria)}" aria-label="${escapeHtml(aria)}">
-                            <span>${hourLabel}</span>
+                        <div class="analytics-heat-cell" style="${style}" title="${escapeHtml(aria)}" aria-label="${escapeHtml(aria)}">
+                            <span>${formatHourCompact(row.hour)}</span>
                             <span>${total}</span>
                         </div>
                     `;
@@ -1575,26 +1786,48 @@ function renderHourlyHeatmap(hours) {
     `;
 }
 
-function heatIntensity(value, max) {
-    if (!value || !max) {
-        return 0;
+/** Red → gold → green scale (relative intensity), matching cohort-style heatmaps. */
+function heatCellStyle(ratio, total) {
+    if (!total || ratio <= 0) {
+        return 'background:#f8fafc;color:#94a3b8';
     }
 
-    const ratio = value / max;
+    const t = Math.max(0, Math.min(1, ratio));
+    const color = heatColorAt(t);
+    const text = t >= 0.55 ? '#ffffff' : '#123a60';
 
-    if (ratio >= 0.8) {
-        return 4;
+    return `background:${color};color:${text}`;
+}
+
+function heatColorAt(t) {
+    // #CE2028 (low) → #FBD116 (mid) → #059669 (high)
+    if (t < 0.5) {
+        const p = t / 0.5;
+        return mixHex('#CE2028', '#FBD116', p);
     }
 
-    if (ratio >= 0.55) {
-        return 3;
-    }
+    const p = (t - 0.5) / 0.5;
+    return mixHex('#FBD116', '#059669', p);
+}
 
-    if (ratio >= 0.3) {
-        return 2;
-    }
+function mixHex(from, to, amount) {
+    const a = hexToRgb(from);
+    const b = hexToRgb(to);
+    const t = Math.max(0, Math.min(1, amount));
+    const r = Math.round(a.r + (b.r - a.r) * t);
+    const g = Math.round(a.g + (b.g - a.g) * t);
+    const bl = Math.round(a.b + (b.b - a.b) * t);
 
-    return 1;
+    return `rgb(${r}, ${g}, ${bl})`;
+}
+
+function hexToRgb(hex) {
+    const raw = String(hex || '').replace('#', '');
+    return {
+        r: Number.parseInt(raw.slice(0, 2), 16) || 0,
+        g: Number.parseInt(raw.slice(2, 4), 16) || 0,
+        b: Number.parseInt(raw.slice(4, 6), 16) || 0,
+    };
 }
 
 function formatHourCompact(hour) {

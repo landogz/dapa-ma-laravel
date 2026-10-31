@@ -147,6 +147,11 @@ class PostService
 
     public function submitForReview(Post $post, User $editor): Post
     {
+        // Super admins never wait for publisher approval — publish immediately.
+        if ($editor->role === 'super_admin') {
+            return $this->publishNow($post, $editor);
+        }
+
         if ($post->status === 'published') {
             if (! $post->hasPendingRevision() || $post->revision_status !== 'draft') {
                 abort(422, 'Save a draft update before submitting it for publisher review.');
@@ -217,16 +222,24 @@ class PostService
 
     public function publishNow(Post $post, User $publisher): Post
     {
-        if ($post->isRevisionAwaitingPublisher()) {
+        if ($post->isRevisionAwaitingPublisher()
+            || ($publisher->role === 'super_admin' && $post->hasPendingRevision())) {
             return $this->applyPendingRevision($post, $publisher);
         }
 
-        $this->assertStatus($post, ['pending_review', 'scheduled']);
+        $allowed = ['pending_review', 'scheduled'];
+        if ($publisher->role === 'super_admin') {
+            $allowed[] = 'draft';
+        }
+
+        $this->assertStatus($post, $allowed);
 
         $post = $this->postRepository->update($post, [
             'status'       => 'published',
             'publish_date' => Carbon::now(),
             'review_notes' => null,
+            'pending_revision' => null,
+            'revision_status' => null,
         ]);
 
         // Reuse the scheduled notification so the author is informed that the post is live.

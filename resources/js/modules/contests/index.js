@@ -11,10 +11,13 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    isPublisherReviewOnly,
     itemForEditorForm,
     openItemFromQuery,
+    publisherReviewSwalButtons,
     renderPendingChangesBanner,
     renderReviewNotesBanner,
+    resolvePublisherReviewSwalResult,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
@@ -285,15 +288,21 @@ function showContestForm(existingRaw) {
     const existing = existingRaw ? itemForEditorForm(existingRaw) : null;
     const isEdit = Boolean(existing);
     const reviewItem = existingRaw?.pending_revision ? existingRaw : null;
+    const publisherReviewOnly = isPublisherReviewOnly(existingRaw);
 
     Swal.fire(buildSwalOptions({
         title: isEdit
-            ? (reviewItem ? 'Review contest changes' : 'Edit Contest')
+            ? (publisherReviewOnly || reviewItem ? 'Review contest changes' : 'Edit Contest')
             : 'Add Contest',
         subtitle: 'Choose Song, Poster, or Video category, then configure the contest.',
         html: buildContestFormHtml(existing, reviewItem),
-        confirmButtonText: isEdit ? 'Save changes' : 'Create contest',
-        cancelButtonText: 'Cancel',
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(existingRaw)
+            : {
+                confirmButtonText: isEdit ? 'Save changes' : 'Create contest',
+                cancelButtonText: 'Cancel',
+                showCancelButton: true,
+            }),
         width: '42rem',
         didOpen: (popup) => {
             syncAllowedFieldVisibility();
@@ -301,6 +310,10 @@ function showContestForm(existingRaw) {
             highlightChangedFieldsInPopup(popup, reviewItem, CONTEST_REVIEW_FIELD_MAP);
         },
         preConfirm: () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const title = document.getElementById('ct-title')?.value.trim();
             const status = document.getElementById('ct-status')?.value;
             const category = document.getElementById('ct-category')?.value;
@@ -342,8 +355,19 @@ function showContestForm(existingRaw) {
                 is_active: document.getElementById('ct-active')?.value === '1',
             };
         },
-    })).then(({ isConfirmed, value }) => {
-        if (!isConfirmed) return;
+    })).then(async (result) => {
+        if (publisherReviewOnly) {
+            await resolvePublisherReviewSwalResult(result, {
+                basePath: '/admin/contests',
+                id: existingRaw.id,
+                item: existingRaw,
+                onSuccess: () => loadContests(),
+            });
+            return;
+        }
+
+        const { isConfirmed, value } = result;
+        if (!isConfirmed || !value) return;
 
         const request = isEdit
             ? axios.put(`/admin/contests/${existingRaw.id}`, value)

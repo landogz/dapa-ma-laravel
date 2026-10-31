@@ -9,8 +9,11 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    isPublisherReviewOnly,
     openItemFromQuery,
+    publisherReviewSwalButtons,
     renderReviewNotesBanner,
+    resolvePublisherReviewSwalResult,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
@@ -373,12 +376,24 @@ function buildMultipartPayload(payload, { method = 'POST' } = {}) {
 
 function showIecMaterialForm(existing) {
     const isEdit = Boolean(existing?.id);
+    const publisherReviewOnly = isPublisherReviewOnly(existing);
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit IEC material' : 'Add IEC material',
+        title: publisherReviewOnly
+            ? 'Review IEC material'
+            : (isEdit ? 'Edit IEC material' : 'Add IEC material'),
         html: buildFormHtml(existing),
-        confirmButtonText: isEdit ? 'Save changes' : 'Create',
-        cancelButtonText: 'Cancel',
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(existing)
+            : {
+                confirmButtonText: isEdit ? 'Save changes' : 'Create',
+                showCancelButton: true,
+                cancelButtonText: 'Cancel',
+            }),
         preConfirm: () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const payload = collectPayload();
             const needsUrl = ['youtube', 'lottie'].includes(payload.media_type);
             if (!payload.title) {
@@ -395,7 +410,18 @@ function showIecMaterialForm(existing) {
             }
             return payload;
         },
-    }, { size: 'lg' })).then(({ isConfirmed, value }) => {
+    }, { size: 'lg' })).then(async (result) => {
+        if (publisherReviewOnly) {
+            await resolvePublisherReviewSwalResult(result, {
+                basePath: '/admin/iec-materials',
+                id: existing.id,
+                item: existing,
+                onSuccess: () => loadIecMaterials(),
+            });
+            return;
+        }
+
+        const { isConfirmed, value } = result;
         if (!isConfirmed || !value) return;
 
         const request = isEdit

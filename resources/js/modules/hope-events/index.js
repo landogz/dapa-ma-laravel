@@ -11,10 +11,13 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     highlightChangedFieldsInPopup,
+    isPublisherReviewOnly,
     itemForEditorForm,
     openItemFromQuery,
+    publisherReviewSwalButtons,
     renderPendingChangesBanner,
     renderReviewNotesBanner,
+    resolvePublisherReviewSwalResult,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
@@ -651,21 +654,31 @@ function showForm(rowRaw) {
     const row = rowRaw ? itemForEditorForm(rowRaw) : null;
     const isEdit = Boolean(row?.id);
     const reviewItem = rowRaw?.pending_revision ? rowRaw : null;
+    const publisherReviewOnly = isPublisherReviewOnly(rowRaw);
 
     Swal.fire(buildSwalOptions({
         title: isEdit
-            ? (reviewItem ? 'Review event changes' : 'Edit Event')
+            ? (publisherReviewOnly || reviewItem ? 'Review event changes' : 'Edit Event')
             : 'Add Event',
         subtitle: 'Configure schedule, speakers, FAQs, and content for the DAPE Hope Events screen.',
         html: buildFormHtml(row, reviewItem),
-        confirmButtonText: isEdit ? 'Save Changes' : 'Create Event',
-        cancelButtonText: 'Cancel',
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(rowRaw)
+            : {
+                confirmButtonText: isEdit ? 'Save Changes' : 'Create Event',
+                cancelButtonText: 'Cancel',
+                showCancelButton: true,
+            }),
         width: '46rem',
         didOpen: (popup) => {
             mountRepeatableLists(row);
             highlightChangedFieldsInPopup(popup, reviewItem, HOPE_EVENT_REVIEW_FIELD_MAP);
         },
         preConfirm: () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const title = document.getElementById('he-title')?.value.trim();
             if (!title) {
                 Swal.showValidationMessage('Title is required.');
@@ -733,7 +746,18 @@ function showForm(rowRaw) {
                 cover: document.getElementById('he-cover')?.files?.[0] || null,
             };
         },
-    })).then(({ isConfirmed, value }) => {
+    })).then(async (result) => {
+        if (publisherReviewOnly) {
+            await resolvePublisherReviewSwalResult(result, {
+                basePath: '/admin/hope-events',
+                id: rowRaw.id,
+                item: rowRaw,
+                onSuccess: () => loadRows(),
+            });
+            return;
+        }
+
+        const { isConfirmed, value } = result;
         if (!isConfirmed || !value) return;
 
         const form = new FormData();

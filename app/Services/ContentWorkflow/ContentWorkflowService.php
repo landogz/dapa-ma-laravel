@@ -19,17 +19,19 @@ class ContentWorkflowService
     }
 
     /**
-     * Force draft ownership fields when an editor (or anyone non–super_admin) creates content.
+     * Super admins publish immediately. Everyone else creates a draft awaiting review.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     public function prepareCreatePayload(User $actor, array $data): array
     {
-        if ($actor->role === 'super_admin' && ($data['workflow_status'] ?? null) === ContentWorkflowStatus::PUBLISHED) {
+        if ($actor->role === 'super_admin') {
+            $data['workflow_status'] = ContentWorkflowStatus::PUBLISHED;
             $data['authored_by'] = $data['authored_by'] ?? $actor->id;
             $data['reviewed_by'] = $actor->id;
             $data['reviewed_at'] = now();
+            $data['submitted_at'] = $data['submitted_at'] ?? now();
             $data['review_notes'] = null;
             $data['pending_revision'] = null;
             $data['revision_status'] = null;
@@ -51,6 +53,7 @@ class ContentWorkflowService
 
     /**
      * Editors may edit draft/pending rows, or stage published updates without changing the live row.
+     * Super admins apply changes live (no publisher approval).
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
@@ -65,6 +68,21 @@ class ContentWorkflowService
 
         $isPublished = ($model->workflow_status ?? null) === ContentWorkflowStatus::PUBLISHED
             || (method_exists($model, 'isWorkflowPublished') && $model->isWorkflowPublished());
+
+        if ($actor->role === 'super_admin') {
+            // Live edits — clear any leftover staged revision from an editor.
+            $data['pending_revision'] = null;
+            $data['revision_status'] = null;
+            $data['review_notes'] = null;
+            $data['reviewed_by'] = $actor->id;
+            $data['reviewed_at'] = now();
+
+            if ($isPublished || ($data['workflow_status'] ?? null) === ContentWorkflowStatus::PUBLISHED) {
+                $data['workflow_status'] = ContentWorkflowStatus::PUBLISHED;
+            }
+
+            return $data;
+        }
 
         if ($actor->role === 'editor' && $isPublished) {
             $this->storePendingRevision($model, $data);
@@ -87,10 +105,7 @@ class ContentWorkflowService
             }
         }
 
-        if ($actor->role !== 'super_admin') {
-            unset($data['authored_by'], $data['reviewed_by'], $data['reviewed_at']);
-        }
-
+        unset($data['authored_by'], $data['reviewed_by'], $data['reviewed_at']);
         unset($data['pending_revision'], $data['revision_status']);
 
         return $data;
@@ -100,7 +115,12 @@ class ContentWorkflowService
     {
         $this->assertUsesWorkflow($model);
 
-        if (! in_array($editor->role, ['editor', 'super_admin'], true)) {
+        // Super admins never wait for publisher approval — publish (or apply revision) now.
+        if ($editor->role === 'super_admin') {
+            return $this->publish($model, $editor, $section);
+        }
+
+        if ($editor->role !== 'editor') {
             abort(403, 'Only editors can submit for review.');
         }
 
@@ -211,7 +231,8 @@ class ContentWorkflowService
             abort(403, 'Only publishers can publish.');
         }
 
-        if ($model->isRevisionAwaitingPublisher()) {
+        if ($model->isRevisionAwaitingPublisher()
+            || ($publisher->role === 'super_admin' && $model->hasPendingRevision())) {
             return $this->applyPendingRevision($model, $publisher, $section);
         }
 
@@ -320,6 +341,23 @@ class ContentWorkflowService
         $this->userNotificationService->notifyPublishedContent($section, $fresh);
 
         return $fresh;
+    }
+
+    /**
+     * When a super admin creates content already published, notify mobile users
+     * the same way a publisher Publish action would.
+     */
+    public function notifyPublishedCreate(Model $model, User $actor, string $section): void
+    {
+        if ($actor->role !== 'super_admin') {
+            return;
+        }
+
+        if (($model->workflow_status ?? null) !== ContentWorkflowStatus::PUBLISHED) {
+            return;
+        }
+
+        $this->userNotificationService->notifyPublishedContent($section, $model);
     }
 
     private function assertUsesWorkflow(Model $model): void

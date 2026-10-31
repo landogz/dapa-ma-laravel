@@ -2,8 +2,8 @@
 
 @section('content')
     <section class="admin-shell-card relative p-4 sm:p-6" data-analytics-shell>
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div class="admin-section-header admin-section-header-accent min-w-0 flex-1 items-center gap-3 sm:gap-4">
+        <div class="admin-insights-header">
+            <div class="admin-section-header admin-section-header-accent admin-insights-header-title min-w-0 items-center gap-3 sm:gap-4">
                 <span class="admin-icon-badge">
                     <i class="fas fa-chart-pie"></i>
                 </span>
@@ -13,48 +13,60 @@
                     <p class="mt-1 text-[11px] text-slate-400" data-analytics-updated-at>Refreshing metrics…</p>
                 </div>
             </div>
-            <div class="admin-page-actions admin-page-actions-centered flex w-full min-w-0 flex-col gap-2 xl:w-auto xl:flex-row xl:flex-wrap xl:items-center xl:justify-end">
-                <div class="flex min-w-0 flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:items-center">
-                    <label class="font-semibold uppercase tracking-[0.12em]" for="analytics-range-select">Range</label>
-                    <select id="analytics-range-select" class="admin-auth-input min-h-11 min-w-[10rem] py-2 text-xs">
-                        <option value="today">Today</option>
-                        <option value="yesterday">Yesterday</option>
-                        <option value="7" selected>Last 7 days</option>
-                        <option value="14">Last 14 days</option>
-                        <option value="30">Last 30 days</option>
-                        <option value="60">Last 60 days</option>
-                        <option value="90">Last 90 days</option>
-                        <option value="this_week">This week</option>
-                        <option value="last_week">Last week</option>
-                        <option value="this_month">This month</option>
-                        <option value="last_month">Last month</option>
-                        <option value="this_quarter">This quarter</option>
-                        <option value="last_quarter">Last quarter</option>
-                        <option value="this_year">This year</option>
-                        <option value="last_year">Last year</option>
-                        <option value="all_time">All time</option>
-                        <option value="custom">Custom range</option>
-                    </select>
-                    <div id="analytics-custom-range" class="hidden flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                        <input id="analytics-range-from" type="date" class="admin-auth-input min-h-11 py-2 text-xs" aria-label="Start date">
-                        <input id="analytics-range-to" type="date" class="admin-auth-input min-h-11 py-2 text-xs" aria-label="End date">
-                        <button type="button" id="analytics-apply-range" class="admin-secondary-button min-h-11 px-3 text-xs">Apply</button>
+
+            <div class="admin-filter-bar" data-admin-filter-bar>
+                <div class="admin-filter-bar-main">
+                    <div class="admin-filter-bar-field">
+                        <label class="admin-filter-bar-label" for="analytics-range-select">Period</label>
+                        <select id="analytics-range-select" class="admin-filter-bar-select" aria-label="Analytics date range">
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="7" selected>Last 7 days</option>
+                            <option value="14">Last 14 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="60">Last 60 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="this_week">This week</option>
+                            <option value="last_week">Last week</option>
+                            <option value="this_month">This month</option>
+                            <option value="last_month">Last month</option>
+                            <option value="this_quarter">This quarter</option>
+                            <option value="last_quarter">Last quarter</option>
+                            <option value="this_year">This year</option>
+                            <option value="last_year">Last year</option>
+                            <option value="all_time">All time</option>
+                            <option value="custom">Custom range</option>
+                        </select>
                     </div>
-                    <div class="admin-range-toggle inline-flex min-h-11 max-w-full overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px]">
-                        <button type="button" class="admin-range-toggle-button" data-analytics-range="today">Today</button>
-                        <button type="button" class="admin-range-toggle-button is-active" data-analytics-range="7">7 days</button>
-                        <button type="button" class="admin-range-toggle-button" data-analytics-range="30">30 days</button>
+
+                    <div class="admin-filter-bar-presets" role="group" aria-label="Quick period">
+                        <button type="button" class="admin-filter-bar-preset" data-analytics-range="today">Today</button>
+                        <button type="button" class="admin-filter-bar-preset is-active" data-analytics-range="7">7 days</button>
+                        <button type="button" class="admin-filter-bar-preset" data-analytics-range="30">30 days</button>
+                    </div>
+
+                    <div class="admin-filter-bar-actions">
+                        <button type="button" class="admin-filter-bar-btn is-ghost" data-admin-action="refresh-analytics" aria-label="Refresh analytics">
+                            <i class="fas fa-rotate" aria-hidden="true"></i>
+                            <span>Refresh</span>
+                        </button>
+                        <button type="button" class="admin-filter-bar-btn is-primary" data-admin-action="export-analytics" aria-label="Export analytics">
+                            <i class="fas fa-file-arrow-down" aria-hidden="true"></i>
+                            <span>Export</span>
+                        </button>
                     </div>
                 </div>
-                <div class="flex w-full min-w-0 flex-col gap-2 sm:flex-row xl:w-auto">
-                    <button type="button" class="admin-secondary-button min-h-11 w-full sm:flex-1 xl:w-auto xl:flex-none" data-admin-action="refresh-analytics" aria-label="Refresh analytics">
-                        <i class="fas fa-rotate" aria-hidden="true"></i>
-                        <span>Refresh</span>
-                    </button>
-                    <button type="button" class="admin-primary-button min-h-11 w-full sm:flex-1 xl:w-auto xl:flex-none" data-admin-action="export-analytics">
-                        <i class="fas fa-file-arrow-down" aria-hidden="true"></i>
-                        <span>Export CSV</span>
-                    </button>
+
+                <div id="analytics-custom-range" class="admin-filter-bar-custom hidden">
+                    <div class="admin-filter-bar-field">
+                        <label class="admin-filter-bar-label" for="analytics-range-from">From</label>
+                        <input id="analytics-range-from" type="date" class="admin-filter-bar-input" aria-label="Start date">
+                    </div>
+                    <div class="admin-filter-bar-field">
+                        <label class="admin-filter-bar-label" for="analytics-range-to">To</label>
+                        <input id="analytics-range-to" type="date" class="admin-filter-bar-input" aria-label="End date">
+                    </div>
+                    <button type="button" id="analytics-apply-range" class="admin-filter-bar-btn is-secondary">Apply range</button>
                 </div>
             </div>
         </div>
@@ -82,7 +94,7 @@
 
         <div class="analytics-insight-strip mt-5" data-analytics-insights></div>
 
-        <p class="mt-3 text-[11px] text-slate-400" data-analytics-tracking-since>Session/DAU metrics appear after mobile app opens are recorded.</p>
+        <p class="mt-3 text-[11px] text-slate-400" data-analytics-tracking-since>Session and daily active user metrics appear after mobile app opens are recorded.</p>
 
         <div class="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4">
             <article class="analytics-mini-kpi" data-analytics-tip="registered_users" title="Registered app users">
@@ -93,16 +105,16 @@
                 <p class="analytics-mini-kpi-label">New users</p>
                 <p class="analytics-mini-kpi-value" data-analytics-summary="new-users">--</p>
             </article>
-            <article class="analytics-mini-kpi" data-analytics-tip="dau">
-                <p class="analytics-mini-kpi-label">DAU</p>
+            <article class="analytics-mini-kpi" data-analytics-tip="dau" title="Distinct users active in the last 1 day">
+                <p class="analytics-mini-kpi-label">Daily active users</p>
                 <p class="analytics-mini-kpi-value" data-analytics-summary="dau">--</p>
             </article>
-            <article class="analytics-mini-kpi" data-analytics-tip="wau">
-                <p class="analytics-mini-kpi-label">WAU</p>
+            <article class="analytics-mini-kpi" data-analytics-tip="wau" title="Distinct users active in the last 7 days">
+                <p class="analytics-mini-kpi-label">Weekly active users</p>
                 <p class="analytics-mini-kpi-value" data-analytics-summary="wau">--</p>
             </article>
-            <article class="analytics-mini-kpi" data-analytics-tip="mau">
-                <p class="analytics-mini-kpi-label">MAU</p>
+            <article class="analytics-mini-kpi" data-analytics-tip="mau" title="Distinct users active in the last 30 days">
+                <p class="analytics-mini-kpi-label">Monthly active users</p>
                 <p class="analytics-mini-kpi-value" data-analytics-summary="mau">--</p>
             </article>
             <article class="analytics-mini-kpi" data-analytics-tip="app_opens">
@@ -206,7 +218,7 @@
             </article>
         </div>
 
-        <div class="mt-5 grid gap-4 xl:grid-cols-[1.4fr_0.9fr]">
+        <div class="mt-5 grid gap-4">
             <section class="analytics-panel">
                 <div class="analytics-panel-header">
                     <div>
@@ -218,12 +230,13 @@
                 <div id="analytics-daily-chart" class="mt-4"></div>
             </section>
             <section class="analytics-panel">
-                <div class="analytics-panel-header">
-                    <div>
+                <div class="analytics-panel-header gap-3">
+                    <div class="min-w-0">
                         <p class="analytics-panel-kicker">Timing</p>
                         <h3 class="analytics-panel-title">Hourly heatmap</h3>
+                        <p class="mt-1 text-[11px] text-slate-500">Relative event volume by weekday and hour (local time)</p>
                     </div>
-                    <p class="text-[11px] text-slate-500">Local time, 24 hours</p>
+                    <p class="shrink-0 text-[11px] text-slate-500" data-analytics-hourly-peak>—</p>
                 </div>
                 <div id="analytics-hourly-heatmap" class="mt-4"></div>
             </section>
@@ -392,23 +405,62 @@
 
         <div class="mt-5 hidden space-y-4" data-analytics-panel="leaderboard">
             <section class="analytics-panel">
-                <div class="analytics-panel-header gap-3 flex-wrap">
-                    <div><p class="analytics-panel-kicker">Ranking</p><h3 class="analytics-panel-title">Top users</h3></div>
-                    <select id="analytics-leaderboard-metric" class="admin-auth-input min-h-11 py-2 text-xs"><option value="engagements">Engagements</option><option value="score">Engagement score</option><option value="views">Views</option><option value="likes">Likes</option><option value="comments">Comments</option><option value="shares">Shares</option><option value="app_opens">App opens</option><option value="sessions">Sessions</option></select>
-                    <select id="analytics-leaderboard-limit" class="admin-auth-input min-h-11 py-2 text-xs"><option value="10">Top 10</option><option value="25" selected>Top 25</option><option value="50">Top 50</option><option value="100">Top 100</option></select>
-                    <button type="button" id="analytics-leaderboard-apply" class="admin-secondary-button min-h-11 px-3 text-xs">Refresh</button>
+                <div class="analytics-panel-header gap-3 flex-col sm:flex-row sm:flex-wrap sm:items-end">
+                    <div class="min-w-0 flex-1">
+                        <p class="analytics-panel-kicker">Ranking</p>
+                        <h3 class="analytics-panel-title">Top users leaderboard</h3>
+                        <p class="mt-1 text-[11px] text-slate-500">Rank by visits, app usage, content views, or engagement. Change criteria anytime.</p>
+                    </div>
+                    <div class="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+                        <label class="sr-only" for="analytics-leaderboard-metric">Ranking criteria</label>
+                        <select id="analytics-leaderboard-metric" class="admin-auth-input min-h-11 min-w-[11rem] py-2 text-xs" aria-label="Ranking criteria">
+                            <optgroup label="Primary">
+                                <option value="visits">Visits</option>
+                                <option value="app_usage">App usage</option>
+                                <option value="content_views">Content views</option>
+                                <option value="engagements" selected>Engagement</option>
+                            </optgroup>
+                            <optgroup label="Advanced">
+                                <option value="score">Engagement score</option>
+                                <option value="sessions">Sessions</option>
+                                <option value="app_opens">App opens</option>
+                                <option value="likes">Likes</option>
+                                <option value="comments">Comments</option>
+                                <option value="shares">Shares</option>
+                                <option value="duration">Session duration</option>
+                            </optgroup>
+                        </select>
+                        <select id="analytics-leaderboard-limit" class="admin-auth-input min-h-11 py-2 text-xs" aria-label="Leaderboard size">
+                            <option value="10">Top 10</option>
+                            <option value="25" selected>Top 25</option>
+                            <option value="50">Top 50</option>
+                            <option value="100">Top 100</option>
+                        </select>
+                        <button type="button" id="analytics-leaderboard-apply" class="admin-secondary-button min-h-11 px-3 text-xs">Refresh</button>
+                    </div>
                 </div>
+                <div id="analytics-leaderboard-criteria" class="mt-4 flex flex-wrap gap-2" role="group" aria-label="Quick ranking criteria"></div>
                 <div id="analytics-leaderboard-table" class="mt-4"></div>
             </section>
         </div>
 
         <div class="mt-5 hidden space-y-4" data-analytics-panel="geography">
-            <section class="analytics-panel">
-                <div class="analytics-panel-header gap-3"><div><p class="analytics-panel-kicker">Geography</p><h3 class="analytics-panel-title">User distribution</h3></div>
-                    <select id="analytics-geo-level" class="admin-auth-input min-h-11 py-2 text-xs"><option value="region">Region</option><option value="province" selected>Province</option><option value="city">City</option></select>
-                    <button type="button" id="analytics-geo-apply" class="admin-secondary-button min-h-11 px-3 text-xs">Refresh</button>
+            <section class="analytics-demo-shell">
+                <div class="analytics-demo-shell-header gap-3 flex-col sm:flex-row sm:flex-wrap sm:items-end">
+                    <div class="min-w-0 flex-1">
+                        <h3 class="analytics-demo-shell-title">Demographics overview</h3>
+                        <p class="mt-1 text-[11px] text-slate-500">Profile-based Region, Province, and City/Municipality for authorized app users.</p>
+                    </div>
+                    <div class="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                        <label class="sr-only" for="analytics-geo-metric">Geography metric</label>
+                        <select id="analytics-geo-metric" class="admin-auth-input min-h-11 py-2 text-xs" aria-label="Geography metric">
+                            <option value="registered" selected>Registered users</option>
+                            <option value="active">Active in range</option>
+                        </select>
+                        <button type="button" id="analytics-geo-apply" class="admin-secondary-button min-h-11 px-3 text-xs">Refresh</button>
+                    </div>
                 </div>
-                <div id="analytics-geography-panel" class="mt-4"></div>
+                <div id="analytics-geography-panel" class="mt-3"></div>
             </section>
         </div>
 
@@ -426,8 +478,24 @@
             <section class="analytics-panel">
                 <div class="analytics-panel-header"><div><p class="analytics-panel-kicker">Exports</p><h3 class="analytics-panel-title">Queued reports</h3></div></div>
                 <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                    <select id="analytics-export-type" class="admin-auth-input min-h-11 text-xs"><option value="summary">Summary events</option><option value="users">Users</option><option value="retention">Retention</option><option value="leaderboard">Leaderboard</option><option value="geography">Geography</option><option value="journeys">Journeys</option><option value="alerts">Alerts</option><option value="complete">Complete</option></select>
-                    <select id="analytics-export-format" class="admin-auth-input min-h-11 text-xs"><option value="csv">CSV</option><option value="xlsx">Excel (CSV fallback)</option><option value="pdf">PDF (text)</option></select>
+                    <select id="analytics-export-type" class="admin-auth-input min-h-11 text-xs" aria-label="Export report type">
+                        <option value="summary">Overview summary</option>
+                        <option value="events">Event log</option>
+                        <option value="demographics">Demographics</option>
+                        <option value="users">Users</option>
+                        <option value="leaderboard">Top users leaderboard</option>
+                        <option value="retention">Retention</option>
+                        <option value="mobile">Mobile / devices</option>
+                        <option value="content">Content performance</option>
+                        <option value="journeys">Journeys</option>
+                        <option value="alerts">Alerts</option>
+                        <option value="complete">Complete pack</option>
+                    </select>
+                    <select id="analytics-export-format" class="admin-auth-input min-h-11 text-xs" aria-label="Export format">
+                        <option value="csv">CSV</option>
+                        <option value="xlsx">Excel</option>
+                        <option value="pdf">PDF</option>
+                    </select>
                     <button type="button" id="analytics-export-queue" class="admin-primary-button min-h-11 text-xs">Queue export</button>
                 </div>
                 <div id="analytics-exports-history" class="mt-4"></div>

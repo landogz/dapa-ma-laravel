@@ -10,9 +10,12 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    isPublisherReviewOnly,
     itemForEditorForm,
     openItemFromQuery,
+    publisherReviewSwalButtons,
     renderReviewNotesBanner,
+    resolvePublisherReviewSwalResult,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
@@ -211,10 +214,11 @@ function showWordForm(existingRaw) {
     const existing = existingRaw ? itemForEditorForm(existingRaw) : null;
     const isEdit = Boolean(existing);
     const reviewItem = existingRaw?.pending_revision ? existingRaw : null;
+    const publisherReviewOnly = isPublisherReviewOnly(existingRaw);
 
     Swal.fire(buildSwalOptions({
         title: isEdit
-            ? (reviewItem ? 'Review blocked word changes' : 'Edit blocked word')
+            ? (publisherReviewOnly || reviewItem ? 'Review blocked word changes' : 'Edit blocked word')
             : 'Add blocked word',
         html: `${renderReviewNotesBanner(existingRaw)}${buildSwalForm({
             description: 'The app replaces this whole word with **** in comments, journal notes, profiles, and other user text.',
@@ -240,8 +244,17 @@ function showWordForm(existingRaw) {
                 },
             ],
         })}`,
-        confirmButtonText: isEdit ? 'Save word' : 'Add word',
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(existingRaw)
+            : {
+                confirmButtonText: isEdit ? 'Save word' : 'Add word',
+                showCancelButton: true,
+            }),
         preConfirm: () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const word = document.getElementById('blocked-word-value')?.value.trim() ?? '';
             if (word.length < 2) {
                 Swal.showValidationMessage('Enter a word with at least 2 characters.');
@@ -252,7 +265,18 @@ function showWordForm(existingRaw) {
                 is_active: document.getElementById('blocked-word-active')?.value === '1' ? '1' : '0',
             };
         },
-    }, { size: 'md' })).then(({ isConfirmed, value }) => {
+    }, { size: 'md' })).then(async (result) => {
+        if (publisherReviewOnly) {
+            await resolvePublisherReviewSwalResult(result, {
+                basePath: '/admin/blocked-words',
+                id: existingRaw.id,
+                item: existingRaw,
+                onSuccess: () => loadBlockedWords(),
+            });
+            return;
+        }
+
+        const { isConfirmed, value } = result;
         if (!isConfirmed || !value) {
             return;
         }

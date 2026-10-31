@@ -45,8 +45,10 @@ class IecMaterialService
     {
         $payload = $this->normalizePayload($data);
         $payload = $this->contentWorkflow->prepareCreatePayload($actor, $payload);
+        $created = $this->iecMaterialRepository->create($payload);
+        $this->contentWorkflow->notifyPublishedCreate($created, $actor, 'iec-materials');
 
-        return $this->iecMaterialRepository->create($payload);
+        return $created;
     }
 
     public function update(IecMaterial $material, array $data, User $actor): IecMaterial

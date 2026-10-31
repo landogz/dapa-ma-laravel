@@ -7,8 +7,10 @@ use App\Models\CareToolkitQuestion;
 use App\Models\User;
 use App\Repositories\CareCheck\CareCheckRepository;
 use App\Repositories\CareToolkitQuestionRepository;
+use App\Support\Analytics\AnalyticsDateRange;
 use App\Support\CareCheck\Scoring;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
 class CareCheckService
@@ -60,13 +62,64 @@ class CareCheckService
         return $this->careCheckRepository->findAdmin($id);
     }
 
-    public function summary(int $days): array
+    public function summary(AnalyticsDateRange $range): array
     {
-        $payload = $this->careCheckRepository->summary($days);
+        $payload = $this->careCheckRepository->summary($range);
         $payload['type_counts'] = $this->careCheckRepository->typeCounts();
         $payload['tier_counts'] = $this->careCheckRepository->tierCounts();
 
         return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, CareCheckResult>
+     */
+    public function listForExport(array $filters, int $limit = 10000): Collection
+    {
+        return $this->careCheckRepository->listForExport($filters, $limit);
+    }
+
+    /**
+     * @param  Collection<int, CareCheckResult>  $rows
+     */
+    public function exportCsv(Collection $rows): string
+    {
+        $lines = [
+            ['Date', 'User', 'Email', 'Check', 'Level', 'Tier', 'Score', 'Percent', 'Band'],
+        ];
+
+        foreach ($rows as $result) {
+            $lines[] = [
+                $result->created_at?->toDateTimeString() ?? '',
+                $result->user?->name ?? '',
+                $result->user?->email ?? '',
+                match ($result->check_type) {
+                    'stress' => 'Stress Check',
+                    'anxiety' => 'Anxiety Check',
+                    'sleep' => 'Sleep Quality',
+                    default => (string) $result->check_type,
+                },
+                $this->levelLabel((string) $result->check_type),
+                $this->tierLabel((string) $result->check_type, (string) $result->display_tier),
+                "{$result->raw_score}/{$result->max_score}",
+                (string) $result->percent,
+                (string) $result->band,
+            ];
+        }
+
+        return collect($lines)
+            ->map(function (array $cells) {
+                return collect($cells)->map(function ($cell) {
+                    $text = (string) $cell;
+                    if (str_contains($text, ',') || str_contains($text, '"') || str_contains($text, "\n")) {
+                        return '"'.str_replace('"', '""', $text).'"';
+                    }
+
+                    return $text;
+                })->implode(',');
+            })
+            ->implode("\n")."\n";
     }
 
     public function format(CareCheckResult $result, bool $includeAnswers = false): array

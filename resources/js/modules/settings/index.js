@@ -11,13 +11,18 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    isEditorStagingPublished,
     isPublishedUpdateDraft,
     isPublishedUpdatePending,
+    isPublisherReviewOnly,
+    isSuperAdminRole,
     itemForEditorForm,
     openItemFromQuery,
     publishContent,
+    publisherReviewSwalButtons,
     rejectContent,
     renderReviewNotesBanner,
+    resolvePublisherReviewSwalResult,
     submitForReview,
     syncWorkflowCreateButton,
     workflowActionDefs,
@@ -173,20 +178,25 @@ async function openLegalEditor(slugOrId) {
     // Always work with the canonical slug (inbox links may pass a numeric id).
     const slug = page.slug || slugOrId;
     const formPage = itemForEditorForm(page);
-    const editingPublished = String(page.workflow_status) === 'published';
+    const editingPublished = isEditorStagingPublished(page);
     const meta = LEGAL_META[slug] ?? { fallbackTitle: slug };
-    const revisionBanner = (isPublishedUpdateDraft(page) || isPublishedUpdatePending(page))
+    const revisionBanner = editingPublished && (isPublishedUpdateDraft(page) || isPublishedUpdatePending(page))
         ? `<div class="mb-3 rounded-xl border border-[#055498]/30 bg-[#055498]/5 px-3 py-2 text-left text-sm text-[#123a60]">
                 <p class="font-semibold">${isPublishedUpdatePending(page) ? 'Proposed update awaiting approval' : 'Draft update (live page unchanged)'}</p>
                 <p class="mt-1">The mobile app still shows the live published version until a publisher approves this update.</p>
            </div>`
         : '';
+    const publisherReviewOnly = isPublisherReviewOnly(page);
     const result = await Swal.fire(buildSwalOptions({
-        title: `Edit ${formPage.title_en || meta.fallbackTitle}`,
+        title: publisherReviewOnly
+            ? `Review ${formPage.title_en || meta.fallbackTitle}`
+            : `Edit ${formPage.title_en || meta.fallbackTitle}`,
         html: `${renderReviewNotesBanner(page)}${revisionBanner}${buildLegalWorkflowActionsHtml(page, slug)}${buildSwalForm({
             description: editingPublished
                 ? 'Editor changes are saved as an update draft. The live published page stays unchanged until a publisher approves it.'
-                : 'Updates appear in the mobile Settings screens (English and Tagalog).',
+                : (isSuperAdminRole()
+                    ? 'Changes apply immediately — no publisher approval needed. Updates appear in the mobile Settings screens.'
+                    : 'Updates appear in the mobile Settings screens (English and Tagalog).'),
             reviewItem: page?.pending_revision ? page : null,
             fields: [
                 {
@@ -247,10 +257,18 @@ async function openLegalEditor(slugOrId) {
                 },
             ],
         })}`,
-        showCancelButton: true,
-        confirmButtonText: editingPublished ? 'Save update draft' : 'Save Changes',
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(page)
+            : {
+                showCancelButton: true,
+                confirmButtonText: editingPublished ? 'Save update draft' : 'Save Changes',
+            }),
         allowOutsideClick: () => !Swal.isLoading(),
         preConfirm: async () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const payload = {
                 title_en: document.getElementById('legal-title-en')?.value.trim(),
                 title_tl: document.getElementById('legal-title-tl')?.value.trim(),
@@ -282,6 +300,21 @@ async function openLegalEditor(slugOrId) {
             }
         },
     }, { size: 'lg' }));
+
+    if (publisherReviewOnly) {
+        await resolvePublisherReviewSwalResult(result, {
+            basePath: '/admin/legal-pages',
+            id: slug,
+            item: page,
+            onSuccess: async () => {
+                const listEl = document.querySelector('[data-settings-legal-list]');
+                if (listEl) {
+                    await loadLegalPages(listEl);
+                }
+            },
+        });
+        return;
+    }
 
     if (!result.isConfirmed || !result.value) {
         return;
@@ -379,8 +412,10 @@ export function removeKidListoQuote(id) {
 function showQuoteForm(existing) {
     const isEdit = Boolean(existing);
     const formQuote = existing ? itemForEditorForm(existing) : null;
-    const editingPublished = isEdit && String(existing.workflow_status) === 'published';
-    const revisionBanner = existing && (isPublishedUpdateDraft(existing) || isPublishedUpdatePending(existing))
+    const editingPublished = isEdit && isEditorStagingPublished(existing);
+    const isSuperAdmin = isSuperAdminRole();
+    const publisherReviewOnly = isPublisherReviewOnly(existing);
+    const revisionBanner = editingPublished && existing && (isPublishedUpdateDraft(existing) || isPublishedUpdatePending(existing))
         ? `<div class="mb-3 rounded-xl border border-[#055498]/30 bg-[#055498]/5 px-3 py-2 text-left text-sm text-[#123a60]">
                 <p class="font-semibold">${isPublishedUpdatePending(existing) ? 'Proposed update awaiting approval' : 'Draft update (live quote unchanged)'}</p>
                 <p class="mt-1">The mobile app still shows the live published version until a publisher approves this update.</p>
@@ -388,11 +423,17 @@ function showQuoteForm(existing) {
         : '';
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? (editingPublished ? 'Edit published quote' : 'Edit Kid Listo Quote') : 'Add Kid Listo Quote',
+        title: publisherReviewOnly
+            ? 'Review Kid Listo Quote'
+            : (isEdit
+                ? (editingPublished ? 'Edit published quote' : 'Edit Kid Listo Quote')
+                : (isSuperAdmin ? 'Add & publish Kid Listo Quote' : 'Add Kid Listo Quote')),
         html: `${renderReviewNotesBanner(existing)}${revisionBanner}${buildSwalForm({
             description: editingPublished
                 ? 'Changes are saved as an update draft. The live published quote stays unchanged until a publisher approves it.'
-                : 'Motivational quotes are shown randomly on the mobile Kid Listo screen.',
+                : (isSuperAdmin && !isEdit
+                    ? 'Saved as published — no publisher approval needed. Quotes appear randomly on the mobile Kid Listo screen.'
+                    : 'Motivational quotes are shown randomly on the mobile Kid Listo screen.'),
             reviewItem: existing?.pending_revision ? existing : null,
             fields: [
                 {
@@ -427,10 +468,20 @@ function showQuoteForm(existing) {
                 },
             ],
         })}`,
-        showCancelButton: true,
-        confirmButtonText: editingPublished ? 'Save update draft' : (isEdit ? 'Save Changes' : 'Create Quote'),
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(existing)
+            : {
+                showCancelButton: true,
+                confirmButtonText: editingPublished
+                    ? 'Save update draft'
+                    : (isEdit ? 'Save Changes' : (isSuperAdmin ? 'Create & publish' : 'Create Quote')),
+            }),
         allowOutsideClick: () => !Swal.isLoading(),
         preConfirm: async () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const payload = {
                 message_en: document.getElementById('klq-message-en')?.value.trim(),
                 message_tl: document.getElementById('klq-message-tl')?.value.trim(),
@@ -459,14 +510,27 @@ function showQuoteForm(existing) {
                 return false;
             }
         },
-    }, { size: 'md' })).then(({ isConfirmed, value }) => {
+    }, { size: 'md' })).then(async (result) => {
+        if (publisherReviewOnly) {
+            await resolvePublisherReviewSwalResult(result, {
+                basePath: '/admin/kid-listo-quotes',
+                id: existing.id,
+                item: existing,
+                onSuccess: () => loadKidListoQuotes(),
+            });
+            return;
+        }
+
+        const { isConfirmed, value } = result;
         if (!isConfirmed || !value) {
             return;
         }
 
         showSuccessToast(
             value.message ?? 'Quote saved.',
-            editingPublished ? 'Update draft saved' : (isEdit ? 'Updated' : 'Created'),
+            editingPublished
+                ? 'Update draft saved'
+                : (isEdit ? 'Updated' : (isSuperAdmin ? 'Published' : 'Created')),
         );
         loadKidListoQuotes();
         if (editingPublished && existing?.id) {

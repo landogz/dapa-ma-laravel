@@ -1,7 +1,13 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
-import { buildSwalOptions } from '../shared/swal-forms';
+import {
+    bindExportFormatPills,
+    buildExportDialogHtml,
+    buildSwalFieldsHtml,
+    buildSwalOptions,
+    syncExportCustomRangePanel,
+} from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs } from '../shared/filter-tabs';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
@@ -9,9 +15,9 @@ import { showErrorToast, showSuccessToast } from '../shared/toast';
 let checksTable;
 let checksTableMode;
 let hasBoundViewportListener = false;
+let hasBoundRangeControls = false;
 let currentTypeFilter = '';
 let currentTierFilter = '';
-let currentRange = 7;
 const resultCache = new Map();
 
 const TYPE_LABELS = {
@@ -37,6 +43,23 @@ const TIER_LABELS = {
     high: 'Higher tier',
 };
 
+const RANGE_OPTIONS = [
+    { value: 'today', label: 'Today' },
+    { value: 'yesterday', label: 'Yesterday' },
+    { value: '7', label: 'Last 7 days' },
+    { value: '14', label: 'Last 14 days' },
+    { value: '30', label: 'Last 30 days' },
+    { value: '60', label: 'Last 60 days' },
+    { value: '90', label: 'Last 90 days' },
+    { value: 'this_week', label: 'This week' },
+    { value: 'last_week', label: 'Last week' },
+    { value: 'this_month', label: 'This month' },
+    { value: 'last_month', label: 'Last month' },
+    { value: 'this_year', label: 'This year' },
+    { value: 'all_time', label: 'All time' },
+    { value: 'custom', label: 'Custom range' },
+];
+
 export function initCareChecksModule() {
     const tableEl = document.getElementById('care-checks-table');
     if (!tableEl) {
@@ -53,27 +76,95 @@ export function initCareChecksModule() {
         loadCareChecks();
     });
 
-    document.querySelectorAll('[data-care-checks-range]').forEach((button) => {
-        button.addEventListener('click', () => {
-            document.querySelectorAll('[data-care-checks-range]').forEach((el) => el.classList.remove('is-active'));
-            button.classList.add('is-active');
-            currentRange = Number.parseInt(button.getAttribute('data-care-checks-range') || '7', 10);
-            loadSummary();
-        });
-    });
+    bindRangeControls();
 
     const exportButton = document.querySelector('[data-admin-action="export-care-checks"]');
     if (exportButton && exportButton.dataset.boundExport !== '1') {
         exportButton.dataset.boundExport = '1';
-        exportButton.addEventListener('click', exportCareChecksCsv);
+        exportButton.addEventListener('click', exportCareChecksWithRange);
     }
 
     initializeTable(tableEl).then(() => {
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
-        loadSummary();
-        loadCareChecks();
+        reloadCareChecksPage();
     });
+}
+
+function bindRangeControls() {
+    if (hasBoundRangeControls) {
+        return;
+    }
+
+    const select = document.getElementById('care-checks-range-select');
+    const customWrap = document.getElementById('care-checks-custom-range');
+    const applyBtn = document.getElementById('care-checks-apply-range');
+
+    const syncCustom = () => {
+        customWrap?.classList.toggle('hidden', select?.value !== 'custom');
+    };
+
+    const syncQuickToggles = (range) => {
+        document.querySelectorAll('[data-care-checks-range]').forEach((el) => {
+            el.classList.toggle('is-active', el.getAttribute('data-care-checks-range') === String(range));
+        });
+    };
+
+    select?.addEventListener('change', () => {
+        syncCustom();
+        syncQuickToggles(select.value);
+        if (select.value !== 'custom') {
+            reloadCareChecksPage();
+        }
+    });
+
+    applyBtn?.addEventListener('click', () => {
+        const from = document.getElementById('care-checks-range-from')?.value || '';
+        const to = document.getElementById('care-checks-range-to')?.value || '';
+        if (!from || !to) {
+            showErrorToast('Enter both start and end dates.', 'Date range');
+            return;
+        }
+        if (from > to) {
+            showErrorToast('Start date must be on or before the end date.', 'Date range');
+            return;
+        }
+        reloadCareChecksPage();
+    });
+
+    document.querySelectorAll('[data-care-checks-range]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const range = button.getAttribute('data-care-checks-range') || '7';
+            if (select) {
+                select.value = range;
+            }
+            syncCustom();
+            syncQuickToggles(range);
+            reloadCareChecksPage();
+        });
+    });
+
+    syncCustom();
+    syncQuickToggles(select?.value || '7');
+    hasBoundRangeControls = true;
+}
+
+function getCareChecksQueryParams() {
+    const select = document.getElementById('care-checks-range-select');
+    const range = select?.value
+        || document.querySelector('[data-care-checks-range].is-active')?.getAttribute('data-care-checks-range')
+        || '7';
+    const params = { range };
+    if (range === 'custom') {
+        params.from = document.getElementById('care-checks-range-from')?.value || '';
+        params.to = document.getElementById('care-checks-range-to')?.value || '';
+    }
+    return params;
+}
+
+function reloadCareChecksPage() {
+    loadSummary();
+    loadCareChecks();
 }
 
 async function initializeTable(tableElement) {
@@ -140,6 +231,7 @@ export function loadCareChecks() {
     }
     axios.get('/admin/care-checks', {
         params: {
+            ...getCareChecksQueryParams(),
             per_page: 200,
             check_type: currentTypeFilter || undefined,
             display_tier: currentTierFilter || undefined,
@@ -158,11 +250,13 @@ export function loadCareChecks() {
 }
 
 function loadSummary() {
-    axios.get('/admin/care-checks/summary', { params: { days: currentRange } })
+    axios.get('/admin/care-checks/summary', { params: getCareChecksQueryParams() })
         .then(({ data }) => {
             const summary = data.data ?? {};
             const previous = summary.previous ?? {};
-            const periodLabel = summary.period_label || `previous ${currentRange} days`;
+            const periodLabel = summary.period_label
+                || summary.range?.label
+                || 'previous period';
 
             setText('[data-care-checks-summary="total"]', formatNumber(summary.total));
             setText('[data-care-checks-summary="unique"]', formatNumber(summary.unique_users));
@@ -499,57 +593,176 @@ function animateCareCheckResult(popup, row) {
     });
 }
 
-function exportCareChecksCsv() {
-    const exportButton = document.querySelector('[data-admin-action="export-care-checks"]');
-    exportButton?.setAttribute('disabled', 'true');
+export function exportCareChecksWithRange() {
+    const pageParams = getCareChecksQueryParams();
+    const initialRange = pageParams.range || '7';
+    const showCustomRange = initialRange === 'custom';
 
-    axios.get('/admin/care-checks', {
-        params: {
-            per_page: 500,
-            check_type: currentTypeFilter || undefined,
-            display_tier: currentTierFilter || undefined,
+    Swal.fire(buildSwalOptions({
+        title: 'Export care checks',
+        subtitle: 'Download Stress, Anxiety, and Sleep Quality completions.',
+        confirmButtonText: 'Download',
+        customClass: {
+            popup: 'admin-swal-popup-export',
         },
-    }).then(({ data }) => {
-        const rows = data.data?.data ?? data.data ?? [];
-        const list = Array.isArray(rows) ? rows : [];
-        const header = ['Date', 'User', 'Email', 'Check', 'Level', 'Tier', 'Score', 'Percent'];
-        const lines = [header.join(',')];
-        list.forEach((row) => {
-            lines.push([
-                csvCell(formatDateTime(row.created_at)),
-                csvCell(row.user?.name ?? ''),
-                csvCell(row.user?.email ?? ''),
-                csvCell(TYPE_LABELS[row.check_type] ?? row.check_type),
-                csvCell(BAND_LABELS[row.band] ?? row.band),
-                csvCell(TIER_LABELS[row.display_tier] ?? row.display_tier),
-                csvCell(`${row.raw_score}/${row.max_score}`),
-                csvCell(row.percent),
-            ].join(','));
-        });
+        html: buildExportDialogHtml({
+            formatId: 'care-checks-export-file-format',
+            formatValue: 'csv',
+            formatOptions: [
+                { value: 'csv', label: 'CSV', icon: 'fas fa-file-csv' },
+            ],
+            fieldsHtml: buildSwalFieldsHtml([
+                {
+                    id: 'care-checks-export-check-type',
+                    label: 'Check type',
+                    type: 'select',
+                    value: currentTypeFilter || '',
+                    options: [
+                        { value: '', label: 'All checks' },
+                        { value: 'stress', label: 'Stress Check' },
+                        { value: 'anxiety', label: 'Anxiety Check' },
+                        { value: 'sleep', label: 'Sleep Quality' },
+                    ],
+                },
+                {
+                    id: 'care-checks-export-tier',
+                    label: 'Result tier',
+                    type: 'select',
+                    value: currentTierFilter || '',
+                    options: [
+                        { value: '', label: 'All results' },
+                        { value: 'low', label: 'Lower tier' },
+                        { value: 'high', label: 'Higher tier' },
+                    ],
+                },
+                {
+                    id: 'care-checks-export-range',
+                    label: 'Date range',
+                    type: 'select',
+                    value: initialRange,
+                    span: 2,
+                    options: RANGE_OPTIONS,
+                },
+            ], 'admin-export-fields-grid'),
+            showCustomRange,
+            customRangeHtml: buildSwalFieldsHtml([
+                {
+                    id: 'care-checks-export-from',
+                    label: 'From',
+                    type: 'date',
+                    value: pageParams.from || '',
+                },
+                {
+                    id: 'care-checks-export-to',
+                    label: 'To',
+                    type: 'date',
+                    value: pageParams.to || '',
+                },
+            ], 'admin-export-custom-grid'),
+        }),
+        didOpen: (popup) => {
+            bindExportFormatPills(popup, 'care-checks-export-file-format');
+            syncExportCustomRangePanel(popup, 'care-checks-export-range');
+            popup.querySelector('#care-checks-export-range')?.addEventListener('change', () => {
+                syncExportCustomRangePanel(popup, 'care-checks-export-range');
+            });
+        },
+        preConfirm: () => {
+            const checkType = document.getElementById('care-checks-export-check-type')?.value || '';
+            const displayTier = document.getElementById('care-checks-export-tier')?.value || '';
+            const range = document.getElementById('care-checks-export-range')?.value || '7';
+            const from = document.getElementById('care-checks-export-from')?.value || '';
+            const to = document.getElementById('care-checks-export-to')?.value || '';
 
-        const blob = new Blob([`${lines.join('\n')}\n`], { type: 'text/csv;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `care-checks-${currentRange}d.csv`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
-        showSuccessToast('Care checks exported.', 'Download ready');
-    }).catch(({ response }) => {
-        showErrorToast(response?.data?.message ?? 'Unable to export care checks.');
-    }).finally(() => {
-        exportButton?.removeAttribute('disabled');
+            if (!range) {
+                Swal.showValidationMessage('Choose a date range.');
+                return false;
+            }
+
+            if (range === 'custom') {
+                if (!from || !to) {
+                    Swal.showValidationMessage('Enter both start and end dates for a custom range.');
+                    return false;
+                }
+                if (from > to) {
+                    Swal.showValidationMessage('Start date must be on or before the end date.');
+                    return false;
+                }
+            }
+
+            return { checkType, displayTier, range, from, to };
+        },
+    }, { size: 'md' })).then(async (result) => {
+        if (!result.isConfirmed || !result.value) {
+            return;
+        }
+
+        const { checkType, displayTier, range, from, to } = result.value;
+        const exportButton = document.querySelector('[data-admin-action="export-care-checks"]');
+        exportButton?.setAttribute('disabled', 'true');
+
+        try {
+            const params = {
+                range,
+                format: 'csv',
+                check_type: checkType || undefined,
+                display_tier: displayTier || undefined,
+            };
+            if (range === 'custom') {
+                params.from = from;
+                params.to = to;
+            }
+
+            const response = await axios.get('/admin/care-checks/export', {
+                params,
+                responseType: 'blob',
+            });
+
+            const payload = response.data;
+            const contentType = String(response.headers?.['content-type'] ?? '');
+            if (contentType.includes('application/json') || (payload instanceof Blob && payload.type.includes('application/json'))) {
+                const text = payload instanceof Blob ? await payload.text() : String(payload);
+                let message = 'Unable to export care checks.';
+                try {
+                    message = JSON.parse(text)?.message ?? message;
+                } catch (_) {
+                    // Keep default message.
+                }
+                showErrorToast(message, 'Export failed');
+                return;
+            }
+
+            const disposition = String(response.headers?.['content-disposition'] ?? '');
+            const matchedName = disposition.match(/filename=\"?([^\";]+)\"?/i);
+            const filename = matchedName?.[1]
+                || `dape-ma-care-checks-${range}-${new Date().toISOString().slice(0, 10)}.csv`;
+            const blob = payload instanceof Blob
+                ? payload
+                : new Blob([payload], { type: 'text/csv;charset=utf-8;' });
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = downloadUrl;
+            anchor.download = filename;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+            showSuccessToast('CSV download started.', 'Export ready');
+        } catch (error) {
+            const response = error?.response;
+            let message = response?.data?.message ?? 'Unable to export care checks.';
+            if (response?.data instanceof Blob) {
+                try {
+                    message = JSON.parse(await response.data.text())?.message ?? message;
+                } catch (_) {
+                    // Keep default message.
+                }
+            }
+            showErrorToast(message, 'Export failed');
+        } finally {
+            exportButton?.removeAttribute('disabled');
+        }
     });
-}
-
-function csvCell(value) {
-    const text = String(value ?? '');
-    if (/[",\n]/.test(text)) {
-        return `"${text.replaceAll('"', '""')}"`;
-    }
-    return text;
 }
 
 function updateTrend(key, current, previousValue, periodLabel) {
@@ -651,5 +864,6 @@ function escapeHtml(value = '') {
 window.CareChecks = {
     view: viewCareCheck,
     reload: loadCareChecks,
-    exportCsv: exportCareChecksCsv,
+    exportCsv: exportCareChecksWithRange,
+    exportCsvWithRange: exportCareChecksWithRange,
 };

@@ -61,6 +61,124 @@ export function canReviewWorkflow(role = currentAdminRole()) {
     return role === 'publisher' || role === 'super_admin';
 }
 
+/**
+ * Editors stage published edits for publisher approval.
+ * Super admins apply published edits live — never treat them as staging.
+ */
+export function isEditorStagingPublished(item = null, role = currentAdminRole()) {
+    if (!isEditorRole(role) || !item) {
+        return false;
+    }
+
+    const workflow = String(item.workflow_status || item.status || '');
+
+    return workflow === WORKFLOW_PUBLISHED;
+}
+
+/**
+ * Publishers may open forms to review pending content, but must not save via editor APIs.
+ */
+export function isPublisherReviewOnly(item = null, role = currentAdminRole()) {
+    if (!isPublisherRole(role) || isSuperAdminRole(role)) {
+        return false;
+    }
+
+    // Any existing item opened by a publisher is review-only.
+    return Boolean(item?.id ?? item);
+}
+
+/**
+ * True when a publisher must Approve/Publish or request Revision for this item.
+ * Posts use `status`; other modules use `workflow_status` (+ optional staged update).
+ */
+export function itemHasPublisherPendingReview(item = null) {
+    if (!item) {
+        return false;
+    }
+
+    if (isPublishedUpdatePending(item)) {
+        return true;
+    }
+
+    // Posts: published live + staged update awaiting approval
+    if (
+        String(item.status || '') === WORKFLOW_PUBLISHED
+        && String(item.revision_status || '') === WORKFLOW_PENDING
+    ) {
+        return true;
+    }
+
+    const workflow = String(item.workflow_status || '');
+    const status = String(item.status || '');
+
+    return workflow === WORKFLOW_PENDING || status === WORKFLOW_PENDING;
+}
+
+/**
+ * Swal button set for publisher Review dialogs.
+ * Publish / Revision only when the item is awaiting publisher decision; otherwise Close only.
+ */
+export function publisherReviewSwalButtons(item = null) {
+    if (!itemHasPublisherPendingReview(item)) {
+        return {
+            confirmButtonText: 'Close',
+            showDenyButton: false,
+            showCancelButton: false,
+        };
+    }
+
+    const isUpdate = isPublishedUpdatePending(item)
+        || (
+            String(item?.status || '') === WORKFLOW_PUBLISHED
+            && String(item?.revision_status || '') === WORKFLOW_PENDING
+        );
+
+    return {
+        confirmButtonText: isUpdate ? 'Approve update' : 'Publish',
+        showDenyButton: true,
+        denyButtonText: 'Revision',
+        showCancelButton: true,
+        cancelButtonText: 'Close',
+        customClass: {
+            denyButton: 'admin-secondary-button admin-swal-button admin-swal-button-warning',
+        },
+    };
+}
+
+/**
+ * Handle Publish / Revision / Close from a publisher Review Swal result.
+ */
+export async function resolvePublisherReviewSwalResult(result, {
+    basePath,
+    id,
+    item = null,
+    onSuccess,
+} = {}) {
+    if (!result || !itemHasPublisherPendingReview(item)) {
+        return false;
+    }
+
+    if (!result.isConfirmed && !result.isDenied) {
+        return false;
+    }
+
+    if (result.isConfirmed) {
+        const isUpdate = isPublishedUpdatePending(item)
+            || (
+                String(item?.status || '') === WORKFLOW_PUBLISHED
+                && String(item?.revision_status || '') === WORKFLOW_PENDING
+            );
+
+        return publishContent(basePath, id, {
+            onSuccess,
+            isPublishedUpdate: isUpdate,
+            item,
+        });
+    }
+
+    return rejectContent(basePath, id, { onSuccess });
+}
+
 export function workflowStatusLabel(status) {
     switch (String(status || '')) {
         case WORKFLOW_PENDING:
@@ -166,17 +284,21 @@ export function workflowActionDefs(item, {
     const status = item?.workflow_status ?? WORKFLOW_DRAFT;
     const actions = [];
     const canEditPublished = canCreateWorkflowDraft(role) && status === WORKFLOW_PUBLISHED;
-    const canSubmitUpdate = canCreateWorkflowDraft(role) && isPublishedUpdateDraft(item);
+    const canSubmitUpdate = isEditorRole(role) && isPublishedUpdateDraft(item);
+    const superAdmin = isSuperAdminRole(role);
 
     if (canCreateWorkflowDraft(role) && ([WORKFLOW_DRAFT, WORKFLOW_PENDING].includes(status) || canEditPublished)) {
         actions.push({
             key: 'edit',
             label: 'Edit',
-            tooltip: status === WORKFLOW_PUBLISHED ? 'Edit published (stages an update draft)' : 'Edit draft',
+            tooltip: status === WORKFLOW_PUBLISHED
+                ? (superAdmin ? 'Edit published' : 'Edit published (stages an update draft)')
+                : 'Edit draft',
             icon: 'fas fa-pen-to-square',
             className: 'admin-table-action-primary',
         });
-        if (status === WORKFLOW_DRAFT || canSubmitUpdate) {
+        // Editors submit for publisher review; super admins publish directly (no approval).
+        if (!superAdmin && (status === WORKFLOW_DRAFT || canSubmitUpdate)) {
             actions.push({
                 key: 'submit',
                 label: 'Submit',
@@ -189,8 +311,11 @@ export function workflowActionDefs(item, {
         }
     }
 
-    if (canReviewWorkflow(role) && (status === WORKFLOW_PENDING || isPublishedUpdatePending(item))) {
-        if (!actions.some((action) => action.key === 'edit')) {
+    const awaitingReview = status === WORKFLOW_PENDING || isPublishedUpdatePending(item);
+    const superAdminCanPublishDraft = superAdmin && status === WORKFLOW_DRAFT;
+
+    if (canReviewWorkflow(role) && (awaitingReview || superAdminCanPublishDraft)) {
+        if (!actions.some((action) => action.key === 'edit') && awaitingReview) {
             actions.push({
                 key: 'edit',
                 label: 'Review',
@@ -211,16 +336,19 @@ export function workflowActionDefs(item, {
             icon: 'fas fa-circle-check',
             className: 'admin-table-action-primary',
         });
-        actions.push({
-            key: 'reject',
-            label: 'Revision',
-            tooltip: 'Return to draft with revision notes',
-            icon: 'fas fa-rotate-left',
-            className: 'admin-table-action-warning',
-        });
+
+        if (awaitingReview) {
+            actions.push({
+                key: 'reject',
+                label: 'Revision',
+                tooltip: 'Return to draft with revision notes',
+                icon: 'fas fa-rotate-left',
+                className: 'admin-table-action-warning',
+            });
+        }
     }
 
-    if (isSuperAdminRole(role)) {
+    if (superAdmin) {
         actions.push({
             key: 'delete',
             label: 'Delete',

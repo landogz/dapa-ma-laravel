@@ -342,6 +342,7 @@ Route::prefix('v1')
                     Route::get('/app-options/{appOption}', [AppOptionAdminController::class, 'show'])->name('app-options.show');
 
                     Route::get('/care-checks/summary', [CareCheckAdminController::class, 'summary'])->name('care-checks.summary');
+                    Route::get('/care-checks/export', [CareCheckAdminController::class, 'export'])->name('care-checks.export');
                     Route::get('/care-checks', [CareCheckAdminController::class, 'index'])->name('care-checks.index');
                     Route::get('/care-checks/{id}', [CareCheckAdminController::class, 'show'])->whereNumber('id')->name('care-checks.show');
 

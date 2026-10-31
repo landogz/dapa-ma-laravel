@@ -10,9 +10,12 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     guardWorkflowCreateAction,
+    isPublisherReviewOnly,
     itemForEditorForm,
     openItemFromQuery,
+    publisherReviewSwalButtons,
     renderReviewNotesBanner,
+    resolvePublisherReviewSwalResult,
     syncWorkflowCreateButton,
     workflowStatusBadge,
 } from '../shared/content-workflow';
@@ -256,10 +259,11 @@ function showQuestionForm(existingRaw) {
         ? existing.options_tl.join('\n')
         : '';
     const reviewItem = existingRaw?.pending_revision ? existingRaw : null;
+    const publisherReviewOnly = isPublisherReviewOnly(existingRaw);
 
     Swal.fire(buildSwalOptions({
         title: isEdit
-            ? (reviewItem ? 'Review Care Toolkit changes' : 'Edit Care Toolkit Question')
+            ? (publisherReviewOnly || reviewItem ? 'Review Care Toolkit changes' : 'Edit Care Toolkit Question')
             : 'Add Care Toolkit Question',
         html: `${renderReviewNotesBanner(existingRaw)}${buildSwalForm({
             description: 'These questions power Stress, Anxiety, and Sleep checks in the mobile Self-care Toolkit.',
@@ -340,9 +344,17 @@ function showQuestionForm(existingRaw) {
                 },
             ],
         })}`,
-        confirmButtonText: isEdit ? 'Save changes' : 'Create question',
-        showCancelButton: true,
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(existingRaw)
+            : {
+                confirmButtonText: isEdit ? 'Save changes' : 'Create question',
+                showCancelButton: true,
+            }),
         preConfirm: () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const toolkitType = document.getElementById('ctq-toolkit-type')?.value;
             const answerType = document.getElementById('ctq-answer-type')?.value;
             const questionEn = document.getElementById('ctq-question-en')?.value?.trim() ?? '';
@@ -385,7 +397,18 @@ function showQuestionForm(existingRaw) {
                     return false;
                 });
         },
-    }, { size: 'lg' })).then(({ isConfirmed, value }) => {
+    }, { size: 'lg' })).then(async (result) => {
+        if (publisherReviewOnly) {
+            await resolvePublisherReviewSwalResult(result, {
+                basePath: '/admin/care-toolkit-questions',
+                id: existingRaw.id,
+                item: existingRaw,
+                onSuccess: () => loadCareToolkitQuestions(),
+            });
+            return;
+        }
+
+        const { isConfirmed, value } = result;
         if (!isConfirmed || !value) {
             return;
         }

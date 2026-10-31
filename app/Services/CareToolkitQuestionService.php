@@ -33,8 +33,10 @@ class CareToolkitQuestionService
     public function create(array $data, User $actor): CareToolkitQuestion
     {
         $payload = $this->contentWorkflow->prepareCreatePayload($actor, $this->normalize($data));
+        $created = $this->repository->create($payload);
+        $this->contentWorkflow->notifyPublishedCreate($created, $actor, 'care-toolkit');
 
-        return $this->repository->create($payload);
+        return $created;
     }
 
     public function update(CareToolkitQuestion $question, array $data, User $actor): CareToolkitQuestion

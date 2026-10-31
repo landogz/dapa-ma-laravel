@@ -25,6 +25,7 @@ class AnalyticsService
             'total' => (int) ($peakDay['total'] ?? 0),
         ];
         $hourlyCounts = $this->analyticsRepository->hourlyCounts($range);
+        $hourlyHeatmap = $this->analyticsRepository->hourlyHeatmap($range);
         $weekdayCounts = $this->analyticsRepository->weekdayCounts($range);
         $devices = $this->analyticsRepository->deviceBreakdown($range);
         $ratings = $this->analyticsRepository->ratingSummary($range);
@@ -46,6 +47,7 @@ class AnalyticsService
             'daily_counts' => $dailyCounts,
             'daily_by_event_type' => $this->analyticsRepository->dailyCountsByEventType($range),
             'hourly_counts' => $hourlyCounts,
+            'hourly_heatmap' => $hourlyHeatmap,
             'weekday_counts' => $weekdayCounts,
             'period_comparison' => $periodComparison,
             'audience' => $audience,

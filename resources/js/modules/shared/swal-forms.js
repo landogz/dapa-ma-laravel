@@ -63,7 +63,20 @@ function renderOptions(options = [], selectedValue = '') {
 }
 
 function fieldShellClass(field) {
-    return field.changed ? 'admin-swal-field admin-swal-field--changed' : 'admin-swal-field';
+    const classes = ['admin-swal-field'];
+    if (field.changed) {
+        classes.push('admin-swal-field--changed');
+    }
+    if (field.span === 2) {
+        classes.push('admin-swal-field-span-2');
+    }
+    if (field.hidden) {
+        classes.push('hidden');
+    }
+    if (field.className) {
+        classes.push(field.className);
+    }
+    return classes.join(' ');
 }
 
 function fieldChangedBadge(field) {
@@ -328,7 +341,21 @@ function renderField(field) {
     `;
 }
 
-export function buildSwalForm({ description = '', rules = '', fields = [], reviewItem = null } = {}) {
+export function buildSwalFieldsHtml(fields = [], fieldsClass = 'admin-swal-fields') {
+    return `
+        <div class="${escapeHtml(fieldsClass)}">
+            ${fields.map(renderField).join('')}
+        </div>
+    `;
+}
+
+export function buildSwalForm({
+    description = '',
+    rules = '',
+    fields = [],
+    reviewItem = null,
+    fieldsClass = 'admin-swal-fields',
+} = {}) {
     const preparedFields = hasPendingRevisionPayload(reviewItem)
         ? annotateSwalFieldsForPendingReview(fields, reviewItem)
         : fields;
@@ -346,11 +373,105 @@ export function buildSwalForm({ description = '', rules = '', fields = [], revie
                     <p class="admin-swal-rules-body">${escapeHtml(rules)}</p>
                 </div>
             ` : ''}
-            <div class="admin-swal-fields">
-                ${preparedFields.map(renderField).join('')}
-            </div>
+            ${buildSwalFieldsHtml(preparedFields, fieldsClass)}
         </div>
     `;
+}
+
+/**
+ * Modern export dialog shell with format pills and optional custom-date panel.
+ */
+export function buildExportDialogHtml({
+    intro = '',
+    fieldsHtml = '',
+    formatOptions = [],
+    formatId = 'export-file-format',
+    formatValue = 'csv',
+    customRangeHtml = '',
+    showCustomRange = false,
+} = {}) {
+    const pills = formatOptions.map((option) => {
+        const active = String(option.value) === String(formatValue);
+        return `
+            <button
+                type="button"
+                class="admin-export-format-pill${active ? ' is-active' : ''}"
+                data-export-format-pill="${escapeHtml(option.value)}"
+                aria-pressed="${active ? 'true' : 'false'}"
+            >
+                ${option.icon ? `<i class="${escapeHtml(option.icon)}" aria-hidden="true"></i>` : ''}
+                <span>${escapeHtml(option.label)}</span>
+            </button>
+        `;
+    }).join('');
+
+    const formatBlock = formatOptions.length > 1
+        ? `
+            <section class="admin-export-dialog-block">
+                <p class="admin-export-dialog-label">Format</p>
+                <div class="admin-export-format-pills" role="group" aria-label="Export format">
+                    ${pills}
+                </div>
+                <input type="hidden" id="${escapeHtml(formatId)}" value="${escapeHtml(formatValue)}">
+            </section>
+        `
+        : (formatOptions.length === 1
+            ? `<input type="hidden" id="${escapeHtml(formatId)}" value="${escapeHtml(formatValue)}">`
+            : '');
+
+    return `
+        <div class="admin-export-dialog">
+            ${intro ? `<p class="admin-export-dialog-intro">${escapeHtml(intro)}</p>` : ''}
+            ${formatBlock}
+            <section class="admin-export-dialog-block">
+                ${fieldsHtml}
+            </section>
+            ${customRangeHtml ? `
+                <section class="admin-export-custom-panel${showCustomRange ? '' : ' hidden'}" data-export-custom-range>
+                    <p class="admin-export-dialog-label">Custom dates</p>
+                    ${customRangeHtml}
+                </section>
+            ` : ''}
+        </div>
+    `;
+}
+
+export function bindExportFormatPills(popup, formatId = 'export-file-format') {
+    if (!popup) {
+        return;
+    }
+    const hidden = popup.querySelector(`#${formatId}`);
+    popup.querySelectorAll('[data-export-format-pill]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const value = button.getAttribute('data-export-format-pill') || 'csv';
+            popup.querySelectorAll('[data-export-format-pill]').forEach((el) => {
+                const active = el === button;
+                el.classList.toggle('is-active', active);
+                el.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+            if (hidden) {
+                hidden.value = value;
+            }
+        });
+    });
+}
+
+export function syncExportCustomRangePanel(popup, rangeSelectId) {
+    if (!popup) {
+        return;
+    }
+    const range = popup.querySelector(`#${rangeSelectId}`)?.value || '';
+    const isCustom = range === 'custom';
+    popup.querySelectorAll('[data-export-custom-range]').forEach((panel) => {
+        panel.classList.toggle('hidden', !isCustom);
+        panel.querySelectorAll('input').forEach((input) => {
+            if (isCustom) {
+                input.setAttribute('required', 'required');
+            } else {
+                input.removeAttribute('required');
+            }
+        });
+    });
 }
 
 /**
