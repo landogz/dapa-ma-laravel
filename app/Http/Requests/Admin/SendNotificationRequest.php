@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Models\HopeEvent;
-use App\Models\Post;
+use App\Support\Notification\NotificationLinkType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class SendNotificationRequest extends FormRequest
@@ -20,7 +20,7 @@ class SendNotificationRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:1024'],
             'topic' => ['nullable', 'string', 'max:255'],
-            'link_type' => ['nullable', 'string', 'in:post,hope_event'],
+            'link_type' => ['nullable', 'string', Rule::in(NotificationLinkType::all())],
             'link_id' => ['nullable', 'integer', 'required_with:link_type'],
             'post_id' => ['nullable', 'integer', 'exists:posts,id'],
             'data' => ['nullable', 'array'],
@@ -47,13 +47,7 @@ class SendNotificationRequest extends FormRequest
                 return;
             }
 
-            $exists = match ($linkType) {
-                'post' => Post::query()->whereKey($linkId)->exists(),
-                'hope_event' => HopeEvent::query()->whereKey($linkId)->exists(),
-                default => false,
-            };
-
-            if (! $exists) {
+            if (! NotificationLinkType::exists((string) $linkType, (int) $linkId)) {
                 $validator->errors()->add('link_id', 'The selected link target is invalid.');
             }
         });

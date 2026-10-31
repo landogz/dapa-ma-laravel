@@ -1004,7 +1004,7 @@ async function loadAdminInbox(panel) {
             ${items.length
                 ? `<div class="admin-notifications-items">${items.map(renderInboxItem).join('')}</div>`
                 : `<div class="admin-notifications-empty">
-                    No ${filter === 'unread' ? 'unread ' : ''}notifications. Actions like post submissions, rejections, schedules, and role updates will appear here.
+                    No ${filter === 'unread' ? 'unread ' : ''}notifications. Submissions, publishes, revisions, and role updates across Posts, Lookups, Care, Hope, Contests, and more will appear here.
                    </div>`}
             ${renderInboxFooter({ filter, total, shown: items.length })}
         `;

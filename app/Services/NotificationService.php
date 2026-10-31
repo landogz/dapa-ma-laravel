@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\HopeEvent;
 use App\Models\Notification;
 use App\Models\User;
 use App\Repositories\NotificationRepository;
 use App\Repositories\UserNotificationRepository;
 use App\Services\ContentWorkflow\ContentWorkflowService;
+use App\Support\Notification\NotificationLinkType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -253,7 +253,7 @@ class NotificationService
             'link_type' => $linkType,
             'link_id' => $linkId !== null ? (string) $linkId : null,
             'post_id' => $postId ? (string) $postId : null,
-            'hope_event_id' => $linkType === Notification::LINK_HOPE_EVENT && $linkId
+            'hope_event_id' => $linkType === 'hope_event' && $linkId
                 ? (string) $linkId
                 : null,
             'topic' => (string) $topic,
@@ -283,7 +283,7 @@ class NotificationService
                 'link_type' => $linkType,
                 'link_id' => $linkId,
                 'post_id' => $postId,
-                'hope_event_id' => $linkType === Notification::LINK_HOPE_EVENT ? $linkId : null,
+                'hope_event_id' => $linkType === 'hope_event' ? $linkId : null,
                 'topic' => $topic,
                 'campaign' => true,
                 'notification_id' => $notification->id,
@@ -334,28 +334,15 @@ class NotificationService
 
         $linkType = $notification->resolvedLinkType();
         $linkId = $notification->resolvedLinkId();
-        $post = null;
-        $hopeEvent = null;
-
-        if ($linkType === Notification::LINK_POST) {
-            $postModel = $notification->post;
-            if ($postModel) {
-                $post = [
-                    'id' => $postModel->id,
-                    'title' => $postModel->title,
-                ];
-            }
-        } elseif ($linkType === Notification::LINK_HOPE_EVENT) {
-            $eventModel = $notification->relationLoaded('hopeEvent')
-                ? $notification->hopeEvent
-                : ($linkId ? HopeEvent::query()->find($linkId, ['id', 'title']) : null);
-            if ($eventModel) {
-                $hopeEvent = [
-                    'id' => $eventModel->id,
-                    'title' => $eventModel->title,
-                ];
-            }
-        }
+        $linkTarget = ($linkType && $linkId)
+            ? NotificationLinkType::resolveTarget($linkType, $linkId)
+            : null;
+        $post = ($linkType === NotificationLinkType::POST && $linkTarget)
+            ? ['id' => $linkTarget['id'], 'title' => $linkTarget['title']]
+            : null;
+        $hopeEvent = ($linkType === NotificationLinkType::HOPE_EVENT && $linkTarget)
+            ? ['id' => $linkTarget['id'], 'title' => $linkTarget['title']]
+            : null;
 
         return [
             'id' => $notification->id,
@@ -365,7 +352,9 @@ class NotificationService
             'topic' => $notification->topic ?? 'all',
             'link_type' => $linkType,
             'link_id' => $linkId,
-            'post_id' => $linkType === Notification::LINK_POST ? $linkId : null,
+            'link_type_label' => $linkType ? NotificationLinkType::labelFor($linkType) : null,
+            'link_target' => $linkTarget,
+            'post_id' => $linkType === NotificationLinkType::POST ? $linkId : null,
             'post' => $post,
             'hope_event' => $hopeEvent,
             'sender' => $notification->sender ? [
@@ -391,7 +380,7 @@ class NotificationService
         $linkId = isset($data['link_id']) ? (int) $data['link_id'] : null;
 
         if ($linkType === '' && filled($data['post_id'] ?? null)) {
-            $linkType = Notification::LINK_POST;
+            $linkType = NotificationLinkType::POST;
             $linkId = (int) $data['post_id'];
         }
 
@@ -399,11 +388,15 @@ class NotificationService
             return [null, null, null];
         }
 
-        if (! in_array($linkType, [Notification::LINK_POST, Notification::LINK_HOPE_EVENT], true)) {
+        if (! in_array($linkType, NotificationLinkType::all(), true)) {
             return [null, null, null];
         }
 
-        $postId = $linkType === Notification::LINK_POST ? $linkId : null;
+        if (! NotificationLinkType::exists($linkType, $linkId)) {
+            return [null, null, null];
+        }
+
+        $postId = $linkType === NotificationLinkType::POST ? $linkId : null;
 
         return [$linkType, $linkId, $postId];
     }

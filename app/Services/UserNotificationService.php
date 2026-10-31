@@ -4,10 +4,15 @@ namespace App\Services;
 
 use App\Models\Post;
 use App\Models\PostComment;
+use App\Models\RehabCenter;
+use App\Models\Training;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Repositories\UserNotificationRepository;
+use App\Support\ContentWorkflow\ContentWorkflowMobileNotify;
+use App\Support\Notification\NotificationLinkType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Model;
 
 class UserNotificationService
 {
@@ -130,6 +135,101 @@ class UserNotificationService
             'data' => [
                 'post_id' => $post->id,
                 'post_title' => $post->title,
+                'link_type' => 'post',
+                'link_id' => $post->id,
+            ],
+        ]);
+    }
+
+    /**
+     * Inbox alert for app users when Hope / Contest / IEC / Care Support / Directory go live.
+     */
+    public function notifyPublishedContent(string $section, Model $model): void
+    {
+        if (! ContentWorkflowMobileNotify::shouldNotify($section)) {
+            return;
+        }
+
+        $recipients = User::query()
+            ->where('role', 'app_user')
+            ->get(['id']);
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $itemTitle = method_exists($model, 'workflowTitle')
+            ? $model->workflowTitle()
+            : (string) ($model->getAttribute('title')
+                ?? $model->getAttribute('title_en')
+                ?? $model->getAttribute('name')
+                ?? $model->getKey());
+
+        $copy = ContentWorkflowMobileNotify::copy($section, $itemTitle);
+        $linkId = (int) $model->getKey();
+
+        $this->repository->createForUsers($recipients, [
+            'type' => $copy['type'],
+            'title' => $copy['title'],
+            'body' => $copy['body'],
+            'data' => [
+                'link_type' => $copy['link_type'],
+                'link_id' => $linkId,
+                'section' => $section,
+                'title' => $itemTitle,
+                'hope_event_id' => $copy['link_type'] === NotificationLinkType::HOPE_EVENT ? $linkId : null,
+            ],
+        ]);
+    }
+
+    public function notifyNewRehabCenter(RehabCenter $center): void
+    {
+        $this->notifyDirectoryItem(
+            type: 'new_rehab_center',
+            linkType: NotificationLinkType::REHAB_CENTER,
+            title: 'New treatment center',
+            body: sprintf('"%s" was added to Treatment Rehabilitation Centers.', $center->name),
+            linkId: (int) $center->id,
+            itemTitle: (string) $center->name,
+        );
+    }
+
+    public function notifyNewTraining(Training $training): void
+    {
+        $this->notifyDirectoryItem(
+            type: 'new_training',
+            linkType: NotificationLinkType::TRAINING,
+            title: 'New training',
+            body: sprintf('"%s" is now available.', $training->title),
+            linkId: (int) $training->id,
+            itemTitle: (string) $training->title,
+        );
+    }
+
+    private function notifyDirectoryItem(
+        string $type,
+        string $linkType,
+        string $title,
+        string $body,
+        int $linkId,
+        string $itemTitle,
+    ): void {
+        $recipients = User::query()
+            ->where('role', 'app_user')
+            ->get(['id']);
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $this->repository->createForUsers($recipients, [
+            'type' => $type,
+            'title' => $title,
+            'body' => $body,
+            'data' => [
+                'link_type' => $linkType,
+                'link_id' => $linkId,
+                'title' => $itemTitle,
             ],
         ]);
     }

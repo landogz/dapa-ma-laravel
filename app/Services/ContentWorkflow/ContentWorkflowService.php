@@ -5,6 +5,7 @@ namespace App\Services\ContentWorkflow;
 use App\Models\Concerns\HasContentWorkflow;
 use App\Models\User;
 use App\Services\AdminNotificationService;
+use App\Services\UserNotificationService;
 use App\Support\ContentWorkflow\ContentWorkflowStatus;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -13,6 +14,7 @@ class ContentWorkflowService
 {
     public function __construct(
         private readonly AdminNotificationService $adminNotificationService,
+        private readonly UserNotificationService $userNotificationService,
     ) {
     }
 
@@ -238,7 +240,10 @@ class ContentWorkflowService
             $publisher,
         );
 
-        return $model->fresh();
+        $fresh = $model->fresh() ?? $model;
+        $this->userNotificationService->notifyPublishedContent($section, $fresh);
+
+        return $fresh;
     }
 
     /**
@@ -304,13 +309,17 @@ class ContentWorkflowService
 
         $model->forceFill($payload)->save();
 
+        $fresh = $model->fresh() ?? $model;
+
         $this->adminNotificationService->notifyContentPublished(
             $section,
-            $model->fresh(),
+            $fresh,
             $publisher,
         );
 
-        return $model->fresh();
+        $this->userNotificationService->notifyPublishedContent($section, $fresh);
+
+        return $fresh;
     }
 
     private function assertUsesWorkflow(Model $model): void

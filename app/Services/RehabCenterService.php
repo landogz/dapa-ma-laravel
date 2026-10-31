@@ -10,6 +10,7 @@ class RehabCenterService
 {
     public function __construct(
         private readonly RehabCenterRepository $rehabCenterRepository,
+        private readonly UserNotificationService $userNotificationService,
     ) {
     }
 
@@ -25,7 +26,10 @@ class RehabCenterService
 
     public function create(array $data): RehabCenter
     {
-        return $this->rehabCenterRepository->create($data);
+        $center = $this->rehabCenterRepository->create($data);
+        $this->userNotificationService->notifyNewRehabCenter($center);
+
+        return $center;
     }
 
     public function update(RehabCenter $center, array $data): RehabCenter

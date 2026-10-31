@@ -2940,6 +2940,54 @@
     "tl": "Anunsyo"
   },
   {
+    "key": "notifTypeHopeEvent",
+    "group": "account",
+    "en": "Hope event",
+    "tl": "Hope event"
+  },
+  {
+    "key": "notifTypeContest",
+    "group": "account",
+    "en": "Contest",
+    "tl": "Contest"
+  },
+  {
+    "key": "notifTypeIecMaterial",
+    "group": "account",
+    "en": "IEC material",
+    "tl": "IEC material"
+  },
+  {
+    "key": "notifTypeCareSupport",
+    "group": "account",
+    "en": "Care Support",
+    "tl": "Care Support"
+  },
+  {
+    "key": "notifTypeHopeDirectory",
+    "group": "account",
+    "en": "Hope Directory",
+    "tl": "Hope Directory"
+  },
+  {
+    "key": "notifTypeCareToolkit",
+    "group": "account",
+    "en": "Self-care Toolkit",
+    "tl": "Self-care Toolkit"
+  },
+  {
+    "key": "notifTypeRehabCenter",
+    "group": "account",
+    "en": "Treatment Rehabilitation Center",
+    "tl": "Treatment Rehabilitation Center"
+  },
+  {
+    "key": "notifTypeContentPublished",
+    "group": "account",
+    "en": "New update",
+    "tl": "Bagong update"
+  },
+  {
     "key": "notifTypeGeneral",
     "group": "account",
     "en": "Notification",

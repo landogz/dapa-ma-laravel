@@ -19,8 +19,7 @@ import {
 import { showErrorToast, showSuccessToast } from './shared/toast';
 
 let notifTable;
-let postOptionsCache = null;
-let hopeEventOptionsCache = null;
+let linkOptionsCache = {};
 let notificationsTableMode = null;
 let notificationsViewportBound = false;
 let hasBoundFilters = false;
@@ -39,6 +38,69 @@ const TOPIC_LABELS = {
 const LINK_TYPE_LABELS = {
     post: 'Post',
     hope_event: 'Hope Event',
+    contest: 'Contest',
+    iec_material: 'IEC Material',
+    rehab_center: 'Treatment Rehabilitation Center',
+    training: 'Training',
+    care_support: 'Care Support',
+    hope_directory: 'Hope Directory',
+};
+
+const LINK_TYPE_OPTIONS = [
+    { value: '', label: 'None' },
+    ...Object.entries(LINK_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+];
+
+const LINK_OPTION_LOADERS = {
+    post: {
+        url: '/admin/posts/options',
+        placeholder: 'Select a post',
+        mapRow: (row) => ({ value: String(row.id), label: row.title }),
+    },
+    hope_event: {
+        url: '/admin/hope-events/options',
+        placeholder: 'Select a hope event',
+        mapRow: (row) => ({
+            value: String(row.id),
+            label: row.is_active === false ? `${row.title} (inactive)` : row.title,
+        }),
+    },
+    contest: {
+        url: '/admin/contests',
+        placeholder: 'Select a contest',
+        mapRow: (row) => ({ value: String(row.id), label: row.title || row.name || `#${row.id}` }),
+        listPath: (data) => data.data?.data ?? data.data ?? [],
+    },
+    iec_material: {
+        url: '/admin/iec-materials',
+        placeholder: 'Select an IEC material',
+        mapRow: (row) => ({ value: String(row.id), label: row.title || `#${row.id}` }),
+        listPath: (data) => data.data?.data ?? data.data ?? [],
+    },
+    rehab_center: {
+        url: '/admin/rehab-centers',
+        placeholder: 'Select a center',
+        mapRow: (row) => ({ value: String(row.id), label: row.name || `#${row.id}` }),
+        listPath: (data) => data.data?.data ?? data.data ?? [],
+    },
+    training: {
+        url: '/admin/trainings',
+        placeholder: 'Select a training',
+        mapRow: (row) => ({ value: String(row.id), label: row.title || row.name || `#${row.id}` }),
+        listPath: (data) => data.data?.data ?? data.data ?? [],
+    },
+    care_support: {
+        url: '/admin/care-support-resources',
+        placeholder: 'Select a Care Support resource',
+        mapRow: (row) => ({ value: String(row.id), label: row.title_en || row.title || `#${row.id}` }),
+        listPath: (data) => data.data?.data ?? data.data ?? [],
+    },
+    hope_directory: {
+        url: '/admin/hope-directory',
+        placeholder: 'Select a directory org',
+        mapRow: (row) => ({ value: String(row.id), label: row.name || `#${row.id}` }),
+        listPath: (data) => data.data?.data ?? data.data ?? [],
+    },
 };
 
 export function initNotificationsModule() {
@@ -124,19 +186,10 @@ export async function sendNotification() {
         return;
     }
 
-    const [postOptions, hopeEventOptions] = await Promise.all([
-        loadPostOptions(),
-        loadHopeEventOptions(),
-    ]);
-
-    if (!postOptions || !hopeEventOptions) {
-        return;
-    }
-
     const formResult = await Swal.fire(buildSwalOptions({
         title: 'Send Notification',
         html: buildSwalForm({
-            description: 'Delivers an in-app inbox alert to the selected mobile audience. Device push is skipped until FCM is configured.',
+            description: 'Delivers an in-app inbox alert to the selected mobile audience. Link any published content — posts, events, contests, IEC, Care Support, and more. Device push is skipped until FCM is configured.',
             fields: [
                 { id: 'notif-title', label: 'Title *', placeholder: 'Enter notification title' },
                 {
@@ -150,11 +203,7 @@ export async function sendNotification() {
                     label: 'Link to',
                     type: 'select',
                     value: '',
-                    options: [
-                        { value: '', label: 'None' },
-                        { value: 'post', label: 'Post' },
-                        { value: 'hope_event', label: 'Hope Event' },
-                    ],
+                    options: LINK_TYPE_OPTIONS,
                 },
                 {
                     id: 'notif-link-id',
@@ -183,7 +232,7 @@ export async function sendNotification() {
             const linkSelect = popup.querySelector('#notif-link-id');
             const linkWrap = linkSelect?.closest('.admin-swal-field') || linkSelect?.parentElement;
 
-            const syncLinkTarget = () => {
+            const syncLinkTarget = async () => {
                 const type = typeSelect?.value || '';
                 if (!linkSelect) return;
 
@@ -196,17 +245,28 @@ export async function sendNotification() {
                     return;
                 }
 
-                const source = type === 'hope_event' ? hopeEventOptions : postOptions;
+                linkSelect.disabled = true;
+                linkSelect.innerHTML = '<option value="">Loading…</option>';
+                if (linkWrap) linkWrap.classList.remove('hidden');
+
+                const source = await loadLinkOptions(type);
+                if (!source) {
+                    linkSelect.innerHTML = '<option value="">Unable to load items</option>';
+                    enhanceAdminFilterSelects(popup);
+                    return;
+                }
+
                 linkSelect.innerHTML = source.map((option) => (
                     `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`
                 )).join('');
                 linkSelect.disabled = false;
-                if (linkWrap) linkWrap.classList.remove('hidden');
                 enhanceAdminFilterSelects(popup);
             };
 
-            typeSelect?.addEventListener('change', syncLinkTarget);
-            syncLinkTarget();
+            typeSelect?.addEventListener('change', () => {
+                void syncLinkTarget();
+            });
+            void syncLinkTarget();
         },
         preConfirm: () => {
             const title = document.getElementById('notif-title')?.value.trim();
@@ -294,56 +354,33 @@ export async function sendNotification() {
     }
 }
 
-async function loadPostOptions() {
-    if (postOptionsCache && postOptionsCache.length > 1) {
-        return postOptionsCache;
-    }
-
-    try {
-        const { data } = await axios.get('/admin/posts/options');
-        const posts = data.data ?? [];
-
-        postOptionsCache = [
-            { value: '', label: 'Select a post' },
-            ...posts.map((post) => ({
-                value: String(post.id),
-                label: post.title,
-            })),
-        ];
-
-        return postOptionsCache;
-    } catch ({ response }) {
-        showErrorToast(
-            response?.data?.message ?? 'Failed to load post options.',
-            'Posts',
-        );
-
+async function loadLinkOptions(linkType) {
+    const config = LINK_OPTION_LOADERS[linkType];
+    if (!config) {
         return null;
     }
-}
 
-async function loadHopeEventOptions() {
-    if (hopeEventOptionsCache && hopeEventOptionsCache.length > 1) {
-        return hopeEventOptionsCache;
+    if (linkOptionsCache[linkType]?.length > 1) {
+        return linkOptionsCache[linkType];
     }
 
     try {
-        const { data } = await axios.get('/admin/hope-events/options');
-        const events = data.data ?? [];
+        const { data } = await axios.get(config.url, { params: { per_page: 200 } });
+        const rows = typeof config.listPath === 'function'
+            ? config.listPath(data)
+            : (data.data ?? []);
+        const list = Array.isArray(rows) ? rows : [];
 
-        hopeEventOptionsCache = [
-            { value: '', label: 'Select a hope event' },
-            ...events.map((event) => ({
-                value: String(event.id),
-                label: event.is_active === false ? `${event.title} (inactive)` : event.title,
-            })),
+        linkOptionsCache[linkType] = [
+            { value: '', label: config.placeholder },
+            ...list.map((row) => config.mapRow(row)),
         ];
 
-        return hopeEventOptionsCache;
+        return linkOptionsCache[linkType];
     } catch ({ response }) {
         showErrorToast(
-            response?.data?.message ?? 'Failed to load hope event options.',
-            'Hope Events',
+            response?.data?.message ?? `Failed to load ${LINK_TYPE_LABELS[linkType] || 'link'} options.`,
+            'Notifications',
         );
 
         return null;
@@ -416,43 +453,47 @@ function bindNotificationsViewportListener(tableEl) {
 function linkedTargetCell(notification) {
     const linkType = notification.link_type
         || (notification.post_id || notification.post ? 'post' : null);
-    const typeLabel = LINK_TYPE_LABELS[linkType] || null;
+    const typeLabel = notification.link_type_label
+        || LINK_TYPE_LABELS[linkType]
+        || null;
+    const target = notification.link_target;
+    const linkId = target?.id
+        ?? notification.link_id
+        ?? notification.hope_event?.id
+        ?? notification.post?.id
+        ?? notification.post_id;
+    const title = target?.title
+        ?? notification.hope_event?.title
+        ?? notification.post?.title;
+    const href = target?.admin_url
+        || (linkType === 'hope_event' && linkId
+            ? `/admin/hope-events?event=${encodeURIComponent(linkId)}`
+            : null)
+        || (linkType === 'post' && linkId
+            ? `/admin/posts?post=${encodeURIComponent(linkId)}`
+            : null);
 
-    if (linkType === 'hope_event') {
-        const eventId = notification.hope_event?.id ?? notification.link_id;
-        const title = notification.hope_event?.title;
-        if (!eventId || !title) {
-            return '<span class="admin-empty-badge">None</span>';
-        }
+    if (!linkType || !typeLabel || !linkId || !title) {
+        return '<span class="admin-empty-badge">None</span>';
+    }
 
+    const label = escapeHtml(typeLabel);
+    const titleHtml = escapeHtml(title);
+    if (!href) {
         return `<span class="inline-flex flex-wrap items-center gap-1.5">
-            <span class="admin-status-badge bg-[#055498]/10 text-[#055498]">${escapeHtml(typeLabel)}</span>
-            <a
-                href="/admin/hope-events?event=${encodeURIComponent(eventId)}"
-                class="font-semibold text-[#055498] underline-offset-2 hover:underline"
-                title="Open linked hope event"
-            >${escapeHtml(title)}</a>
+            <span class="admin-status-badge bg-[#055498]/10 text-[#055498]">${label}</span>
+            <span class="font-semibold text-[#123a60]">${titleHtml}</span>
         </span>`;
     }
 
-    if (linkType === 'post') {
-        const postId = notification.post?.id ?? notification.post_id ?? notification.link_id;
-        const title = notification.post?.title;
-        if (!postId || !title) {
-            return '<span class="admin-empty-badge">None</span>';
-        }
-
-        return `<span class="inline-flex flex-wrap items-center gap-1.5">
-            <span class="admin-status-badge bg-[#055498]/10 text-[#055498]">${escapeHtml(typeLabel)}</span>
-            <a
-                href="/admin/posts?post=${encodeURIComponent(postId)}"
-                class="font-semibold text-[#055498] underline-offset-2 hover:underline"
-                title="Open linked post"
-            >${escapeHtml(title)}</a>
-        </span>`;
-    }
-
-    return '<span class="admin-empty-badge">None</span>';
+    return `<span class="inline-flex flex-wrap items-center gap-1.5">
+        <span class="admin-status-badge bg-[#055498]/10 text-[#055498]">${label}</span>
+        <a
+            href="${escapeHtml(href)}"
+            class="font-semibold text-[#055498] underline-offset-2 hover:underline"
+            title="Open linked ${label.toLowerCase()}"
+        >${titleHtml}</a>
+    </span>`;
 }
 
 function buildNotificationRowData(notification) {

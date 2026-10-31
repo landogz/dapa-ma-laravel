@@ -10,6 +10,7 @@ class TrainingService
 {
     public function __construct(
         private readonly TrainingRepository $trainingRepository,
+        private readonly UserNotificationService $userNotificationService,
     ) {
     }
 
@@ -36,7 +37,10 @@ class TrainingService
 
     public function create(array $data): Training
     {
-        return $this->trainingRepository->create($data);
+        $training = $this->trainingRepository->create($data);
+        $this->userNotificationService->notifyNewTraining($training);
+
+        return $training;
     }
 
     public function update(Training $training, array $data): Training
