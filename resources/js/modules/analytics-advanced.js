@@ -658,6 +658,12 @@ function classifyPhilippineIsland(location) {
     return 'luzon';
 }
 
+const PH_ISLAND_COLORS = {
+    luzon: '#055498',
+    visayas: '#FBD116',
+    mindanao: '#CE2028',
+};
+
 function aggregateIslandHeat(rows, valueKey) {
     const totals = { luzon: 0, visayas: 0, mindanao: 0 };
     rows.forEach((row) => {
@@ -665,80 +671,85 @@ function aggregateIslandHeat(rows, valueKey) {
         if (island === 'unknown') return;
         totals[island] += Number(row[valueKey]) || 0;
     });
-    const max = Math.max(totals.luzon, totals.visayas, totals.mindanao, 1);
+    const total = Math.max(totals.luzon + totals.visayas + totals.mindanao, 0);
+    const pct = (value) => (total > 0 ? Math.round((value / total) * 1000) / 10 : 0);
     return {
         luzon: totals.luzon,
         visayas: totals.visayas,
         mindanao: totals.mindanao,
-        heat: {
-            luzon: totals.luzon / max,
-            visayas: totals.visayas / max,
-            mindanao: totals.mindanao / max,
+        total,
+        pct: {
+            luzon: pct(totals.luzon),
+            visayas: pct(totals.visayas),
+            mindanao: pct(totals.mindanao),
         },
     };
 }
 
-function islandFill(intensity) {
-    const t = Math.max(0.18, Math.min(1, Number(intensity) || 0));
-    const light = { r: 186, g: 214, b: 236 };
-    const dark = { r: 5, g: 84, b: 152 };
-    const r = Math.round(light.r + (dark.r - light.r) * t);
-    const g = Math.round(light.g + (dark.g - light.g) * t);
-    const b = Math.round(light.b + (dark.b - light.b) * t);
-    return `rgb(${r}, ${g}, ${b})`;
+function renderIslandStatPin(island, label, count, percent, x, y) {
+    return `
+        <div class="analytics-demo-map-pin analytics-demo-map-pin--${escapeHtml(island)}"
+            style="left:${x}%; top:${y}%;"
+            title="${escapeHtml(label)}: ${formatCompactNumber(count)} (${percent}%)">
+            <span class="analytics-demo-map-pin-count">${formatCompactNumber(count)}</span>
+            <span class="analytics-demo-map-pin-pct">${percent}%</span>
+            <span class="analytics-demo-map-pin-name">${escapeHtml(label)}</span>
+        </div>
+    `;
 }
 
 function renderPhilippinesMap(rows, valueKey) {
     const heat = aggregateIslandHeat(rows, valueKey);
-    const top = [...rows]
-        .sort((a, b) => (Number(b[valueKey]) || 0) - (Number(a[valueKey]) || 0))
-        .slice(0, 4);
-    const max = Math.max(...top.map((row) => Number(row[valueKey]) || 0), 1);
-
-    const markers = top.map((row, index) => {
-        const island = classifyPhilippineIsland(row.location);
-        const positions = {
-            luzon: [{ x: 42, y: 22 }, { x: 48, y: 34 }, { x: 36, y: 28 }, { x: 52, y: 18 }],
-            visayas: [{ x: 48, y: 52 }, { x: 56, y: 48 }, { x: 40, y: 54 }, { x: 60, y: 56 }],
-            mindanao: [{ x: 52, y: 74 }, { x: 44, y: 78 }, { x: 60, y: 72 }, { x: 48, y: 82 }],
-        };
-        const point = (positions[island] || positions.luzon)[index % 4];
-        const size = 8 + Math.round(((Number(row[valueKey]) || 0) / max) * 14);
-        return `
-            <circle class="analytics-demo-map-marker" cx="${point.x}" cy="${point.y}" r="${size / 2}"
-                fill="rgba(5, 84, 152, 0.55)" stroke="#fff" stroke-width="1.5">
-                <title>${escapeHtml(row.location)}: ${formatCompactNumber(row[valueKey])}</title>
-            </circle>
-        `;
-    }).join('');
 
     return `
-        <div class="analytics-demo-map" role="img" aria-label="Philippines users by island group">
-            <svg viewBox="0 0 100 100" class="analytics-demo-map-svg" aria-hidden="true">
-                <defs>
-                    <linearGradient id="analytics-demo-map-sea" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#eef6fb"/>
-                        <stop offset="100%" stop-color="#e2eef7"/>
-                    </linearGradient>
-                </defs>
-                <rect width="100" height="100" rx="10" fill="url(#analytics-demo-map-sea)"/>
-                <!-- Luzon -->
-                <path d="M46 8c4-1 10 1 12 7 2 5 1 11-1 16-1 4 1 7 3 10 2 3 1 7-2 9-4 2-9 1-12-2-2-2-5-2-7 0-3 2-7 1-8-2-1-4 1-8 3-11 2-3 2-7 1-10-1-5 3-10 11-17z"
-                    fill="${islandFill(heat.heat.luzon)}" stroke="#fff" stroke-width="0.8"/>
-                <!-- Visayas -->
-                <path d="M34 50c3-2 7-1 10 1 2 1 5 0 7-1 3-2 7-1 9 1 2 2 5 3 5 6 0 3-3 5-6 5-2 0-4 2-4 4 0 2-3 4-6 3-3-1-5-3-5-6 0-2-2-3-4-3-3 0-5-3-3-6 1-2 0-3-3-4z"
-                    fill="${islandFill(heat.heat.visayas)}" stroke="#fff" stroke-width="0.8"/>
-                <path d="M58 58c2-1 5 0 6 2 1 2 0 4-2 5-2 1-4 0-5-2-1-2 0-4 1-5z"
-                    fill="${islandFill(heat.heat.visayas)}" stroke="#fff" stroke-width="0.6"/>
-                <!-- Mindanao -->
-                <path d="M40 68c6-3 14-2 18 2 4 4 6 10 4 15-2 5-8 8-14 8-6 0-12-3-14-8-2-5 0-11 4-14 1-1 1-2 2-3z"
-                    fill="${islandFill(heat.heat.mindanao)}" stroke="#fff" stroke-width="0.8"/>
-                ${markers}
-            </svg>
+        <div class="analytics-demo-map analytics-demo-map--infographic" role="img"
+            aria-label="Philippines users by island group: Luzon ${formatCompactNumber(heat.luzon)}, Visayas ${formatCompactNumber(heat.visayas)}, Mindanao ${formatCompactNumber(heat.mindanao)}">
+            <div class="analytics-demo-map-canvas">
+                <svg viewBox="0 0 220 320" class="analytics-demo-map-svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <radialGradient id="analytics-demo-map-glow" cx="50%" cy="48%" r="58%">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                            <stop offset="55%" stop-color="#eef2f7" stop-opacity="0.9"/>
+                            <stop offset="100%" stop-color="#e5e7eb" stop-opacity="0.75"/>
+                        </radialGradient>
+                        <filter id="analytics-demo-map-soft" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="2" stdDeviation="2.2" flood-color="#0f172a" flood-opacity="0.12"/>
+                        </filter>
+                    </defs>
+                    <rect width="220" height="320" rx="18" fill="url(#analytics-demo-map-glow)"/>
+                    <circle cx="110" cy="150" r="118" fill="none" stroke="#d1d5db" stroke-width="1" opacity="0.45"/>
+                    <circle cx="110" cy="150" r="88" fill="none" stroke="#d1d5db" stroke-width="1" opacity="0.35"/>
+                    <circle cx="110" cy="150" r="58" fill="none" stroke="#d1d5db" stroke-width="1" opacity="0.25"/>
+
+                    <g filter="url(#analytics-demo-map-soft)" stroke="#ffffff" stroke-width="2.2" stroke-linejoin="round">
+                        <!-- Luzon -->
+                        <path fill="${PH_ISLAND_COLORS.luzon}"
+                            d="M108 18c8-1 18 2 24 11 5 8 5 18 2 27-2 7 1 13 5 18 5 6 4 14-1 19-6 6-15 6-22 2-4-2-9-2-12 1-5 4-13 3-16-2-3-6 0-13 4-18 3-4 3-10 1-15-2-8 3-16 15-25z"/>
+                        <path fill="${PH_ISLAND_COLORS.luzon}"
+                            d="M92 78c5 1 9 5 10 10 1 4-1 8-5 9-4 1-8-2-9-6-1-5 0-9 4-13z"/>
+                        <!-- Visayas cluster -->
+                        <path fill="${PH_ISLAND_COLORS.visayas}"
+                            d="M70 148c7-4 16-2 23 3 5 3 12 2 17-1 7-4 16-2 21 4 4 5 10 7 11 13 1 6-5 11-12 11-5 0-9 4-9 8 0 4-6 8-12 6-7-2-11-7-11-13 0-4-4-6-8-6-7 0-12-6-8-13 2-4 1-7-6-9-4-1-7-2-6-3z"/>
+                        <path fill="${PH_ISLAND_COLORS.visayas}"
+                            d="M128 172c5-2 11 1 13 6 2 5-1 10-6 11-5 2-10-1-12-6-2-5 1-9 5-11z"/>
+                        <path fill="${PH_ISLAND_COLORS.visayas}"
+                            d="M152 158c4-1 8 2 9 6 1 4-2 8-6 8-4 1-8-2-9-6 0-4 2-7 6-8z"/>
+                        <!-- Mindanao -->
+                        <path fill="${PH_ISLAND_COLORS.mindanao}"
+                            d="M84 214c14-8 34-6 45 5 10 10 15 25 10 38-5 13-20 21-36 21-15 0-30-8-35-20-5-13 0-28 10-36 2-2 3-5 6-8z"/>
+                        <path fill="${PH_ISLAND_COLORS.mindanao}"
+                            d="M78 268c5 1 9 5 9 10 0 4-4 7-8 7-5 0-9-4-9-8 0-5 3-9 8-9z"/>
+                    </g>
+                </svg>
+
+                ${renderIslandStatPin('luzon', 'Luzon', heat.luzon, heat.pct.luzon, 58, 14)}
+                ${renderIslandStatPin('visayas', 'Visayas', heat.visayas, heat.pct.visayas, 12, 46)}
+                ${renderIslandStatPin('mindanao', 'Mindanao', heat.mindanao, heat.pct.mindanao, 54, 72)}
+            </div>
             <div class="analytics-demo-map-legend">
-                <span><i style="background:${islandFill(heat.heat.luzon)}"></i>Luzon ${formatCompactNumber(heat.luzon)}</span>
-                <span><i style="background:${islandFill(heat.heat.visayas)}"></i>Visayas ${formatCompactNumber(heat.visayas)}</span>
-                <span><i style="background:${islandFill(heat.heat.mindanao)}"></i>Mindanao ${formatCompactNumber(heat.mindanao)}</span>
+                <span><i style="background:${PH_ISLAND_COLORS.luzon}"></i>Luzon</span>
+                <span><i style="background:${PH_ISLAND_COLORS.visayas}"></i>Visayas</span>
+                <span><i style="background:${PH_ISLAND_COLORS.mindanao}"></i>Mindanao</span>
             </div>
         </div>
     `;

@@ -11,6 +11,15 @@
                     <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="anxiety" data-icon="fas fa-heart-pulse">Anxiety Check</button>
                     <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="sleep" data-icon="fas fa-moon">Sleep Quality</button>
                 </div>
+
+                <p class="admin-filter-rail-title">Workflow</p>
+                <div
+                    class="admin-filter-tabs"
+                    data-workflow-status-tabs="1"
+                    role="tablist"
+                    aria-label="Filter by workflow status"
+                ></div>
+
             </aside>
             <div class="admin-filter-main">
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">

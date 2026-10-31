@@ -9,6 +9,7 @@ import {
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
     isPublisherReviewOnly,
     itemForEditorForm,
@@ -156,7 +157,9 @@ export function loadCareToolkitQuestions() {
         },
     })
         .then(({ data }) => {
-            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
+            const allRows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            applyWorkflowStatusCounts(null, allRows);
             toolkitTable.clear();
             rows.forEach((row) => toolkitTable.row.add(buildRowData(row)));
             toolkitTable.draw();

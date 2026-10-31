@@ -10,6 +10,7 @@ import {
     canCreateWorkflowDraft,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
     isPublisherReviewOnly,
     itemForEditorForm,
     openItemFromQuery,
@@ -161,7 +162,9 @@ function loadRows() {
         },
     })
         .then(({ data }) => {
-            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
+            const allRows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            applyWorkflowStatusCounts(null, allRows);
             directoryTable.clear();
             rows.forEach((row) => directoryTable.row.add(buildRow(row)));
             directoryTable.draw();

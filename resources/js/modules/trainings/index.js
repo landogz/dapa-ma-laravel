@@ -1,7 +1,8 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
-import { buildSwalOptions } from '../shared/swal-forms';
+import { bindAdminFilterTabs, setAdminFilterTab } from '../shared/filter-tabs';
+import { buildSwalOptions, confirmWithSwal } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
@@ -9,6 +10,9 @@ let trainingsTable;
 let trainingsDataTableClass;
 let trainingsTableMode;
 let hasBoundViewportListener = false;
+let latestTrainings = [];
+let trainingsStatusFilter = 'active';
+let trainingsFiltersBound = false;
 
 const TRAINING_CATEGORIES = [
     'Preventive Education',
@@ -27,8 +31,21 @@ export function initTrainingsModule() {
         await initializeTrainingsTable(tableEl);
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        bindTrainingsStatusTabs();
         loadTrainings();
     });
+}
+
+function bindTrainingsStatusTabs() {
+    if (trainingsFiltersBound) return;
+    const root = document.getElementById('trainings-status-tabs');
+    if (!root) return;
+    bindAdminFilterTabs(root, (value) => {
+        trainingsStatusFilter = value || 'active';
+        renderTrainingsRows();
+    });
+    setAdminFilterTab(root, trainingsStatusFilter);
+    trainingsFiltersBound = true;
 }
 
 export function loadTrainings(search = '') {
@@ -36,16 +53,26 @@ export function loadTrainings(search = '') {
 
     axios.get('/admin/trainings', { params: { search, per_page: 200 } })
         .then(({ data }) => {
-            const rows = data.data?.data ?? [];
-            trainingsTable.clear();
-            rows.forEach((training) => {
-                trainingsTable.row.add(buildRowData(training));
-            });
-            trainingsTable.draw();
+            latestTrainings = data.data?.data ?? [];
+            renderTrainingsRows();
         })
         .catch(() => {
             showErrorToast('Failed to load training listings.');
         });
+}
+
+function renderTrainingsRows() {
+    if (!trainingsTable) return;
+    const filtered = latestTrainings.filter((training) => {
+        if (trainingsStatusFilter === 'archived') return training.is_active === false;
+        if (trainingsStatusFilter === 'active') return training.is_active !== false;
+        return true;
+    });
+    trainingsTable.clear();
+    filtered.forEach((training) => {
+        trainingsTable.row.add(buildRowData(training));
+    });
+    trainingsTable.draw();
 }
 
 export function createTraining() {
@@ -60,22 +87,41 @@ export function editTraining(id) {
     });
 }
 
-export function removeTraining(id) {
-    Swal.fire(buildSwalOptions({
+export function archiveTraining(id) {
+    confirmWithSwal({
         icon: 'warning',
-        title: 'Delete Training?',
-        html: '<p class="admin-swal-description">This cannot be undone.</p>',
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel',
-    }, { danger: true, size: 'sm' })).then(({ isConfirmed }) => {
+        title: 'Archive training?',
+        text: 'It will be hidden from the mobile app until restored.',
+        confirmButtonText: 'Archive',
+        danger: true,
+    }).then(({ isConfirmed }) => {
         if (!isConfirmed) return;
-        axios.delete(`/admin/trainings/${id}`)
+        axios.put(`/admin/trainings/${id}/archive`)
             .then(({ data }) => {
-                showSuccessToast(data.message, 'Deleted');
+                showSuccessToast(data.message ?? 'Archived.', 'Archived');
                 loadTrainings();
             })
             .catch(({ response }) => {
-                showErrorToast(response?.data?.message ?? 'Delete failed.');
+                showErrorToast(response?.data?.message ?? 'Archive failed.');
+            });
+    });
+}
+
+export function restoreTraining(id) {
+    confirmWithSwal({
+        icon: 'question',
+        title: 'Restore training?',
+        text: 'It will show again in the mobile app.',
+        confirmButtonText: 'Restore',
+    }).then(({ isConfirmed }) => {
+        if (!isConfirmed) return;
+        axios.put(`/admin/trainings/${id}/restore`)
+            .then(({ data }) => {
+                showSuccessToast(data.message ?? 'Restored.', 'Restored');
+                loadTrainings();
+            })
+            .catch(({ response }) => {
+                showErrorToast(response?.data?.message ?? 'Restore failed.');
             });
     });
 }
@@ -213,7 +259,8 @@ function showTrainingForm(existing) {
 window.Trainings = {
     create: createTraining,
     edit: editTraining,
-    remove: removeTraining,
+    archive: archiveTraining,
+    restore: restoreTraining,
 };
 
 async function initializeTrainingsTable(tableEl) {
@@ -294,26 +341,34 @@ function buildColumns(mode) {
 }
 
 function buildRowData(training) {
+    const isActive = training.is_active !== false;
     const actions = [
         {
             tooltip: 'Edit training',
             icon: 'fas fa-pen-to-square',
             className: 'admin-table-action-primary',
             attrs: `onclick="window.Trainings.edit(${training.id})"`,
+            label: 'Edit',
         },
-        {
-            tooltip: 'Delete training',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `onclick="window.Trainings.remove(${training.id})"`,
-        },
+        isActive
+            ? {
+                tooltip: 'Archive training',
+                icon: 'fas fa-box-archive',
+                className: 'admin-table-action-warning',
+                attrs: `onclick="window.Trainings.archive(${training.id})"`,
+                label: 'Archive',
+            }
+            : {
+                tooltip: 'Restore training',
+                icon: 'fas fa-rotate-left',
+                className: 'admin-table-action-primary',
+                attrs: `onclick="window.Trainings.restore(${training.id})"`,
+                label: 'Restore',
+            },
     ];
 
     const desktopActionsMarkup = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
-    const mobileActionsMarkup = buildAdminActionButtons([
-        { ...actions[0], label: 'Edit' },
-        { ...actions[1], label: 'Delete' },
-    ], { isMobile: true, nowrap: true });
+    const mobileActionsMarkup = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
 
     const scheduleLabel = formatSchedule(training);
 

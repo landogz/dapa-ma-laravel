@@ -9,6 +9,7 @@ import {
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
     isPublisherReviewOnly,
     openItemFromQuery,
@@ -163,7 +164,9 @@ export function loadAppTranslations(search = '') {
                     return;
                 }
             }
-            const rows = filterByWorkflowStatus(sortTranslationRows(data.data?.data ?? []), workflowStatusFilter);
+            const allRows = sortTranslationRows(data.data?.data ?? []);
+            const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            applyWorkflowStatusCounts(null, allRows);
             renderTranslationGroupTabs();
             updateGroupHeading();
             translationsTable.clear();

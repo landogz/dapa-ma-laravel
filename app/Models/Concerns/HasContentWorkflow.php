@@ -95,6 +95,31 @@ trait HasContentWorkflow
         return ($this->workflow_status ?? ContentWorkflowStatus::PUBLISHED) === ContentWorkflowStatus::PUBLISHED;
     }
 
+    public function isWorkflowArchived(): bool
+    {
+        return ($this->workflow_status ?? null) === ContentWorkflowStatus::ARCHIVED;
+    }
+
+    /**
+     * Fields required by admin DataTables / workflow status filters.
+     * Merge into every custom toAdminArray() / format() payload.
+     *
+     * @return array<string, mixed>
+     */
+    public function workflowAdminFields(): array
+    {
+        return [
+            'workflow_status' => $this->workflow_status ?? ContentWorkflowStatus::DRAFT,
+            'revision_status' => $this->revision_status,
+            'review_notes' => $this->review_notes,
+            'pending_revision' => $this->pending_revision,
+            'authored_by' => $this->authored_by,
+            'submitted_at' => $this->submitted_at?->toIso8601String(),
+            'reviewed_by' => $this->reviewed_by,
+            'reviewed_at' => $this->reviewed_at?->toIso8601String(),
+        ];
+    }
+
     public function hasPendingRevision(): bool
     {
         return filled($this->revision_status)

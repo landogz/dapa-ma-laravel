@@ -19,6 +19,8 @@ class KidListoQuoteAdminController extends Controller
         submit as protected workflowSubmit;
         reject as protected workflowReject;
         publish as protected workflowPublish;
+        archive as protected workflowArchive;
+        restore as protected workflowRestore;
     }
 
     public function __construct(
@@ -101,6 +103,16 @@ class KidListoQuoteAdminController extends Controller
     public function publish(Request $request, KidListoQuote $kidListoQuote): JsonResponse
     {
         return $this->workflowPublish($request, $kidListoQuote);
+    }
+
+    public function archive(Request $request, KidListoQuote $kidListoQuote): JsonResponse
+    {
+        return $this->workflowArchive($request, $kidListoQuote);
+    }
+
+    public function restore(Request $request, KidListoQuote $kidListoQuote): JsonResponse
+    {
+        return $this->workflowRestore($request, $kidListoQuote);
     }
 
     public function destroy(KidListoQuote $kidListoQuote): JsonResponse

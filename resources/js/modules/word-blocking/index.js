@@ -9,6 +9,7 @@ import {
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
     isPublisherReviewOnly,
     itemForEditorForm,
@@ -128,7 +129,9 @@ export function loadBlockedWords() {
     axios.get('/admin/blocked-words', { params })
         .then(({ data }) => {
             const rows = data.data?.data ?? data.data ?? [];
-            const list = filterByWorkflowStatus(Array.isArray(rows) ? rows : [], workflowStatusFilter);
+            const allRows = Array.isArray(rows) ? rows : [];
+            const list = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            applyWorkflowStatusCounts(null, allRows);
             wordsTable.clear();
             list.forEach((row) => wordsTable.row.add(buildRowData(row)));
             wordsTable.draw();

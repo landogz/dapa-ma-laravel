@@ -8,6 +8,7 @@ import {
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
     isPublisherReviewOnly,
     openItemFromQuery,
@@ -61,7 +62,9 @@ export function loadIecMaterials(search = '') {
 
     axios.get('/admin/iec-materials', { params: { search, per_page: 200 } })
         .then(({ data }) => {
-            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
+            const allRows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            applyWorkflowStatusCounts(null, allRows);
             iecMaterialsTable.clear();
             rows.forEach((item) => {
                 iecMaterialsTable.row.add(buildRowData(item));

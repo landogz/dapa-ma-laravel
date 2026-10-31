@@ -19,6 +19,8 @@ class HopeEventAdminController extends Controller
         submit as protected workflowSubmit;
         reject as protected workflowReject;
         publish as protected workflowPublish;
+        archive as protected workflowArchive;
+        restore as protected workflowRestore;
     }
 
     public function __construct(
@@ -129,6 +131,16 @@ class HopeEventAdminController extends Controller
     public function publish(Request $request, HopeEvent $hopeEvent): JsonResponse
     {
         return $this->workflowPublish($request, $hopeEvent);
+    }
+
+    public function archive(Request $request, HopeEvent $hopeEvent): JsonResponse
+    {
+        return $this->workflowArchive($request, $hopeEvent);
+    }
+
+    public function restore(Request $request, HopeEvent $hopeEvent): JsonResponse
+    {
+        return $this->workflowRestore($request, $hopeEvent);
     }
 
     public function destroy(HopeEvent $hopeEvent): JsonResponse

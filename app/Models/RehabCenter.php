@@ -9,6 +9,7 @@ class RehabCenter extends Model
 {
     protected $fillable = [
         'name',
+        'category',
         'region',
         'province',
         'address',

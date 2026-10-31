@@ -360,6 +360,57 @@ class ContentWorkflowService
         $this->userNotificationService->notifyPublishedContent($section, $model);
     }
 
+    public function archive(Model $model, User $actor, string $section): Model
+    {
+        $this->assertUsesWorkflow($model);
+
+        if ($actor->role !== 'super_admin') {
+            throw new InvalidArgumentException('Only Super Admin can archive content.');
+        }
+
+        if (($model->workflow_status ?? null) === ContentWorkflowStatus::ARCHIVED) {
+            throw new InvalidArgumentException('This item is already archived.');
+        }
+
+        $model->forceFill([
+            'workflow_status' => ContentWorkflowStatus::ARCHIVED,
+            'pending_revision' => null,
+            'revision_status' => null,
+            'reviewed_by' => $actor->id,
+            'reviewed_at' => now(),
+        ])->save();
+
+        return $model->fresh() ?? $model;
+    }
+
+    public function restore(Model $model, User $actor, string $section): Model
+    {
+        $this->assertUsesWorkflow($model);
+
+        if ($actor->role !== 'super_admin') {
+            throw new InvalidArgumentException('Only Super Admin can restore archived content.');
+        }
+
+        if (($model->workflow_status ?? null) !== ContentWorkflowStatus::ARCHIVED) {
+            throw new InvalidArgumentException('Only archived items can be restored.');
+        }
+
+        $model->forceFill([
+            'workflow_status' => ContentWorkflowStatus::PUBLISHED,
+            'pending_revision' => null,
+            'revision_status' => null,
+            'reviewed_by' => $actor->id,
+            'reviewed_at' => now(),
+            'review_notes' => null,
+        ])->save();
+
+        $fresh = $model->fresh() ?? $model;
+
+        $this->userNotificationService->notifyPublishedContent($section, $fresh);
+
+        return $fresh;
+    }
+
     private function assertUsesWorkflow(Model $model): void
     {
         $uses = in_array(HasContentWorkflow::class, class_uses_recursive($model), true);

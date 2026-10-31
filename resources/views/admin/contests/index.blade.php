@@ -11,14 +11,21 @@
                     <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="poster" data-icon="fas fa-image">Poster Contest</button>
                     <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="video" data-icon="fas fa-video">Video Contest</button>
                 </div>
-                <p class="admin-filter-rail-title">Statuses</p>
-                <div id="contests-status-tabs" class="admin-filter-tabs" role="tablist" aria-label="Filter by status">
+                <p class="admin-filter-rail-title">Submission</p>
+                <div id="contests-status-tabs" class="admin-filter-tabs" role="tablist" aria-label="Filter by contest status">
                     <button type="button" class="admin-filter-tab is-active" role="tab" aria-selected="true" data-filter-value="" data-icon="fas fa-layer-group">All statuses</button>
                     <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="draft" data-icon="fas fa-pen">Draft</button>
                     <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="open" data-icon="fas fa-folder-open">Open for submissions</button>
                     <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="closed" data-icon="fas fa-folder">Closed (reviewing)</button>
                     <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="completed" data-icon="fas fa-trophy">Completed</button>
                 </div>
+                <p class="admin-filter-rail-title">Workflow</p>
+                <div
+                    class="admin-filter-tabs"
+                    data-workflow-status-tabs="1"
+                    role="tablist"
+                    aria-label="Filter by workflow status"
+                ></div>
             </aside>
             <div class="admin-filter-main">
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">

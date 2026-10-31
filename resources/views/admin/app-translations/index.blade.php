@@ -6,6 +6,15 @@
             <aside class="admin-filter-rail">
                 <p class="admin-filter-rail-title">Edit by group</p>
                 <div id="app-translations-group-tabs" class="admin-filter-tab-groups" role="tablist" aria-label="Translation groups"></div>
+
+                <p class="admin-filter-rail-title">Workflow</p>
+                <div
+                    class="admin-filter-tabs"
+                    data-workflow-status-tabs="1"
+                    role="tablist"
+                    aria-label="Filter by workflow status"
+                ></div>
+
             </aside>
             <div class="admin-filter-main">
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">

@@ -27,6 +27,7 @@ class BlockedWord extends Model
             'id' => $this->id,
             'word' => $this->word,
             'is_active' => (bool) $this->is_active,
+            ...$this->workflowAdminFields(),
             'updated_at' => $this->updated_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

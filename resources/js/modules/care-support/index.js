@@ -15,6 +15,7 @@ import {
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
     isPublisherReviewOnly,
     itemForEditorForm,
@@ -206,7 +207,9 @@ export function loadCareSupportResources() {
         },
     })
         .then(({ data }) => {
-            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
+            const allRows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            applyWorkflowStatusCounts(null, allRows);
             supportTable.clear();
             rows.forEach((row) => supportTable.row.add(buildRowData(row)));
             supportTable.draw();

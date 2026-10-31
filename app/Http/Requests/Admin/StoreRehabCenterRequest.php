@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\AppOption;
+use App\Support\AppOptionGroup;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreRehabCenterRequest extends FormRequest
 {
@@ -15,6 +18,7 @@ class StoreRehabCenterRequest extends FormRequest
     {
         return [
             'name'     => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:64'],
             'region'   => ['required', 'string', 'max:255'],
             'province' => ['required', 'string', 'max:255'],
             'address'  => ['required', 'string', 'max:512'],
@@ -24,5 +28,19 @@ class StoreRehabCenterRequest extends FormRequest
             'website'  => ['nullable', 'url', 'max:512'],
             'is_active' => ['required', 'boolean'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $category = $this->input('category');
+            if (! is_string($category) || $category === '') {
+                return;
+            }
+
+            if (! AppOption::isAllowed(AppOptionGroup::REHAB_CENTER, $category)) {
+                $validator->errors()->add('category', 'Select a valid rehab center category from Lookups.');
+            }
+        });
     }
 }

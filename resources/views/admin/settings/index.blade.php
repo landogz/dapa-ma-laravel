@@ -25,27 +25,40 @@
         </div>
 
         <div class="admin-shell-card p-4 sm:p-6">
-            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div class="admin-section-header admin-section-header-accent flex-1 items-center gap-3 sm:gap-4">
-                    <span class="admin-icon-badge">
-                        <i class="fas fa-quote-left"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <h2 class="admin-shell-title text-base sm:text-lg">Kid Listo Quotes</h2>
-                        <p class="mt-0.5 text-xs sm:text-sm admin-shell-subtitle">
-                            Motivational quotes shown randomly in the mobile Kid Listo screen.
-                        </p>
+            <div class="admin-filter-split mt-0">
+                <aside class="admin-filter-rail">
+                    <p class="admin-filter-rail-title">Workflow</p>
+                    <div
+                        class="admin-filter-tabs"
+                        data-workflow-status-tabs="1"
+                        role="tablist"
+                        aria-label="Filter by workflow status"
+                    ></div>
+                </aside>
+                <div class="admin-filter-main min-w-0">
+                    <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                        <div class="admin-section-header admin-section-header-accent flex-1 items-center gap-3 sm:gap-4">
+                            <span class="admin-icon-badge">
+                                <i class="fas fa-quote-left"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h2 class="admin-shell-title text-base sm:text-lg">Kid Listo Quotes</h2>
+                                <p class="mt-0.5 text-xs sm:text-sm admin-shell-subtitle">
+                                    Motivational quotes shown randomly in the mobile Kid Listo screen.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="admin-page-actions admin-page-actions-centered xl:self-center">
+                            <button type="button" class="admin-primary-button w-full sm:w-auto" data-admin-action="create-kid-listo-quote">
+                                Add Quote
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="admin-table-shell mt-6">
+                        <table id="kid-listo-quotes-table" class="min-w-full text-left text-sm text-slate-700"></table>
                     </div>
                 </div>
-                <div class="admin-page-actions admin-page-actions-centered xl:self-center">
-                    <button type="button" class="admin-primary-button w-full sm:w-auto" data-admin-action="create-kid-listo-quote">
-                        Add Quote
-                    </button>
-                </div>
-            </div>
-
-            <div class="admin-table-shell mt-6">
-                <table id="kid-listo-quotes-table" class="min-w-full text-left text-sm text-slate-700"></table>
             </div>
         </div>
     </section>

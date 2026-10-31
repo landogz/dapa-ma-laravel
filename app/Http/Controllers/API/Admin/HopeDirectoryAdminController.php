@@ -19,6 +19,8 @@ class HopeDirectoryAdminController extends Controller
         submit as protected workflowSubmit;
         reject as protected workflowReject;
         publish as protected workflowPublish;
+        archive as protected workflowArchive;
+        restore as protected workflowRestore;
     }
 
     public function __construct(
@@ -116,6 +118,16 @@ class HopeDirectoryAdminController extends Controller
     public function publish(Request $request, HopeDirectoryOrganization $hopeDirectory): JsonResponse
     {
         return $this->workflowPublish($request, $hopeDirectory);
+    }
+
+    public function archive(Request $request, HopeDirectoryOrganization $hopeDirectory): JsonResponse
+    {
+        return $this->workflowArchive($request, $hopeDirectory);
+    }
+
+    public function restore(Request $request, HopeDirectoryOrganization $hopeDirectory): JsonResponse
+    {
+        return $this->workflowRestore($request, $hopeDirectory);
     }
 
     public function destroy(HopeDirectoryOrganization $hopeDirectory): JsonResponse

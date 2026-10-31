@@ -19,6 +19,8 @@ class CareSupportResourceAdminController extends Controller
         submit as protected workflowSubmit;
         reject as protected workflowReject;
         publish as protected workflowPublish;
+        archive as protected workflowArchive;
+        restore as protected workflowRestore;
     }
 
     public function __construct(
@@ -106,6 +108,16 @@ class CareSupportResourceAdminController extends Controller
     public function publish(Request $request, CareSupportResource $careSupportResource): JsonResponse
     {
         return $this->workflowPublish($request, $careSupportResource);
+    }
+
+    public function archive(Request $request, CareSupportResource $careSupportResource): JsonResponse
+    {
+        return $this->workflowArchive($request, $careSupportResource);
+    }
+
+    public function restore(Request $request, CareSupportResource $careSupportResource): JsonResponse
+    {
+        return $this->workflowRestore($request, $careSupportResource);
     }
 
     public function destroy(CareSupportResource $careSupportResource): JsonResponse

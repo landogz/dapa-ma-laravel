@@ -18,6 +18,8 @@ class NotificationAdminController extends Controller
     use HandlesContentWorkflow {
         submit as protected workflowSubmit;
         reject as protected workflowReject;
+        archive as protected workflowArchive;
+        restore as protected workflowRestore;
     }
 
     public function __construct(
@@ -85,6 +87,16 @@ class NotificationAdminController extends Controller
             'message' => 'Notification fetched successfully.',
             'data' => $this->notificationService->format($notification),
         ]);
+    }
+
+    public function archive(Request $request, Notification $notification): JsonResponse
+    {
+        return $this->workflowArchive($request, $notification);
+    }
+
+    public function restore(Request $request, Notification $notification): JsonResponse
+    {
+        return $this->workflowRestore($request, $notification);
     }
 
     public function destroy(Notification $notification): JsonResponse

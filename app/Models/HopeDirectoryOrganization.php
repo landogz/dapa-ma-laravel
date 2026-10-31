@@ -60,6 +60,7 @@ class HopeDirectoryOrganization extends Model
     {
         return [
             ...$this->toPublicArray(),
+            ...$this->workflowAdminFields(),
             'logo_path'  => $this->logo_path,
             'is_active'  => $this->is_active,
             'created_at' => $this->created_at?->toIso8601String(),

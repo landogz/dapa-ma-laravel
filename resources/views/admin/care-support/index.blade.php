@@ -12,6 +12,15 @@
                     <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="crisis_emergency" data-icon="fas fa-kit-medical">Crisis emergency</button>
                     <button type="button" class="admin-filter-tab" role="tab" aria-selected="false" data-filter-value="crisis_resource" data-icon="fas fa-life-ring">Crisis resources</button>
                 </div>
+
+                <p class="admin-filter-rail-title">Workflow</p>
+                <div
+                    class="admin-filter-tabs"
+                    data-workflow-status-tabs="1"
+                    role="tablist"
+                    aria-label="Filter by workflow status"
+                ></div>
+
             </aside>
             <div class="admin-filter-main">
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">

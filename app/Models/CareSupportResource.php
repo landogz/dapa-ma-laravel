@@ -96,6 +96,7 @@ class CareSupportResource extends Model
             'is_emergency'   => $this->is_emergency,
             'sort_order'     => $this->sort_order,
             'is_active'      => $this->is_active,
+            ...$this->workflowAdminFields(),
             'created_at'     => optional($this->created_at)?->toIso8601String(),
             'updated_at'     => optional($this->updated_at)?->toIso8601String(),
         ];

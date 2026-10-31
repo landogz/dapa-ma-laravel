@@ -471,20 +471,40 @@ Route::prefix('v1')
                     Route::put('/app-translations/{appTranslation}/publish', [AppTranslationAdminController::class, 'publish'])->name('app-translations.publish');
                 });
 
-                // Workflow modules — destroy (Super Admin)
+                // Workflow modules — archive / restore (Super Admin). Hard delete routes removed from UI.
                 Route::middleware('role:super_admin')->group(function (): void {
-                    Route::delete('/notifications/{notification}', [NotificationAdminController::class, 'destroy'])->name('notifications.destroy');
+                    Route::put('/notifications/{notification}/archive', [NotificationAdminController::class, 'archive'])->name('notifications.archive');
+                    Route::put('/notifications/{notification}/restore', [NotificationAdminController::class, 'restore'])->name('notifications.restore');
 
-                    Route::delete('/blocked-words/{blockedWord}', [BlockedWordAdminController::class, 'destroy'])->name('blocked-words.destroy');
-                    Route::delete('/kid-listo-quotes/{kidListoQuote}', [KidListoQuoteAdminController::class, 'destroy'])->name('kid-listo-quotes.destroy');
-                    Route::delete('/app-options/{appOption}', [AppOptionAdminController::class, 'destroy'])->name('app-options.destroy');
-                    Route::delete('/care-toolkit-questions/{careToolkitQuestion}', [CareToolkitQuestionAdminController::class, 'destroy'])->name('care-toolkit-questions.destroy');
-                    Route::delete('/care-support-resources/{careSupportResource}', [CareSupportResourceAdminController::class, 'destroy'])->name('care-support-resources.destroy');
-                    Route::delete('/hope-directory/{hopeDirectory}', [HopeDirectoryAdminController::class, 'destroy'])->name('hope-directory.destroy');
-                    Route::delete('/hope-events/{hopeEvent}', [HopeEventAdminController::class, 'destroy'])->name('hope-events.destroy');
-                    Route::delete('/contests/{contest}', [ContestAdminController::class, 'destroy'])->name('contests.destroy');
-                    Route::delete('/iec-materials/{iecMaterial}', [IecMaterialAdminController::class, 'destroy'])->name('iec-materials.destroy');
-                    Route::delete('/app-translations/{appTranslation}', [AppTranslationAdminController::class, 'destroy'])->name('app-translations.destroy');
+                    Route::put('/blocked-words/{blockedWord}/archive', [BlockedWordAdminController::class, 'archive'])->name('blocked-words.archive');
+                    Route::put('/blocked-words/{blockedWord}/restore', [BlockedWordAdminController::class, 'restore'])->name('blocked-words.restore');
+
+                    Route::put('/kid-listo-quotes/{kidListoQuote}/archive', [KidListoQuoteAdminController::class, 'archive'])->name('kid-listo-quotes.archive');
+                    Route::put('/kid-listo-quotes/{kidListoQuote}/restore', [KidListoQuoteAdminController::class, 'restore'])->name('kid-listo-quotes.restore');
+
+                    Route::put('/app-options/{appOption}/archive', [AppOptionAdminController::class, 'archive'])->name('app-options.archive');
+                    Route::put('/app-options/{appOption}/restore', [AppOptionAdminController::class, 'restore'])->name('app-options.restore');
+
+                    Route::put('/care-toolkit-questions/{careToolkitQuestion}/archive', [CareToolkitQuestionAdminController::class, 'archive'])->name('care-toolkit-questions.archive');
+                    Route::put('/care-toolkit-questions/{careToolkitQuestion}/restore', [CareToolkitQuestionAdminController::class, 'restore'])->name('care-toolkit-questions.restore');
+
+                    Route::put('/care-support-resources/{careSupportResource}/archive', [CareSupportResourceAdminController::class, 'archive'])->name('care-support-resources.archive');
+                    Route::put('/care-support-resources/{careSupportResource}/restore', [CareSupportResourceAdminController::class, 'restore'])->name('care-support-resources.restore');
+
+                    Route::put('/hope-directory/{hopeDirectory}/archive', [HopeDirectoryAdminController::class, 'archive'])->name('hope-directory.archive');
+                    Route::put('/hope-directory/{hopeDirectory}/restore', [HopeDirectoryAdminController::class, 'restore'])->name('hope-directory.restore');
+
+                    Route::put('/hope-events/{hopeEvent}/archive', [HopeEventAdminController::class, 'archive'])->name('hope-events.archive');
+                    Route::put('/hope-events/{hopeEvent}/restore', [HopeEventAdminController::class, 'restore'])->name('hope-events.restore');
+
+                    Route::put('/contests/{contest}/archive', [ContestAdminController::class, 'archive'])->name('contests.archive');
+                    Route::put('/contests/{contest}/restore', [ContestAdminController::class, 'restore'])->name('contests.restore');
+
+                    Route::put('/iec-materials/{iecMaterial}/archive', [IecMaterialAdminController::class, 'archive'])->name('iec-materials.archive');
+                    Route::put('/iec-materials/{iecMaterial}/restore', [IecMaterialAdminController::class, 'restore'])->name('iec-materials.restore');
+
+                    Route::put('/app-translations/{appTranslation}/archive', [AppTranslationAdminController::class, 'archive'])->name('app-translations.archive');
+                    Route::put('/app-translations/{appTranslation}/restore', [AppTranslationAdminController::class, 'restore'])->name('app-translations.restore');
                 });
 
                 // Admin in-app notification inbox (all admin roles)

@@ -160,6 +160,7 @@ class Visual
             'image_url' => self::imageUrl($translation),
             'uses_card_image' => self::usesVisual((string) $translation->key),
             'visual_kind' => self::visualKind((string) $translation->key),
+            ...$translation->workflowAdminFields(),
             'updated_at' => $translation->updated_at?->toIso8601String(),
         ];
     }

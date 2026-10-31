@@ -10,6 +10,7 @@ import {
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
     isEditorStagingPublished,
     isPublishedUpdateDraft,
@@ -365,6 +366,7 @@ export function loadKidListoQuotes(search = '') {
             quotesById.clear();
             allRows.forEach((quote) => quotesById.set(String(quote.id), quote));
             const rows = filterByWorkflowStatus(allRows, quotesWorkflowFilter);
+            applyWorkflowStatusCounts(null, allRows);
             quotesTable.clear();
             rows.forEach((quote) => {
                 quotesTable.row.add(buildQuoteRowData(quote));

@@ -10,6 +10,7 @@ import {
     defaultWorkflowFilter,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
     isPublisherReviewOnly,
     itemForEditorForm,
@@ -118,7 +119,9 @@ export function loadContests(search = '') {
         },
     })
         .then(({ data }) => {
-            const rows = filterByWorkflowStatus(data.data?.data ?? [], contestsWorkflowFilter);
+            const allRows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(allRows, contestsWorkflowFilter);
+            applyWorkflowStatusCounts(null, allRows);
             contestsTable.clear();
             rows.forEach((contest) => {
                 contestsTable.row.add(buildRowData(contest));

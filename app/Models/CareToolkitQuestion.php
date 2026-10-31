@@ -71,6 +71,7 @@ class CareToolkitQuestion extends Model
             'sort_order'   => $this->sort_order,
             'is_active'    => $this->is_active,
             'is_reverse'   => (bool) $this->is_reverse,
+            ...$this->workflowAdminFields(),
             'created_at'   => optional($this->created_at)?->toIso8601String(),
             'updated_at'   => optional($this->updated_at)?->toIso8601String(),
         ];

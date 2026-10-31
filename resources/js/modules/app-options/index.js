@@ -21,6 +21,7 @@ import {
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
     isEditorStagingPublished,
     isPublisherReviewOnly,
@@ -173,6 +174,7 @@ function fillGroupTabs() {
         persona: 'fas fa-id-card',
         care_toolkit: 'fas fa-heart-pulse',
         care_support: 'fas fa-headset',
+        rehab_center: 'fas fa-house-medical',
         journal_sky: 'fas fa-palette',
         journal_feeling: 'fas fa-face-smile',
         journal_impact: 'fas fa-sun',
@@ -209,7 +211,9 @@ export function loadAppOptions() {
             }
             iconChoices = data.meta?.icons ?? iconChoices;
 
-            const workflowRows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
+            const allRows = data.data?.data ?? [];
+            const workflowRows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            applyWorkflowStatusCounts(null, allRows);
             const groupCounts = countByKey(workflowRows, (row) => row.group);
             groupMeta = groupMeta.map((group) => ({
                 ...group,

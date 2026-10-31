@@ -19,6 +19,8 @@ class AppOptionAdminController extends Controller
         submit as protected workflowSubmit;
         reject as protected workflowReject;
         publish as protected workflowPublish;
+        archive as protected workflowArchive;
+        restore as protected workflowRestore;
     }
 
     public function __construct(
@@ -108,6 +110,16 @@ class AppOptionAdminController extends Controller
     public function publish(Request $request, AppOption $appOption): JsonResponse
     {
         return $this->workflowPublish($request, $appOption);
+    }
+
+    public function archive(Request $request, AppOption $appOption): JsonResponse
+    {
+        return $this->workflowArchive($request, $appOption);
+    }
+
+    public function restore(Request $request, AppOption $appOption): JsonResponse
+    {
+        return $this->workflowRestore($request, $appOption);
     }
 
     public function destroy(AppOption $appOption): JsonResponse

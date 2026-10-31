@@ -10,9 +10,12 @@ final class ContentWorkflowStatus
 
     public const PUBLISHED = 'published';
 
+    public const ARCHIVED = 'archived';
+
     public const ALL = [
         self::DRAFT,
         self::PENDING,
         self::PUBLISHED,
+        self::ARCHIVED,
     ];
 }

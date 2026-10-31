@@ -38,12 +38,12 @@ let postsFiltersBound = false;
 let activeStatusFilter = '';
 
 const STATUS_FILTER_TABS_ALL = [
-    { value: '', label: 'All', icon: 'fas fa-layer-group', hint: 'Every status' },
+    { value: '', label: 'All', icon: 'fas fa-layer-group', hint: 'Active statuses' },
     { value: 'draft', label: 'Draft', icon: 'fas fa-pen', hint: 'Editor drafts & rejected' },
     { value: 'pending_review', label: 'Pending', icon: 'fas fa-clock', hint: 'Awaiting publisher' },
     { value: 'scheduled', label: 'Scheduled', icon: 'fas fa-calendar-check', hint: 'Approved, not live' },
     { value: 'published', label: 'Published', icon: 'fas fa-circle-check', hint: 'Live in the app' },
-    { value: 'archived', label: 'Archived', icon: 'fas fa-box-archive', hint: 'Removed from feed' },
+    { value: 'archived', label: 'Archived', icon: 'fas fa-box-archive', hint: 'Hidden — restore anytime' },
 ];
 
 function postsStatusFilterTabs(role = currentUserRole) {
@@ -216,7 +216,7 @@ function renderPostsTable() {
 
     const rows = activeStatusFilter
         ? allPostsCache.filter((post) => postMatchesStatusFilter(post, activeStatusFilter))
-        : allPostsCache;
+        : allPostsCache.filter((post) => String(post.status || '') !== 'archived');
 
     postsTable.clear();
     rows.forEach((post) => {
@@ -1789,17 +1789,6 @@ function getAvailableActions(post) {
         });
     }
 
-    if (canDeletePost(post)) {
-        actions.push({
-            handler: 'deletePost',
-            label: 'Delete',
-            tooltip: 'Delete permanently',
-            icon: 'fas fa-trash',
-            iconClass: 'text-[#CE2028]',
-            className: 'admin-table-action-danger',
-        });
-    }
-
     return actions;
 }
 
@@ -1855,15 +1844,11 @@ function canPublishPost(post) {
 
 function canArchivePost(post) {
     return currentUserRole === 'super_admin'
-        && ['published', 'scheduled'].includes(post.status);
+        && ['draft', 'pending_review', 'published', 'scheduled'].includes(post.status);
 }
 
 function canRestorePost(post) {
     return currentUserRole === 'super_admin' && post.status === 'archived';
-}
-
-function canDeletePost(_post) {
-    return currentUserRole === 'super_admin';
 }
 
 window.Posts = {
@@ -1877,6 +1862,5 @@ window.Posts = {
     rejectPost,
     archivePost,
     restorePost,
-    deletePost,
     deleteComment: deletePostComment,
 };

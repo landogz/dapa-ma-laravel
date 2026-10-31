@@ -365,6 +365,7 @@ class NotificationService
             'sent_at' => $notification->sent_at?->toIso8601String(),
             'recipient_count' => (int) ($notification->recipient_count ?? 0),
             'inbox_count' => (int) ($notification->inbox_count ?? 0),
+            ...$notification->workflowAdminFields(),
             'created_at' => $notification->created_at?->toIso8601String(),
             'updated_at' => $notification->updated_at?->toIso8601String(),
         ];

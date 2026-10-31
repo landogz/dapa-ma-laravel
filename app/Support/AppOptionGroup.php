@@ -18,6 +18,8 @@ final class AppOptionGroup
 
     public const CARE_SUPPORT = 'care_support';
 
+    public const REHAB_CENTER = 'rehab_center';
+
     public const SELECTION_SINGLE = 'single';
 
     public const SELECTION_MULTIPLE = 'multiple';
@@ -35,6 +37,7 @@ final class AppOptionGroup
             self::JOURNAL_IMPACT,
             self::CARE_TOOLKIT,
             self::CARE_SUPPORT,
+            self::REHAB_CENTER,
         ];
     }
 
@@ -90,6 +93,12 @@ final class AppOptionGroup
                 'subtitle' => 'Get Support filters — 24/7 Hotlines, Counseling, Crisis emergency, Crisis resources',
                 'selection' => self::SELECTION_SINGLE,
                 'surface' => 'Care',
+            ],
+            self::REHAB_CENTER => [
+                'title' => 'Rehab center categories',
+                'subtitle' => 'Treatment Rehabilitation Center types — set accent colors for badges and map pins',
+                'selection' => self::SELECTION_SINGLE,
+                'surface' => 'Find Help',
             ],
         ];
     }
@@ -230,6 +239,74 @@ final class AppOptionGroup
                 'life_ring_outlined',
                 'Crisis information resources',
                 'Mga resource para sa crisis',
+            ),
+
+            // Treatment Rehabilitation Center categories (keys stored on rehab_centers.category)
+            self::row(
+                self::REHAB_CENTER,
+                'residential',
+                'Residential',
+                'Residential',
+                1,
+                'home_outlined',
+                'Live-in treatment facility',
+                'Pasilidad na may tuluyan',
+                '#123a60',
+            ),
+            self::row(
+                self::REHAB_CENTER,
+                'outpatient',
+                'Outpatient',
+                'Outpatient',
+                2,
+                'medical_services_outlined',
+                'Day programs without overnight stay',
+                'Programa sa araw nang walang tuluyan',
+                '#055498',
+            ),
+            self::row(
+                self::REHAB_CENTER,
+                'community_based',
+                'Community-based',
+                'Community-based',
+                3,
+                'groups_outlined',
+                'Barangay and community recovery programs',
+                'Programa sa barangay at komunidad',
+                '#16A34A',
+            ),
+            self::row(
+                self::REHAB_CENTER,
+                'aftercare',
+                'Aftercare / Halfway',
+                'Aftercare / Halfway',
+                4,
+                'handshake_outlined',
+                'Halfway houses and aftercare support',
+                'Halfway house at aftercare',
+                '#FBD116',
+            ),
+            self::row(
+                self::REHAB_CENTER,
+                'detox',
+                'Detoxification',
+                'Detoxification',
+                5,
+                'spa_outlined',
+                'Medical detox and withdrawal management',
+                'Medikal na detox at pamamahala ng withdrawal',
+                '#CE2028',
+            ),
+            self::row(
+                self::REHAB_CENTER,
+                'dual_diagnosis',
+                'Dual diagnosis',
+                'Dual diagnosis',
+                6,
+                'psychology_outlined',
+                'Substance use with mental health care',
+                'Substance use at mental health care',
+                '#7C3AED',
             ),
         ];
     }

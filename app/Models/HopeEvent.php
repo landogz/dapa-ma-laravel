@@ -143,6 +143,7 @@ class HopeEvent extends Model
     {
         return [
             ...$this->toPublicArray(true),
+            ...$this->workflowAdminFields(),
             'speakers'   => $this->speakersForApi(true),
             'cover_path' => $this->cover_path,
             'is_active'  => $this->is_active,

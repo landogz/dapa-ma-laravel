@@ -104,4 +104,46 @@ trait HandlesContentWorkflow
             'data' => $updated,
         ]);
     }
+
+    public function archive(Request $request, Model $model): JsonResponse
+    {
+        $this->assertVisibleToAdmin($request, $model);
+
+        try {
+            $updated = $this->contentWorkflowService()->archive(
+                $model,
+                $request->user(),
+                $this->contentWorkflowSection(),
+            );
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Archived. It is hidden from the mobile app until restored.',
+            'data' => $updated,
+        ]);
+    }
+
+    public function restore(Request $request, Model $model): JsonResponse
+    {
+        $this->assertVisibleToAdmin($request, $model);
+
+        try {
+            $updated = $this->contentWorkflowService()->restore(
+                $model,
+                $request->user(),
+                $this->contentWorkflowSection(),
+            );
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Restored and published.',
+            'data' => $updated,
+        ]);
+    }
 }

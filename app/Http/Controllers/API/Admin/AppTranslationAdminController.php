@@ -20,6 +20,8 @@ class AppTranslationAdminController extends Controller
         submit as protected workflowSubmit;
         reject as protected workflowReject;
         publish as protected workflowPublish;
+        archive as protected workflowArchive;
+        restore as protected workflowRestore;
     }
 
     public function __construct(
@@ -132,6 +134,16 @@ class AppTranslationAdminController extends Controller
     public function publish(Request $request, AppTranslation $appTranslation): JsonResponse
     {
         return $this->workflowPublish($request, $appTranslation);
+    }
+
+    public function archive(Request $request, AppTranslation $appTranslation): JsonResponse
+    {
+        return $this->workflowArchive($request, $appTranslation);
+    }
+
+    public function restore(Request $request, AppTranslation $appTranslation): JsonResponse
+    {
+        return $this->workflowRestore($request, $appTranslation);
     }
 
     public function destroy(AppTranslation $appTranslation): JsonResponse

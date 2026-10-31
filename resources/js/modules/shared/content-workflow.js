@@ -36,6 +36,7 @@ export {
 export const WORKFLOW_DRAFT = 'draft';
 export const WORKFLOW_PENDING = 'pending_review';
 export const WORKFLOW_PUBLISHED = 'published';
+export const WORKFLOW_ARCHIVED = 'archived';
 
 export function currentAdminRole() {
     return getStoredUser()?.role ?? null;
@@ -185,6 +186,8 @@ export function workflowStatusLabel(status) {
             return 'Pending review';
         case WORKFLOW_PUBLISHED:
             return 'Published';
+        case WORKFLOW_ARCHIVED:
+            return 'Archived';
         case WORKFLOW_DRAFT:
         default:
             return 'Draft';
@@ -228,7 +231,9 @@ export function workflowStatusBadge(status, item = null) {
         ? 'bg-emerald-100 text-emerald-700'
         : value === WORKFLOW_PENDING
             ? 'bg-[#055498]/10 text-[#055498]'
-            : 'bg-slate-100 text-slate-600';
+            : value === WORKFLOW_ARCHIVED
+                ? 'bg-[#CE2028]/10 text-[#CE2028]'
+                : 'bg-slate-100 text-slate-600';
 
     const base = `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone}">${workflowStatusLabel(value)}</span>`;
 
@@ -251,10 +256,11 @@ export function workflowFilterTabs(role = currentAdminRole()) {
     }
 
     return [
-        { value: '', label: 'All', icon: 'fas fa-layer-group', hint: 'Every status' },
+        { value: '', label: 'All', icon: 'fas fa-layer-group', hint: 'Active statuses' },
         { value: WORKFLOW_DRAFT, label: 'Draft', icon: 'fas fa-pen', hint: 'Editor drafts & rejected' },
         { value: WORKFLOW_PENDING, label: 'Pending', icon: 'fas fa-clock', hint: 'Awaiting publisher' },
         { value: WORKFLOW_PUBLISHED, label: 'Published', icon: 'fas fa-circle-check', hint: 'Live in the app' },
+        { value: WORKFLOW_ARCHIVED, label: 'Archived', icon: 'fas fa-box-archive', hint: 'Hidden — restore anytime' },
     ];
 }
 
@@ -348,13 +354,21 @@ export function workflowActionDefs(item, {
         }
     }
 
-    if (superAdmin) {
+    if (superAdmin && status === WORKFLOW_ARCHIVED) {
         actions.push({
-            key: 'delete',
-            label: 'Delete',
-            tooltip: 'Delete permanently',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
+            key: 'restore',
+            label: 'Restore',
+            tooltip: 'Restore and publish',
+            icon: 'fas fa-rotate-left',
+            className: 'admin-table-action-primary',
+        });
+    } else if (superAdmin && status !== WORKFLOW_ARCHIVED) {
+        actions.push({
+            key: 'archive',
+            label: 'Archive',
+            tooltip: 'Archive (hide from app)',
+            icon: 'fas fa-box-archive',
+            className: 'admin-table-action-warning',
         });
     }
 
@@ -362,6 +376,53 @@ export function workflowActionDefs(item, {
         ...action,
         path: `${basePath}/${id}`,
     }));
+}
+
+export async function archiveContent(basePath, id, { onSuccess } = {}) {
+    const { isConfirmed } = await confirmWithSwal({
+        icon: 'warning',
+        title: 'Archive this item?',
+        text: 'It will be hidden from the mobile app. You can restore it later from the Archived tab.',
+        confirmButtonText: 'Archive',
+        danger: true,
+    });
+
+    if (!isConfirmed) {
+        return false;
+    }
+
+    try {
+        const { data } = await axios.put(`${basePath}/${id}/archive`);
+        showSuccessToast(data.message ?? 'Archived.', 'Archived');
+        onSuccess?.(data.data);
+        return true;
+    } catch ({ response }) {
+        showErrorToast(response?.data?.message ?? 'Archive failed.', 'Error');
+        return false;
+    }
+}
+
+export async function restoreContent(basePath, id, { onSuccess } = {}) {
+    const { isConfirmed } = await confirmWithSwal({
+        icon: 'question',
+        title: 'Restore this item?',
+        text: 'It will be published again and visible in the mobile app.',
+        confirmButtonText: 'Restore',
+    });
+
+    if (!isConfirmed) {
+        return false;
+    }
+
+    try {
+        const { data } = await axios.put(`${basePath}/${id}/restore`);
+        showSuccessToast(data.message ?? 'Restored.', 'Restored');
+        onSuccess?.(data.data);
+        return true;
+    } catch ({ response }) {
+        showErrorToast(response?.data?.message ?? 'Restore failed.', 'Error');
+        return false;
+    }
 }
 
 export async function submitForReview(basePath, id, { onSuccess, isPublishedUpdate = false } = {}) {
@@ -464,7 +525,8 @@ export async function rejectContent(basePath, id, { onSuccess } = {}) {
 
 export function filterByWorkflowStatus(items, statusFilter) {
     if (!statusFilter) {
-        return items;
+        // "All" excludes archived — use the Archived tab to restore.
+        return items.filter((item) => String(item.workflow_status || WORKFLOW_DRAFT) !== WORKFLOW_ARCHIVED);
     }
 
     return items.filter((item) => {
@@ -519,26 +581,25 @@ const WORKFLOW_ACTION_HANDLERS = {
     submit: 'submitWorkflow',
     publish: 'publishWorkflow',
     reject: 'rejectWorkflow',
-    delete: 'remove',
+    archive: 'archiveWorkflow',
+    restore: 'restoreWorkflow',
 };
 
 export function buildWorkflowTableActions(item, globalName, {
     basePath,
     extraBefore = [],
     extraAfter = [],
-    deleteMethod = 'remove',
-    includeDelete = true,
+    includeDelete = false,
 } = {}) {
     let defs = workflowActionDefs(item, { basePath, id: item?.id });
 
+    // Legacy flag — permanent delete is no longer exposed in the UI.
     if (!includeDelete) {
         defs = defs.filter((def) => def.key !== 'delete');
     }
 
     const mapped = defs.map((def) => {
-        const handler = def.key === 'delete'
-            ? deleteMethod
-            : (WORKFLOW_ACTION_HANDLERS[def.key] ?? def.key);
+        const handler = WORKFLOW_ACTION_HANDLERS[def.key] ?? def.key;
 
         return {
             tooltip: def.tooltip,
@@ -558,11 +619,125 @@ export function attachWorkflowWindowHandlers(globalName, basePath, reloadFn) {
     root.submitWorkflow = (id) => submitForReview(basePath, id, { onSuccess: reloadFn });
     root.publishWorkflow = (id) => publishContent(basePath, id, { onSuccess: reloadFn });
     root.rejectWorkflow = (id) => rejectContent(basePath, id, { onSuccess: reloadFn });
+    root.archiveWorkflow = (id) => archiveContent(basePath, id, { onSuccess: reloadFn });
+    root.restoreWorkflow = (id) => restoreContent(basePath, id, { onSuccess: reloadFn });
+    // Back-compat: older onclick="remove" handlers archive instead of hard-deleting.
+    root.remove = root.archiveWorkflow;
     window[globalName] = root;
 }
 
-let workflowFilterMountSeq = 0;
+function resolveWorkflowFilterShell(selectMount) {
+    if (!selectMount) {
+        return null;
+    }
 
+    return selectMount.closest('.admin-filter-split')
+        || selectMount.closest('.admin-shell-card')
+        || selectMount.parentElement
+        || null;
+}
+
+function ensureWorkflowFilterRail(selectMount) {
+    const shell = resolveWorkflowFilterShell(selectMount);
+    if (!shell) {
+        return null;
+    }
+
+    let split = shell.classList?.contains('admin-filter-split')
+        ? shell
+        : shell.querySelector?.(':scope > .admin-filter-split');
+
+    if (split) {
+        return split.querySelector('.admin-filter-rail');
+    }
+
+    // Pages with only a table shell (IEC, Settings quotes, etc.) — wrap into filter-split + rail.
+    if (!selectMount.classList?.contains('admin-table-shell') && !selectMount.querySelector?.('.admin-table-shell')) {
+        return null;
+    }
+
+    const tableShell = selectMount.classList.contains('admin-table-shell')
+        ? selectMount
+        : selectMount.querySelector('.admin-table-shell');
+    if (!tableShell || tableShell.closest('.admin-filter-split')) {
+        return null;
+    }
+
+    const card = tableShell.closest('.admin-shell-card') || tableShell.parentElement;
+    if (!card) {
+        return null;
+    }
+
+    const headerNodes = [];
+    let cursor = card.firstElementChild;
+    while (cursor && cursor !== tableShell) {
+        headerNodes.push(cursor);
+        cursor = cursor.nextElementSibling;
+    }
+
+    split = document.createElement('div');
+    split.className = 'admin-filter-split mt-0';
+
+    const rail = document.createElement('aside');
+    rail.className = 'admin-filter-rail';
+    rail.setAttribute('data-workflow-filter-rail', '1');
+
+    const main = document.createElement('div');
+    main.className = 'admin-filter-main min-w-0';
+
+    headerNodes.forEach((node) => main.appendChild(node));
+    main.appendChild(tableShell);
+    split.appendChild(rail);
+    split.appendChild(main);
+    card.appendChild(split);
+
+    return rail;
+}
+
+function ensureWorkflowTabsRoot(rail, selectMount) {
+    if (rail) {
+        let root = rail.querySelector('[data-workflow-status-tabs]');
+        if (root) {
+            return root;
+        }
+
+        const title = document.createElement('p');
+        title.className = 'admin-filter-rail-title';
+        title.textContent = 'Workflow';
+        root = document.createElement('div');
+        root.className = 'admin-filter-tabs';
+        root.setAttribute('data-workflow-status-tabs', '1');
+        root.setAttribute('role', 'tablist');
+        root.setAttribute('aria-label', 'Filter by workflow status');
+        rail.appendChild(title);
+        rail.appendChild(root);
+        return root;
+    }
+
+    if (!selectMount) {
+        return null;
+    }
+
+    let root = selectMount.querySelector('[data-workflow-status-tabs]')
+        || selectMount.parentElement?.querySelector?.('[data-workflow-status-tabs]');
+    if (root) {
+        return root;
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'mb-4';
+    wrap.innerHTML = `
+        <p class="admin-filter-rail-title mb-2">Workflow</p>
+        <div class="admin-filter-tabs is-horizontal" data-workflow-status-tabs="1" role="tablist" aria-label="Filter by workflow status"></div>
+    `;
+    selectMount.prepend(wrap);
+    return wrap.querySelector('[data-workflow-status-tabs]');
+}
+
+/**
+ * Mount Draft / Pending / Published / Archived tabs for any admin DataTable.
+ * Prefers the left filter rail; creates one when the page has only a table shell.
+ */
 export function ensureWorkflowStatusFilter({
     tabsRoot,
     selectMount,
@@ -571,49 +746,56 @@ export function ensureWorkflowStatusFilter({
 } = {}) {
     const resolvedInitial = initialValue == null ? defaultWorkflowFilter() : initialValue;
     const tabs = workflowFilterTabs();
+    const mount = selectMount
+        || tabsRoot?.closest?.('.admin-table-shell')
+        || document.querySelector('.admin-table-shell');
 
-    if (tabsRoot) {
-        renderAdminFilterTabs(tabsRoot, tabs);
-        bindAdminFilterTabs(tabsRoot, onChange);
-        setAdminFilterTab(tabsRoot, resolvedInitial);
-        if (typeof onChange === 'function' && isPublisherRole()) {
-            onChange(resolvedInitial);
-        }
-        return;
+    let root = tabsRoot
+        || document.querySelector('[data-workflow-status-tabs]');
+
+    if (!root) {
+        const rail = ensureWorkflowFilterRail(mount)
+            || resolveWorkflowFilterShell(mount)?.querySelector?.('.admin-filter-rail');
+        root = ensureWorkflowTabsRoot(rail, mount);
     }
 
-    if (!selectMount || selectMount.querySelector('[data-workflow-status-filter]')) {
-        return;
+    if (!root) {
+        return null;
     }
 
-    const selectId = `workflow-status-filter-${++workflowFilterMountSeq}`;
-    const wrapper = document.createElement('div');
-    wrapper.className = 'mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between';
-    wrapper.innerHTML = `
-        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500" for="${selectId}">Workflow status</label>
-        <select id="${selectId}" data-workflow-status-filter class="admin-swal-input max-w-xs min-h-11 w-full sm:w-auto">
-            ${tabs.map((tab) => (
-                `<option value="${escapeWorkflowHtml(tab.value)}">${escapeWorkflowHtml(tab.label)}</option>`
-            )).join('')}
-        </select>
-    `;
-    selectMount.prepend(wrapper);
+    // Drop any legacy dropdown so Archived is not buried in a select.
+    mount?.querySelector?.('[data-workflow-status-filter]')?.closest('div')?.remove();
+    document.querySelectorAll('[data-workflow-status-filter]').forEach((el) => {
+        el.closest('div.mb-4, div.flex')?.remove();
+    });
 
-    const select = wrapper.querySelector('[data-workflow-status-filter]');
-    select.value = resolvedInitial;
-    select.addEventListener('change', () => onChange(select.value ?? ''));
+    // Allow rebinding after layout wraps recreate the tablist.
+    if (root.dataset.tabsBound === '1' && !root.querySelector('[data-filter-value]')) {
+        delete root.dataset.tabsBound;
+    }
+
+    renderAdminFilterTabs(root, tabs);
+    bindAdminFilterTabs(root, onChange);
+    setAdminFilterTab(root, resolvedInitial);
     if (typeof onChange === 'function' && isPublisherRole()) {
         onChange(resolvedInitial);
     }
+
+    return root;
 }
 
 export function applyWorkflowStatusCounts(tabsRoot, rows) {
-    if (!tabsRoot) {
+    const root = tabsRoot
+        || document.querySelector('[data-workflow-status-tabs]');
+    if (!root) {
         return;
     }
 
-    const counts = countByKey(rows, (row) => String(row.workflow_status || WORKFLOW_DRAFT));
-    applyAdminFilterTabCounts(tabsRoot, counts);
+    const list = Array.isArray(rows) ? rows : [];
+    const counts = countByKey(list, (row) => String(row.workflow_status || WORKFLOW_DRAFT));
+    // "All" excludes archived.
+    counts[''] = list.filter((row) => String(row.workflow_status || WORKFLOW_DRAFT) !== WORKFLOW_ARCHIVED).length;
+    applyAdminFilterTabCounts(root, counts);
 }
 
 function escapeWorkflowHtml(value) {

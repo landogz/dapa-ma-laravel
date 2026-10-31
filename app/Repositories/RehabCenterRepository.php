@@ -7,15 +7,22 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class RehabCenterRepository
 {
-    public function paginate(int $perPage = 20, ?string $region = null, ?string $search = null): LengthAwarePaginator
-    {
+    public function paginate(
+        int $perPage = 20,
+        ?string $region = null,
+        ?string $search = null,
+        bool $activeOnly = true,
+        ?string $category = null,
+    ): LengthAwarePaginator {
         return RehabCenter::query()
-            ->where('is_active', true)
+            ->when($activeOnly, fn ($q) => $q->where('is_active', true))
             ->when($region, fn ($q) => $q->where('region', $region))
+            ->when($category, fn ($q) => $q->where('category', $category))
             ->when($search, fn ($q) => $q->where(function ($q) use ($search): void {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('province', 'like', "%{$search}%")
-                    ->orWhere('address', 'like', "%{$search}%");
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
             }))
             ->latest()
             ->paginate($perPage);

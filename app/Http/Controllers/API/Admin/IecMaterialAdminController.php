@@ -19,6 +19,8 @@ class IecMaterialAdminController extends Controller
         submit as protected workflowSubmit;
         reject as protected workflowReject;
         publish as protected workflowPublish;
+        archive as protected workflowArchive;
+        restore as protected workflowRestore;
     }
 
     public function __construct(
@@ -105,6 +107,16 @@ class IecMaterialAdminController extends Controller
     public function publish(Request $request, IecMaterial $iecMaterial): JsonResponse
     {
         return $this->workflowPublish($request, $iecMaterial);
+    }
+
+    public function archive(Request $request, IecMaterial $iecMaterial): JsonResponse
+    {
+        return $this->workflowArchive($request, $iecMaterial);
+    }
+
+    public function restore(Request $request, IecMaterial $iecMaterial): JsonResponse
+    {
+        return $this->workflowRestore($request, $iecMaterial);
     }
 
     public function destroy(IecMaterial $iecMaterial): JsonResponse

@@ -22,6 +22,8 @@ class ContestAdminController extends Controller
         submit as protected workflowSubmit;
         reject as protected workflowReject;
         publish as protected workflowPublish;
+        archive as protected workflowArchive;
+        restore as protected workflowRestore;
     }
 
     public function __construct(
@@ -106,6 +108,16 @@ class ContestAdminController extends Controller
     public function publish(Request $request, Contest $contest): JsonResponse
     {
         return $this->workflowPublish($request, $contest);
+    }
+
+    public function archive(Request $request, Contest $contest): JsonResponse
+    {
+        return $this->workflowArchive($request, $contest);
+    }
+
+    public function restore(Request $request, Contest $contest): JsonResponse
+    {
+        return $this->workflowRestore($request, $contest);
     }
 
     public function destroy(Contest $contest): JsonResponse

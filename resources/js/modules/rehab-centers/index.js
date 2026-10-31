@@ -2,6 +2,13 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { getStoredUser } from '../auth';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
+import {
+    applyAdminFilterTabCounts,
+    bindAdminFilterTabs,
+    countByKey,
+    renderAdminFilterTabs,
+    setAdminFilterTab,
+} from '../shared/filter-tabs';
 import { buildSwalOptions, confirmWithSwal } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
@@ -14,11 +21,24 @@ import {
     initRehabMapPicker,
 } from './rehab-map';
 
+const CATEGORY_ICONS = {
+    residential: 'fas fa-house',
+    outpatient: 'fas fa-kit-medical',
+    community_based: 'fas fa-users',
+    aftercare: 'fas fa-handshake',
+    detox: 'fas fa-spa',
+    dual_diagnosis: 'fas fa-brain',
+};
+
 let rehabTable;
 let rehabDataTableClass;
 let rehabTableMode;
 let hasBoundViewportListener = false;
 let latestCenters = [];
+let rehabStatusFilter = 'active';
+let rehabCategoryFilter = '';
+let rehabFiltersBound = false;
+let categoryOptions = [];
 
 export function initRehabCentersModule() {
     const tableEl = document.getElementById('rehab-centers-table');
@@ -29,8 +49,68 @@ export function initRehabCentersModule() {
         await initializeRehabTable(tableEl);
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        bindRehabStatusTabs();
+        await loadRehabCategories();
         loadRehabCenters();
     });
+}
+
+function bindRehabStatusTabs() {
+    if (rehabFiltersBound) return;
+    const root = document.getElementById('rehab-centers-status-tabs');
+    if (!root) return;
+    bindAdminFilterTabs(root, (value) => {
+        rehabStatusFilter = value || 'active';
+        renderRehabRows();
+    });
+    setAdminFilterTab(root, rehabStatusFilter);
+    rehabFiltersBound = true;
+}
+
+async function loadRehabCategories() {
+    try {
+        const { data } = await axios.get('/admin/app-options', {
+            params: { group: 'rehab_center', per_page: 100 },
+        });
+        const rows = (data.data?.data ?? []).filter((row) => row.is_active !== false);
+        categoryOptions = rows
+            .slice()
+            .sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0))
+            .map((row) => ({
+                value: row.key,
+                label: row.label_en || row.key,
+                color: normalizeHexColor(row.accent_color),
+                icon: CATEGORY_ICONS[row.key] || 'fas fa-tag',
+            }));
+    } catch {
+        categoryOptions = [
+            { value: 'residential', label: 'Residential', color: '#123a60', icon: 'fas fa-house' },
+            { value: 'outpatient', label: 'Outpatient', color: '#055498', icon: 'fas fa-kit-medical' },
+            { value: 'community_based', label: 'Community-based', color: '#16A34A', icon: 'fas fa-users' },
+            { value: 'aftercare', label: 'Aftercare / Halfway', color: '#FBD116', icon: 'fas fa-handshake' },
+            { value: 'detox', label: 'Detoxification', color: '#CE2028', icon: 'fas fa-spa' },
+            { value: 'dual_diagnosis', label: 'Dual diagnosis', color: '#7C3AED', icon: 'fas fa-brain' },
+        ];
+    }
+
+    const tabs = document.getElementById('rehab-centers-category-tabs');
+    if (!tabs) {
+        return;
+    }
+
+    renderAdminFilterTabs(tabs, [
+        { value: '', label: 'All categories', icon: 'fas fa-layer-group' },
+        ...categoryOptions.map((option) => ({
+            value: option.value,
+            label: option.label,
+            icon: option.icon,
+        })),
+    ]);
+    bindAdminFilterTabs(tabs, (value) => {
+        rehabCategoryFilter = value || '';
+        renderRehabRows();
+    });
+    setAdminFilterTab(tabs, rehabCategoryFilter);
 }
 
 export function loadRehabCenters(search = '') {
@@ -39,16 +119,60 @@ export function loadRehabCenters(search = '') {
     axios.get('/admin/rehab-centers', { params: { search, per_page: 200 } })
         .then(({ data }) => {
             latestCenters = data.data?.data ?? [];
-            rehabTable.clear();
-            latestCenters.forEach((center) => {
-                rehabTable.row.add(buildRowData(center));
-            });
-            rehabTable.draw();
+            renderRehabRows();
             initRehabCentersOverviewMap('rehab-centers-overview-map', latestCenters);
         })
         .catch(() => {
             showErrorToast('Failed to load rehab center listings.');
         });
+}
+
+function renderRehabRows() {
+    if (!rehabTable) return;
+    const filtered = latestCenters.filter((center) => {
+        if (rehabStatusFilter === 'archived' && center.is_active !== false) return false;
+        if (rehabStatusFilter === 'active' && center.is_active === false) return false;
+        if (rehabCategoryFilter && String(center.category || '') !== rehabCategoryFilter) return false;
+        return true;
+    });
+    applyAdminFilterTabCounts(document.getElementById('rehab-centers-status-tabs'), {
+        active: latestCenters.filter((center) => center.is_active !== false).length,
+        archived: latestCenters.filter((center) => center.is_active === false).length,
+    });
+    applyAdminFilterTabCounts(
+        document.getElementById('rehab-centers-category-tabs'),
+        {
+            '': latestCenters.length,
+            ...countByKey(latestCenters, (center) => String(center.category || '')),
+        },
+    );
+    rehabTable.clear();
+    filtered.forEach((center) => {
+        rehabTable.row.add(buildRowData(center));
+    });
+    rehabTable.draw();
+}
+
+function normalizeHexColor(value) {
+    const raw = String(value ?? '').trim();
+    if (!raw) return '';
+    const withHash = raw.startsWith('#') ? raw : `#${raw}`;
+    return /^#[0-9A-Fa-f]{6}$/.test(withHash) ? withHash.toUpperCase() : '';
+}
+
+function resolveCategoryMeta(center) {
+    const key = String(center?.category || '');
+    const fromOptions = categoryOptions.find((option) => option.value === key);
+    return {
+        key,
+        label: center?.category_label || fromOptions?.label || (key ? key.replaceAll('_', ' ') : 'Uncategorized'),
+        color: normalizeHexColor(center?.category_color) || fromOptions?.color || '#64748B',
+    };
+}
+
+function categoryBadge(center) {
+    const meta = resolveCategoryMeta(center);
+    return `<span class="admin-status-badge rehab-category-badge" style="--rehab-category-color:${escapeAttribute(meta.color)}">${escapeHtml(meta.label)}</span>`;
 }
 
 export function createRehabCenter() {
@@ -152,6 +276,11 @@ function applyGeocodedFields(meta = {}) {
 
 function buildRehabCenterFormHtml(existing) {
     const statusValue = existing?.is_active === false ? '0' : '1';
+    const selectedCategory = existing?.category || categoryOptions[0]?.value || '';
+    const categorySelect = categoryOptions.map((option) => {
+        const selected = option.value === selectedCategory ? ' selected' : '';
+        return `<option value="${escapeAttribute(option.value)}"${selected}>${escapeHtml(option.label)}</option>`;
+    }).join('');
 
     return `
         <div class="admin-swal-form rehab-center-form">
@@ -162,6 +291,14 @@ function buildRehabCenterFormHtml(existing) {
                         <div class="admin-swal-field">
                             <label class="admin-swal-label" for="rc-name">Name *</label>
                             <input id="rc-name" class="admin-swal-input" type="text" placeholder="Enter facility name" value="${escapeHtml(existing?.name ?? '')}">
+                        </div>
+                        <div class="admin-swal-field">
+                            <label class="admin-swal-label" for="rc-category">Category *</label>
+                            <select id="rc-category" class="admin-swal-select">
+                                <option value="" disabled${selectedCategory ? '' : ' selected'}>Select a category</option>
+                                ${categorySelect}
+                            </select>
+                            <p class="admin-swal-hint mt-1 text-xs text-slate-500">Managed in Lookups → Rehab center categories (with accent colors).</p>
                         </div>
                         <div class="admin-swal-field">
                             <label class="admin-swal-label" for="rc-address">Address *</label>
@@ -231,6 +368,7 @@ function showRehabForm(existing) {
         },
         preConfirm: () => {
             const name = document.getElementById('rc-name')?.value.trim();
+            const category = document.getElementById('rc-category')?.value.trim();
             const region = document.getElementById('rc-region')?.value.trim();
             const province = document.getElementById('rc-province')?.value.trim();
             const address = document.getElementById('rc-address')?.value.trim();
@@ -238,6 +376,11 @@ function showRehabForm(existing) {
 
             if (!name || !address) {
                 Swal.showValidationMessage('Name and Address are required.');
+                return false;
+            }
+
+            if (!category) {
+                Swal.showValidationMessage('Select a category.');
                 return false;
             }
 
@@ -253,6 +396,7 @@ function showRehabForm(existing) {
 
             return {
                 name,
+                category,
                 region,
                 province,
                 address,
@@ -361,6 +505,7 @@ function buildColumns(mode) {
     return [
         { title: 'ID', className: 'dt-col-id' },
         { title: 'Name', className: 'dt-col-primary dt-col-name' },
+        { title: 'Category', className: 'dt-col-nowrap' },
         { title: 'Address', className: 'dt-col-wide' },
         { title: 'Location', className: 'dt-col-nowrap' },
         { title: 'Status', className: 'dt-col-nowrap' },
@@ -371,7 +516,6 @@ function buildColumns(mode) {
 }
 
 function buildRowData(center) {
-    const isSuperAdmin = getStoredUser()?.role === 'super_admin';
     const actions = [
         {
             tooltip: 'Edit rehab center',
@@ -400,16 +544,6 @@ function buildRowData(center) {
         });
     }
 
-    if (isSuperAdmin) {
-        actions.push({
-            tooltip: 'Delete rehab center',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `onclick="window.RehabCenters.remove(${center.id})"`,
-            label: 'Delete',
-        });
-    }
-
     const desktopActionsMarkup = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
     const mobileActionsMarkup = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
 
@@ -428,6 +562,7 @@ function buildRowData(center) {
                     ${statusBadge(center.is_active)}
                 </div>
                 <div class="admin-table-mobile-details">
+                    <p><span>Category:</span> ${categoryBadge(center)}</p>
                     <p><span>Address:</span> ${escapeHtml(center.address)}</p>
                     <p><span>Coordinates:</span> ${escapeHtml(locationLabel)}</p>
                     <p><span>Contact:</span> ${contactValue(center.contact)}</p>
@@ -441,6 +576,7 @@ function buildRowData(center) {
     return [
         center.id,
         escapeHtml(center.name),
+        categoryBadge(center),
         escapeHtml(center.address),
         hasCoordinates(center)
             ? `<span class="rehab-coords-chip" title="Latitude and longitude">${escapeHtml(locationLabel)}</span>`

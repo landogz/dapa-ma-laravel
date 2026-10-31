@@ -10,6 +10,7 @@ import {
     canCreateWorkflowDraft,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
     highlightChangedFieldsInPopup,
     isPublisherReviewOnly,
     itemForEditorForm,
@@ -159,7 +160,9 @@ function loadRows() {
         },
     })
         .then(({ data }) => {
-            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
+            const allRows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            applyWorkflowStatusCounts(null, allRows);
             eventsTable.clear();
             rows.forEach((row) => eventsTable.row.add(buildRow(row)));
             eventsTable.draw();

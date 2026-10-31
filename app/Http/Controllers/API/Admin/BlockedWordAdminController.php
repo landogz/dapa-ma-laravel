@@ -20,6 +20,8 @@ class BlockedWordAdminController extends Controller
         submit as protected workflowSubmit;
         reject as protected workflowReject;
         publish as protected workflowPublish;
+        archive as protected workflowArchive;
+        restore as protected workflowRestore;
     }
 
     public function __construct(
@@ -109,6 +111,16 @@ class BlockedWordAdminController extends Controller
     public function publish(Request $request, BlockedWord $blockedWord): JsonResponse
     {
         return $this->workflowPublish($request, $blockedWord);
+    }
+
+    public function archive(Request $request, BlockedWord $blockedWord): JsonResponse
+    {
+        return $this->workflowArchive($request, $blockedWord);
+    }
+
+    public function restore(Request $request, BlockedWord $blockedWord): JsonResponse
+    {
+        return $this->workflowRestore($request, $blockedWord);
     }
 
     public function destroy(BlockedWord $blockedWord): JsonResponse

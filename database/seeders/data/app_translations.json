@@ -290,8 +290,8 @@
   {
     "key": "iecMaterialsTitle",
     "group": "ddb_services",
-    "en": "IEC Materials (Animated)",
-    "tl": "IEC Materials (Animated)"
+    "en": "IEC Materials",
+    "tl": "IEC Materials"
   },
   {
     "key": "iecMaterialsSubtitle",
@@ -334,6 +334,30 @@
     "group": "ddb_services",
     "en": "About this material",
     "tl": "Tungkol sa material na ito"
+  },
+  {
+    "key": "downloadIecMaterial",
+    "group": "ddb_services",
+    "en": "Download",
+    "tl": "I-download"
+  },
+  {
+    "key": "iecMaterialDownloading",
+    "group": "ddb_services",
+    "en": "Downloading…",
+    "tl": "Dina-download…"
+  },
+  {
+    "key": "iecMaterialDownloaded",
+    "group": "ddb_services",
+    "en": "Ready to save. Use the share sheet to keep a copy.",
+    "tl": "Handa na. Gamitin ang share sheet para mag-save ng kopya."
+  },
+  {
+    "key": "iecMaterialDownloadFailed",
+    "group": "ddb_services",
+    "en": "Could not download this material. Try again.",
+    "tl": "Hindi ma-download ang material. Subukan ulit."
   },
   {
     "key": "tapToViewIec",

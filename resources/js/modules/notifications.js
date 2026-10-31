@@ -10,6 +10,7 @@ import {
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
     openItemFromQuery,
     renderReviewNotesBanner,
@@ -164,7 +165,9 @@ export function loadNotifications() {
     }).then(({ data }) => {
         notifTable.clear();
         notificationsCache.clear();
-        const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
+        const allRows = data.data?.data ?? [];
+        const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+        applyWorkflowStatusCounts(null, allRows);
         rows.forEach((n) => {
             notificationsCache.set(String(n.id), n);
             notifTable.row.add(buildNotificationRowData(n));

@@ -22,10 +22,11 @@ class RehabCenterAdminController extends Controller
         $perPage = (int) $request->integer('per_page', 20);
         $region  = $request->string('region')->toString() ?: null;
         $search  = $request->string('search')->toString() ?: null;
+        $category = $request->string('category')->toString() ?: null;
 
         return response()->json([
             'status' => true,
-            'data'   => $this->rehabCenterService->list($perPage, $region, $search),
+            'data'   => $this->rehabCenterService->list($perPage, $region, $search, false, $category),
         ]);
     }
 
@@ -33,7 +34,7 @@ class RehabCenterAdminController extends Controller
     {
         return response()->json([
             'status' => true,
-            'data'   => $rehabCenter,
+            'data'   => $this->rehabCenterService->format($rehabCenter),
         ]);
     }
 
@@ -44,7 +45,7 @@ class RehabCenterAdminController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Rehab center created.',
-            'data'    => $center,
+            'data'    => $this->rehabCenterService->format($center),
         ], 201);
     }
 
@@ -55,7 +56,7 @@ class RehabCenterAdminController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Rehab center updated.',
-            'data'    => $center,
+            'data'    => $this->rehabCenterService->format($center),
         ]);
     }
 
@@ -76,7 +77,7 @@ class RehabCenterAdminController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Rehab center archived.',
-            'data'    => $center,
+            'data'    => $this->rehabCenterService->format($center),
         ]);
     }
 
@@ -87,7 +88,7 @@ class RehabCenterAdminController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Rehab center restored.',
-            'data'    => $center,
+            'data'    => $this->rehabCenterService->format($center),
         ]);
     }
 }

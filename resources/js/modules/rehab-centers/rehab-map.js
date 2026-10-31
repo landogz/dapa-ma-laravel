@@ -219,7 +219,13 @@ export function initRehabCentersOverviewMap(containerId, centers = []) {
             </div>`,
         );
 
-        return new maplibregl.Marker({ color: center.is_active ? '#055498' : '#94a3b8' })
+        const pinColor = !center.is_active
+            ? '#94a3b8'
+            : (String(center.category_color || '').match(/^#?[0-9A-Fa-f]{6}$/)
+                ? (String(center.category_color).startsWith('#') ? center.category_color : `#${center.category_color}`)
+                : '#055498');
+
+        return new maplibregl.Marker({ color: pinColor })
             .setLngLat([center.longitude, center.latitude])
             .setPopup(popup)
             .addTo(map);
