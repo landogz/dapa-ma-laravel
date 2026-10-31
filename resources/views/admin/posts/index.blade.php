@@ -35,7 +35,8 @@
                         </button>
                         <a
                             href="/admin/analytics"
-                            class="admin-secondary-button xl:w-auto"
+                            class="admin-secondary-button xl:w-auto hidden"
+                            data-admin-action="review-insights"
                             title="Open analytics dashboard"
                         >
                             Review Insights
