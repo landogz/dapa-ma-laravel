@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use Illuminate\Database\Eloquent\Model;
 
 class CareToolkitQuestion extends Model
 {
+    use HasContentWorkflow;
+
     public const TYPES = ['stress', 'anxiety', 'sleep'];
 
     public const ANSWER_TYPES = ['likert5', 'likert4', 'time'];

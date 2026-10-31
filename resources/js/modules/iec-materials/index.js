@@ -3,9 +3,21 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
 import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    guardWorkflowCreateAction,
+    openItemFromQuery,
+    renderReviewNotesBanner,
+    syncWorkflowCreateButton,
+    workflowStatusBadge,
+} from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let iecMaterialsTable;
+let workflowStatusFilter = '';
 let iecMaterialsDataTableClass;
 let iecMaterialsTableMode;
 let hasBoundViewportListener = false;
@@ -27,6 +39,16 @@ export function initIecMaterialsModule() {
         await initializeIecMaterialsTable(tableEl);
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        syncWorkflowCreateButton('[data-admin-action="create-iec-material"]');
+        attachWorkflowWindowHandlers('IecMaterials', '/admin/iec-materials', () => loadIecMaterials());
+        ensureWorkflowStatusFilter({
+            selectMount: tableEl.closest('.admin-table-shell'),
+            onChange: (value) => {
+                workflowStatusFilter = value;
+                loadIecMaterials();
+            },
+        });
+        openItemFromQuery('item', (id) => editIecMaterial(id));
         loadIecMaterials();
     });
 }
@@ -36,7 +58,7 @@ export function loadIecMaterials(search = '') {
 
     axios.get('/admin/iec-materials', { params: { search, per_page: 200 } })
         .then(({ data }) => {
-            const rows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
             iecMaterialsTable.clear();
             rows.forEach((item) => {
                 iecMaterialsTable.row.add(buildRowData(item));
@@ -49,7 +71,7 @@ export function loadIecMaterials(search = '') {
 }
 
 export function createIecMaterial() {
-    showIecMaterialForm(null);
+    guardWorkflowCreateAction(() => showIecMaterialForm(null));
 }
 
 export function editIecMaterial(id) {
@@ -261,6 +283,7 @@ function buildFormHtml(existing) {
 
     return `
         <div class="admin-swal-form">
+            ${renderReviewNotesBanner(existing)}
             <p class="admin-swal-description">Upload a GIF/image or paste a YouTube/Lottie URL for the mobile IEC gallery.</p>
             <div class="admin-swal-fields">
                 ${existingPreview}
@@ -463,38 +486,27 @@ function buildColumns(mode) {
         { title: 'Type', className: 'dt-col-nowrap' },
         { title: 'Sort', className: 'dt-col-nowrap' },
         { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Workflow', className: 'dt-col-nowrap' },
         { title: 'Actions', orderable: false, className: 'dt-col-actions' },
     ];
 }
 
 function buildRowData(item) {
-    const actions = [
-        {
-            tooltip: 'Preview material',
-            icon: 'fas fa-eye',
-            className: 'admin-table-action-warning',
-            attrs: `onclick="window.IecMaterials.preview(${item.id})"`,
-        },
-        {
-            tooltip: 'Edit material',
-            icon: 'fas fa-pen-to-square',
-            className: 'admin-table-action-primary',
-            attrs: `onclick="window.IecMaterials.edit(${item.id})"`,
-        },
-        {
-            tooltip: 'Delete material',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `onclick="window.IecMaterials.remove(${item.id})"`,
-        },
-    ];
+    const previewAction = {
+        tooltip: 'Preview material',
+        icon: 'fas fa-eye',
+        className: 'admin-table-action-warning',
+        attrs: `onclick="window.IecMaterials.preview(${item.id})"`,
+        label: 'Preview',
+    };
+    const actions = buildWorkflowTableActions(item, 'IecMaterials', {
+        basePath: '/admin/iec-materials',
+        extraBefore: [previewAction],
+    });
 
     const desktopActionsMarkup = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
-    const mobileActionsMarkup = buildAdminActionButtons([
-        { ...actions[0], label: 'Preview' },
-        { ...actions[1], label: 'Edit' },
-        { ...actions[2], label: 'Delete' },
-    ], { isMobile: true, nowrap: true });
+    const mobileActionsMarkup = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
+    const workflowBadge = workflowStatusBadge(item.workflow_status);
     const thumbMarkup = buildTableThumbMarkup(item);
 
     if (iecMaterialsTableMode === 'mobile') {
@@ -508,7 +520,7 @@ function buildRowData(item) {
                             <p class="admin-table-mobile-title">${escapeHtml(item.title)}</p>
                         </div>
                     </div>
-                    ${statusBadge(item.is_active)}
+                    <div class="flex flex-col items-end gap-1">${workflowBadge}${statusBadge(item.is_active)}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Topic:</span> ${escapeHtml(item.topic ?? '—')}</p>
@@ -527,6 +539,7 @@ function buildRowData(item) {
         escapeHtml((item.media_type ?? '').toUpperCase()),
         item.sort_order ?? 0,
         statusBadge(item.is_active),
+        workflowBadge,
         desktopActionsMarkup,
     ];
 }

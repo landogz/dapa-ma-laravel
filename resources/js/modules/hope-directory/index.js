@@ -4,6 +4,17 @@ import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datata
 import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    canCreateWorkflowDraft,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    openItemFromQuery,
+    renderReviewNotesBanner,
+    syncWorkflowCreateButton,
+    workflowStatusBadge,
+} from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { assertPhoneFields } from '../phone-validation';
 
@@ -12,6 +23,7 @@ let directoryTableMode;
 let hasBoundViewportListener = false;
 let categoryFilter = '';
 let categoryCounts = null;
+let workflowStatusFilter = '';
 
 const CATEGORY_LABELS = {
     government: "Gov't",
@@ -34,6 +46,16 @@ export function initHopeDirectoryModule() {
     initializeTable(tableEl).then(() => {
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        syncWorkflowCreateButton('[data-admin-action="create-hope-directory"]');
+        attachWorkflowWindowHandlers('HopeDirectory', '/admin/hope-directory', () => loadRows());
+        ensureWorkflowStatusFilter({
+            selectMount: tableEl.closest('.admin-table-shell'),
+            onChange: (value) => {
+                workflowStatusFilter = value;
+                loadRows();
+            },
+        });
+        openItemFromQuery('item', (id) => editHopeDirectory(id));
         loadRows();
     });
 }
@@ -60,7 +82,6 @@ async function initializeTable(tableElement) {
             pageLength: nextMode === 'mobile' ? 5 : 15,
             scrollX: nextMode !== 'mobile',
             scrollCollapse: nextMode !== 'mobile',
-            drawCallback: () => bindRowActions(),
         }),
     );
 }
@@ -107,6 +128,7 @@ function buildColumns(mode) {
         { title: 'Category', className: 'dt-col-nowrap' },
         { title: 'Contact', className: 'dt-col-wide' },
         { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Workflow', className: 'dt-col-nowrap' },
         { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
     ];
 }
@@ -121,12 +143,12 @@ function loadRows() {
         },
     })
         .then(({ data }) => {
-            const rows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
             directoryTable.clear();
             rows.forEach((row) => directoryTable.row.add(buildRow(row)));
             directoryTable.draw();
-            if (!categoryFilter) {
-                categoryCounts = countByKey(rows, (row) => row.category || '');
+            if (!categoryFilter && !workflowStatusFilter) {
+                categoryCounts = countByKey(data.data?.data ?? [], (row) => row.category || '');
             }
             applyAdminFilterTabCounts(document.getElementById('hope-directory-category-tabs'), categoryCounts || {});
         })
@@ -156,26 +178,13 @@ function buildRow(row) {
         : '<span class="admin-status-badge rehab-status-badge rehab-status-badge-inactive">Inactive</span>';
     const contact = escapeHtml([row.phone, row.email].filter(Boolean).join(' · ') || '—');
     const summary = escapeHtml(row.description ?? row.address ?? '');
-    const actions = [
-        {
-            tooltip: 'Edit organization',
-            icon: 'fas fa-pen-to-square',
-            className: 'admin-table-action-primary',
-            attrs: `data-hope-directory-edit="${row.id}"`,
-        },
-        {
-            tooltip: 'Delete organization',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `data-hope-directory-delete="${row.id}"`,
-        },
-    ];
+    const workflowBadge = workflowStatusBadge(row.workflow_status);
+    const actions = buildWorkflowTableActions(row, 'HopeDirectory', {
+        basePath: '/admin/hope-directory',
+    });
 
     const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
-    const mobileActions = buildAdminActionButtons([
-        { ...actions[0], label: 'Edit' },
-        { ...actions[1], label: 'Delete' },
-    ], { isMobile: true, nowrap: true });
+    const mobileActions = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
 
     if (directoryTableMode === 'mobile') {
         return [
@@ -185,7 +194,7 @@ function buildRow(row) {
                         <p class="admin-table-mobile-kicker">Order ${escapeHtml(String(row.sort_order ?? 0))}</p>
                         <p class="admin-table-mobile-title">${escapeHtml(row.name)}</p>
                     </div>
-                    ${status}
+                    <div class="flex flex-col items-end gap-1">${status}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Category:</span> ${categoryBadge(row.category)}</p>
@@ -209,46 +218,47 @@ function buildRow(row) {
         categoryBadge(row.category),
         contact,
         status,
+        workflowBadge,
         `<div class="admin-table-actions-nowrap">${desktopActions}</div>`,
     ];
 }
 
-function bindRowActions() {
-    document.querySelectorAll('[data-hope-directory-edit]').forEach((button) => {
-        if (button.dataset.bound === '1') return;
-        button.dataset.bound = '1';
-        button.addEventListener('click', () => {
-            const id = button.getAttribute('data-hope-directory-edit');
-            axios.get(`/admin/hope-directory/${id}`)
-                .then(({ data }) => showForm(data.data))
-                .catch(() => showErrorToast('Failed to load organization.'));
-        });
-    });
+export function editHopeDirectory(id) {
+    axios.get(`/admin/hope-directory/${id}`)
+        .then(({ data }) => showForm(data.data))
+        .catch(() => showErrorToast('Failed to load organization.'));
+}
 
-    document.querySelectorAll('[data-hope-directory-delete]').forEach((button) => {
-        if (button.dataset.bound === '1') return;
-        button.dataset.bound = '1';
-        button.addEventListener('click', () => {
-            const id = button.getAttribute('data-hope-directory-delete');
-            Swal.fire(buildSwalOptions({
-                icon: 'warning',
-                title: 'Delete this organization?',
-                html: '<p class="admin-swal-description">It will no longer appear in the mobile Hope Directory.</p>',
-                confirmButtonText: 'Delete',
-                cancelButtonText: 'Cancel',
-            }, { danger: true, size: 'sm' })).then(({ isConfirmed }) => {
-                if (!isConfirmed) return;
-                axios.delete(`/admin/hope-directory/${id}`)
-                    .then(({ data }) => {
-                        showSuccessToast(data.message ?? 'Organization deleted.');
-                        loadRows();
-                    })
-                    .catch(({ response }) => {
-                        showErrorToast(response?.data?.message ?? 'Delete failed.');
-                    });
+export function removeHopeDirectory(id) {
+    Swal.fire(buildSwalOptions({
+        icon: 'warning',
+        title: 'Delete this organization?',
+        html: '<p class="admin-swal-description">It will no longer appear in the mobile Hope Directory.</p>',
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+    }, { danger: true, size: 'sm' })).then(({ isConfirmed }) => {
+        if (!isConfirmed) {
+            return;
+        }
+
+        axios.delete(`/admin/hope-directory/${id}`)
+            .then(({ data }) => {
+                showSuccessToast(data.message ?? 'Organization deleted.');
+                loadRows();
+            })
+            .catch(({ response }) => {
+                showErrorToast(response?.data?.message ?? 'Delete failed.');
             });
-        });
     });
+}
+
+window.HopeDirectory = {
+    edit: editHopeDirectory,
+    remove: removeHopeDirectory,
+};
+
+function bindRowActions() {
+    // Row actions use onclick handlers on window.HopeDirectory.
 }
 
 function buildFormHtml(row) {
@@ -258,6 +268,7 @@ function buildFormHtml(row) {
 
     return `
         <div class="admin-swal-form">
+            ${renderReviewNotesBanner(row)}
             <div class="admin-swal-section">
                 <p class="admin-swal-section-title">Organization</p>
                 <div class="admin-swal-fields">
@@ -335,6 +346,11 @@ function buildFormHtml(row) {
 }
 
 function showForm(row) {
+    if (!row?.id && !canCreateWorkflowDraft()) {
+        showErrorToast('Publishers cannot create new drafts.', 'Not allowed');
+        return;
+    }
+
     const isEdit = Boolean(row);
 
     Swal.fire(buildSwalOptions({

@@ -32,6 +32,7 @@ class CareToolkitQuestionRepository
         return CareToolkitQuestion::query()
             ->where('toolkit_type', $toolkitType)
             ->where('is_active', true)
+            ->published()
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();

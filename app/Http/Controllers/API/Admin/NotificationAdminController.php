@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers\API\Admin;
 
+use App\Http\Controllers\API\Admin\Concerns\HandlesContentWorkflow;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\RejectContentRequest;
 use App\Http\Requests\Admin\SendNotificationRequest;
+use App\Models\Notification;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,9 +15,25 @@ use InvalidArgumentException;
 
 class NotificationAdminController extends Controller
 {
+    use HandlesContentWorkflow {
+        submit as protected workflowSubmit;
+        reject as protected workflowReject;
+    }
+
     public function __construct(
         private readonly NotificationService $notificationService,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
+    }
+
+    protected function contentWorkflowSection(): string
+    {
+        return 'notifications';
+    }
+
+    protected function contentWorkflowService(): ContentWorkflowService
+    {
+        return $this->contentWorkflow;
     }
 
     public function index(Request $request): JsonResponse
@@ -56,10 +76,8 @@ class NotificationAdminController extends Controller
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Notification $notification): JsonResponse
     {
-        $notification = $this->notificationService->show($id);
-
         return response()->json([
             'status' => true,
             'message' => 'Notification fetched successfully.',
@@ -67,9 +85,9 @@ class NotificationAdminController extends Controller
         ]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Notification $notification): JsonResponse
     {
-        $this->notificationService->delete($id);
+        $this->notificationService->delete($notification->id);
 
         return response()->json([
             'status' => true,
@@ -103,5 +121,43 @@ class NotificationAdminController extends Controller
                 'inbox_count' => $result['inbox_count'],
             ],
         ], $result['http_status']);
+    }
+
+    public function submit(Request $request, Notification $notification): JsonResponse
+    {
+        return $this->workflowSubmit($request, $notification);
+    }
+
+    public function reject(RejectContentRequest $request, Notification $notification): JsonResponse
+    {
+        return $this->workflowReject($request, $notification);
+    }
+
+    public function publish(Request $request, Notification $notification): JsonResponse
+    {
+        try {
+            $updated = $this->contentWorkflow->publish(
+                $notification,
+                $request->user(),
+                $this->contentWorkflowSection(),
+            );
+            $delivery = $this->notificationService->deliverPublishedCampaign($updated);
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => $delivery['message'],
+            'data' => [
+                'notification' => $this->notificationService->format($delivery['notification']),
+                'fcm_configured' => $delivery['fcm_configured'],
+                'recipient_count' => $delivery['recipient_count'],
+                'token_count' => $delivery['token_count'],
+                'sent_count' => $delivery['sent_count'],
+                'failed_count' => $delivery['failed_count'],
+                'inbox_count' => $delivery['inbox_count'],
+            ],
+        ]);
     }
 }

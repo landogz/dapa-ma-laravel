@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use Illuminate\Database\Eloquent\Model;
 
 class BlockedWord extends Model
 {
+    use HasContentWorkflow;
+
     protected $fillable = [
         'word',
         'is_active',

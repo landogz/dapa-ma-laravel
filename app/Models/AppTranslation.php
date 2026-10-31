@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use Illuminate\Database\Eloquent\Model;
 
 class AppTranslation extends Model
 {
+    use HasContentWorkflow;
+
     protected $fillable = [
         'key',
         'group',

@@ -2,20 +2,40 @@
 
 namespace App\Http\Controllers\API\Admin;
 
+use App\Http\Controllers\API\Admin\Concerns\HandlesContentWorkflow;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\RejectContentRequest;
 use App\Http\Requests\Admin\StoreAppTranslationRequest;
 use App\Http\Requests\Admin\UpdateAppTranslationRequest;
 use App\Models\AppTranslation;
 use App\Services\AppTranslationService;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Support\AppTranslation\Visual;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AppTranslationAdminController extends Controller
 {
+    use HandlesContentWorkflow {
+        submit as protected workflowSubmit;
+        reject as protected workflowReject;
+        publish as protected workflowPublish;
+    }
+
     public function __construct(
         private readonly AppTranslationService $appTranslationService,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
+    }
+
+    protected function contentWorkflowSection(): string
+    {
+        return 'app-translations';
+    }
+
+    protected function contentWorkflowService(): ContentWorkflowService
+    {
+        return $this->contentWorkflow;
     }
 
     public function index(Request $request): JsonResponse
@@ -72,7 +92,7 @@ class AppTranslationAdminController extends Controller
 
     public function store(StoreAppTranslationRequest $request): JsonResponse
     {
-        $translation = $this->appTranslationService->create($this->payloadFromRequest($request));
+        $translation = $this->appTranslationService->create($this->payloadFromRequest($request), $request->user());
 
         return response()->json([
             'status' => true,
@@ -86,6 +106,7 @@ class AppTranslationAdminController extends Controller
         $translation = $this->appTranslationService->update(
             $appTranslation,
             $this->payloadFromRequest($request),
+            $request->user(),
         );
 
         return response()->json([
@@ -93,6 +114,21 @@ class AppTranslationAdminController extends Controller
             'message' => 'Translation updated.',
             'data' => Visual::formatAdmin($translation),
         ]);
+    }
+
+    public function submit(Request $request, AppTranslation $appTranslation): JsonResponse
+    {
+        return $this->workflowSubmit($request, $appTranslation);
+    }
+
+    public function reject(RejectContentRequest $request, AppTranslation $appTranslation): JsonResponse
+    {
+        return $this->workflowReject($request, $appTranslation);
+    }
+
+    public function publish(Request $request, AppTranslation $appTranslation): JsonResponse
+    {
+        return $this->workflowPublish($request, $appTranslation);
     }
 
     public function destroy(AppTranslation $appTranslation): JsonResponse

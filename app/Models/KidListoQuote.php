@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use Illuminate\Database\Eloquent\Model;
 
 class KidListoQuote extends Model
 {
+    use HasContentWorkflow;
+
     protected $fillable = [
         'message_en',
         'message_tl',

@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 class IecMaterial extends Model
 {
+    use HasContentWorkflow;
+
     protected $fillable = [
         'title',
         'description',

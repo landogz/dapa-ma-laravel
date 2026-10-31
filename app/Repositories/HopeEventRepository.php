@@ -26,7 +26,7 @@ class HopeEventRepository
         bool $activeOnly = true,
     ): LengthAwarePaginator {
         $query = HopeEvent::query()
-            ->when($activeOnly, fn ($q) => $q->where('is_active', true))
+            ->when($activeOnly, fn ($q) => $q->where('is_active', true)->published())
             ->when($audience, fn ($q) => $q->where('audience', $audience))
             ->when($search, function ($q) use ($search) {
                 $like = '%'.$search.'%';

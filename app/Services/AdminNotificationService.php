@@ -6,7 +6,9 @@ use App\Models\AdminNotification;
 use App\Models\Post;
 use App\Models\User;
 use App\Repositories\AdminNotificationRepository;
+use App\Support\ContentWorkflow\ContentWorkflowSections;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Model;
 
 class AdminNotificationService
 {
@@ -109,6 +111,72 @@ class AdminNotificationService
         }
     }
 
+    public function notifyContentSubmitted(string $section, Model $model, User $editor): void
+    {
+        $meta = ContentWorkflowSections::get($section);
+        $label = $meta['label'] ?? 'Item';
+        $title = method_exists($model, 'workflowTitle') ? $model->workflowTitle() : (string) $model->getKey();
+
+        $recipients = User::query()
+            ->whereIn('role', ['publisher', 'super_admin'])
+            ->where('id', '!=', $editor->id)
+            ->get();
+
+        foreach ($recipients as $recipient) {
+            $this->repository->createForUser($recipient, [
+                'type' => 'content_submitted',
+                'title' => $label.' submitted for review',
+                'body' => sprintf('%s submitted "%s" for publisher review.', $editor->name, $title),
+                'data' => $this->contentPayload($section, $model, $editor->name, $title),
+            ]);
+        }
+    }
+
+    public function notifyContentRejected(string $section, Model $model, User $publisher, string $reviewNotes): void
+    {
+        $authorId = (int) ($model->getAttribute('authored_by') ?? 0);
+        $author = $authorId > 0 ? User::query()->find($authorId) : null;
+
+        if (! $author) {
+            return;
+        }
+
+        $meta = ContentWorkflowSections::get($section);
+        $label = $meta['label'] ?? 'Item';
+        $title = method_exists($model, 'workflowTitle') ? $model->workflowTitle() : (string) $model->getKey();
+
+        $this->repository->createForUser($author, [
+            'type' => 'content_rejected',
+            'title' => $label.' rejected for revision',
+            'body' => $reviewNotes,
+            'data' => array_merge(
+                $this->contentPayload($section, $model, $publisher->name, $title),
+                ['review_notes' => $reviewNotes],
+            ),
+        ]);
+    }
+
+    public function notifyContentPublished(string $section, Model $model, User $publisher): void
+    {
+        $authorId = (int) ($model->getAttribute('authored_by') ?? 0);
+        $author = $authorId > 0 ? User::query()->find($authorId) : null;
+
+        if (! $author || $author->id === $publisher->id) {
+            return;
+        }
+
+        $meta = ContentWorkflowSections::get($section);
+        $label = $meta['label'] ?? 'Item';
+        $title = method_exists($model, 'workflowTitle') ? $model->workflowTitle() : (string) $model->getKey();
+
+        $this->repository->createForUser($author, [
+            'type' => 'content_published',
+            'title' => $label.' published',
+            'body' => sprintf('Your %s "%s" was published by %s.', strtolower($label), $title, $publisher->name),
+            'data' => $this->contentPayload($section, $model, $publisher->name, $title),
+        ]);
+    }
+
     /**
      * @return array{post_id:int, post_title:string, actor_name:string, admin_url:string}
      */
@@ -119,6 +187,25 @@ class AdminNotificationService
             'post_title' => $post->title,
             'actor_name' => $actorName,
             'admin_url' => '/admin/posts?post='.$post->id,
+            'section' => 'posts',
+            'resource_id' => $post->id,
+        ];
+    }
+
+    /**
+     * @return array{section:string, resource_id:int|string, title:string, actor_name:string, admin_url:string}
+     */
+    private function contentPayload(string $section, Model $model, string $actorName, string $title): array
+    {
+        $id = $model->getKey();
+
+        return [
+            'section' => $section,
+            'resource_id' => $id,
+            'title' => $title,
+            'post_title' => $title,
+            'actor_name' => $actorName,
+            'admin_url' => ContentWorkflowSections::adminUrl($section, $id),
         ];
     }
 

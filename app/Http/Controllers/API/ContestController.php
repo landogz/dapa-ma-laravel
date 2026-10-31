@@ -42,7 +42,7 @@ class ContestController extends Controller
 
     public function show(Request $request, Contest $contest): JsonResponse
     {
-        if (! $contest->is_active || ! in_array($contest->status, ['open', 'closed', 'completed'], true)) {
+        if (! $contest->is_active || ! in_array($contest->status, ['open', 'closed', 'completed'], true) || ! $contest->isWorkflowPublished()) {
             return response()->json([
                 'status' => false,
                 'message' => 'Contest not found.',

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use App\Models\Concerns\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 class HopeEvent extends Model
 {
+    use HasContentWorkflow;
     use HasPublicUuid;
 
     public const AUDIENCES = ['youth', 'parents', 'community'];

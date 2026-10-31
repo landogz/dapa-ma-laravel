@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\API\Admin;
 
+use App\Http\Controllers\API\Admin\Concerns\HandlesContentWorkflow;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\RejectContentRequest;
 use App\Http\Requests\Admin\ReviewContestEntryRequest;
 use App\Http\Requests\Admin\StoreContestRequest;
 use App\Http\Requests\Admin\UpdateContestRequest;
 use App\Models\Contest;
 use App\Models\ContestEntry;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Services\ContestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,9 +18,26 @@ use Illuminate\Validation\ValidationException;
 
 class ContestAdminController extends Controller
 {
+    use HandlesContentWorkflow {
+        submit as protected workflowSubmit;
+        reject as protected workflowReject;
+        publish as protected workflowPublish;
+    }
+
     public function __construct(
         private readonly ContestService $contestService,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
+    }
+
+    protected function contentWorkflowSection(): string
+    {
+        return 'contests';
+    }
+
+    protected function contentWorkflowService(): ContentWorkflowService
+    {
+        return $this->contentWorkflow;
     }
 
     public function index(Request $request): JsonResponse
@@ -50,7 +70,7 @@ class ContestAdminController extends Controller
 
     public function store(StoreContestRequest $request): JsonResponse
     {
-        $contest = $this->contestService->createContest($request->validated());
+        $contest = $this->contestService->createContest($request->validated(), $request->user());
 
         return response()->json([
             'status' => true,
@@ -61,13 +81,28 @@ class ContestAdminController extends Controller
 
     public function update(UpdateContestRequest $request, Contest $contest): JsonResponse
     {
-        $contest = $this->contestService->updateContest($contest, $request->validated());
+        $contest = $this->contestService->updateContest($contest, $request->validated(), $request->user());
 
         return response()->json([
             'status' => true,
             'message' => 'Contest updated.',
             'data' => $contest,
         ]);
+    }
+
+    public function submit(Request $request, Contest $contest): JsonResponse
+    {
+        return $this->workflowSubmit($request, $contest);
+    }
+
+    public function reject(RejectContentRequest $request, Contest $contest): JsonResponse
+    {
+        return $this->workflowReject($request, $contest);
+    }
+
+    public function publish(Request $request, Contest $contest): JsonResponse
+    {
+        return $this->workflowPublish($request, $contest);
     }
 
     public function destroy(Contest $contest): JsonResponse

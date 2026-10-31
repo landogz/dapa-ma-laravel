@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use Illuminate\Database\Eloquent\Model;
 
 class CareSupportResource extends Model
 {
+    use HasContentWorkflow;
+
     public const CATEGORIES = [
         'hotline',
         'counseling',

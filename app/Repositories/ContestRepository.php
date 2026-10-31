@@ -23,7 +23,7 @@ class ContestRepository
                 'entries as pending_count' => fn ($q) => $q->where('status', 'pending'),
             ])
             ->when($activeOnly, fn ($q) => $q->where('is_active', true))
-            ->when($publicOnly, fn ($q) => $q->whereIn('status', ['open', 'closed', 'completed']))
+            ->when($publicOnly, fn ($q) => $q->whereIn('status', ['open', 'closed', 'completed'])->published())
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when($category, fn ($q) => $q->where('category', $category))
             ->when($search, fn ($q) => $q->where(function ($q) use ($search): void {

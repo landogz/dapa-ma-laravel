@@ -37,4 +37,14 @@ class RehabCenterService
     {
         $this->rehabCenterRepository->delete($center);
     }
+
+    public function archive(RehabCenter $center): RehabCenter
+    {
+        return $this->rehabCenterRepository->update($center, ['is_active' => false]);
+    }
+
+    public function restore(RehabCenter $center): RehabCenter
+    {
+        return $this->rehabCenterRepository->update($center, ['is_active' => true]);
+    }
 }

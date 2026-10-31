@@ -3,13 +3,16 @@
 namespace App\Services;
 
 use App\Models\CareToolkitQuestion;
+use App\Models\User;
 use App\Repositories\CareToolkitQuestionRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class CareToolkitQuestionService
 {
     public function __construct(
         private readonly CareToolkitQuestionRepository $repository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -26,14 +29,22 @@ class CareToolkitQuestionService
         return $this->repository->findOrFail($id);
     }
 
-    public function create(array $data): CareToolkitQuestion
+    public function create(array $data, User $actor): CareToolkitQuestion
     {
-        return $this->repository->create($this->normalize($data));
+        $payload = $this->contentWorkflow->prepareCreatePayload($actor, $this->normalize($data));
+
+        return $this->repository->create($payload);
     }
 
-    public function update(CareToolkitQuestion $question, array $data): CareToolkitQuestion
+    public function update(CareToolkitQuestion $question, array $data, User $actor): CareToolkitQuestion
     {
-        return $this->repository->update($question, $this->normalize($data, $question));
+        $payload = $this->contentWorkflow->prepareUpdatePayload(
+            $question,
+            $actor,
+            $this->normalize($data, $question),
+        );
+
+        return $this->repository->update($question, $payload);
     }
 
     public function delete(CareToolkitQuestion $question): void

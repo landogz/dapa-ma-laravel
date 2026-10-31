@@ -2,19 +2,39 @@
 
 namespace App\Http\Controllers\API\Admin;
 
+use App\Http\Controllers\API\Admin\Concerns\HandlesContentWorkflow;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\RejectContentRequest;
 use App\Http\Requests\Admin\StoreAppOptionRequest;
 use App\Http\Requests\Admin\UpdateAppOptionRequest;
 use App\Models\AppOption;
 use App\Services\AppOptionService;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AppOptionAdminController extends Controller
 {
+    use HandlesContentWorkflow {
+        submit as protected workflowSubmit;
+        reject as protected workflowReject;
+        publish as protected workflowPublish;
+    }
+
     public function __construct(
         private readonly AppOptionService $appOptionService,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
+    }
+
+    protected function contentWorkflowSection(): string
+    {
+        return 'lookups';
+    }
+
+    protected function contentWorkflowService(): ContentWorkflowService
+    {
+        return $this->contentWorkflow;
     }
 
     public function index(Request $request): JsonResponse
@@ -43,7 +63,7 @@ class AppOptionAdminController extends Controller
 
     public function store(StoreAppOptionRequest $request): JsonResponse
     {
-        $option = $this->appOptionService->create($request->validated());
+        $option = $this->appOptionService->create($request->validated(), $request->user());
 
         return response()->json([
             'status' => true,
@@ -54,13 +74,28 @@ class AppOptionAdminController extends Controller
 
     public function update(UpdateAppOptionRequest $request, AppOption $appOption): JsonResponse
     {
-        $option = $this->appOptionService->update($appOption, $request->validated());
+        $option = $this->appOptionService->update($appOption, $request->validated(), $request->user());
 
         return response()->json([
             'status' => true,
             'message' => 'Option updated.',
             'data' => $option->toAdminArray(),
         ]);
+    }
+
+    public function submit(Request $request, AppOption $appOption): JsonResponse
+    {
+        return $this->workflowSubmit($request, $appOption);
+    }
+
+    public function reject(RejectContentRequest $request, AppOption $appOption): JsonResponse
+    {
+        return $this->workflowReject($request, $appOption);
+    }
+
+    public function publish(Request $request, AppOption $appOption): JsonResponse
+    {
+        return $this->workflowPublish($request, $appOption);
     }
 
     public function destroy(AppOption $appOption): JsonResponse

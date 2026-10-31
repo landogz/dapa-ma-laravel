@@ -32,6 +32,7 @@ class AppOptionRepository
     {
         return AppOption::query()
             ->where('is_active', true)
+            ->published()
             ->when($group, fn ($q) => $q->where('group', $group))
             ->orderBy('group')
             ->orderBy('sort_order')

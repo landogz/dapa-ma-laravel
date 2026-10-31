@@ -6,6 +6,7 @@ use App\Models\Contest;
 use App\Models\ContestEntry;
 use App\Models\User;
 use App\Repositories\ContestRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class ContestService
 {
     public function __construct(
         private readonly ContestRepository $contestRepository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -41,13 +43,17 @@ class ContestService
         return $this->contestRepository->findContestOrFail($id);
     }
 
-    public function createContest(array $data): Contest
+    public function createContest(array $data, User $actor): Contest
     {
+        $data = $this->contentWorkflow->prepareCreatePayload($actor, $data);
+
         return $this->contestRepository->createContest($data);
     }
 
-    public function updateContest(Contest $contest, array $data): Contest
+    public function updateContest(Contest $contest, array $data, User $actor): Contest
     {
+        $data = $this->contentWorkflow->prepareUpdatePayload($contest, $actor, $data);
+
         return $this->contestRepository->updateContest($contest, $data);
     }
 

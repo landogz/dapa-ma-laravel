@@ -2,19 +2,39 @@
 
 namespace App\Http\Controllers\API\Admin;
 
+use App\Http\Controllers\API\Admin\Concerns\HandlesContentWorkflow;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\RejectContentRequest;
 use App\Http\Requests\HopeEvent\StoreHopeEventRequest;
 use App\Http\Requests\HopeEvent\UpdateHopeEventRequest;
 use App\Models\HopeEvent;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Services\HopeEventService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class HopeEventAdminController extends Controller
 {
+    use HandlesContentWorkflow {
+        submit as protected workflowSubmit;
+        reject as protected workflowReject;
+        publish as protected workflowPublish;
+    }
+
     public function __construct(
         private readonly HopeEventService $hopeEventService,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
+    }
+
+    protected function contentWorkflowSection(): string
+    {
+        return 'hope-events';
+    }
+
+    protected function contentWorkflowService(): ContentWorkflowService
+    {
+        return $this->contentWorkflow;
     }
 
     public function index(Request $request): JsonResponse
@@ -64,7 +84,7 @@ class HopeEventAdminController extends Controller
         }
         $data['speaker_photos'] = $this->collectSpeakerPhotos($request);
 
-        $event = $this->hopeEventService->create($data);
+        $event = $this->hopeEventService->create($data, $request->user());
 
         return response()->json([
             'status'  => true,
@@ -84,13 +104,28 @@ class HopeEventAdminController extends Controller
         }
         $data['speaker_photos'] = $this->collectSpeakerPhotos($request);
 
-        $event = $this->hopeEventService->update($hopeEvent, $data);
+        $event = $this->hopeEventService->update($hopeEvent, $data, $request->user());
 
         return response()->json([
             'status'  => true,
             'message' => 'Hope event updated.',
             'data'    => $event->toAdminArray(),
         ]);
+    }
+
+    public function submit(Request $request, HopeEvent $hopeEvent): JsonResponse
+    {
+        return $this->workflowSubmit($request, $hopeEvent);
+    }
+
+    public function reject(RejectContentRequest $request, HopeEvent $hopeEvent): JsonResponse
+    {
+        return $this->workflowReject($request, $hopeEvent);
+    }
+
+    public function publish(Request $request, HopeEvent $hopeEvent): JsonResponse
+    {
+        return $this->workflowPublish($request, $hopeEvent);
     }
 
     public function destroy(HopeEvent $hopeEvent): JsonResponse

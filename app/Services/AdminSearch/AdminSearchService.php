@@ -13,7 +13,12 @@ class AdminSearchService
             'care-toolkit', 'care-checks', 'care-support', 'hope-directory',
             'hope-events', 'settings', 'lookups', 'word-blocking',
         ],
-        'editor' => ['posts'],
+        'editor' => [
+            'posts', 'rehab-centers', 'contests', 'iec-materials',
+            'app-translations', 'notifications', 'care-toolkit', 'care-checks',
+            'care-support', 'hope-directory', 'hope-events', 'settings',
+            'lookups', 'word-blocking',
+        ],
         'publisher' => [
             'posts', 'rehab-centers', 'contests', 'iec-materials',
             'app-translations', 'notifications', 'care-toolkit', 'care-checks',

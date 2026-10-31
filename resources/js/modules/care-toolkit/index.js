@@ -4,6 +4,17 @@ import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datata
 import { buildSwalForm, buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    guardWorkflowCreateAction,
+    openItemFromQuery,
+    renderReviewNotesBanner,
+    syncWorkflowCreateButton,
+    workflowStatusBadge,
+} from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let toolkitTable;
@@ -11,6 +22,7 @@ let toolkitTableMode;
 let hasBoundViewportListener = false;
 let currentTypeFilter = '';
 let typeCounts = null;
+let workflowStatusFilter = '';
 
 const TYPE_LABELS = {
     stress: 'Stress Check',
@@ -41,6 +53,16 @@ export function initCareToolkitModule() {
     initializeToolkitTable(tableEl).then(() => {
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        syncWorkflowCreateButton('[data-admin-action="create-care-toolkit-question"]');
+        attachWorkflowWindowHandlers('CareToolkit', '/admin/care-toolkit-questions', () => loadCareToolkitQuestions());
+        ensureWorkflowStatusFilter({
+            selectMount: tableEl.closest('.admin-table-shell'),
+            onChange: (value) => {
+                workflowStatusFilter = value;
+                loadCareToolkitQuestions();
+            },
+        });
+        openItemFromQuery('item', (id) => editCareToolkitQuestion(id));
         loadCareToolkitQuestions();
     });
 }
@@ -113,6 +135,7 @@ function buildColumns(mode) {
         { title: 'Answer type', className: 'dt-col-nowrap' },
         { title: 'Question (EN)', className: 'dt-col-primary dt-col-wide' },
         { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Workflow', className: 'dt-col-nowrap' },
         { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
     ];
 }
@@ -129,12 +152,12 @@ export function loadCareToolkitQuestions() {
         },
     })
         .then(({ data }) => {
-            const rows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
             toolkitTable.clear();
             rows.forEach((row) => toolkitTable.row.add(buildRowData(row)));
             toolkitTable.draw();
-            if (!currentTypeFilter) {
-                typeCounts = countByKey(rows, (row) => row.toolkit_type || '');
+            if (!currentTypeFilter && !workflowStatusFilter) {
+                typeCounts = countByKey(data.data?.data ?? [], (row) => row.toolkit_type || '');
             }
             applyAdminFilterTabCounts(document.getElementById('care-toolkit-type-tabs'), typeCounts || {});
         })
@@ -144,7 +167,7 @@ export function loadCareToolkitQuestions() {
 }
 
 export function createCareToolkitQuestion() {
-    showQuestionForm(null);
+    guardWorkflowCreateAction(() => showQuestionForm(null));
 }
 
 export function editCareToolkitQuestion(id) {
@@ -183,27 +206,14 @@ function buildRowData(row) {
     const status = row.is_active
         ? '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>'
         : '<span class="admin-status-badge rehab-status-badge rehab-status-badge-inactive">Inactive</span>';
+    const workflowBadge = workflowStatusBadge(row.workflow_status);
 
-    const actions = [
-        {
-            tooltip: 'Edit question',
-            icon: 'fas fa-pen-to-square',
-            className: 'admin-table-action-primary',
-            attrs: `onclick="window.CareToolkit.edit(${row.id})"`,
-        },
-        {
-            tooltip: 'Delete question',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `onclick="window.CareToolkit.remove(${row.id})"`,
-        },
-    ];
+    const actions = buildWorkflowTableActions(row, 'CareToolkit', {
+        basePath: '/admin/care-toolkit-questions',
+    });
 
     const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
-    const mobileActions = buildAdminActionButtons([
-        { ...actions[0], label: 'Edit' },
-        { ...actions[1], label: 'Delete' },
-    ], { isMobile: true, nowrap: true });
+    const mobileActions = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
 
     if (toolkitTableMode === 'mobile') {
         return [
@@ -213,7 +223,7 @@ function buildRowData(row) {
                         <p class="admin-table-mobile-kicker">${type}</p>
                         <p class="admin-table-mobile-title">${preview || '—'}</p>
                     </div>
-                    ${status}
+                    ${status}${workflowBadge}
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Order:</span> ${escapeHtml(String(row.sort_order ?? 0))}</p>
@@ -230,6 +240,7 @@ function buildRowData(row) {
         answer,
         preview || '—',
         status,
+        workflowBadge,
         desktopActions,
     ];
 }
@@ -245,7 +256,7 @@ function showQuestionForm(existing) {
 
     Swal.fire(buildSwalOptions({
         title: isEdit ? 'Edit Care Toolkit Question' : 'Add Care Toolkit Question',
-        html: buildSwalForm({
+        html: `${renderReviewNotesBanner(existing)}${buildSwalForm({
             description: 'These questions power Stress, Anxiety, and Sleep checks in the mobile Self-care Toolkit.',
             fields: [
                 {
@@ -322,7 +333,7 @@ function showQuestionForm(existing) {
                     ],
                 },
             ],
-        }),
+        })}`,
         confirmButtonText: isEdit ? 'Save changes' : 'Create question',
         showCancelButton: true,
         preConfirm: () => {

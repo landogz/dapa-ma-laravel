@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 class HopeDirectoryOrganization extends Model
 {
+    use HasContentWorkflow;
+
     public const CATEGORIES = ['government', 'ngo', 'school'];
 
     protected $fillable = [

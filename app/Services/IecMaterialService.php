@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\IecMaterial;
+use App\Models\User;
 use App\Repositories\IecMaterialRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +14,7 @@ class IecMaterialService
 {
     public function __construct(
         private readonly IecMaterialRepository $iecMaterialRepository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -36,16 +39,18 @@ class IecMaterialService
         return $this->iecMaterialRepository->findOrFail($id);
     }
 
-    public function create(array $data): IecMaterial
+    public function create(array $data, User $actor): IecMaterial
     {
         $payload = $this->normalizePayload($data);
+        $payload = $this->contentWorkflow->prepareCreatePayload($actor, $payload);
 
         return $this->iecMaterialRepository->create($payload);
     }
 
-    public function update(IecMaterial $material, array $data): IecMaterial
+    public function update(IecMaterial $material, array $data, User $actor): IecMaterial
     {
         $payload = $this->normalizePayload($data, $material);
+        $payload = $this->contentWorkflow->prepareUpdatePayload($material, $actor, $payload);
 
         return $this->iecMaterialRepository->update($material, $payload);
     }

@@ -51,7 +51,22 @@ const ADMIN_ROLE_SECTIONS = {
         'word-blocking',
         'audit-trail',
     ],
-    editor: ['posts'],
+    editor: [
+        'posts',
+        'rehab-centers',
+        'contests',
+        'iec-materials',
+        'app-translations',
+        'notifications',
+        'care-toolkit',
+        'care-checks',
+        'care-support',
+        'hope-directory',
+        'hope-events',
+        'settings',
+        'lookups',
+        'word-blocking',
+    ],
     publisher: [
         'posts',
         'rehab-centers',
@@ -1142,7 +1157,7 @@ function renderInboxItem(item) {
         || (postId ? `/admin/posts?post=${postId}` : '');
     const createdAt = item.created_at ?? '';
     const actor = item.data?.actor_name ?? '';
-    const postTitle = item.data?.post_title ?? '';
+    const postTitle = item.data?.post_title ?? item.data?.title ?? '';
     const type = String(item.type || '').toLowerCase();
 
     const metaPieces = [];
@@ -1174,8 +1189,20 @@ function renderInboxItem(item) {
         typeLabel = 'Scheduled';
         typeClass = 'bg-emerald-100 text-emerald-700';
         icon = 'fas fa-calendar-check';
-    } else if (type === 'post_published') {
+    } else     if (type === 'post_published') {
         typeLabel = 'Published';
+        typeClass = 'bg-emerald-100 text-emerald-700';
+        icon = 'fas fa-circle-check';
+    } else if (type === 'content_submitted') {
+        typeLabel = 'Submitted for review';
+        typeClass = 'bg-[#055498]/10 text-[#055498]';
+        icon = 'fas fa-paper-plane';
+    } else if (type === 'content_rejected') {
+        typeLabel = 'Content rejected';
+        typeClass = 'bg-[#FBD116]/15 text-[#123a60]';
+        icon = 'fas fa-rotate-left';
+    } else if (type === 'content_published') {
+        typeLabel = 'Content published';
         typeClass = 'bg-emerald-100 text-emerald-700';
         icon = 'fas fa-circle-check';
     } else if (type === 'user_created') {

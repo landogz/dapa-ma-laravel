@@ -68,4 +68,26 @@ class RehabCenterAdminController extends Controller
             'message' => 'Rehab center deleted.',
         ]);
     }
+
+    public function archive(RehabCenter $rehabCenter): JsonResponse
+    {
+        $center = $this->rehabCenterService->archive($rehabCenter);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Rehab center archived.',
+            'data'    => $center,
+        ]);
+    }
+
+    public function restore(RehabCenter $rehabCenter): JsonResponse
+    {
+        $center = $this->rehabCenterService->restore($rehabCenter);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Rehab center restored.',
+            'data'    => $center,
+        ]);
+    }
 }

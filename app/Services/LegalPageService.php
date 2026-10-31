@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\LegalPage;
+use App\Models\User;
 use App\Repositories\LegalPageRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -11,6 +13,7 @@ class LegalPageService
 {
     public function __construct(
         private readonly LegalPageRepository $legalPageRepository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -32,9 +35,10 @@ class LegalPageService
         return $page;
     }
 
-    public function update(string $slug, array $data): LegalPage
+    public function update(string $slug, array $data, User $actor): LegalPage
     {
         $page = $this->findForAdmin($slug);
+        $data = $this->contentWorkflow->prepareUpdatePayload($page, $actor, $data);
 
         return $this->legalPageRepository->update($page, $data);
     }

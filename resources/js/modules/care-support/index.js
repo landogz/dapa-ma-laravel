@@ -4,6 +4,17 @@ import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datata
 import { buildSwalForm, buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    guardWorkflowCreateAction,
+    openItemFromQuery,
+    renderReviewNotesBanner,
+    syncWorkflowCreateButton,
+    workflowStatusBadge,
+} from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { assertPhoneFields } from '../phone-validation';
 
@@ -12,6 +23,7 @@ let supportTableMode;
 let hasBoundViewportListener = false;
 let currentCategoryFilter = '';
 let categoryCounts = null;
+let workflowStatusFilter = '';
 
 const CATEGORY_LABELS = {
     hotline: 'Hotline',
@@ -37,6 +49,16 @@ export function initCareSupportModule() {
     initializeSupportTable(tableEl).then(() => {
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        syncWorkflowCreateButton('[data-admin-action="create-care-support-resource"]');
+        attachWorkflowWindowHandlers('CareSupport', '/admin/care-support-resources', () => loadCareSupportResources());
+        ensureWorkflowStatusFilter({
+            selectMount: tableEl.closest('.admin-table-shell'),
+            onChange: (value) => {
+                workflowStatusFilter = value;
+                loadCareSupportResources();
+            },
+        });
+        openItemFromQuery('item', (id) => editCareSupportResource(id));
         loadCareSupportResources();
     });
 }
@@ -109,6 +131,7 @@ function buildColumns(mode) {
         { title: 'Title (EN)', className: 'dt-col-primary dt-col-wide' },
         { title: 'Phone / Link', className: 'dt-col-wide' },
         { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Workflow', className: 'dt-col-nowrap' },
         { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
     ];
 }
@@ -125,12 +148,12 @@ export function loadCareSupportResources() {
         },
     })
         .then(({ data }) => {
-            const rows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
             supportTable.clear();
             rows.forEach((row) => supportTable.row.add(buildRowData(row)));
             supportTable.draw();
-            if (!currentCategoryFilter) {
-                categoryCounts = countByKey(rows, (row) => row.category || '');
+            if (!currentCategoryFilter && !workflowStatusFilter) {
+                categoryCounts = countByKey(data.data?.data ?? [], (row) => row.category || '');
             }
             applyAdminFilterTabCounts(document.getElementById('care-support-category-tabs'), categoryCounts || {});
         })
@@ -140,7 +163,7 @@ export function loadCareSupportResources() {
 }
 
 export function createCareSupportResource() {
-    showResourceForm(null);
+    guardWorkflowCreateAction(() => showResourceForm(null));
 }
 
 export function editCareSupportResource(id) {
@@ -179,27 +202,14 @@ function buildRowData(row) {
     const status = row.is_active
         ? '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>'
         : '<span class="admin-status-badge rehab-status-badge rehab-status-badge-inactive">Inactive</span>';
+    const workflowBadge = workflowStatusBadge(row.workflow_status);
 
-    const actions = [
-        {
-            tooltip: 'Edit resource',
-            icon: 'fas fa-pen-to-square',
-            className: 'admin-table-action-primary',
-            attrs: `onclick="window.CareSupport.edit(${row.id})"`,
-        },
-        {
-            tooltip: 'Delete resource',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `onclick="window.CareSupport.remove(${row.id})"`,
-        },
-    ];
+    const actions = buildWorkflowTableActions(row, 'CareSupport', {
+        basePath: '/admin/care-support-resources',
+    });
 
     const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
-    const mobileActions = buildAdminActionButtons([
-        { ...actions[0], label: 'Edit' },
-        { ...actions[1], label: 'Delete' },
-    ], { isMobile: true, nowrap: true });
+    const mobileActions = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
 
     if (supportTableMode === 'mobile') {
         return [
@@ -209,7 +219,7 @@ function buildRowData(row) {
                         <p class="admin-table-mobile-kicker">${category}</p>
                         <p class="admin-table-mobile-title">${title || '—'}</p>
                     </div>
-                    ${status}
+                    <div class="flex flex-col items-end gap-1">${status}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Order:</span> ${escapeHtml(String(row.sort_order ?? 0))}</p>
@@ -226,6 +236,7 @@ function buildRowData(row) {
         title || '—',
         contact,
         status,
+        workflowBadge,
         desktopActions,
     ];
 }
@@ -237,7 +248,7 @@ function showResourceForm(existing) {
 
     Swal.fire(buildSwalOptions({
         title: isEdit ? 'Edit Care Support Resource' : 'Add Care Support Resource',
-        html: buildSwalForm({
+        html: `${renderReviewNotesBanner(existing)}${buildSwalForm({
             description: 'Hotlines need a phone number. Counseling usually needs a description and optional website. Crisis resources can include modal body paragraphs (one per line).',
             fields: [
                 {
@@ -364,7 +375,7 @@ function showResourceForm(existing) {
                     ],
                 },
             ],
-        }),
+        })}`,
         confirmButtonText: isEdit ? 'Save changes' : 'Create resource',
         showCancelButton: true,
         preConfirm: () => {

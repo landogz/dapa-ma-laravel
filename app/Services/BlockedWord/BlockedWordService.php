@@ -3,7 +3,9 @@
 namespace App\Services\BlockedWord;
 
 use App\Models\BlockedWord;
+use App\Models\User;
 use App\Repositories\BlockedWord\BlockedWordRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 
@@ -15,6 +17,7 @@ class BlockedWordService
 
     public function __construct(
         private readonly BlockedWordRepository $blockedWordRepository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -28,17 +31,19 @@ class BlockedWordService
         return $this->blockedWordRepository->findOrFail($id);
     }
 
-    public function create(array $data): BlockedWord
+    public function create(array $data, User $actor): BlockedWord
     {
-        $word = $this->blockedWordRepository->create($this->normalize($data));
+        $payload = $this->contentWorkflow->prepareCreatePayload($actor, $this->normalize($data));
+        $word = $this->blockedWordRepository->create($payload);
         $this->forgetCache();
 
         return $word;
     }
 
-    public function update(BlockedWord $word, array $data): BlockedWord
+    public function update(BlockedWord $word, array $data, User $actor): BlockedWord
     {
-        $updated = $this->blockedWordRepository->update($word, $this->normalize($data));
+        $payload = $this->contentWorkflow->prepareUpdatePayload($word, $actor, $this->normalize($data));
+        $updated = $this->blockedWordRepository->update($word, $payload);
         $this->forgetCache();
 
         return $updated;

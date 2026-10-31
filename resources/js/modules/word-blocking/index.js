@@ -4,12 +4,24 @@ import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datata
 import { buildSwalForm, buildSwalOptions, confirmWithSwal } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs } from '../shared/filter-tabs';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    guardWorkflowCreateAction,
+    openItemFromQuery,
+    renderReviewNotesBanner,
+    syncWorkflowCreateButton,
+    workflowStatusBadge,
+} from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let wordsTable;
 let wordsTableMode;
 let hasBoundViewportListener = false;
 let currentStatusFilter = '';
+let workflowStatusFilter = '';
 
 export function initWordBlockingModule() {
     const tableEl = document.getElementById('word-blocking-table');
@@ -28,6 +40,16 @@ export function initWordBlockingModule() {
     initializeTable(tableEl).then(() => {
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        syncWorkflowCreateButton('[data-admin-action="create-blocked-word"]');
+        attachWorkflowWindowHandlers('WordBlocking', '/admin/blocked-words', () => loadBlockedWords());
+        ensureWorkflowStatusFilter({
+            selectMount: tableEl.closest('.admin-table-shell'),
+            onChange: (value) => {
+                workflowStatusFilter = value;
+                loadBlockedWords();
+            },
+        });
+        openItemFromQuery('item', (id) => editBlockedWord(id));
         loadBlockedWords();
     });
 }
@@ -83,6 +105,7 @@ function buildColumns(mode) {
     return [
         { title: 'Word', className: 'dt-col-primary dt-col-name' },
         { title: 'Status', className: 'dt-col-nowrap', orderable: false },
+        { title: 'Workflow', className: 'dt-col-nowrap', orderable: false },
         { title: 'Updated', className: 'dt-col-nowrap' },
         { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
     ];
@@ -101,7 +124,7 @@ export function loadBlockedWords() {
     axios.get('/admin/blocked-words', { params })
         .then(({ data }) => {
             const rows = data.data?.data ?? data.data ?? [];
-            const list = Array.isArray(rows) ? rows : [];
+            const list = filterByWorkflowStatus(Array.isArray(rows) ? rows : [], workflowStatusFilter);
             wordsTable.clear();
             list.forEach((row) => wordsTable.row.add(buildRowData(row)));
             wordsTable.draw();
@@ -116,7 +139,7 @@ export function loadBlockedWords() {
 }
 
 export function createBlockedWord() {
-    showWordForm(null);
+    guardWorkflowCreateAction(() => showWordForm(null));
 }
 
 export function editBlockedWord(id) {
@@ -155,25 +178,12 @@ function buildRowData(row) {
         ? '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>'
         : '<span class="admin-status-badge rehab-status-badge rehab-status-badge-inactive">Inactive</span>';
     const updated = formatDateTime(row.updated_at);
-    const actions = [
-        {
-            tooltip: 'Edit word',
-            icon: 'fas fa-pen-to-square',
-            className: 'admin-table-action-primary',
-            attrs: `onclick="window.WordBlocking.edit(${row.id})"`,
-        },
-        {
-            tooltip: 'Delete word',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `onclick="window.WordBlocking.remove(${row.id})"`,
-        },
-    ];
+    const workflowBadge = workflowStatusBadge(row.workflow_status);
+    const actions = buildWorkflowTableActions(row, 'WordBlocking', {
+        basePath: '/admin/blocked-words',
+    });
     const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
-    const mobileActions = buildAdminActionButtons([
-        { ...actions[0], label: 'Edit' },
-        { ...actions[1], label: 'Delete' },
-    ], { isMobile: true, nowrap: true });
+    const mobileActions = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
 
     if (wordsTableMode === 'mobile') {
         return [`
@@ -183,7 +193,7 @@ function buildRowData(row) {
                         <p class="admin-table-mobile-kicker">Blocked word</p>
                         <p class="admin-table-mobile-title">${word || '—'}</p>
                     </div>
-                    ${status}
+                    <div class="flex flex-col items-end gap-1">${status}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Updated:</span> ${escapeHtml(updated)}</p>
@@ -193,7 +203,7 @@ function buildRowData(row) {
         `];
     }
 
-    return [word, status, escapeHtml(updated), desktopActions];
+    return [word, status, workflowBadge, escapeHtml(updated), desktopActions];
 }
 
 function showWordForm(existing) {
@@ -201,7 +211,7 @@ function showWordForm(existing) {
 
     Swal.fire(buildSwalOptions({
         title: isEdit ? 'Edit blocked word' : 'Add blocked word',
-        html: buildSwalForm({
+        html: `${renderReviewNotesBanner(existing)}${buildSwalForm({
             description: 'The app replaces this whole word with **** in comments, journal notes, profiles, and other user text.',
             fields: [
                 {
@@ -221,7 +231,7 @@ function showWordForm(existing) {
                     ],
                 },
             ],
-        }),
+        })}`,
         confirmButtonText: isEdit ? 'Save word' : 'Add word',
         preConfirm: () => {
             const word = document.getElementById('blocked-word-value')?.value.trim() ?? '';

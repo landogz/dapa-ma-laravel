@@ -5,6 +5,17 @@ import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from './sh
 import { enhanceAdminFilterSelects } from './shared/filter-select';
 import { buildSwalForm, buildSwalOptions, confirmWithSwal } from './shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    guardWorkflowCreateAction,
+    openItemFromQuery,
+    renderReviewNotesBanner,
+    syncWorkflowCreateButton,
+    workflowStatusBadge,
+} from './shared/content-workflow';
 import { showErrorToast, showSuccessToast } from './shared/toast';
 
 let notifTable;
@@ -17,6 +28,7 @@ const notificationsCache = new Map();
 
 let topicFilter = '';
 let topicCounts = null;
+let workflowStatusFilter = '';
 
 const TOPIC_LABELS = {
     all: 'All users',
@@ -34,14 +46,32 @@ export function initNotificationsModule() {
     if (!tableEl) return;
 
     bindNotificationFilters();
+    syncWorkflowCreateButton('[data-admin-action="send-notification"]');
 
     if (notifTable && notificationsTableMode === getNotificationsTableMode()) {
+        ensureWorkflowStatusFilter({
+            selectMount: document.querySelector('#notifications-table')?.closest('.admin-table-shell'),
+            onChange: (value) => {
+                workflowStatusFilter = value;
+                loadNotifications();
+            },
+        });
+        openItemFromQuery('item', (id) => viewNotification(id));
         loadNotifications();
         return;
     }
 
     initializeNotificationsTable(tableEl).then(() => {
         bindAdminActionTooltipSuppression(tableEl);
+        attachWorkflowWindowHandlers('Notifications', '/admin/notifications', () => loadNotifications());
+        ensureWorkflowStatusFilter({
+            selectMount: tableEl.closest('.admin-table-shell'),
+            onChange: (value) => {
+                workflowStatusFilter = value;
+                loadNotifications();
+            },
+        });
+        openItemFromQuery('item', (id) => viewNotification(id));
         loadNotifications();
     });
 
@@ -72,15 +102,16 @@ export function loadNotifications() {
     }).then(({ data }) => {
         notifTable.clear();
         notificationsCache.clear();
-        (data.data?.data ?? []).forEach((n) => {
+        const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
+        rows.forEach((n) => {
             notificationsCache.set(String(n.id), n);
             notifTable.row.add(buildNotificationRowData(n));
         });
         notifTable.draw();
         bindNotificationActions();
-        const rows = [...notificationsCache.values()];
+        const cachedRows = [...notificationsCache.values()];
         if (!topicFilter) {
-            topicCounts = countByKey(rows, (row) => row.topic || '');
+            topicCounts = countByKey(cachedRows, (row) => row.topic || '');
         }
         applyAdminFilterTabCounts(document.getElementById('notifications-topic-tabs'), topicCounts || {});
     }).catch(() => {
@@ -89,6 +120,10 @@ export function loadNotifications() {
 }
 
 export async function sendNotification() {
+    if (!guardWorkflowCreateAction(() => true)) {
+        return;
+    }
+
     const [postOptions, hopeEventOptions] = await Promise.all([
         loadPostOptions(),
         loadHopeEventOptions(),
@@ -345,6 +380,7 @@ async function initializeNotificationsTable(tableEl) {
                 { title: 'Audience', className: 'dt-col-nowrap' },
                 { title: 'Recipients', className: 'dt-col-nowrap' },
                 { title: 'Sent By', className: 'dt-col-nowrap' },
+                { title: 'Workflow', className: 'dt-col-nowrap' },
                 { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
             ],
     }));
@@ -433,6 +469,7 @@ function buildNotificationRowData(notification) {
     const linkedTarget = linkedTargetCell(notification);
     const recipients = Number(notification.inbox_count ?? notification.recipient_count ?? 0);
     const rowAttrs = `data-notif-row-id="${notification.id}"`;
+    const workflowBadge = workflowStatusBadge(notification.workflow_status);
 
     if (notificationsTableMode === 'mobile') {
         return [
@@ -442,7 +479,7 @@ function buildNotificationRowData(notification) {
                         <p class="admin-table-mobile-kicker">${sentAt}</p>
                         <p class="admin-table-mobile-title">${escapeHtml(notification.title)}</p>
                     </div>
-                    ${topic}
+                    <div class="flex flex-col items-end gap-1">${topic}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Preview:</span> ${preview}</p>
@@ -450,7 +487,7 @@ function buildNotificationRowData(notification) {
                     <p><span>Recipients:</span> ${recipients}</p>
                     <p><span>Sent By:</span> ${sender}</p>
                 </div>
-                <div class="admin-table-mobile-actions">${buildActionButtons(notification.id, true)}</div>
+                <div class="admin-table-mobile-actions">${buildActionButtons(notification, true)}</div>
             </div>`,
         ];
     }
@@ -463,27 +500,28 @@ function buildNotificationRowData(notification) {
         topic,
         String(recipients),
         sender,
-        buildActionButtons(notification.id, false),
+        workflowBadge,
+        buildActionButtons(notification, false),
     ];
 }
 
-function buildActionButtons(notificationId, isMobile) {
-    return buildAdminActionButtons([
-        {
-            tooltip: 'View notification',
-            icon: 'fas fa-eye',
-            className: 'admin-table-action-primary',
-            attrs: `data-notif-view="${notificationId}"`,
-            label: 'View',
-        },
-        {
-            tooltip: 'Delete history',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `data-notif-delete="${notificationId}"`,
-            label: 'Delete',
-        },
-    ], { isMobile: Boolean(isMobile), nowrap: true });
+function buildActionButtons(notification, isMobile) {
+    const viewAction = {
+        tooltip: 'View notification',
+        icon: 'fas fa-eye',
+        className: 'admin-table-action-primary',
+        attrs: `data-notif-view="${notification.id}"`,
+        label: 'View',
+    };
+    const workflowActions = buildWorkflowTableActions(notification, 'Notifications', {
+        basePath: '/admin/notifications',
+        deleteMethod: 'deleteHistory',
+    });
+
+    return buildAdminActionButtons([viewAction, ...workflowActions], {
+        isMobile: Boolean(isMobile),
+        nowrap: true,
+    });
 }
 
 function bindNotificationActions() {
@@ -532,6 +570,7 @@ async function viewNotification(notificationId) {
         subtitle: `${topicLabel} · ${recipients} recipient(s)`,
         html: `
             <div class="admin-swal-form text-left">
+                ${renderReviewNotesBanner(notification)}
                 <div class="admin-swal-fields">
                     <p class="text-sm text-slate-600"><strong>Sent:</strong> ${escapeHtml(formatDateTime(notification.sent_at) || '—')}</p>
                     <p class="text-sm text-slate-600"><strong>Sent by:</strong> ${escapeHtml(sender)}</p>
@@ -608,4 +647,9 @@ function formatDateTime(value) {
     });
 }
 
-window.Notifications = { send: sendNotification, reload: loadNotifications };
+window.Notifications = {
+    send: sendNotification,
+    reload: loadNotifications,
+    edit: (id) => viewNotification(id),
+    deleteHistory: deleteNotification,
+};

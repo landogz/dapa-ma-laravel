@@ -2,19 +2,39 @@
 
 namespace App\Http\Controllers\API\Admin;
 
+use App\Http\Controllers\API\Admin\Concerns\HandlesContentWorkflow;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\RejectContentRequest;
 use App\Http\Requests\HopeDirectory\StoreHopeDirectoryOrganizationRequest;
 use App\Http\Requests\HopeDirectory\UpdateHopeDirectoryOrganizationRequest;
 use App\Models\HopeDirectoryOrganization;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Services\HopeDirectoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class HopeDirectoryAdminController extends Controller
 {
+    use HandlesContentWorkflow {
+        submit as protected workflowSubmit;
+        reject as protected workflowReject;
+        publish as protected workflowPublish;
+    }
+
     public function __construct(
         private readonly HopeDirectoryService $hopeDirectoryService,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
+    }
+
+    protected function contentWorkflowSection(): string
+    {
+        return 'hope-directory';
+    }
+
+    protected function contentWorkflowService(): ContentWorkflowService
+    {
+        return $this->contentWorkflow;
     }
 
     public function index(Request $request): JsonResponse
@@ -50,7 +70,7 @@ class HopeDirectoryAdminController extends Controller
             $data['logo'] = $request->file('logo');
         }
 
-        $org = $this->hopeDirectoryService->create($data);
+        $org = $this->hopeDirectoryService->create($data, $request->user());
 
         return response()->json([
             'status'  => true,
@@ -71,13 +91,28 @@ class HopeDirectoryAdminController extends Controller
             $data['remove_logo'] = true;
         }
 
-        $org = $this->hopeDirectoryService->update($hopeDirectory, $data);
+        $org = $this->hopeDirectoryService->update($hopeDirectory, $data, $request->user());
 
         return response()->json([
             'status'  => true,
             'message' => 'Directory organization updated.',
             'data'    => $org->toAdminArray(),
         ]);
+    }
+
+    public function submit(Request $request, HopeDirectoryOrganization $hopeDirectory): JsonResponse
+    {
+        return $this->workflowSubmit($request, $hopeDirectory);
+    }
+
+    public function reject(RejectContentRequest $request, HopeDirectoryOrganization $hopeDirectory): JsonResponse
+    {
+        return $this->workflowReject($request, $hopeDirectory);
+    }
+
+    public function publish(Request $request, HopeDirectoryOrganization $hopeDirectory): JsonResponse
+    {
+        return $this->workflowPublish($request, $hopeDirectory);
     }
 
     public function destroy(HopeDirectoryOrganization $hopeDirectory): JsonResponse

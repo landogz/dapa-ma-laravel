@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use App\Models\Concerns\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 
 class Contest extends Model
 {
+    use HasContentWorkflow;
     use HasPublicUuid;
 
     protected $fillable = [
@@ -56,6 +58,10 @@ class Contest extends Model
     {
         if (! $this->is_active) {
             return 'This contest is hidden and not accepting submissions.';
+        }
+
+        if (! $this->isWorkflowPublished()) {
+            return 'This contest is not published yet.';
         }
 
         if ($this->status !== 'open') {

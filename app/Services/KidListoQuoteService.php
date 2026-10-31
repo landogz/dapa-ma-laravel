@@ -3,13 +3,16 @@
 namespace App\Services;
 
 use App\Models\KidListoQuote;
+use App\Models\User;
 use App\Repositories\KidListoQuoteRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class KidListoQuoteService
 {
     public function __construct(
         private readonly KidListoQuoteRepository $kidListoQuoteRepository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -23,14 +26,22 @@ class KidListoQuoteService
         return $this->kidListoQuoteRepository->findOrFail($id);
     }
 
-    public function create(array $data): KidListoQuote
+    public function create(array $data, User $actor): KidListoQuote
     {
-        return $this->kidListoQuoteRepository->create($this->normalize($data));
+        $payload = $this->contentWorkflow->prepareCreatePayload($actor, $this->normalize($data));
+
+        return $this->kidListoQuoteRepository->create($payload);
     }
 
-    public function update(KidListoQuote $quote, array $data): KidListoQuote
+    public function update(KidListoQuote $quote, array $data, User $actor): KidListoQuote
     {
-        return $this->kidListoQuoteRepository->update($quote, $this->normalize($data));
+        $payload = $this->contentWorkflow->prepareUpdatePayload(
+            $quote,
+            $actor,
+            $this->normalize($data),
+        );
+
+        return $this->kidListoQuoteRepository->update($quote, $payload);
     }
 
     public function delete(KidListoQuote $quote): void

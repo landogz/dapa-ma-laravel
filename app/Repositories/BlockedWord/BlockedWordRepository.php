@@ -50,6 +50,7 @@ class BlockedWordRepository
     {
         return BlockedWord::query()
             ->where('is_active', true)
+            ->published()
             ->orderBy('word')
             ->pluck('word');
     }

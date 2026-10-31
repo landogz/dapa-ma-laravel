@@ -4,6 +4,17 @@ import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibra
 import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey, setAdminFilterTab } from '../shared/filter-tabs';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    guardWorkflowCreateAction,
+    openItemFromQuery,
+    renderReviewNotesBanner,
+    syncWorkflowCreateButton,
+    workflowStatusBadge,
+} from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { readAdminPageFocus } from '../shared/page-focus';
 
@@ -13,6 +24,7 @@ let contestsTableMode;
 let hasBoundViewportListener = false;
 let contestsCategoryFilter = '';
 let contestsStatusFilter = '';
+let contestsWorkflowFilter = '';
 let contestsCategoryCounts = null;
 let contestsStatusCounts = null;
 
@@ -44,6 +56,16 @@ export function initContestsModule() {
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
         bindContestFilters();
+        syncWorkflowCreateButton('[data-admin-action="create-contest"]');
+        attachWorkflowWindowHandlers('Contests', '/admin/contests', () => loadContests());
+        ensureWorkflowStatusFilter({
+            selectMount: tableEl.closest('.admin-table-shell'),
+            onChange: (value) => {
+                contestsWorkflowFilter = value;
+                loadContests();
+            },
+        });
+        openItemFromQuery('item', (id) => editContest(id));
         loadContests();
     });
 }
@@ -74,15 +96,15 @@ export function loadContests(search = '') {
         },
     })
         .then(({ data }) => {
-            const rows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(data.data?.data ?? [], contestsWorkflowFilter);
             contestsTable.clear();
             rows.forEach((contest) => {
                 contestsTable.row.add(buildRowData(contest));
             });
             contestsTable.draw();
-            if (!contestsCategoryFilter && !contestsStatusFilter) {
-                contestsCategoryCounts = countByKey(rows, (row) => row.category || '');
-                contestsStatusCounts = countByKey(rows, (row) => row.status || '');
+            if (!contestsCategoryFilter && !contestsStatusFilter && !contestsWorkflowFilter) {
+                contestsCategoryCounts = countByKey(data.data?.data ?? [], (row) => row.category || '');
+                contestsStatusCounts = countByKey(data.data?.data ?? [], (row) => row.status || '');
             }
             applyAdminFilterTabCounts(document.getElementById('contests-category-tabs'), contestsCategoryCounts || {});
             applyAdminFilterTabCounts(document.getElementById('contests-status-tabs'), contestsStatusCounts || {});
@@ -93,7 +115,7 @@ export function loadContests(search = '') {
 }
 
 export function createContest() {
-    showContestForm(null);
+    guardWorkflowCreateAction(() => showContestForm(null));
 }
 
 export function editContest(id) {
@@ -156,6 +178,7 @@ function buildContestFormHtml(existing) {
 
     return `
         <div class="admin-swal-form">
+            ${renderReviewNotesBanner(existing)}
             <div class="admin-swal-fields">
                 <div class="admin-swal-field">
                     <label class="admin-swal-label" for="ct-category">Category *</label>
@@ -463,6 +486,7 @@ function buildColumns(mode) {
         { title: 'Category', className: 'dt-col-nowrap' },
         { title: 'Title', className: 'dt-col-primary dt-col-name' },
         { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Workflow', className: 'dt-col-nowrap' },
         { title: 'Entries', className: 'dt-col-nowrap' },
         { title: 'Pending', className: 'dt-col-nowrap' },
         { title: 'Year', className: 'dt-col-nowrap' },
@@ -471,39 +495,28 @@ function buildColumns(mode) {
 }
 
 function buildRowData(contest) {
-    const actions = [
-        {
-            tooltip: 'Review submissions',
-            icon: 'fas fa-inbox',
-            className: 'admin-table-action-warning',
-            attrs: `onclick="window.Contests.reviewSubmissions(${contest.id})"`,
-        },
-        {
-            tooltip: 'Edit contest',
-            icon: 'fas fa-pen-to-square',
-            className: 'admin-table-action-primary',
-            attrs: `onclick="window.Contests.edit(${contest.id})"`,
-        },
-        {
-            tooltip: 'Delete contest',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `onclick="window.Contests.remove(${contest.id})"`,
-        },
-    ];
+    const reviewAction = {
+        tooltip: 'Review submissions',
+        icon: 'fas fa-inbox',
+        className: 'admin-table-action-warning',
+        attrs: `onclick="window.Contests.reviewSubmissions(${contest.id})"`,
+        label: 'Review',
+    };
+    const actions = buildWorkflowTableActions(contest, 'Contests', {
+        basePath: '/admin/contests',
+        extraBefore: [reviewAction],
+    });
 
     const desktopActions = buildAdminActionButtons(actions, {
         isMobile: false,
         nowrap: true,
         className: 'admin-table-actions-panel',
     });
-    const mobileActions = buildAdminActionButtons(actions.map((action) => ({
-        ...action,
-        label: action.tooltip.split(' ')[0],
-    })), { isMobile: true, nowrap: true });
+    const mobileActions = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
 
     const pendingMarkup = pendingCountMarkup(contest.pending_count);
     const entriesMarkup = `<span class="admin-metric-count">${escapeHtml(String(contest.entries_count ?? 0))}</span>`;
+    const workflowBadge = workflowStatusBadge(contest.workflow_status);
 
     if (contestsTableMode === 'mobile') {
         return [
@@ -514,6 +527,7 @@ function buildRowData(contest) {
                         <p class="admin-table-mobile-title">${escapeHtml(contest.title)}</p>
                     </div>
                     ${contestStatusCell(contest)}
+                    ${workflowBadge}
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Entries:</span> ${entriesMarkup}</p>
@@ -531,6 +545,7 @@ function buildRowData(contest) {
         escapeHtml(categoryLabel(contest.category)),
         escapeHtml(contest.title),
         contestStatusCell(contest),
+        workflowBadge,
         entriesMarkup,
         pendingMarkup,
         escapeHtml(contest.contest_year != null ? String(contest.contest_year) : '—'),

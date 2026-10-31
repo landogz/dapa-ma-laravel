@@ -69,4 +69,26 @@ class TrainingAdminController extends Controller
             'message' => 'Training deleted.',
         ]);
     }
+
+    public function archive(Training $training): JsonResponse
+    {
+        $training = $this->trainingService->archive($training);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Training archived.',
+            'data'    => $training,
+        ]);
+    }
+
+    public function restore(Training $training): JsonResponse
+    {
+        $training = $this->trainingService->restore($training);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Training restored.',
+            'data'    => $training,
+        ]);
+    }
 }

@@ -7,6 +7,7 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Repositories\NotificationRepository;
 use App\Repositories\UserNotificationRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -19,6 +20,7 @@ class NotificationService
         private readonly NotificationRepository $notificationRepository,
         private readonly UserNotificationRepository $userNotificationRepository,
         private readonly FcmService $fcmService,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -100,7 +102,7 @@ class NotificationService
 
         $recipientCount = $recipients->count();
 
-        $notification = $this->notificationRepository->create([
+        $createPayload = $this->contentWorkflow->prepareCreatePayload($sender, [
             'title' => $title,
             'body' => $plainBody,
             'topic' => $topic,
@@ -108,11 +110,144 @@ class NotificationService
             'link_id' => $linkId,
             'post_id' => $postId,
             'sent_by' => $sender->id,
-            'sent_at' => Carbon::now(),
             'recipient_count' => $recipientCount,
             'inbox_count' => 0,
         ]);
 
+        $notification = $this->notificationRepository->create($createPayload);
+
+        if (! $notification->isWorkflowPublished()) {
+            return [
+                'ok' => true,
+                'http_status' => 201,
+                'notification' => $notification,
+                'fcm_configured' => $this->fcmService->isConfigured(),
+                'recipient_count' => $recipientCount,
+                'token_count' => count($tokens),
+                'sent_count' => 0,
+                'failed_count' => 0,
+                'inbox_count' => 0,
+                'message' => 'Campaign saved as draft. Submit for review, then publish to send.',
+            ];
+        }
+
+        return $this->deliverCampaign(
+            $notification,
+            $data,
+            $recipients,
+            $tokens,
+            $recipientCount,
+            $linkType,
+            $linkId,
+            $postId,
+            $topic,
+            $title,
+            $plainBody,
+        );
+    }
+
+    /**
+     * Send FCM + in-app inbox after workflow publish (skips if already delivered).
+     *
+     * @return array{
+     *     ok: bool,
+     *     http_status: int,
+     *     notification: Notification,
+     *     fcm_configured: bool,
+     *     recipient_count: int,
+     *     token_count: int,
+     *     sent_count: int,
+     *     failed_count: int,
+     *     inbox_count: int,
+     *     message: string
+     * }
+     */
+    public function deliverPublishedCampaign(Notification $notification): array
+    {
+        $notification = $notification->fresh(['sender', 'post', 'hopeEvent']);
+
+        if (! $notification->isWorkflowPublished()) {
+            throw new InvalidArgumentException('Only published campaigns can be delivered.');
+        }
+
+        if ($notification->sent_at !== null && (int) ($notification->inbox_count ?? 0) > 0) {
+            return [
+                'ok' => true,
+                'http_status' => 200,
+                'notification' => $notification,
+                'fcm_configured' => $this->fcmService->isConfigured(),
+                'recipient_count' => (int) ($notification->recipient_count ?? 0),
+                'token_count' => 0,
+                'sent_count' => 0,
+                'failed_count' => 0,
+                'inbox_count' => (int) ($notification->inbox_count ?? 0),
+                'message' => 'Campaign was already delivered.',
+            ];
+        }
+
+        $topic = (string) ($notification->topic ?? 'all');
+        $recipients = $this->resolveRecipients($topic);
+
+        if ($recipients->isEmpty()) {
+            throw new InvalidArgumentException($this->emptyAudienceMessage($topic));
+        }
+
+        $tokens = $recipients
+            ->pluck('fcm_token')
+            ->filter(static fn ($token) => filled($token))
+            ->unique()
+            ->values()
+            ->all();
+
+        $linkType = $notification->resolvedLinkType();
+        $linkId = $notification->resolvedLinkId();
+        $postId = $linkType === Notification::LINK_POST ? $linkId : null;
+
+        return $this->deliverCampaign(
+            $notification,
+            [],
+            $recipients,
+            $tokens,
+            $recipients->count(),
+            $linkType,
+            $linkId,
+            $postId,
+            $topic,
+            (string) $notification->title,
+            (string) $notification->body,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  Collection<int, User>  $recipients
+     * @param  list<string>  $tokens
+     * @return array{
+     *     ok: bool,
+     *     http_status: int,
+     *     notification: Notification,
+     *     fcm_configured: bool,
+     *     recipient_count: int,
+     *     token_count: int,
+     *     sent_count: int,
+     *     failed_count: int,
+     *     inbox_count: int,
+     *     message: string
+     * }
+     */
+    private function deliverCampaign(
+        Notification $notification,
+        array $data,
+        Collection $recipients,
+        array $tokens,
+        int $recipientCount,
+        ?string $linkType,
+        ?int $linkId,
+        ?int $postId,
+        string $topic,
+        string $title,
+        string $plainBody,
+    ): array {
         $payloadData = array_filter([
             'type' => 'admin_push',
             'link_type' => $linkType,
@@ -156,6 +291,7 @@ class NotificationService
         ]);
 
         $notification = $this->notificationRepository->update($notification, [
+            'sent_at' => Carbon::now(),
             'recipient_count' => $recipientCount,
             'inbox_count' => $inboxCount,
         ]);

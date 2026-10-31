@@ -3,13 +3,16 @@
 namespace App\Services;
 
 use App\Models\CareSupportResource;
+use App\Models\User;
 use App\Repositories\CareSupportResourceRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class CareSupportResourceService
 {
     public function __construct(
         private readonly CareSupportResourceRepository $repository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -26,14 +29,22 @@ class CareSupportResourceService
         return $this->repository->findOrFail($id);
     }
 
-    public function create(array $data): CareSupportResource
+    public function create(array $data, User $actor): CareSupportResource
     {
-        return $this->repository->create($this->normalize($data));
+        $payload = $this->contentWorkflow->prepareCreatePayload($actor, $this->normalize($data));
+
+        return $this->repository->create($payload);
     }
 
-    public function update(CareSupportResource $resource, array $data): CareSupportResource
+    public function update(CareSupportResource $resource, array $data, User $actor): CareSupportResource
     {
-        return $this->repository->update($resource, $this->normalize($data, $resource));
+        $payload = $this->contentWorkflow->prepareUpdatePayload(
+            $resource,
+            $actor,
+            $this->normalize($data, $resource),
+        );
+
+        return $this->repository->update($resource, $payload);
     }
 
     public function delete(CareSupportResource $resource): void

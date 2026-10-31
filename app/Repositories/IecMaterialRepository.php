@@ -15,7 +15,7 @@ class IecMaterialRepository
         bool $activeOnly = true,
     ): LengthAwarePaginator {
         return IecMaterial::query()
-            ->when($activeOnly, fn ($q) => $q->where('is_active', true))
+            ->when($activeOnly, fn ($q) => $q->where('is_active', true)->published())
             ->when($topic, fn ($q) => $q->where('topic', $topic))
             ->when($mediaType, fn ($q) => $q->where('media_type', $mediaType))
             ->when($search, fn ($q) => $q->where(function ($q) use ($search): void {

@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\AppTranslation;
+use App\Models\User;
 use App\Repositories\AppTranslationRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Support\AppTranslation\Visual;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -14,6 +16,7 @@ class AppTranslationService
 {
     public function __construct(
         private readonly AppTranslationRepository $appTranslationRepository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -35,17 +38,21 @@ class AppTranslationService
         return $this->appTranslationRepository->findOrFail($id);
     }
 
-    public function create(array $data): AppTranslation
+    public function create(array $data, User $actor): AppTranslation
     {
-        return $this->appTranslationRepository->create($this->normalize($data));
+        $payload = $this->contentWorkflow->prepareCreatePayload($actor, $this->normalize($data));
+
+        return $this->appTranslationRepository->create($payload);
     }
 
-    public function update(AppTranslation $translation, array $data): AppTranslation
+    public function update(AppTranslation $translation, array $data, User $actor): AppTranslation
     {
         $payload = $this->normalize($data, $translation);
 
         // Key is immutable after create.
         unset($payload['key']);
+
+        $payload = $this->contentWorkflow->prepareUpdatePayload($translation, $actor, $payload);
 
         return $this->appTranslationRepository->update($translation, $payload);
     }

@@ -83,6 +83,8 @@ class DashboardAdminController extends Controller
             ->whereBetween('start_date', [$weekStart, $weekEnd])
             ->count();
 
+        $pendingContentReview = $this->pendingWorkflowReviewTotal();
+
         $items = array_values(array_filter([
             [
                 'id' => 'draft_posts',
@@ -92,6 +94,14 @@ class DashboardAdminController extends Controller
                 'icon' => 'fas fa-file-pen',
                 'tone' => 'amber',
             ],
+            $pendingContentReview > 0 ? [
+                'id' => 'pending_content_review',
+                'label' => 'Content awaiting publisher review',
+                'count' => $pendingContentReview,
+                'href' => '/admin/dashboard',
+                'icon' => 'fas fa-clock',
+                'tone' => 'amber',
+            ] : null,
             [
                 'id' => 'care_checks',
                 'label' => 'Care Checks submitted this week',
@@ -116,7 +126,7 @@ class DashboardAdminController extends Controller
                 'icon' => 'fas fa-calendar-days',
                 'tone' => 'default',
             ],
-        ], static fn (array $item): bool => (int) $item['count'] > 0));
+        ], static fn (?array $item): bool => is_array($item) && (int) $item['count'] > 0));
 
         return response()->json([
             'status' => true,
@@ -208,6 +218,38 @@ class DashboardAdminController extends Controller
                 'metrics' => $metrics,
             ],
         ]);
+    }
+
+    private function pendingWorkflowReviewTotal(): int
+    {
+        $tables = [
+            'contests',
+            'iec_materials',
+            'app_translations',
+            'care_toolkit_questions',
+            'care_support_resources',
+            'hope_directory_organizations',
+            'hope_events',
+            'kid_listo_quotes',
+            'legal_pages',
+            'app_options',
+            'blocked_words',
+            'notifications',
+        ];
+
+        $total = 0;
+
+        foreach ($tables as $table) {
+            if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'workflow_status')) {
+                continue;
+            }
+
+            $total += (int) DB::table($table)
+                ->where('workflow_status', 'pending_review')
+                ->count();
+        }
+
+        return $total;
     }
 
     /**

@@ -2,19 +2,40 @@
 
 namespace App\Http\Controllers\API\Admin;
 
+use App\Http\Controllers\API\Admin\Concerns\HandlesContentWorkflow;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\IndexBlockedWordRequest;
+use App\Http\Requests\Admin\RejectContentRequest;
 use App\Http\Requests\Admin\StoreBlockedWordRequest;
 use App\Http\Requests\Admin\UpdateBlockedWordRequest;
 use App\Models\BlockedWord;
 use App\Services\BlockedWord\BlockedWordService;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class BlockedWordAdminController extends Controller
 {
+    use HandlesContentWorkflow {
+        submit as protected workflowSubmit;
+        reject as protected workflowReject;
+        publish as protected workflowPublish;
+    }
+
     public function __construct(
         private readonly BlockedWordService $blockedWordService,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
+    }
+
+    protected function contentWorkflowSection(): string
+    {
+        return 'word-blocking';
+    }
+
+    protected function contentWorkflowService(): ContentWorkflowService
+    {
+        return $this->contentWorkflow;
     }
 
     public function index(IndexBlockedWordRequest $request): JsonResponse
@@ -52,7 +73,7 @@ class BlockedWordAdminController extends Controller
 
     public function store(StoreBlockedWordRequest $request): JsonResponse
     {
-        $word = $this->blockedWordService->create($request->validated());
+        $word = $this->blockedWordService->create($request->validated(), $request->user());
 
         return response()->json([
             'status' => true,
@@ -63,13 +84,28 @@ class BlockedWordAdminController extends Controller
 
     public function update(UpdateBlockedWordRequest $request, BlockedWord $blockedWord): JsonResponse
     {
-        $word = $this->blockedWordService->update($blockedWord, $request->validated());
+        $word = $this->blockedWordService->update($blockedWord, $request->validated(), $request->user());
 
         return response()->json([
             'status' => true,
             'message' => 'Blocked word updated.',
             'data' => $word->toAdminArray(),
         ]);
+    }
+
+    public function submit(Request $request, BlockedWord $blockedWord): JsonResponse
+    {
+        return $this->workflowSubmit($request, $blockedWord);
+    }
+
+    public function reject(RejectContentRequest $request, BlockedWord $blockedWord): JsonResponse
+    {
+        return $this->workflowReject($request, $blockedWord);
+    }
+
+    public function publish(Request $request, BlockedWord $blockedWord): JsonResponse
+    {
+        return $this->workflowPublish($request, $blockedWord);
     }
 
     public function destroy(BlockedWord $blockedWord): JsonResponse

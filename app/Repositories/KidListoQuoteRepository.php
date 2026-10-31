@@ -47,6 +47,7 @@ class KidListoQuoteRepository
     {
         return KidListoQuote::query()
             ->where('is_active', true)
+            ->published()
             ->inRandomOrder()
             ->first();
     }

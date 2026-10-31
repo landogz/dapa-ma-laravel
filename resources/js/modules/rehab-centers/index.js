@@ -1,7 +1,8 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { getStoredUser } from '../auth';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
-import { buildSwalOptions } from '../shared/swal-forms';
+import { buildSwalOptions, confirmWithSwal } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import {
@@ -62,11 +63,55 @@ export function editRehabCenter(id) {
     });
 }
 
+export function archiveRehabCenter(id) {
+    confirmWithSwal({
+        icon: 'warning',
+        title: 'Archive rehab center?',
+        text: 'It will be hidden from the mobile app until restored.',
+        confirmButtonText: 'Archive',
+        danger: true,
+    }).then(({ isConfirmed }) => {
+        if (!isConfirmed) return;
+        axios.put(`/admin/rehab-centers/${id}/archive`)
+            .then(({ data }) => {
+                showSuccessToast(data.message ?? 'Archived.', 'Archived');
+                loadRehabCenters();
+            })
+            .catch(({ response }) => {
+                showErrorToast(response?.data?.message ?? 'Archive failed.');
+            });
+    });
+}
+
+export function restoreRehabCenter(id) {
+    confirmWithSwal({
+        icon: 'question',
+        title: 'Restore rehab center?',
+        text: 'It will show again in the mobile app.',
+        confirmButtonText: 'Restore',
+    }).then(({ isConfirmed }) => {
+        if (!isConfirmed) return;
+        axios.put(`/admin/rehab-centers/${id}/restore`)
+            .then(({ data }) => {
+                showSuccessToast(data.message ?? 'Restored.', 'Restored');
+                loadRehabCenters();
+            })
+            .catch(({ response }) => {
+                showErrorToast(response?.data?.message ?? 'Restore failed.');
+            });
+    });
+}
+
 export function removeRehabCenter(id) {
+    if (getStoredUser()?.role !== 'super_admin') {
+        showErrorToast('Only Super Admin can permanently delete rehab centers.');
+        return;
+    }
+
     Swal.fire(buildSwalOptions({
         icon: 'warning',
         title: 'Delete Rehab Center?',
-        html: '<p class="admin-swal-description">This cannot be undone.</p>',
+        html: '<p class="admin-swal-description">This cannot be undone. Prefer Archive when possible.</p>',
         confirmButtonText: 'Delete',
         cancelButtonText: 'Cancel',
     }, { danger: true, size: 'sm' })).then(({ isConfirmed }) => {
@@ -237,6 +282,8 @@ function showRehabForm(existing) {
 window.RehabCenters = {
     create: createRehabCenter,
     edit: editRehabCenter,
+    archive: archiveRehabCenter,
+    restore: restoreRehabCenter,
     remove: removeRehabCenter,
 };
 
@@ -324,26 +371,47 @@ function buildColumns(mode) {
 }
 
 function buildRowData(center) {
+    const isSuperAdmin = getStoredUser()?.role === 'super_admin';
     const actions = [
         {
             tooltip: 'Edit rehab center',
             icon: 'fas fa-pen-to-square',
             className: 'admin-table-action-primary',
             attrs: `onclick="window.RehabCenters.edit(${center.id})"`,
+            label: 'Edit',
         },
-        {
+    ];
+
+    if (center.is_active) {
+        actions.push({
+            tooltip: 'Archive rehab center',
+            icon: 'fas fa-box-archive',
+            className: 'admin-table-action-warning',
+            attrs: `onclick="window.RehabCenters.archive(${center.id})"`,
+            label: 'Archive',
+        });
+    } else {
+        actions.push({
+            tooltip: 'Restore rehab center',
+            icon: 'fas fa-rotate-left',
+            className: 'admin-table-action-primary',
+            attrs: `onclick="window.RehabCenters.restore(${center.id})"`,
+            label: 'Restore',
+        });
+    }
+
+    if (isSuperAdmin) {
+        actions.push({
             tooltip: 'Delete rehab center',
             icon: 'fas fa-trash',
             className: 'admin-table-action-danger',
             attrs: `onclick="window.RehabCenters.remove(${center.id})"`,
-        },
-    ];
+            label: 'Delete',
+        });
+    }
 
     const desktopActionsMarkup = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
-    const mobileActionsMarkup = buildAdminActionButtons([
-        { ...actions[0], label: 'Edit' },
-        { ...actions[1], label: 'Delete' },
-    ], { isMobile: true, nowrap: true });
+    const mobileActionsMarkup = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
 
     const locationLabel = hasCoordinates(center)
         ? `${Number(center.latitude).toFixed(4)}, ${Number(center.longitude).toFixed(4)}`

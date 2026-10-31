@@ -6,6 +6,21 @@ import { getRichTextValue, isRichTextEmpty } from '../rich-text-editor';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { highlightAdminPageMatches, readAdminPageFocus } from '../shared/page-focus';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    guardWorkflowCreateAction,
+    openItemFromQuery,
+    publishContent,
+    rejectContent,
+    renderReviewNotesBanner,
+    submitForReview,
+    syncWorkflowCreateButton,
+    workflowActionDefs,
+    workflowStatusBadge,
+} from '../shared/content-workflow';
 
 const LEGAL_META = {
     privacy_policy: {
@@ -32,6 +47,7 @@ let quotesTable;
 let quotesDataTableClass;
 let quotesTableMode;
 let hasBoundQuotesViewportListener = false;
+let quotesWorkflowFilter = '';
 
 export function initSettingsModule() {
     const listEl = document.querySelector('[data-settings-legal-list]');
@@ -40,6 +56,11 @@ export function initSettingsModule() {
     }
 
     initKidListoQuotesModule();
+
+    syncWorkflowCreateButton('[data-admin-action="create-kid-listo-quote"]');
+    openItemFromQuery('item', (id) => editKidListoQuote(id));
+    openItemFromQuery('quote', (id) => editKidListoQuote(id));
+    openItemFromQuery('legal', (slug) => openLegalEditor(slug));
 
     document.querySelector('[data-admin-action="create-kid-listo-quote"]')?.addEventListener('click', () => {
         createKidListoQuote();
@@ -84,6 +105,7 @@ function renderLegalTile(page) {
     const activeBadge = page.is_active
         ? '<span class="admin-settings-tile-badge admin-settings-tile-badge-active">Active</span>'
         : '<span class="admin-settings-tile-badge">Hidden</span>';
+    const workflowBadge = workflowStatusBadge(page.workflow_status);
 
     return `
         <button
@@ -98,6 +120,7 @@ function renderLegalTile(page) {
             <span class="admin-settings-tile-copy min-w-0 flex-1 text-left">
                 <span class="admin-settings-tile-title-row">
                     <span class="admin-settings-tile-title">${escapeHtml(title)}</span>
+                    ${workflowBadge}
                     ${activeBadge}
                 </span>
                 <span class="admin-settings-tile-subtitle">${escapeHtml(subtitle)}</span>
@@ -107,6 +130,26 @@ function renderLegalTile(page) {
             </span>
         </button>
     `;
+}
+
+function buildLegalWorkflowActionsHtml(page, slug) {
+    const handlerMap = {
+        submit: `window.Settings.legalSubmitWorkflow(${JSON.stringify(slug)})`,
+        publish: `window.Settings.legalPublishWorkflow(${JSON.stringify(slug)})`,
+        reject: `window.Settings.legalRejectWorkflow(${JSON.stringify(slug)})`,
+    };
+    const actions = workflowActionDefs(page, { basePath: '/admin/legal-pages', id: slug })
+        .filter((action) => handlerMap[action.key]);
+
+    if (!actions.length) {
+        return '';
+    }
+
+    const buttons = actions.map((action) => (
+        `<button type="button" class="admin-secondary-button min-h-11 text-xs" onclick="${handlerMap[action.key]}">${escapeHtml(action.label)}</button>`
+    )).join('');
+
+    return `<div class="mb-3 flex flex-wrap gap-2">${buttons}</div>`;
 }
 
 async function openLegalEditor(slug) {
@@ -123,7 +166,7 @@ async function openLegalEditor(slug) {
     const meta = LEGAL_META[slug] ?? { fallbackTitle: slug };
     const result = await Swal.fire(buildSwalOptions({
         title: `Edit ${page.title_en || meta.fallbackTitle}`,
-        html: buildSwalForm({
+        html: `${renderReviewNotesBanner(page)}${buildLegalWorkflowActionsHtml(page, slug)}${buildSwalForm({
             description: 'Updates appear in the mobile Settings screens (English and Tagalog).',
             fields: [
                 {
@@ -183,7 +226,7 @@ async function openLegalEditor(slug) {
                     ],
                 },
             ],
-        }),
+        })}`,
         showCancelButton: true,
         confirmButtonText: 'Save Changes',
         allowOutsideClick: () => !Swal.isLoading(),
@@ -242,6 +285,14 @@ function initKidListoQuotesModule() {
         await initializeQuotesTable(tableEl);
         bindQuotesViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        attachWorkflowWindowHandlers('KidListoQuotes', '/admin/kid-listo-quotes', () => loadKidListoQuotes());
+        ensureWorkflowStatusFilter({
+            selectMount: tableEl.closest('.admin-table-shell'),
+            onChange: (value) => {
+                quotesWorkflowFilter = value;
+                loadKidListoQuotes();
+            },
+        });
         loadKidListoQuotes();
     });
 }
@@ -253,7 +304,7 @@ export function loadKidListoQuotes(search = '') {
 
     axios.get('/admin/kid-listo-quotes', { params: { search, per_page: 500 } })
         .then(({ data }) => {
-            const rows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(data.data?.data ?? [], quotesWorkflowFilter);
             quotesTable.clear();
             rows.forEach((quote) => {
                 quotesTable.row.add(buildQuoteRowData(quote));
@@ -266,7 +317,7 @@ export function loadKidListoQuotes(search = '') {
 }
 
 export function createKidListoQuote() {
-    showQuoteForm(null);
+    guardWorkflowCreateAction(() => showQuoteForm(null));
 }
 
 export function editKidListoQuote(id) {
@@ -303,7 +354,7 @@ function showQuoteForm(existing) {
 
     Swal.fire(buildSwalOptions({
         title: isEdit ? 'Edit Kid Listo Quote' : 'Add Kid Listo Quote',
-        html: buildSwalForm({
+        html: `${renderReviewNotesBanner(existing)}${buildSwalForm({
             description: 'Motivational quotes are shown randomly on the mobile Kid Listo screen.',
             fields: [
                 {
@@ -337,7 +388,7 @@ function showQuoteForm(existing) {
                     ],
                 },
             ],
-        }),
+        })}`,
         showCancelButton: true,
         confirmButtonText: isEdit ? 'Save Changes' : 'Create Quote',
         allowOutsideClick: () => !Swal.isLoading(),
@@ -421,31 +472,19 @@ function buildQuoteColumns(mode) {
         { title: 'Tagalog' },
         { title: 'Attribution', className: 'dt-col-nowrap' },
         { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Workflow', className: 'dt-col-nowrap' },
         { title: 'Actions', orderable: false, className: 'dt-col-actions' },
     ];
 }
 
 function buildQuoteRowData(quote) {
-    const actions = [
-        {
-            tooltip: 'Edit quote',
-            icon: 'fas fa-pen-to-square',
-            className: 'admin-table-action-primary',
-            attrs: `onclick="window.KidListoQuotes.edit(${quote.id})"`,
-        },
-        {
-            tooltip: 'Delete quote',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `onclick="window.KidListoQuotes.remove(${quote.id})"`,
-        },
-    ];
+    const actions = buildWorkflowTableActions(quote, 'KidListoQuotes', {
+        basePath: '/admin/kid-listo-quotes',
+    });
 
     const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
-    const mobileActions = buildAdminActionButtons([
-        { ...actions[0], label: 'Edit' },
-        { ...actions[1], label: 'Delete' },
-    ], { isMobile: true, nowrap: true });
+    const mobileActions = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
+    const workflowBadge = workflowStatusBadge(quote.workflow_status);
 
     const statusBadge = quote.is_active
         ? '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>'
@@ -459,7 +498,7 @@ function buildQuoteRowData(quote) {
                         <p class="admin-table-mobile-kicker">Kid Listo</p>
                         <p class="admin-table-mobile-title">${escapeHtml(truncate(quote.message_en, 140))}</p>
                     </div>
-                    ${statusBadge}
+                    <div class="flex flex-col items-end gap-1">${statusBadge}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Tagalog:</span> ${escapeHtml(truncate(quote.message_tl, 120))}</p>
@@ -475,6 +514,7 @@ function buildQuoteRowData(quote) {
         escapeHtml(truncate(quote.message_tl, 120)),
         escapeHtml(quote.attribution || '—'),
         statusBadge,
+        workflowBadge,
         desktopActions,
     ];
 }
@@ -539,4 +579,18 @@ window.Settings = {
         }
         loadKidListoQuotes();
     },
+    legalSubmitWorkflow: (slug) => submitForReview('/admin/legal-pages', slug, {
+        onSuccess: () => openLegalEditor(slug),
+    }),
+    legalPublishWorkflow: (slug) => publishContent('/admin/legal-pages', slug, {
+        onSuccess: () => {
+            const listEl = document.querySelector('[data-settings-legal-list]');
+            if (listEl) {
+                loadLegalPages(listEl);
+            }
+        },
+    }),
+    legalRejectWorkflow: (slug) => rejectContent('/admin/legal-pages', slug, {
+        onSuccess: () => openLegalEditor(slug),
+    }),
 };

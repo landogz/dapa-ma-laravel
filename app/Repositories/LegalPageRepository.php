@@ -21,7 +21,7 @@ class LegalPageRepository
     public function activeAll(): Collection
     {
         return $this->sorted(
-            LegalPage::query()->where('is_active', true)->get(),
+            LegalPage::query()->where('is_active', true)->published()->get(),
         );
     }
 
@@ -44,6 +44,7 @@ class LegalPageRepository
         return LegalPage::query()
             ->where('slug', $slug)
             ->where('is_active', true)
+            ->published()
             ->first();
     }
 

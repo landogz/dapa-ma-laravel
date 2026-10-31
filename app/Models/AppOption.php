@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use App\Support\AppOptionGroup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 
 class AppOption extends Model
 {
+    use HasContentWorkflow;
+
     protected $fillable = [
         'group',
         'key',

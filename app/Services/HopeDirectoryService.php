@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\HopeDirectoryOrganization;
+use App\Models\User;
 use App\Repositories\HopeDirectoryRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +14,7 @@ class HopeDirectoryService
 {
     public function __construct(
         private readonly HopeDirectoryRepository $repository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -24,17 +27,19 @@ class HopeDirectoryService
         return $this->repository->paginate($perPage, $search, $category, $activeOnly);
     }
 
-    public function create(array $data): HopeDirectoryOrganization
+    public function create(array $data, User $actor): HopeDirectoryOrganization
     {
         $payload = $this->normalize($data);
         if (($data['logo'] ?? null) instanceof UploadedFile) {
             $payload['logo_path'] = $data['logo']->store('hope-directory', 'public');
         }
 
+        $payload = $this->contentWorkflow->prepareCreatePayload($actor, $payload);
+
         return $this->repository->create($payload);
     }
 
-    public function update(HopeDirectoryOrganization $org, array $data): HopeDirectoryOrganization
+    public function update(HopeDirectoryOrganization $org, array $data, User $actor): HopeDirectoryOrganization
     {
         $payload = $this->normalize($data, partial: true);
 
@@ -45,6 +50,8 @@ class HopeDirectoryService
             $this->deleteLogo($org->logo_path);
             $payload['logo_path'] = null;
         }
+
+        $payload = $this->contentWorkflow->prepareUpdatePayload($org, $actor, $payload);
 
         return $this->repository->update($org, $payload);
     }

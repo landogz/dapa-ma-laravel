@@ -10,6 +10,17 @@ import {
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { bindAdminFilterTabs, renderAdminFilterTabs, setAdminFilterTab } from '../shared/filter-tabs';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    guardWorkflowCreateAction,
+    openItemFromQuery,
+    renderReviewNotesBanner,
+    syncWorkflowCreateButton,
+    workflowStatusBadge,
+} from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { readAdminPageFocus } from '../shared/page-focus';
 
@@ -19,6 +30,7 @@ let hasBoundViewportListener = false;
 let currentGroupFilter = '';
 let groupMeta = [];
 let iconChoices = [];
+let workflowStatusFilter = '';
 
 export function initAppOptionsModule() {
     const tableEl = document.getElementById('app-options-table');
@@ -42,6 +54,16 @@ export function initAppOptionsModule() {
     initializeOptionsTable(tableEl).then(() => {
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        syncWorkflowCreateButton('[data-admin-action="create-app-option"]');
+        attachWorkflowWindowHandlers('AppOptions', '/admin/app-options', () => loadAppOptions());
+        ensureWorkflowStatusFilter({
+            selectMount: tableEl.closest('.admin-table-shell'),
+            onChange: (value) => {
+                workflowStatusFilter = value;
+                loadAppOptions();
+            },
+        });
+        openItemFromQuery('item', (id) => editAppOption(id));
         loadAppOptions();
     });
 }
@@ -116,6 +138,7 @@ function buildColumns(mode) {
         { title: 'Key', className: 'dt-col-nowrap' },
         { title: 'Selection', className: 'dt-col-nowrap' },
         { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Workflow', className: 'dt-col-nowrap' },
         { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
     ];
 }
@@ -172,7 +195,7 @@ export function loadAppOptions() {
             iconChoices = data.meta?.icons ?? iconChoices;
             fillGroupTabs();
 
-            const rows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
             optionsTable.clear();
             rows.forEach((row) => optionsTable.row.add(buildRowData(row)));
             optionsTable.draw();
@@ -184,7 +207,7 @@ export function loadAppOptions() {
 }
 
 export function createAppOption() {
-    showOptionForm(null);
+    guardWorkflowCreateAction(() => showOptionForm(null));
 }
 
 export function editAppOption(id) {
@@ -223,27 +246,14 @@ function buildRowData(row) {
     const status = row.is_active
         ? '<span class="admin-status-badge rehab-status-badge rehab-status-badge-active">Active</span>'
         : '<span class="admin-status-badge rehab-status-badge rehab-status-badge-inactive">Inactive</span>';
+    const workflowBadge = workflowStatusBadge(row.workflow_status);
 
-    const actions = [
-        {
-            tooltip: 'Edit option',
-            icon: 'fas fa-pen-to-square',
-            className: 'admin-table-action-primary',
-            attrs: `onclick="window.AppOptions.edit(${row.id})"`,
-        },
-        {
-            tooltip: 'Delete option',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `onclick="window.AppOptions.remove(${row.id})"`,
-        },
-    ];
+    const actions = buildWorkflowTableActions(row, 'AppOptions', {
+        basePath: '/admin/app-options',
+    });
 
     const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
-    const mobileActions = buildAdminActionButtons([
-        { ...actions[0], label: 'Edit' },
-        { ...actions[1], label: 'Delete' },
-    ], { isMobile: true, nowrap: true });
+    const mobileActions = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
 
     if (optionsTableMode === 'mobile') {
         return [
@@ -253,7 +263,7 @@ function buildRowData(row) {
                         <p class="admin-table-mobile-kicker">${catalog}</p>
                         <p class="admin-table-mobile-title admin-option-label-cell">${optionIconHtml(row)}${accentSwatchHtml(row)}${label}</p>
                     </div>
-                    ${status}
+                    ${status}${workflowBadge}
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Key:</span> ${key}</p>
@@ -273,6 +283,7 @@ function buildRowData(row) {
         key,
         escapeHtml(selection),
         status,
+        workflowBadge,
         desktopActions,
     ];
 }
@@ -360,12 +371,12 @@ function showOptionForm(existing) {
 
     Swal.fire(buildSwalOptions({
         title: isEdit ? 'Edit option' : 'Add option',
-        html: buildSwalForm({
+        html: `${renderReviewNotesBanner(existing)}${buildSwalForm({
             description: isEdit
                 ? `Key “${existing.key}” stays the same so existing answers still match. English and Tagalog labels appear in the mobile app.`
                 : 'English and Tagalog labels appear in the mobile app. Leave Key blank to generate it from the English label.',
             fields,
-        }),
+        })}`,
         confirmButtonText: isEdit ? 'Save changes' : 'Create option',
         showCancelButton: true,
         preConfirm: () => {

@@ -4,6 +4,17 @@ import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibra
 import { buildSwalOptions, confirmWithSwal } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { bindAdminFilterTabs, setAdminFilterTab } from '../shared/filter-tabs';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    guardWorkflowCreateAction,
+    openItemFromQuery,
+    renderReviewNotesBanner,
+    syncWorkflowCreateButton,
+    workflowStatusBadge,
+} from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { bindSvgIconPickers } from '../shared/svg-icon-picker';
 import { readAdminPageFocus } from '../shared/page-focus';
@@ -22,6 +33,7 @@ let translationCardKeys = [];
 let translationMenuKeys = [];
 let translationLogoKeys = [];
 let translationPageKeys = [];
+let workflowStatusFilter = '';
 
 const GROUP_SECTIONS = [
     {
@@ -100,6 +112,16 @@ export function initAppTranslationsModule() {
             translationsSearchAll = false;
             loadAppTranslations();
         });
+        syncWorkflowCreateButton('[data-admin-action="create-app-translation"]');
+        attachWorkflowWindowHandlers('AppTranslations', '/admin/app-translations', () => loadAppTranslations());
+        ensureWorkflowStatusFilter({
+            selectMount: tableEl.closest('.admin-table-shell'),
+            onChange: (value) => {
+                workflowStatusFilter = value;
+                loadAppTranslations();
+            },
+        });
+        openItemFromQuery('item', (id) => editAppTranslation(id));
         loadAppTranslations();
     });
 }
@@ -138,7 +160,7 @@ export function loadAppTranslations(search = '') {
                     return;
                 }
             }
-            const rows = sortTranslationRows(data.data?.data ?? []);
+            const rows = filterByWorkflowStatus(sortTranslationRows(data.data?.data ?? []), workflowStatusFilter);
             renderTranslationGroupTabs();
             updateGroupHeading();
             translationsTable.clear();
@@ -153,7 +175,7 @@ export function loadAppTranslations(search = '') {
 }
 
 export function createAppTranslation() {
-    showTranslationForm(null);
+    guardWorkflowCreateAction(() => showTranslationForm(null));
 }
 
 export function editAppTranslation(id) {
@@ -388,6 +410,7 @@ function buildFormHtml(existing) {
 
     return `
         <div class="admin-swal-form">
+            ${renderReviewNotesBanner(existing)}
             <p class="admin-swal-description">${visualKind === 'menu'
         ? 'This label is a mobile bottom-menu item (Home, Hope, FAQ, Care, Account). You can change the copy and replace the icon or upload an image.'
         : visualKind === 'logo'
@@ -603,31 +626,19 @@ function buildColumns(mode) {
         { title: 'English', className: 'dt-col-primary' },
         { title: 'Tagalog', className: 'dt-col-primary' },
         { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Workflow', className: 'dt-col-nowrap' },
         { title: 'Actions', orderable: false, className: 'dt-col-actions' },
     ];
 }
 
 function buildRowData(item) {
-    const actions = [
-        {
-            tooltip: 'Edit translation',
-            icon: 'fas fa-pen-to-square',
-            className: 'admin-table-action-primary',
-            attrs: `onclick="window.AppTranslations.edit(${item.id})"`,
-        },
-        {
-            tooltip: 'Delete translation',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `onclick="window.AppTranslations.remove(${item.id})"`,
-        },
-    ];
+    const actions = buildWorkflowTableActions(item, 'AppTranslations', {
+        basePath: '/admin/app-translations',
+    });
 
     const desktopActionsMarkup = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
-    const mobileActionsMarkup = buildAdminActionButtons([
-        { ...actions[0], label: 'Edit' },
-        { ...actions[1], label: 'Delete' },
-    ], { isMobile: true, nowrap: true });
+    const mobileActionsMarkup = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
+    const workflowBadge = workflowStatusBadge(item.workflow_status);
 
     const enPreview = truncateText(item.value_en ?? '', 80);
     const tlPreview = truncateText(item.value_tl ?? '', 80);
@@ -641,7 +652,7 @@ function buildRowData(item) {
                         <p class="admin-table-mobile-kicker">${escapeHtml(formatGroupLabel(item.group ?? 'general'))}</p>
                         <p class="admin-table-mobile-title">${escapeHtml(item.key)}</p>
                     </div>
-                    ${statusBadge(item.is_active)}
+                    <div class="flex flex-col items-end gap-1">${workflowBadge}${statusBadge(item.is_active)}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     ${visual ? `<p>${visual}</p>` : ''}
@@ -658,6 +669,7 @@ function buildRowData(item) {
         escapeHtml(enPreview),
         escapeHtml(tlPreview),
         statusBadge(item.is_active),
+        workflowBadge,
         desktopActionsMarkup,
     ];
 }

@@ -142,6 +142,7 @@ class AppTranslationRepository
     {
         return AppTranslation::query()
             ->where('is_active', true)
+            ->published()
             ->where(function ($query): void {
                 $query->whereNull('group')->orWhere('group', '!=', 'bible');
             })

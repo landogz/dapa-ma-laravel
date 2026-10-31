@@ -4,6 +4,17 @@ import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datata
 import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    canCreateWorkflowDraft,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    openItemFromQuery,
+    renderReviewNotesBanner,
+    syncWorkflowCreateButton,
+    workflowStatusBadge,
+} from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 let eventsTable;
@@ -11,6 +22,7 @@ let eventsTableMode;
 let hasBoundViewportListener = false;
 let audienceFilter = '';
 let audienceCounts = null;
+let workflowStatusFilter = '';
 
 const AUDIENCE_LABELS = {
     youth: 'Youth',
@@ -33,6 +45,16 @@ export function initHopeEventsModule() {
     initializeTable(tableEl).then(() => {
         bindViewportListener(tableEl);
         bindAdminActionTooltipSuppression(tableEl);
+        syncWorkflowCreateButton('[data-admin-action="create-hope-event"]');
+        attachWorkflowWindowHandlers('HopeEvents', '/admin/hope-events', () => loadRows());
+        ensureWorkflowStatusFilter({
+            selectMount: tableEl.closest('.admin-table-shell'),
+            onChange: (value) => {
+                workflowStatusFilter = value;
+                loadRows();
+            },
+        });
+        openItemFromQuery('item', (id) => editHopeEvent(id));
         loadRows();
     });
 }
@@ -59,7 +81,6 @@ async function initializeTable(tableElement) {
             pageLength: nextMode === 'mobile' ? 5 : 15,
             scrollX: nextMode !== 'mobile',
             scrollCollapse: nextMode !== 'mobile',
-            drawCallback: () => bindRowActions(),
         }),
     );
 }
@@ -107,6 +128,7 @@ function buildColumns(mode) {
         { title: 'Dates', className: 'dt-col-nowrap' },
         { title: 'Slots', className: 'dt-col-nowrap' },
         { title: 'Status', className: 'dt-col-nowrap' },
+        { title: 'Workflow', className: 'dt-col-nowrap' },
         { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
     ];
 }
@@ -121,12 +143,12 @@ function loadRows() {
         },
     })
         .then(({ data }) => {
-            const rows = data.data?.data ?? [];
+            const rows = filterByWorkflowStatus(data.data?.data ?? [], workflowStatusFilter);
             eventsTable.clear();
             rows.forEach((row) => eventsTable.row.add(buildRow(row)));
             eventsTable.draw();
-            if (!audienceFilter) {
-                audienceCounts = countByKey(rows, (row) => row.audience || '');
+            if (!audienceFilter && !workflowStatusFilter) {
+                audienceCounts = countByKey(data.data?.data ?? [], (row) => row.audience || '');
             }
             applyAdminFilterTabCounts(document.getElementById('hope-events-audience-tabs'), audienceCounts || {});
         })
@@ -165,26 +187,13 @@ function buildRow(row) {
         ? (row.online_label || 'Online')
         : (row.venue || '—');
     const dates = [row.start_date, row.end_date].filter(Boolean).join(' → ') || '—';
-    const actions = [
-        {
-            tooltip: 'Edit event',
-            icon: 'fas fa-pen-to-square',
-            className: 'admin-table-action-primary',
-            attrs: `data-hope-event-edit="${row.id}"`,
-        },
-        {
-            tooltip: 'Delete event',
-            icon: 'fas fa-trash',
-            className: 'admin-table-action-danger',
-            attrs: `data-hope-event-delete="${row.id}"`,
-        },
-    ];
+    const workflowBadge = workflowStatusBadge(row.workflow_status);
+    const actions = buildWorkflowTableActions(row, 'HopeEvents', {
+        basePath: '/admin/hope-events',
+    });
 
     const desktopActions = buildAdminActionButtons(actions, { isMobile: false, nowrap: true });
-    const mobileActions = buildAdminActionButtons([
-        { ...actions[0], label: 'Edit' },
-        { ...actions[1], label: 'Delete' },
-    ], { isMobile: true, nowrap: true });
+    const mobileActions = buildAdminActionButtons(actions, { isMobile: true, nowrap: true });
 
     if (eventsTableMode === 'mobile') {
         return [
@@ -194,7 +203,7 @@ function buildRow(row) {
                         <p class="admin-table-mobile-kicker">Order ${escapeHtml(String(row.sort_order ?? 0))}</p>
                         <p class="admin-table-mobile-title">${escapeHtml(row.title)}</p>
                     </div>
-                    ${statusBadge(row)}
+                    ${statusBadge(row)}${workflowBadge}
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Audience:</span> ${audienceBadge(row.audience)}</p>
@@ -220,46 +229,47 @@ function buildRow(row) {
         escapeHtml(dates),
         row.slots ?? '—',
         statusBadge(row),
+        workflowBadge,
         `<div class="admin-table-actions-nowrap">${desktopActions}</div>`,
     ];
 }
 
-function bindRowActions() {
-    document.querySelectorAll('[data-hope-event-edit]').forEach((button) => {
-        if (button.dataset.bound === '1') return;
-        button.dataset.bound = '1';
-        button.addEventListener('click', () => {
-            const id = button.getAttribute('data-hope-event-edit');
-            axios.get(`/admin/hope-events/${id}`)
-                .then(({ data }) => showForm(data.data))
-                .catch(() => showErrorToast('Failed to load event.'));
-        });
-    });
+export function editHopeEvent(id) {
+    axios.get(`/admin/hope-events/${id}`)
+        .then(({ data }) => showForm(data.data))
+        .catch(() => showErrorToast('Failed to load event.'));
+}
 
-    document.querySelectorAll('[data-hope-event-delete]').forEach((button) => {
-        if (button.dataset.bound === '1') return;
-        button.dataset.bound = '1';
-        button.addEventListener('click', () => {
-            const id = button.getAttribute('data-hope-event-delete');
-            Swal.fire(buildSwalOptions({
-                icon: 'warning',
-                title: 'Delete this event?',
-                html: '<p class="admin-swal-description">It will no longer appear in the mobile Hope Events list.</p>',
-                confirmButtonText: 'Delete',
-                cancelButtonText: 'Cancel',
-            }, { danger: true, size: 'sm' })).then(({ isConfirmed }) => {
-                if (!isConfirmed) return;
-                axios.delete(`/admin/hope-events/${id}`)
-                    .then(({ data }) => {
-                        showSuccessToast(data.message ?? 'Event deleted.');
-                        loadRows();
-                    })
-                    .catch(({ response }) => {
-                        showErrorToast(response?.data?.message ?? 'Delete failed.');
-                    });
+export function removeHopeEvent(id) {
+    Swal.fire(buildSwalOptions({
+        icon: 'warning',
+        title: 'Delete this event?',
+        html: '<p class="admin-swal-description">It will no longer appear in the mobile Hope Events list.</p>',
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+    }, { danger: true, size: 'sm' })).then(({ isConfirmed }) => {
+        if (!isConfirmed) {
+            return;
+        }
+
+        axios.delete(`/admin/hope-events/${id}`)
+            .then(({ data }) => {
+                showSuccessToast(data.message ?? 'Event deleted.');
+                loadRows();
+            })
+            .catch(({ response }) => {
+                showErrorToast(response?.data?.message ?? 'Delete failed.');
             });
-        });
     });
+}
+
+window.HopeEvents = {
+    edit: editHopeEvent,
+    remove: removeHopeEvent,
+};
+
+function bindRowActions() {
+    // Row actions use onclick handlers on window.HopeEvents.
 }
 
 function buildFormHtml(row) {
@@ -273,6 +283,7 @@ function buildFormHtml(row) {
 
     return `
         <div class="admin-swal-form">
+            ${renderReviewNotesBanner(row)}
             <div class="admin-swal-section">
                 <p class="admin-swal-section-title">Basics</p>
                 <div class="admin-swal-fields">
@@ -613,7 +624,12 @@ function collectFaqs() {
 }
 
 function showForm(row) {
-    const isEdit = Boolean(row);
+    if (!row?.id && !canCreateWorkflowDraft()) {
+        showErrorToast('Publishers cannot create new drafts.', 'Not allowed');
+        return;
+    }
+
+    const isEdit = Boolean(row?.id);
 
     Swal.fire(buildSwalOptions({
         title: isEdit ? 'Edit Event' : 'Add Event',

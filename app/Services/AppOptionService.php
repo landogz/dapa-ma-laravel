@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\AppOption;
+use App\Models\User;
 use App\Repositories\AppOptionRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Support\AppOptionGroup;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -15,6 +17,7 @@ class AppOptionService
 {
     public function __construct(
         private readonly AppOptionRepository $repository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -31,14 +34,22 @@ class AppOptionService
         return $this->repository->findOrFail($id);
     }
 
-    public function create(array $data): AppOption
+    public function create(array $data, User $actor): AppOption
     {
-        return $this->repository->create($this->normalize($data));
+        $payload = $this->contentWorkflow->prepareCreatePayload($actor, $this->normalize($data));
+
+        return $this->repository->create($payload);
     }
 
-    public function update(AppOption $option, array $data): AppOption
+    public function update(AppOption $option, array $data, User $actor): AppOption
     {
-        return $this->repository->update($option, $this->normalize($data, $option));
+        $payload = $this->contentWorkflow->prepareUpdatePayload(
+            $option,
+            $actor,
+            $this->normalize($data, $option),
+        );
+
+        return $this->repository->update($option, $payload);
     }
 
     public function delete(AppOption $option): void

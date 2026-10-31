@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\HopeEvent;
+use App\Models\User;
 use App\Repositories\HopeEventRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -13,6 +15,7 @@ class HopeEventService
 {
     public function __construct(
         private readonly HopeEventRepository $repository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
@@ -35,7 +38,7 @@ class HopeEventService
         return HopeEvent::findByPublicKey((string) $id);
     }
 
-    public function create(array $data): HopeEvent
+    public function create(array $data, User $actor): HopeEvent
     {
         $payload = $this->normalize($data);
         if (($data['cover'] ?? null) instanceof UploadedFile) {
@@ -49,10 +52,12 @@ class HopeEventService
             );
         }
 
+        $payload = $this->contentWorkflow->prepareCreatePayload($actor, $payload);
+
         return $this->repository->create($payload);
     }
 
-    public function update(HopeEvent $event, array $data): HopeEvent
+    public function update(HopeEvent $event, array $data, User $actor): HopeEvent
     {
         $payload = $this->normalize($data, partial: true);
 
@@ -71,6 +76,8 @@ class HopeEventService
                 $event->speakers ?? [],
             );
         }
+
+        $payload = $this->contentWorkflow->prepareUpdatePayload($event, $actor, $payload);
 
         return $this->repository->update($event, $payload);
     }

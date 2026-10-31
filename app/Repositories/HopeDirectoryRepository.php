@@ -14,7 +14,7 @@ class HopeDirectoryRepository
         bool $activeOnly = true,
     ): LengthAwarePaginator {
         $query = HopeDirectoryOrganization::query()
-            ->when($activeOnly, fn ($q) => $q->where('is_active', true))
+            ->when($activeOnly, fn ($q) => $q->where('is_active', true)->published())
             ->when($category, fn ($q) => $q->where('category', $category))
             ->when($search, function ($q) use ($search) {
                 $like = '%'.$search.'%';

@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Notification extends Model
 {
+    use HasContentWorkflow;
+
     public const LINK_POST = 'post';
 
     public const LINK_HOPE_EVENT = 'hope_event';

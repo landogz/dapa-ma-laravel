@@ -48,4 +48,14 @@ class TrainingService
     {
         $this->trainingRepository->delete($training);
     }
+
+    public function archive(Training $training): Training
+    {
+        return $this->trainingRepository->update($training, ['is_active' => false]);
+    }
+
+    public function restore(Training $training): Training
+    {
+        return $this->trainingRepository->update($training, ['is_active' => true]);
+    }
 }

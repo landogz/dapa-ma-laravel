@@ -34,6 +34,7 @@ class CareSupportResourceRepository
         return CareSupportResource::query()
             ->where('category', $category)
             ->where('is_active', true)
+            ->published()
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
