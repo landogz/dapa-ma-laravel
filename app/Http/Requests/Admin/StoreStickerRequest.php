@@ -37,7 +37,9 @@ class StoreStickerRequest extends FormRequest
         return [
             'sticker_pack_id' => ['required', 'integer', 'exists:sticker_packs,id'],
             'name' => ['nullable', 'string', 'max:255'],
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'image' => ['required_without:images', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images' => ['required_without:image', 'nullable', 'array', 'min:1', 'max:40'],
+            'images.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'is_active' => ['sometimes', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:99999'],
         ];

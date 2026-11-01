@@ -42,7 +42,12 @@ class BlockedWordService
 
     public function update(BlockedWord $word, array $data, User $actor): BlockedWord
     {
-        $payload = $this->contentWorkflow->prepareUpdatePayload($word, $actor, $this->normalize($data));
+        $payload = $this->contentWorkflow->prepareUpdatePayload(
+            $word,
+            $actor,
+            $this->normalize($data),
+            'word-blocking',
+        );
         $updated = $this->blockedWordRepository->update($word, $payload);
         $this->forgetCache();
 

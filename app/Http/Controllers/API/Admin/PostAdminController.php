@@ -66,15 +66,15 @@ class PostAdminController extends Controller
         $wasPublishedLive = $post->status === 'published';
         $post = $this->postService->updateDraft($post, $request->validated(), $request->user());
         $isSuperAdmin = $request->user()?->role === 'super_admin';
-        $savedAsRevision = ! $isSuperAdmin
+        $submittedUpdate = ! $isSuperAdmin
             && $wasPublishedLive
             && $post->status === 'published'
-            && $post->revision_status === 'draft';
+            && $post->revision_status === 'pending_review';
 
         return response()->json([
             'status'  => true,
-            'message' => $savedAsRevision
-                ? 'Update saved as a draft revision. The live published post is unchanged until a publisher approves it.'
+            'message' => $submittedUpdate
+                ? 'Update submitted for publisher review. Publishers were notified. The live post stays unchanged until approved.'
                 : ($isSuperAdmin && $post->status === 'published'
                     ? 'Post updated and published.'
                     : 'Post updated.'),

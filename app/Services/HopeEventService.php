@@ -80,7 +80,7 @@ class HopeEventService
             );
         }
 
-        $payload = $this->contentWorkflow->prepareUpdatePayload($event, $actor, $payload);
+        $payload = $this->contentWorkflow->prepareUpdatePayload($event, $actor, $payload, 'hope-events');
 
         return $this->repository->update($event, $payload);
     }

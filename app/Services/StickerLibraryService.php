@@ -140,6 +140,52 @@ class StickerLibraryService
     }
 
     /**
+     * Create one or many stickers from uploaded image files.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<Sticker>
+     */
+    public function createStickers(array $data): array
+    {
+        /** @var list<UploadedFile> $files */
+        $files = array_values(array_filter(
+            $data['images'] ?? (($data['image'] ?? null) instanceof UploadedFile ? [$data['image']] : []),
+            static fn ($file) => $file instanceof UploadedFile,
+        ));
+
+        if ($files === []) {
+            throw new \InvalidArgumentException('At least one sticker image is required.');
+        }
+
+        $packId = (int) ($data['sticker_pack_id'] ?? 0);
+        $nextSort = array_key_exists('sort_order', $data) && $data['sort_order'] !== null
+            ? (int) $data['sort_order']
+            : (int) Sticker::query()->where('sticker_pack_id', $packId)->max('sort_order') + 1;
+
+        $created = [];
+
+        foreach ($files as $index => $file) {
+            $name = null;
+            if (count($files) === 1 && filled($data['name'] ?? null)) {
+                $name = (string) $data['name'];
+            } else {
+                $original = pathinfo((string) $file->getClientOriginalName(), PATHINFO_FILENAME);
+                $name = filled($original) ? $original : null;
+            }
+
+            $created[] = $this->createSticker([
+                'sticker_pack_id' => $packId,
+                'name' => $name,
+                'image' => $file,
+                'is_active' => $data['is_active'] ?? true,
+                'sort_order' => $nextSort + $index,
+            ]);
+        }
+
+        return $created;
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function updateSticker(Sticker $sticker, array $data): Sticker

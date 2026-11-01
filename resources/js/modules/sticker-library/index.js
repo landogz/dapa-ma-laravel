@@ -32,6 +32,15 @@ function readField(id) {
     return String(el.value ?? '').trim();
 }
 
+function readImageFiles(id) {
+    const el = document.getElementById(id);
+    if (!el || el.type !== 'file') {
+        return [];
+    }
+
+    return Array.from(el.files || []).filter((file) => file.type.startsWith('image/'));
+}
+
 export function initStickerLibraryModule() {
     const root = document.querySelector('.sticker-library-page');
     if (!root) {
@@ -203,7 +212,7 @@ function renderGallery() {
                 <p>${searchQuery ? 'No stickers match your search.' : 'This pack has no stickers yet.'}</p>
                 ${searchQuery ? '' : `
                     <button type="button" class="admin-primary-button min-h-11" data-sticker-action="add-sticker-empty">
-                        Add sticker
+                        Add stickers
                     </button>
                 `}
             </div>
@@ -234,9 +243,9 @@ function renderGallery() {
                     </div>
                 </article>
             `).join('')}
-            <button type="button" class="sticker-tile sticker-tile-add" data-sticker-action="add-sticker-tile" aria-label="Add sticker">
+            <button type="button" class="sticker-tile sticker-tile-add" data-sticker-action="add-sticker-tile" aria-label="Add stickers">
                 <i class="fas fa-plus" aria-hidden="true"></i>
-                <span>Add sticker</span>
+                <span>Add stickers</span>
             </button>
         </div>
     `;
@@ -407,9 +416,11 @@ function showStickerForm(existing) {
         || packOptions[0].value;
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit sticker' : 'Add sticker',
+        title: isEdit ? 'Edit sticker' : 'Add stickers',
         html: buildSwalForm({
-            description: 'Upload a PNG, JPEG, or WebP image for the mobile Stickers tab.',
+            description: isEdit
+                ? 'Upload a PNG, JPEG, or WebP image for the mobile Stickers tab.'
+                : 'Select one or more PNG, JPEG, or WebP images. Multiple files are added in one go; names default to each file name.',
             fields: [
                 {
                     id: 'sticker-pack',
@@ -423,20 +434,27 @@ function showStickerForm(existing) {
                 {
                     id: 'sticker-name',
                     name: 'name',
-                    label: 'Name',
+                    label: isEdit ? 'Name' : 'Name (single upload only)',
                     type: 'text',
                     value: existing?.name ?? '',
+                    hint: isEdit
+                        ? undefined
+                        : 'Optional when uploading one image. Multi-upload uses each file name.',
                 },
                 {
                     id: 'sticker-image',
-                    name: 'image',
-                    label: isEdit ? 'Image' : 'Image *',
+                    name: isEdit ? 'image' : 'images',
+                    label: isEdit ? 'Image' : 'Images *',
                     type: 'file',
                     accept: 'image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp',
                     showPreview: true,
                     previewUrl: existing?.image_url || '',
+                    multiple: !isEdit,
                     span: 2,
                     required: !isEdit,
+                    hint: isEdit
+                        ? undefined
+                        : 'You can select up to 40 images at once.',
                 },
                 {
                     id: 'sticker-sort',
@@ -444,6 +462,9 @@ function showStickerForm(existing) {
                     label: 'Sort order',
                     type: 'number',
                     value: String(existing?.sort_order ?? 0),
+                    hint: isEdit
+                        ? undefined
+                        : 'Starting order for the first image; additional files continue after it.',
                 },
                 {
                     id: 'sticker-active',
@@ -458,14 +479,15 @@ function showStickerForm(existing) {
                 },
             ],
         }),
-        confirmButtonText: isEdit ? 'Save changes' : 'Add sticker',
+        confirmButtonText: isEdit ? 'Save changes' : 'Add stickers',
         showCancelButton: true,
         cancelButtonText: 'Cancel',
         preConfirm: () => {
             const values = {
                 sticker_pack_id: readField('sticker-pack'),
                 name: readField('sticker-name'),
-                image: readField('sticker-image'),
+                image: isEdit ? readField('sticker-image') : null,
+                images: isEdit ? [] : readImageFiles('sticker-image'),
                 sort_order: readField('sticker-sort'),
                 is_active: readField('sticker-active'),
             };
@@ -473,8 +495,12 @@ function showStickerForm(existing) {
                 Swal.showValidationMessage('Pack is required.');
                 return false;
             }
-            if (!isEdit && !(values.image instanceof File)) {
-                Swal.showValidationMessage('Image is required.');
+            if (!isEdit && values.images.length === 0) {
+                Swal.showValidationMessage('Select at least one image.');
+                return false;
+            }
+            if (!isEdit && values.images.length > 40) {
+                Swal.showValidationMessage('You can upload up to 40 images at once.');
                 return false;
             }
             return values;
@@ -490,8 +516,15 @@ function showStickerForm(existing) {
         formData.append('name', values.name || '');
         formData.append('sort_order', String(values.sort_order || 0));
         formData.append('is_active', values.is_active === '1' ? '1' : '0');
-        if (values.image instanceof File) {
-            formData.append('image', values.image);
+
+        if (isEdit) {
+            if (values.image instanceof File) {
+                formData.append('image', values.image);
+            }
+        } else {
+            values.images.forEach((file) => {
+                formData.append('images[]', file);
+            });
         }
 
         try {
@@ -504,7 +537,12 @@ function showStickerForm(existing) {
                 : axios.post('/admin/stickers', formData);
 
             const { data } = await request;
-            showSuccessToast(data.message, isEdit ? 'Updated' : 'Created');
+            showSuccessToast(
+                data.message,
+                isEdit
+                    ? 'Updated'
+                    : (Array.isArray(values.images) && values.images.length > 1 ? 'Stickers added' : 'Created'),
+            );
             await loadPacks({ preferPackId: packId });
         } catch (error) {
             const errors = error?.response?.data?.errors;

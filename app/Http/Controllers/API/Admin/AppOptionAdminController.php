@@ -84,14 +84,14 @@ class AppOptionAdminController extends Controller
     {
         $wasPublished = $appOption->isWorkflowPublished();
         $option = $this->appOptionService->update($appOption, $request->validated(), $request->user());
-        $savedAsRevision = $request->user()?->role === 'editor'
+        $submittedUpdate = $request->user()?->role === 'editor'
             && $wasPublished
-            && $option->isRevisionDraft();
+            && $option->isRevisionAwaitingPublisher();
 
         return response()->json([
             'status' => true,
-            'message' => $savedAsRevision
-                ? 'Update saved as a draft revision. The live published option is unchanged until a publisher approves it.'
+            'message' => $submittedUpdate
+                ? 'Update submitted for publisher review. Publishers were notified. The live option stays unchanged until approved.'
                 : 'Option updated.',
             'data' => $option->toAdminArray(),
         ]);

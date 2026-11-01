@@ -45,6 +45,7 @@ class CareSupportResourceService
             $resource,
             $actor,
             $this->normalize($data, $resource),
+            'care-support',
         );
 
         return $this->repository->update($resource, $payload);

@@ -54,7 +54,7 @@ class IecMaterialService
     public function update(IecMaterial $material, array $data, User $actor): IecMaterial
     {
         $payload = $this->normalizePayload($data, $material);
-        $payload = $this->contentWorkflow->prepareUpdatePayload($material, $actor, $payload);
+        $payload = $this->contentWorkflow->prepareUpdatePayload($material, $actor, $payload, 'iec-materials');
 
         return $this->iecMaterialRepository->update($material, $payload);
     }

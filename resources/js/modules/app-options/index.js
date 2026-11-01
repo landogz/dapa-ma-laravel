@@ -5,7 +5,9 @@ import {
     buildSwalOptions,
     confirmWithSwal,
     formatApiValidationMessage,
+    isInboxReviewResolvedError,
     normalizeHexColor,
+    showInboxResolvedNotice,
 } from '../shared/swal-forms';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
@@ -25,6 +27,7 @@ import {
     guardWorkflowCreateAction,
     isEditorStagingPublished,
     isPublisherReviewOnly,
+    isPublisherRole,
     isSuperAdminRole,
     itemForEditorForm,
     openItemFromQuery,
@@ -249,7 +252,24 @@ export function createAppOption() {
 export function editAppOption(id) {
     axios.get(`/admin/app-options/${id}`)
         .then(({ data }) => showOptionForm(data.data))
-        .catch(() => showErrorToast('Failed to load option.'));
+        .catch(async (error) => {
+            if (isInboxReviewResolvedError(error) || (
+                isPublisherRole()
+                && Number(error?.response?.status) === 404
+            )) {
+                await showInboxResolvedNotice({
+                    resourceLabel: 'Lookup option',
+                    message: error?.response?.data?.message
+                        || 'This option update was already published. It is no longer in your review queue.',
+                });
+                return;
+            }
+
+            showErrorToast(
+                error?.response?.data?.message ?? 'Failed to load option.',
+                'Unable to open option',
+            );
+        });
 }
 
 export async function removeAppOption(id) {
@@ -423,7 +443,7 @@ function showOptionForm(existingRaw) {
             : (isSuperAdmin ? 'Add & publish option' : 'Add option'),
         html: `${renderReviewNotesBanner(existingRaw)}${buildSwalForm({
             description: editingPublished
-                ? 'Changes are saved as an update draft. The live published option stays unchanged until a publisher approves it.'
+                ? 'Saving submits your update for publisher review and notifies publishers. The live published option stays unchanged until approved.'
                 : (isEdit
                     ? `Key “${existing.key}” stays the same so existing answers still match. English and Tagalog labels appear in the mobile app.`
                     : (isSuperAdmin
@@ -436,7 +456,7 @@ function showOptionForm(existingRaw) {
             ? publisherReviewSwalButtons(existingRaw)
             : {
                 confirmButtonText: editingPublished
-                    ? 'Save update draft'
+                    ? 'Submit for publisher review'
                     : (isEdit ? 'Save changes' : (isSuperAdmin ? 'Create & publish' : 'Create option')),
                 showCancelButton: true,
             }),
@@ -514,12 +534,9 @@ function showOptionForm(existingRaw) {
         }
         showSuccessToast(
             value.message ?? 'Option saved.',
-            editingPublished ? 'Update draft saved' : (isSuperAdmin && !isEdit ? 'Published' : 'Lookups'),
+            editingPublished ? 'Publisher notified' : (isSuperAdmin && !isEdit ? 'Published' : 'Lookups'),
         );
         loadAppOptions();
-        if (editingPublished && existingRaw?.id) {
-            setTimeout(() => editAppOption(existingRaw.id), 250);
-        }
     });
 }
 

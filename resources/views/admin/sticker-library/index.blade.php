@@ -21,7 +21,7 @@
                 </button>
                 <button type="button" class="admin-primary-button w-full sm:w-auto min-h-11" data-sticker-action="add-sticker">
                     <i class="fas fa-plus mr-2" aria-hidden="true"></i>
-                    Add sticker
+                    Add stickers
                 </button>
             </div>
         </div>

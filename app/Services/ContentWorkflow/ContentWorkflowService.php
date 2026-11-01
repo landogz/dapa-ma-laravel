@@ -55,10 +55,13 @@ class ContentWorkflowService
      * Editors may edit draft/pending rows, or stage published updates without changing the live row.
      * Super admins apply changes live (no publisher approval).
      *
+     * When an editor edits published content, the revision is submitted for publisher review
+     * immediately and publishers/super admins are notified (pass $section for the inbox link).
+     *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function prepareUpdatePayload(Model $model, User $actor, array $data): array
+    public function prepareUpdatePayload(Model $model, User $actor, array $data, ?string $section = null): array
     {
         $this->assertUsesWorkflow($model);
 
@@ -85,7 +88,7 @@ class ContentWorkflowService
         }
 
         if ($actor->role === 'editor' && $isPublished) {
-            $this->storePendingRevision($model, $data);
+            $this->storePendingRevision($model, $data, $actor, $section);
 
             // Live published columns stay untouched — except operational Active/Inactive,
             // which staff expect to take effect immediately (Lookups, blocked words, etc.).
@@ -231,8 +234,8 @@ class ContentWorkflowService
             abort(403, 'Only publishers can publish.');
         }
 
-        if ($model->isRevisionAwaitingPublisher()
-            || ($publisher->role === 'super_admin' && $model->hasPendingRevision())) {
+        // Apply staged published updates whether still an editor draft or pending review.
+        if ($model->isWorkflowPublished() && $model->hasPendingRevision()) {
             return $this->applyPendingRevision($model, $publisher, $section);
         }
 
@@ -287,7 +290,7 @@ class ContentWorkflowService
     /**
      * @param  array<string, mixed>  $data
      */
-    private function storePendingRevision(Model $model, array $data): void
+    private function storePendingRevision(Model $model, array $data, User $editor, ?string $section = null): void
     {
         $allowed = $model->workflowContentAttributes();
         $revision = is_array($model->pending_revision) && $model->pending_revision !== []
@@ -300,11 +303,24 @@ class ContentWorkflowService
             }
         }
 
+        // Editor edits on live content go straight to publisher review + inbox notify.
         $model->forceFill([
             'pending_revision' => $revision,
-            'revision_status' => ContentWorkflowStatus::DRAFT,
+            'revision_status' => ContentWorkflowStatus::PENDING,
             'review_notes' => null,
+            'authored_by' => $model->authored_by ?: $editor->id,
+            'submitted_at' => now(),
+            'reviewed_by' => null,
+            'reviewed_at' => null,
         ])->save();
+
+        if ($section) {
+            $this->adminNotificationService->notifyContentSubmitted(
+                $section,
+                $model->fresh() ?? $model,
+                $editor,
+            );
+        }
     }
 
     private function applyPendingRevision(Model $model, User $publisher, string $section): Model

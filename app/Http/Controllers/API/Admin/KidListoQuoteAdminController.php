@@ -77,14 +77,14 @@ class KidListoQuoteAdminController extends Controller
     {
         $wasPublished = $kidListoQuote->isWorkflowPublished();
         $quote = $this->kidListoQuoteService->update($kidListoQuote, $request->validated(), $request->user());
-        $savedAsRevision = $request->user()?->role === 'editor'
+        $submittedUpdate = $request->user()?->role === 'editor'
             && $wasPublished
-            && $quote->isRevisionDraft();
+            && $quote->isRevisionAwaitingPublisher();
 
         return response()->json([
             'status' => true,
-            'message' => $savedAsRevision
-                ? 'Update saved as a draft revision. The live published quote is unchanged until a publisher approves it.'
+            'message' => $submittedUpdate
+                ? 'Update submitted for publisher review. Publishers were notified. The live quote stays unchanged until approved.'
                 : 'Kid Listo quote updated.',
             'data' => $quote,
         ]);

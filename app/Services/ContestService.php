@@ -56,7 +56,7 @@ class ContestService
 
     public function updateContest(Contest $contest, array $data, User $actor): Contest
     {
-        $data = $this->contentWorkflow->prepareUpdatePayload($contest, $actor, $data);
+        $data = $this->contentWorkflow->prepareUpdatePayload($contest, $actor, $data, 'contests');
 
         return $this->contestRepository->updateContest($contest, $data);
     }

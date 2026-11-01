@@ -63,7 +63,8 @@ trait HasContentWorkflow
                 $inner->where($table.'.workflow_status', ContentWorkflowStatus::PENDING)
                     ->orWhere(function (Builder $revision) use ($table): void {
                         $revision->where($table.'.workflow_status', ContentWorkflowStatus::PUBLISHED)
-                            ->where($table.'.revision_status', ContentWorkflowStatus::PENDING);
+                            ->whereNotNull($table.'.revision_status')
+                            ->whereNotNull($table.'.pending_revision');
                     });
             });
         }
@@ -74,7 +75,8 @@ trait HasContentWorkflow
     public function isVisibleToAdmin(?User $user): bool
     {
         if ($user?->role === 'publisher') {
-            return $this->isWorkflowPending() || $this->isRevisionAwaitingPublisher();
+            return $this->isWorkflowPending()
+                || ($this->isWorkflowPublished() && $this->hasPendingRevision());
         }
 
         return true;
@@ -134,7 +136,9 @@ trait HasContentWorkflow
 
     public function isRevisionAwaitingPublisher(): bool
     {
-        return $this->isWorkflowPublished() && $this->revision_status === ContentWorkflowStatus::PENDING;
+        return $this->isWorkflowPublished()
+            && in_array($this->revision_status, [ContentWorkflowStatus::DRAFT, ContentWorkflowStatus::PENDING], true)
+            && $this->hasPendingRevision();
     }
 
     /**

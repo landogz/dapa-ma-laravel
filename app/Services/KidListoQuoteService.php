@@ -40,6 +40,7 @@ class KidListoQuoteService
                 $quote,
                 $actor,
                 $this->normalize($data),
+                'kid-listo',
             );
         } catch (\InvalidArgumentException $e) {
             abort(422, $e->getMessage());

@@ -41,7 +41,9 @@ class Post extends Model
 
     public function isRevisionAwaitingPublisher(): bool
     {
-        return $this->status === 'published' && $this->revision_status === 'pending_review';
+        return $this->status === 'published'
+            && in_array($this->revision_status, ['draft', 'pending_review'], true)
+            && $this->hasPendingRevision();
     }
 
     /**

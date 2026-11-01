@@ -97,15 +97,8 @@ export function itemHasPublisherPendingReview(item = null) {
         return false;
     }
 
-    if (isPublishedUpdatePending(item)) {
-        return true;
-    }
-
-    // Posts: published live + staged update awaiting approval
-    if (
-        String(item.status || '') === WORKFLOW_PUBLISHED
-        && String(item.revision_status || '') === WORKFLOW_PENDING
-    ) {
+    // Published live + staged update (draft or pending) needs Approve / Revision.
+    if (isPublishedUpdateAwaitingPublisher(item)) {
         return true;
     }
 
@@ -128,11 +121,7 @@ export function publisherReviewSwalButtons(item = null) {
         };
     }
 
-    const isUpdate = isPublishedUpdatePending(item)
-        || (
-            String(item?.status || '') === WORKFLOW_PUBLISHED
-            && String(item?.revision_status || '') === WORKFLOW_PENDING
-        );
+    const isUpdate = isPublishedUpdateAwaitingPublisher(item);
 
     return {
         confirmButtonText: isUpdate ? 'Approve update' : 'Publish',
@@ -164,15 +153,9 @@ export async function resolvePublisherReviewSwalResult(result, {
     }
 
     if (result.isConfirmed) {
-        const isUpdate = isPublishedUpdatePending(item)
-            || (
-                String(item?.status || '') === WORKFLOW_PUBLISHED
-                && String(item?.revision_status || '') === WORKFLOW_PENDING
-            );
-
         return publishContent(basePath, id, {
             onSuccess,
-            isPublishedUpdate: isUpdate,
+            isPublishedUpdate: isPublishedUpdateAwaitingPublisher(item),
             item,
         });
     }
@@ -194,14 +177,23 @@ export function workflowStatusLabel(status) {
     }
 }
 
+function publishedWorkflowStatus(item) {
+    return String(item?.workflow_status || item?.status || '');
+}
+
 export function isPublishedUpdateDraft(item) {
-    return String(item?.workflow_status || '') === WORKFLOW_PUBLISHED
+    return publishedWorkflowStatus(item) === WORKFLOW_PUBLISHED
         && String(item?.revision_status || '') === WORKFLOW_DRAFT;
 }
 
 export function isPublishedUpdatePending(item) {
-    return String(item?.workflow_status || '') === WORKFLOW_PUBLISHED
+    return publishedWorkflowStatus(item) === WORKFLOW_PUBLISHED
         && String(item?.revision_status || '') === WORKFLOW_PENDING;
+}
+
+/** True when a published item has any staged update (draft or pending review). */
+export function isPublishedUpdateAwaitingPublisher(item) {
+    return isPublishedUpdatePending(item) || isPublishedUpdateDraft(item);
 }
 
 export function hasPendingRevisionPayload(item) {
@@ -298,7 +290,7 @@ export function workflowActionDefs(item, {
             key: 'edit',
             label: 'Edit',
             tooltip: status === WORKFLOW_PUBLISHED
-                ? (superAdmin ? 'Edit published' : 'Edit published (stages an update draft)')
+                ? (superAdmin ? 'Edit published' : 'Edit published (submits for publisher review)')
                 : 'Edit draft',
             icon: 'fas fa-pen-to-square',
             className: 'admin-table-action-primary',

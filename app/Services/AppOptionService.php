@@ -53,6 +53,7 @@ class AppOptionService
                 $option,
                 $actor,
                 $this->normalize($data, $option),
+                'lookups',
             );
         } catch (\InvalidArgumentException $e) {
             abort(422, $e->getMessage());

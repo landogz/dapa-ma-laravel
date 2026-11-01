@@ -53,7 +53,7 @@ class AppTranslationService
         // Key is immutable after create.
         unset($payload['key']);
 
-        $payload = $this->contentWorkflow->prepareUpdatePayload($translation, $actor, $payload);
+        $payload = $this->contentWorkflow->prepareUpdatePayload($translation, $actor, $payload, 'app-translations');
 
         return $this->appTranslationRepository->update($translation, $payload);
     }

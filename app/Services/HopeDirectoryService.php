@@ -54,7 +54,7 @@ class HopeDirectoryService
             $payload['logo_path'] = null;
         }
 
-        $payload = $this->contentWorkflow->prepareUpdatePayload($org, $actor, $payload);
+        $payload = $this->contentWorkflow->prepareUpdatePayload($org, $actor, $payload, 'hope-directory');
 
         return $this->repository->update($org, $payload);
     }

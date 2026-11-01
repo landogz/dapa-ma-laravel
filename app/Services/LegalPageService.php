@@ -44,7 +44,7 @@ class LegalPageService
         $page = $this->findForAdmin($slug);
 
         try {
-            $payload = $this->contentWorkflow->prepareUpdatePayload($page, $actor, $data);
+            $payload = $this->contentWorkflow->prepareUpdatePayload($page, $actor, $data, 'legal-pages');
         } catch (\InvalidArgumentException $e) {
             throw ValidationException::withMessages(['workflow' => [$e->getMessage()]]);
         }

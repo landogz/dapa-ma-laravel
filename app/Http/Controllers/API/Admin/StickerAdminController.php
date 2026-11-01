@@ -20,14 +20,24 @@ class StickerAdminController extends Controller
     public function store(StoreStickerRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $data['image'] = $request->file('image');
+        $images = $request->file('images');
+        if (is_array($images) && $images !== []) {
+            $data['images'] = $images;
+        } elseif ($request->hasFile('image')) {
+            $data['image'] = $request->file('image');
+        }
 
-        $sticker = $this->stickerLibraryService->createSticker($data);
+        $stickers = $this->stickerLibraryService->createStickers($data);
+        $count = count($stickers);
 
         return response()->json([
             'status' => true,
-            'message' => 'Sticker created.',
-            'data' => $sticker->toAdminArray(),
+            'message' => $count === 1
+                ? 'Sticker created.'
+                : "{$count} stickers created.",
+            'data' => $count === 1
+                ? $stickers[0]->toAdminArray()
+                : array_map(static fn ($sticker) => $sticker->toAdminArray(), $stickers),
         ], 201);
     }
 

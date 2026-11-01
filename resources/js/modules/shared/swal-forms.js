@@ -176,8 +176,27 @@ function renderField(field) {
     if (field.type === 'file') {
         const previewUrl = field.previewUrl ? escapeHtml(field.previewUrl) : '';
         const showPreview = field.showPreview === true || Boolean(field.previewUrl);
+        const allowMultiple = field.multiple === true;
         const previewBlock = showPreview
-            ? `
+            ? (
+                allowMultiple
+                    ? `
+                <div
+                    id="${escapeHtml(field.id)}-preview-grid"
+                    class="admin-swal-image-preview-grid"
+                    data-image-preview-grid-for="${escapeHtml(field.id)}"
+                    hidden
+                ></div>
+                <div
+                    id="${escapeHtml(field.id)}-preview-empty"
+                    class="admin-swal-image-preview-empty"
+                    aria-hidden="false"
+                >
+                    <i class="fas fa-images" aria-hidden="true"></i>
+                    <span>No images selected</span>
+                </div>
+            `
+                    : `
                 <div class="admin-swal-image-preview-wrap" data-image-preview-for="${escapeHtml(field.id)}">
                     <img
                         id="${escapeHtml(field.id)}-preview"
@@ -197,13 +216,14 @@ function renderField(field) {
                     </div>
                 </div>
             `
+            )
             : '';
 
         return `
             <div class="${shellClass}">
                 ${label}
                 ${previewBlock}
-                <input id="${field.id}" class="admin-swal-input" type="file"${field.accept ? ` accept="${escapeHtml(field.accept)}"` : ''} data-image-preview-input="${showPreview ? 'true' : 'false'}"${previewUrl ? ` data-preview-fallback="${previewUrl}"` : ''}>
+                <input id="${field.id}" class="admin-swal-input" type="file"${field.accept ? ` accept="${escapeHtml(field.accept)}"` : ''}${allowMultiple ? ' multiple' : ''} data-image-preview-input="${showPreview ? 'true' : 'false'}"${allowMultiple ? ' data-image-preview-multiple="true"' : ''}${previewUrl ? ` data-preview-fallback="${previewUrl}"` : ''}>
                 ${hint}
                 ${changedHint}
                 ${fieldErrorMarkup(field.id)}
@@ -673,8 +693,16 @@ export function bindImageFilePreviews(root = document) {
 
         input.dataset.previewBound = '1';
 
-        const preview = root.querySelector(`#${CSS.escape(input.id)}-preview`);
+        const isMultiple = input.multiple
+            || input.getAttribute('data-image-preview-multiple') === 'true';
         const empty = root.querySelector(`#${CSS.escape(input.id)}-preview-empty`);
+
+        if (isMultiple) {
+            bindMultipleImageFilePreview(input, root, empty);
+            return;
+        }
+
+        const preview = root.querySelector(`#${CSS.escape(input.id)}-preview`);
         const wrap = root.querySelector(`[data-image-preview-for="${CSS.escape(input.id)}"]`)
             || preview?.closest('.admin-swal-image-preview-wrap');
 
@@ -738,6 +766,65 @@ export function bindImageFilePreviews(root = document) {
             showPreviewImage(objectUrl);
         });
     });
+}
+
+function bindMultipleImageFilePreview(input, root, empty) {
+    const grid = root.querySelector(`#${CSS.escape(input.id)}-preview-grid`)
+        || root.querySelector(`[data-image-preview-grid-for="${CSS.escape(input.id)}"]`);
+
+    if (!grid) {
+        return;
+    }
+
+    /** @type {string[]} */
+    let objectUrls = [];
+
+    const clearObjectUrls = () => {
+        objectUrls.forEach((url) => URL.revokeObjectURL(url));
+        objectUrls = [];
+    };
+
+    const render = () => {
+        clearObjectUrls();
+        grid.innerHTML = '';
+
+        const files = Array.from(input.files || []).filter((file) => file.type.startsWith('image/'));
+
+        if (!files.length) {
+            grid.hidden = true;
+            if (empty) {
+                empty.hidden = false;
+                empty.setAttribute('aria-hidden', 'false');
+            }
+            return;
+        }
+
+        grid.hidden = false;
+        if (empty) {
+            empty.hidden = true;
+            empty.setAttribute('aria-hidden', 'true');
+        }
+
+        files.forEach((file) => {
+            const url = URL.createObjectURL(file);
+            objectUrls.push(url);
+
+            const tile = document.createElement('button');
+            tile.type = 'button';
+            tile.className = 'admin-swal-image-preview-grid-item is-zoomable';
+            tile.setAttribute('aria-label', `Preview ${file.name}`);
+            tile.innerHTML = `<img src="${url}" alt="">`;
+            tile.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openAdminImageViewer(url, { alt: file.name });
+            });
+            grid.appendChild(tile);
+        });
+    };
+
+    input.addEventListener('change', render);
+    render();
 }
 
 /**
@@ -1071,6 +1158,73 @@ export function confirmWithSwal({
         confirmButtonText,
         cancelButtonText,
     }, { danger, size: 'sm' }));
+}
+
+/**
+ * Branded single-action notice (info / success / warning) — not a yes/cancel confirm.
+ */
+export function showNoticeSwal({
+    title,
+    text = '',
+    html = null,
+    icon = 'info',
+    confirmButtonText = 'Got it',
+} = {}) {
+    return Swal.fire(buildSwalOptions({
+        confirmOnly: true,
+        icon,
+        title,
+        text: html ? undefined : text,
+        html: html || undefined,
+        showCancelButton: false,
+        showCloseButton: true,
+        confirmButtonText,
+    }, { size: 'sm' }));
+}
+
+/**
+ * Publisher clicked an inbox item for content that is already published / no longer pending.
+ */
+export function showInboxResolvedNotice({
+    resourceLabel = 'Content',
+    message = null,
+} = {}) {
+    const label = String(resourceLabel || 'Content').trim() || 'Content';
+
+    return showNoticeSwal({
+        icon: 'info',
+        title: 'Already published',
+        text: message
+            || `This ${label.toLowerCase()} update was already published. The live version is up to date, so it is no longer in your review queue.`,
+        confirmButtonText: 'Close',
+    });
+}
+
+/**
+ * True when an API error means the publisher review item was already handled.
+ */
+export function isInboxReviewResolvedError(error) {
+    const status = Number(error?.response?.status || 0);
+    const code = String(error?.response?.data?.code || '');
+    const message = String(error?.response?.data?.message || '').toLowerCase();
+
+    if (code === 'review_resolved') {
+        return true;
+    }
+
+    if (status === 409) {
+        return true;
+    }
+
+    if (status === 404 && (
+        message.includes('already published')
+        || message.includes('review queue')
+        || message.includes('no longer')
+    )) {
+        return true;
+    }
+
+    return false;
 }
 
 function resolveSubtitle(popup, subtitle) {

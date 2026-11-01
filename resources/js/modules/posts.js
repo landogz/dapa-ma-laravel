@@ -15,6 +15,8 @@ import {
     confirmWithSwal,
     failSwalValidation,
     formatApiValidationMessage,
+    isInboxReviewResolvedError,
+    showInboxResolvedNotice,
 } from './shared/swal-forms';
 import { bindRichTextEditors, getRichTextValue, isRichTextEmpty } from './rich-text-editor';
 import { renderRatingBadge, renderStars } from './shared/ratings';
@@ -167,6 +169,10 @@ function isPublishedUpdatePending(post) {
     return String(post?.status) === 'published' && String(post?.revision_status || '') === 'pending_review';
 }
 
+function isPublishedUpdateAwaitingPublisher(post) {
+    return isPublishedUpdatePending(post) || isPublishedUpdateDraft(post);
+}
+
 function hasPendingRevisionPayload(post) {
     return Boolean(post?.pending_revision) && typeof post.pending_revision === 'object';
 }
@@ -192,7 +198,7 @@ function postMatchesStatusFilter(post, filter) {
     }
 
     if (filter === 'pending_review') {
-        return String(post.status) === 'pending_review' || isPublishedUpdatePending(post);
+        return String(post.status) === 'pending_review' || isPublishedUpdateAwaitingPublisher(post);
     }
 
     if (filter === 'draft') {
@@ -273,11 +279,33 @@ export async function viewPost(postId, { engagementTab = null } = {}) {
         postsById.set(String(post.id), post);
         openPostViewModal(post, { engagementTab });
     } catch (error) {
+        if (isInboxReviewResolvedError(error) || (
+            currentUserRole === 'publisher'
+            && Number(error?.response?.status) === 404
+        )) {
+            await showInboxResolvedNotice({
+                resourceLabel: 'Post',
+                message: error?.response?.data?.message
+                    || 'This post update was already published. It is no longer in your review queue.',
+            });
+            clearPostQueryParam();
+            return;
+        }
+
         showErrorToast(
             error?.response?.data?.message ?? 'Unable to load the selected post.',
-            'Post',
+            'Unable to open post',
         );
     }
+}
+
+function clearPostQueryParam() {
+    const nextUrl = new URL(window.location.href);
+    if (!nextUrl.searchParams.has('post')) {
+        return;
+    }
+    nextUrl.searchParams.delete('post');
+    window.history.replaceState({}, '', nextUrl.toString());
 }
 
 function openPostViewModal(post, { engagementTab = null } = {}) {
@@ -678,7 +706,7 @@ export async function promptEditPost(postId) {
             : (editingPublished ? 'Edit published post' : 'Edit Post'),
         post: postForEditorForm(post),
         categoryOptions,
-        confirmButtonText: editingPublished ? 'Save update draft' : 'Save Changes',
+        confirmButtonText: editingPublished ? 'Submit for publisher review' : 'Save Changes',
         showStatus: currentUserRole === 'super_admin',
         postId,
         editingPublished,
@@ -702,7 +730,7 @@ export async function promptEditPost(postId) {
         return;
     }
 
-    showSuccessToast(result.value.message, editingPublished ? 'Update draft saved' : 'Post updated');
+    showSuccessToast(result.value.message, editingPublished ? 'Publisher notified' : 'Post updated');
     loadPosts();
 }
 
@@ -912,7 +940,7 @@ export function schedulePost(postId) {
 
 export function publishNow(postId) {
     const post = postsById.get(String(postId));
-    const isPublishedUpdate = isPublishedUpdatePending(post);
+    const isPublishedUpdate = isPublishedUpdateAwaitingPublisher(post);
     const changedFields = isPublishedUpdate
         ? getRevisionFieldDiffs(post).map((key) => humanizeWorkflowAttribute(key))
         : [];
@@ -1478,7 +1506,7 @@ function buildPostForm(post = null, categoryOptions = [], {
     return buildSwalForm({
         description: post
             ? (editingPublished
-                ? 'Changes are saved as an update draft. The live published post stays unchanged until a publisher approves it.'
+                ? 'Saving submits your update for publisher review and notifies publishers. The live published post stays unchanged until approved.'
                 : (isSuperAdmin
                     ? 'Updates from super admin are published automatically unless status is scheduled or archived.'
                     : 'Update the content and workflow details for this post.'))
@@ -1741,12 +1769,12 @@ function getAvailableActions(post) {
         });
     } else if (
         (currentUserRole === 'publisher' || currentUserRole === 'super_admin')
-        && (post.status === 'pending_review' || isPublishedUpdatePending(post))
+        && (post.status === 'pending_review' || isPublishedUpdateAwaitingPublisher(post))
     ) {
         actions.push({
             handler: 'editPost',
             label: 'Review',
-            tooltip: isPublishedUpdatePending(post)
+            tooltip: isPublishedUpdateAwaitingPublisher(post)
                 ? 'Review highlighted field changes'
                 : 'Review before publishing',
             icon: 'fas fa-clipboard-check',
@@ -1787,8 +1815,8 @@ function getAvailableActions(post) {
     if (canPublishPost(post)) {
         actions.push({
             handler: 'publishNow',
-            label: isPublishedUpdatePending(post) ? 'Approve update' : 'Publish now',
-            tooltip: isPublishedUpdatePending(post)
+            label: isPublishedUpdateAwaitingPublisher(post) ? 'Approve update' : 'Publish now',
+            tooltip: isPublishedUpdateAwaitingPublisher(post)
                 ? 'Apply update to the live published post'
                 : 'Publish immediately',
             icon: 'fas fa-circle-check',
@@ -1831,7 +1859,7 @@ function canEditPost(post) {
         return false;
     }
 
-    // Draft posts, or published posts (edits become a pending update draft).
+    // Draft posts, or published posts (edits submit an update for publisher review).
     return post.status === 'draft' || post.status === 'published';
 }
 
@@ -1846,7 +1874,7 @@ function canSubmitPost(post) {
 
 function canRejectPost(post) {
     return (currentUserRole === 'publisher' || currentUserRole === 'super_admin')
-        && (post.status === 'pending_review' || isPublishedUpdatePending(post));
+        && (post.status === 'pending_review' || isPublishedUpdateAwaitingPublisher(post));
 }
 
 function canSchedulePost(post) {
@@ -1865,7 +1893,7 @@ function canPublishPost(post) {
 
     return post.status === 'pending_review'
         || post.status === 'scheduled'
-        || isPublishedUpdatePending(post);
+        || isPublishedUpdateAwaitingPublisher(post);
 }
 
 function canArchivePost(post) {

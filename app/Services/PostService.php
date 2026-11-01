@@ -65,7 +65,15 @@ class PostService
         $post = $this->postRepository->findAdminDetail($id);
 
         if ($actor?->role === 'publisher' && ! $this->publisherCanView($post)) {
-            abort(404);
+            $alreadyResolved = $post->status === 'published' && ! $post->hasPendingRevision();
+
+            abort(response()->json([
+                'status' => false,
+                'code' => $alreadyResolved ? 'review_resolved' : 'not_in_queue',
+                'message' => $alreadyResolved
+                    ? 'This post update was already published. It is no longer in your review queue.'
+                    : 'This post is not available in your publisher review queue.',
+            ], $alreadyResolved ? 409 : 404));
         }
 
         return $post;
@@ -106,7 +114,7 @@ class PostService
         $data = $this->applyWordBlocking($data);
 
         if ($actor?->role === 'editor' && $post->status === 'published') {
-            return $this->savePendingRevision($post, $data);
+            return $this->savePendingRevision($post, $data, $actor);
         }
 
         $allowedStatuses = $actor?->role === 'super_admin'
@@ -192,7 +200,7 @@ class PostService
 
     public function reject(Post $post, string $reviewNotes, User $publisher): Post
     {
-        if ($post->isRevisionAwaitingPublisher()) {
+        if ($post->status === 'published' && $post->hasPendingRevision()) {
             $post = $this->postRepository->update($post, [
                 'revision_status' => 'draft',
                 'review_notes' => $reviewNotes,
@@ -236,8 +244,9 @@ class PostService
 
     public function publishNow(Post $post, User $publisher): Post
     {
-        if ($post->isRevisionAwaitingPublisher()
-            || ($publisher->role === 'super_admin' && $post->hasPendingRevision())) {
+        // Apply staged published updates for publishers/super admins whether the
+        // revision is still an editor draft or already marked pending_review.
+        if ($post->status === 'published' && $post->hasPendingRevision()) {
             return $this->applyPendingRevision($post, $publisher);
         }
 
@@ -305,7 +314,7 @@ class PostService
         return $count;
     }
 
-    private function savePendingRevision(Post $post, array $data): Post
+    private function savePendingRevision(Post $post, array $data, User $editor): Post
     {
         $revision = is_array($post->pending_revision) && $post->pending_revision !== []
             ? $post->pending_revision
@@ -341,11 +350,16 @@ class PostService
             }
         }
 
-        return $this->postRepository->update($post, [
+        // Editor edits on live posts go straight to publisher review + inbox notify.
+        $post = $this->postRepository->update($post, [
             'pending_revision' => $revision,
-            'revision_status' => 'draft',
+            'revision_status' => 'pending_review',
             'review_notes' => null,
         ]);
+
+        $this->adminNotificationService->notifyPostSubmitted($post, $editor);
+
+        return $post;
     }
 
     private function applyPendingRevision(Post $post, User $publisher): Post
@@ -389,7 +403,8 @@ class PostService
 
     private function publisherCanView(Post $post): bool
     {
-        return $post->status === 'pending_review' || $post->isRevisionAwaitingPublisher();
+        return $post->status === 'pending_review'
+            || ($post->status === 'published' && $post->hasPendingRevision());
     }
 
     private function resolveSuperAdminPublishMeta(User $author, ?string $requestedStatus = null): array

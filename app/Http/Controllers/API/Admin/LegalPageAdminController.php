@@ -61,14 +61,14 @@ class LegalPageAdminController extends Controller
         $before = $this->legalPageService->findForAdmin($slug);
         $wasPublished = $before->isWorkflowPublished();
         $page = $this->legalPageService->update($slug, $request->validated(), $request->user());
-        $savedAsRevision = $request->user()?->role === 'editor'
+        $submittedUpdate = $request->user()?->role === 'editor'
             && $wasPublished
-            && $page->isRevisionDraft();
+            && $page->isRevisionAwaitingPublisher();
 
         return response()->json([
             'status' => true,
-            'message' => $savedAsRevision
-                ? 'Update saved as a draft revision. The live published page is unchanged until a publisher approves it.'
+            'message' => $submittedUpdate
+                ? 'Update submitted for publisher review. Publishers were notified. The live page stays unchanged until approved.'
                 : 'Legal page updated.',
             'data' => $page,
         ]);

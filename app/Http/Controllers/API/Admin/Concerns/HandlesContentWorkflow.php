@@ -17,9 +17,22 @@ trait HandlesContentWorkflow
 
     protected function assertVisibleToAdmin(Request $request, Model $model): void
     {
-        if (method_exists($model, 'isVisibleToAdmin') && ! $model->isVisibleToAdmin($request->user())) {
-            abort(404);
+        if (! method_exists($model, 'isVisibleToAdmin') || $model->isVisibleToAdmin($request->user())) {
+            return;
         }
+
+        $alreadyResolved = method_exists($model, 'isWorkflowPublished')
+            && $model->isWorkflowPublished()
+            && method_exists($model, 'hasPendingRevision')
+            && ! $model->hasPendingRevision();
+
+        abort(response()->json([
+            'status' => false,
+            'code' => $alreadyResolved ? 'review_resolved' : 'not_in_queue',
+            'message' => $alreadyResolved
+                ? 'This update was already published. It is no longer in your review queue.'
+                : 'This item is not available in your publisher review queue.',
+        ], $alreadyResolved ? 409 : 404));
     }
 
     public function submit(Request $request, Model $model): JsonResponse

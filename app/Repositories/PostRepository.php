@@ -23,8 +23,10 @@ class PostRepository
                 $q->where(function (Builder $inner): void {
                     $inner->where('status', 'pending_review')
                         ->orWhere(function (Builder $revision): void {
+                            // Include editor update drafts and submitted updates.
                             $revision->where('status', 'published')
-                                ->where('revision_status', 'pending_review');
+                                ->whereNotNull('revision_status')
+                                ->whereNotNull('pending_revision');
                         });
                 });
             })

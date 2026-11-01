@@ -1,7 +1,13 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
-import { buildSwalForm, buildSwalOptions, formatApiValidationMessage } from '../shared/swal-forms';
+import {
+    buildSwalForm,
+    buildSwalOptions,
+    formatApiValidationMessage,
+    isInboxReviewResolvedError,
+    showInboxResolvedNotice,
+} from '../shared/swal-forms';
 import { getRichTextValue, isRichTextEmpty } from '../rich-text-editor';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
@@ -16,6 +22,7 @@ import {
     isPublishedUpdateDraft,
     isPublishedUpdatePending,
     isPublisherReviewOnly,
+    isPublisherRole,
     isSuperAdminRole,
     itemForEditorForm,
     openItemFromQuery,
@@ -168,10 +175,23 @@ async function openLegalEditor(slugOrId) {
         const { data } = await axios.get(`/admin/legal-pages/${slugOrId}`);
         page = data.data;
     } catch (error) {
+        if (isInboxReviewResolvedError(error) || (
+            isPublisherRole()
+            && Number(error?.response?.status) === 404
+        )) {
+            await showInboxResolvedNotice({
+                resourceLabel: 'Legal page',
+                message: error?.response?.data?.message
+                    || 'This legal page update was already published. It is no longer in your review queue.',
+            });
+            return;
+        }
+
         showErrorToast(
             error.response?.status === 404
                 ? 'Legal page not found. Open it from Settings using the page tile.'
                 : (error.response?.data?.message ?? 'Unable to load page.'),
+            'Unable to open page',
         );
         return;
     }
@@ -194,7 +214,7 @@ async function openLegalEditor(slugOrId) {
             : `Edit ${formPage.title_en || meta.fallbackTitle}`,
         html: `${renderReviewNotesBanner(page)}${revisionBanner}${buildLegalWorkflowActionsHtml(page, slug)}${buildSwalForm({
             description: editingPublished
-                ? 'Editor changes are saved as an update draft. The live published page stays unchanged until a publisher approves it.'
+                ? 'Saving submits your update for publisher review and notifies publishers. The live published page stays unchanged until approved.'
                 : (isSuperAdminRole()
                     ? 'Changes apply immediately — no publisher approval needed. Updates appear in the mobile Settings screens.'
                     : 'Updates appear in the mobile Settings screens (English and Tagalog).'),
@@ -262,7 +282,7 @@ async function openLegalEditor(slugOrId) {
             ? publisherReviewSwalButtons(page)
             : {
                 showCancelButton: true,
-                confirmButtonText: editingPublished ? 'Save update draft' : 'Save Changes',
+                confirmButtonText: editingPublished ? 'Submit for publisher review' : 'Save Changes',
             }),
         allowOutsideClick: () => !Swal.isLoading(),
         preConfirm: async () => {
@@ -321,15 +341,10 @@ async function openLegalEditor(slugOrId) {
         return;
     }
 
-    showSuccessToast(result.value.message ?? 'Legal page updated.', editingPublished ? 'Update draft saved' : 'Settings saved');
+    showSuccessToast(result.value.message ?? 'Legal page updated.', editingPublished ? 'Publisher notified' : 'Settings saved');
     const listEl = document.querySelector('[data-settings-legal-list]');
     if (listEl) {
         await loadLegalPages(listEl);
-    }
-
-    // Re-open so Submit / Approve actions appear for the staged update.
-    if (editingPublished) {
-        await openLegalEditor(slug);
     }
 }
 
@@ -385,7 +400,24 @@ export function createKidListoQuote() {
 export function editKidListoQuote(id) {
     axios.get(`/admin/kid-listo-quotes/${id}`)
         .then(({ data }) => showQuoteForm(data.data))
-        .catch(() => showErrorToast('Failed to load quote.'));
+        .catch(async (error) => {
+            if (isInboxReviewResolvedError(error) || (
+                isPublisherRole()
+                && Number(error?.response?.status) === 404
+            )) {
+                await showInboxResolvedNotice({
+                    resourceLabel: 'Kid Listo quote',
+                    message: error?.response?.data?.message
+                        || 'This quote update was already published. It is no longer in your review queue.',
+                });
+                return;
+            }
+
+            showErrorToast(
+                error?.response?.data?.message ?? 'Failed to load quote.',
+                'Unable to open quote',
+            );
+        });
 }
 
 export function removeKidListoQuote(id) {
@@ -432,7 +464,7 @@ function showQuoteForm(existing) {
                 : (isSuperAdmin ? 'Add & publish Kid Listo Quote' : 'Add Kid Listo Quote')),
         html: `${renderReviewNotesBanner(existing)}${revisionBanner}${buildSwalForm({
             description: editingPublished
-                ? 'Changes are saved as an update draft. The live published quote stays unchanged until a publisher approves it.'
+                ? 'Saving submits your update for publisher review and notifies publishers. The live published quote stays unchanged until approved.'
                 : (isSuperAdmin && !isEdit
                     ? 'Saved as published — no publisher approval needed. Quotes appear randomly on the mobile Kid Listo screen.'
                     : 'Motivational quotes are shown randomly on the mobile Kid Listo screen.'),
@@ -475,7 +507,7 @@ function showQuoteForm(existing) {
             : {
                 showCancelButton: true,
                 confirmButtonText: editingPublished
-                    ? 'Save update draft'
+                    ? 'Submit for publisher review'
                     : (isEdit ? 'Save Changes' : (isSuperAdmin ? 'Create & publish' : 'Create Quote')),
             }),
         allowOutsideClick: () => !Swal.isLoading(),
@@ -531,13 +563,10 @@ function showQuoteForm(existing) {
         showSuccessToast(
             value.message ?? 'Quote saved.',
             editingPublished
-                ? 'Update draft saved'
+                ? 'Publisher notified'
                 : (isEdit ? 'Updated' : (isSuperAdmin ? 'Published' : 'Created')),
         );
         loadKidListoQuotes();
-        if (editingPublished && existing?.id) {
-            setTimeout(() => editKidListoQuote(existing.id), 250);
-        }
     });
 }
 
