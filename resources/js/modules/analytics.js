@@ -16,6 +16,7 @@ import {
     renderExtendedKpis,
 } from './analytics-advanced';
 import { renderContentCatalog } from './analytics-content-catalog';
+import { renderCareTools } from './analytics-care-tools';
 
 const METRIC_COLORS = {
     total: '#055498',
@@ -45,6 +46,20 @@ const EVENT_TYPE_META = {
     event_share: { label: 'Event shares', icon: 'fas fa-share-nodes' },
     contest_view: { label: 'Contest views', icon: 'fas fa-trophy' },
     contest_share: { label: 'Contest shares', icon: 'fas fa-share-nodes' },
+    rehab_view: { label: 'Rehab views', icon: 'fas fa-hospital' },
+    rehab_call: { label: 'Rehab calls', icon: 'fas fa-phone' },
+    rehab_directions: { label: 'Rehab directions', icon: 'fas fa-route' },
+    hope_org_view: { label: 'Hope directory views', icon: 'fas fa-building' },
+    journal_create: { label: 'Journal saves', icon: 'fas fa-book' },
+    care_check_submit: { label: 'Care checks', icon: 'fas fa-heart-pulse' },
+    mood_checkin: { label: 'Mood check-ins', icon: 'fas fa-face-smile' },
+    calm_complete: { label: 'Calm sessions', icon: 'fas fa-spa' },
+    color_fun_open: { label: 'Color Fun opens', icon: 'fas fa-palette' },
+    color_fun_complete: { label: 'Color Fun completes', icon: 'fas fa-check' },
+    notification_open: { label: 'Notification opens', icon: 'fas fa-bell' },
+    contest_submit: { label: 'Contest submissions', icon: 'fas fa-paper-plane' },
+    event_register: { label: 'Event registrations', icon: 'fas fa-user-check' },
+    feature_use: { label: 'Feature use', icon: 'fas fa-puzzle-piece' },
 };
 
 let cachedDailyCounts = [];
@@ -265,6 +280,7 @@ export function loadAnalytics() {
             renderEventTypeSummary(eventTypes);
             renderFunnel(funnel);
             renderContentCatalog(payload.content_catalog ?? {});
+            renderCareTools(payload.care_tools ?? {});
             renderTopPosts(topPosts);
             renderTopRatedPosts(topRatedPosts);
             renderTopCategories(topCategories);
@@ -1398,6 +1414,49 @@ function describeGroupedEvent(group) {
             title: 'Contest shared',
             details: `${userName} shared a contest.`,
         };
+    }
+
+    if (type === 'rehab_view') {
+        return { icon: 'fas fa-hospital', tone: 'is-view', title: 'Rehab center viewed', details: `${userName} opened a rehab center.` };
+    }
+    if (type === 'rehab_call') {
+        return { icon: 'fas fa-phone', tone: 'is-share', title: 'Rehab center called', details: `${userName} called a rehab center.` };
+    }
+    if (type === 'rehab_directions') {
+        return { icon: 'fas fa-route', tone: 'is-share', title: 'Rehab directions opened', details: `${userName} opened directions to a rehab center.` };
+    }
+    if (type === 'hope_org_view') {
+        return { icon: 'fas fa-building', tone: 'is-view', title: 'Hope directory viewed', details: `${userName} opened a Hope directory organization.` };
+    }
+    if (type === 'journal_create') {
+        return { icon: 'fas fa-book', tone: 'is-bookmark', title: 'Journal entry saved', details: `${userName} saved a journal entry.` };
+    }
+    if (type === 'care_check_submit') {
+        return { icon: 'fas fa-heart-pulse', tone: 'is-share', title: 'Care check submitted', details: `${userName} completed a care check.` };
+    }
+    if (type === 'mood_checkin') {
+        return { icon: 'fas fa-face-smile', tone: 'is-view', title: 'Mood check-in', details: `${userName} logged a mood check-in.` };
+    }
+    if (type === 'calm_complete') {
+        return { icon: 'fas fa-spa', tone: 'is-share', title: 'Calm session completed', details: `${userName} finished a Calm Corner session.` };
+    }
+    if (type === 'color_fun_open') {
+        return { icon: 'fas fa-palette', tone: 'is-view', title: 'Color Fun opened', details: `${userName} opened Color Fun.` };
+    }
+    if (type === 'color_fun_complete') {
+        return { icon: 'fas fa-check', tone: 'is-share', title: 'Color Fun completed', details: `${userName} finished a Color Fun worksheet.` };
+    }
+    if (type === 'notification_open') {
+        return { icon: 'fas fa-bell', tone: 'is-search', title: 'Notification opened', details: `${userName} opened a notification.` };
+    }
+    if (type === 'contest_submit') {
+        return { icon: 'fas fa-paper-plane', tone: 'is-share', title: 'Contest entry submitted', details: `${userName} submitted a contest entry.` };
+    }
+    if (type === 'event_register') {
+        return { icon: 'fas fa-user-check', tone: 'is-share', title: 'Event registration opened', details: `${userName} opened event registration.` };
+    }
+    if (type === 'feature_use') {
+        return { icon: 'fas fa-puzzle-piece', tone: 'is-view', title: 'Feature used', details: `${userName} used a Care or help feature.` };
     }
 
     if (type === 'signup' || type === 'register' || type === 'user_registered') {

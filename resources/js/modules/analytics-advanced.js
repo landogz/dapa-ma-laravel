@@ -239,6 +239,7 @@ async function loadMobileTab(params) {
     const kpis = payload.kpis ?? {};
     const screens = Array.isArray(payload.screen_breakdown) ? payload.screen_breakdown : [];
     const devices = payload.devices ?? {};
+    const care = payload.care_tools?.totals ?? {};
 
     root.innerHTML = `
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -246,6 +247,16 @@ async function loadMobileTab(params) {
             <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Session rows</p><p class="analytics-mini-kpi-value">${Number(kpis.session_rows || 0).toLocaleString()}</p></article>
             <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Avg session</p><p class="analytics-mini-kpi-value">${kpis.avg_session_duration_seconds ? `${Math.round(kpis.avg_session_duration_seconds)}s` : '—'}</p></article>
             <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Android / iOS</p><p class="analytics-mini-kpi-value">${Number(devices.android || 0).toLocaleString()} / ${Number(devices.ios || 0).toLocaleString()}</p></article>
+        </div>
+        <div class="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
+            <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Journal saves</p><p class="analytics-mini-kpi-value">${Number(care.journal_creates || 0).toLocaleString()}</p></article>
+            <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Care checks</p><p class="analytics-mini-kpi-value">${Number(care.care_checks || 0).toLocaleString()}</p></article>
+            <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Mood check-ins</p><p class="analytics-mini-kpi-value">${Number(care.mood_checkins || 0).toLocaleString()}</p></article>
+            <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Calm sessions</p><p class="analytics-mini-kpi-value">${Number(care.calm_sessions || 0).toLocaleString()}</p></article>
+            <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Color Fun opens</p><p class="analytics-mini-kpi-value">${Number(care.color_fun_opens || 0).toLocaleString()}</p></article>
+            <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Color Fun done</p><p class="analytics-mini-kpi-value">${Number(care.color_fun_completes || 0).toLocaleString()}</p></article>
+            <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Notification opens</p><p class="analytics-mini-kpi-value">${Number(care.notification_opens || 0).toLocaleString()}</p></article>
+            <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Contest submits</p><p class="analytics-mini-kpi-value">${Number(care.contest_submits || 0).toLocaleString()}</p></article>
         </div>
         <div class="mt-4">
             <h4 class="text-sm font-semibold text-slate-800">Top screens</h4>

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Repositories\AnalyticsRepository;
+use App\Services\Analytics\CareToolsService;
 use App\Services\Analytics\ContentCatalogService;
 use App\Support\Analytics\AnalyticsDateRange;
 use Carbon\Carbon;
@@ -12,6 +13,7 @@ class AnalyticsService
     public function __construct(
         private readonly AnalyticsRepository $analyticsRepository,
         private readonly ContentCatalogService $contentCatalogService,
+        private readonly CareToolsService $careToolsService,
     ) {
     }
 
@@ -39,12 +41,14 @@ class AnalyticsService
         $downloads = (int) ($current['downloads'] ?? $extras['downloads'] ?? 0);
         $relational = (int) ($extras['relational_engagements'] ?? 0);
         $contentCatalog = $this->contentCatalogService->dashboard($range);
+        $careTools = $this->careToolsService->dashboard($range);
 
         $payload = [
             'range' => $range->toArray(),
             'range_days' => $range->daySpan(),
             'by_event_type' => $this->analyticsRepository->countByEventType($range),
             'content_catalog' => $contentCatalog,
+            'care_tools' => $careTools,
             'top_posts' => $this->analyticsRepository->topPosts($range, 10),
             'top_rated_posts' => $this->analyticsRepository->topRatedPosts(10),
             'top_categories' => $this->analyticsRepository->topCategories($range, 6),

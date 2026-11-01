@@ -16,6 +16,7 @@ final class ContentWorkflowSections
             'care-toolkit' => ['label' => 'Care toolkit question', 'path' => '/admin/care-toolkit', 'query' => 'item'],
             'care-support' => ['label' => 'Care support resource', 'path' => '/admin/care-support', 'query' => 'item'],
             'hope-directory' => ['label' => 'Hope directory org', 'path' => '/admin/hope-directory', 'query' => 'item'],
+            'rehab-centers' => ['label' => 'Rehab center', 'path' => '/admin/rehab-centers', 'query' => 'item'],
             'hope-events' => ['label' => 'Hope event', 'path' => '/admin/hope-events', 'query' => 'item'],
             'settings' => ['label' => 'Settings content', 'path' => '/admin/settings', 'query' => 'item'],
             'lookups' => ['label' => 'Lookup option', 'path' => '/admin/lookups', 'query' => 'item'],

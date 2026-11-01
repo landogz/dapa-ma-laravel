@@ -5,6 +5,7 @@ namespace App\Services\Analytics;
 use App\Repositories\AnalyticsRepository;
 use App\Services\AnalyticsService;
 use App\Support\Analytics\AnalyticsDateRange;
+use App\Support\Analytics\AnalyticsEventTypes;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use PhpOffice\PhpSpreadsheet\Chart\Chart;
@@ -14,6 +15,7 @@ use PhpOffice\PhpSpreadsheet\Chart\Legend as ChartLegend;
 use PhpOffice\PhpSpreadsheet\Chart\PlotArea;
 use PhpOffice\PhpSpreadsheet\Chart\Title as ChartTitle;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -226,6 +228,8 @@ class AnalyticsReportExporter
         $audience = $dashboard['audience'] ?? [];
         $devices = $dashboard['devices'] ?? [];
         $hourlyByMetric = $dashboard['hourly_by_metric']['series'] ?? [];
+        $careTotals = $dashboard['care_tools']['totals'] ?? [];
+        $views = (int) ($funnel['views'] ?? 0);
 
         $kpiRows = [
             ['Registered users', $kpis['registered_users'] ?? 0, '—', 'App accounts'],
@@ -241,7 +245,16 @@ class AnalyticsReportExporter
             ['Views', $current['views'] ?? 0, $previous['views'] ?? 0, 'Content views'],
             ['Bookmarks', $current['bookmarks'] ?? 0, $previous['bookmarks'] ?? 0, 'Bookmark events'],
             ['Shares', $current['shares'] ?? 0, $previous['shares'] ?? 0, 'Share events'],
+            ['Downloads', $current['downloads'] ?? ($funnel['downloads'] ?? ($kpis['downloads'] ?? 0)), $previous['downloads'] ?? '—', 'IEC material downloads'],
             ['Searches', $current['searches'] ?? 0, $previous['searches'] ?? 0, 'Search events'],
+            ['Journal saves', $careTotals['journal_creates'] ?? 0, '—', 'Count only'],
+            ['Care checks', $careTotals['care_checks'] ?? 0, '—', 'Count only'],
+            ['Mood check-ins', $careTotals['mood_checkins'] ?? 0, '—', 'Count only'],
+            ['Calm sessions', $careTotals['calm_sessions'] ?? 0, '—', 'Count only'],
+            ['Color Fun opens', $careTotals['color_fun_opens'] ?? 0, '—', 'Count only'],
+            ['Color Fun completes', $careTotals['color_fun_completes'] ?? 0, '—', 'Count only'],
+            ['Notification opens', $careTotals['notification_opens'] ?? 0, '—', 'Count only'],
+            ['Contest submissions', $careTotals['contest_submits'] ?? 0, '—', 'Count only'],
             ['Engagement rate %', $funnel['engagement'] ?? 0, '—', '(bookmarks + shares) / views'],
             ['Relational engagements', $funnel['relational_engagements'] ?? ($kpis['relational_engagements'] ?? 0), '—', 'Likes/comments/bookmarks/shares'],
             ['Avg events / day', $audience['avg_per_day'] ?? 0, '—', 'Volume / day span'],
@@ -257,18 +270,27 @@ class AnalyticsReportExporter
             round(((int) ($row['total'] ?? 0) / $dailyMax) * 100, 1),
         ])->all();
 
-        $typeRows = collect($dashboard['by_event_type'] ?? []);
-        $typeTotal = max(1, (int) $typeRows->sum(fn ($row) => (int) ($row['total'] ?? 0)));
+        $typeRows = collect($dashboard['by_event_type'] ?? [])
+            ->groupBy(fn ($row) => $this->humanizeEventType((string) ($row['event_type'] ?? '')))
+            ->map(fn ($rows, $label) => [
+                'label' => $label,
+                'total' => (int) $rows->sum(fn ($row) => (int) ($row['total'] ?? 0)),
+            ])
+            ->sortByDesc('total')
+            ->values();
+        $typeTotal = max(1, (int) $typeRows->sum('total'));
         $types = $typeRows->map(fn ($row) => [
-            $row['event_type'] ?? '',
-            (int) ($row['total'] ?? 0),
-            round(((int) ($row['total'] ?? 0) / $typeTotal) * 100, 1),
+            $row['label'],
+            (int) $row['total'],
+            round(((int) $row['total'] / $typeTotal) * 100, 1),
         ])->all();
 
-        $weekdayRows = collect($dashboard['weekday_counts'] ?? [])->map(fn ($row) => [
-            $row['label'] ?? '',
-            (int) ($row['total'] ?? 0),
-        ])->all();
+        $weekdayRows = $this->rowsWithPeakShare(
+            collect($dashboard['weekday_counts'] ?? [])->map(fn ($row) => [
+                (string) ($row['label'] ?? ''),
+                (int) ($row['total'] ?? 0),
+            ])->all(),
+        );
 
         $deviceTotal = max(1, (int) ($devices['total'] ?? 0));
         $deviceRows = [
@@ -278,27 +300,16 @@ class AnalyticsReportExporter
             ['Other', (int) ($devices['other'] ?? 0), round(((int) ($devices['other'] ?? 0) / $deviceTotal) * 100, 1)],
         ];
 
-        $hourlyVisits = collect($hourlyByMetric['visits'] ?? $dashboard['hourly_counts'] ?? [])->map(fn ($row) => [
-            sprintf('%02d:00', (int) ($row['hour'] ?? 0)),
-            (int) ($row['total'] ?? 0),
-        ])->all();
-        $hourlyApp = collect($hourlyByMetric['app_usage'] ?? [])->map(fn ($row) => [
-            sprintf('%02d:00', (int) ($row['hour'] ?? 0)),
-            (int) ($row['total'] ?? 0),
-        ])->all();
-        $hourlyViews = collect($hourlyByMetric['content_views'] ?? [])->map(fn ($row) => [
-            sprintf('%02d:00', (int) ($row['hour'] ?? 0)),
-            (int) ($row['total'] ?? 0),
-        ])->all();
-        $hourlyEngagement = collect($hourlyByMetric['engagements'] ?? [])->map(fn ($row) => [
-            sprintf('%02d:00', (int) ($row['hour'] ?? 0)),
-            (int) ($row['total'] ?? 0),
-        ])->all();
+        $hourlyVisits = $this->hourlyRows($hourlyByMetric['visits'] ?? $dashboard['hourly_counts'] ?? []);
+        $hourlyApp = $this->hourlyRows($hourlyByMetric['app_usage'] ?? []);
+        $hourlyViews = $this->hourlyRows($hourlyByMetric['content_views'] ?? []);
+        $hourlyEngagement = $this->hourlyRows($hourlyByMetric['engagements'] ?? []);
 
         $funnelRows = [
-            ['Views', (int) ($funnel['views'] ?? 0), 100, 0],
-            ['Bookmarks', (int) ($funnel['bookmarks'] ?? 0), (int) ($funnel['views'] ?? 0) > 0 ? round(((int) ($funnel['bookmarks'] ?? 0) / (int) $funnel['views']) * 100, 1) : 0, '—'],
-            ['Shares', (int) ($funnel['shares'] ?? 0), (int) ($funnel['views'] ?? 0) > 0 ? round(((int) ($funnel['shares'] ?? 0) / (int) $funnel['views']) * 100, 1) : 0, '—'],
+            ['Views', $views, 100, 0],
+            ['Bookmarks', (int) ($funnel['bookmarks'] ?? 0), $views > 0 ? round(((int) ($funnel['bookmarks'] ?? 0) / $views) * 100, 1) : 0, '—'],
+            ['Shares', (int) ($funnel['shares'] ?? 0), $views > 0 ? round(((int) ($funnel['shares'] ?? 0) / $views) * 100, 1) : 0, '—'],
+            ['Downloads', (int) ($funnel['downloads'] ?? 0), $views > 0 ? round(((int) ($funnel['downloads'] ?? 0) / $views) * 100, 1) : 0, 'IEC material downloads'],
             ['Engagement rate %', $funnel['engagement'] ?? 0, '—', $funnel['formula'] ?? ''],
         ];
 
@@ -315,37 +326,37 @@ class AnalyticsReportExporter
             ],
             [
                 'name' => 'Daily activity',
-                'headers' => ['Date', 'Events', 'Share of peak %'],
+                'headers' => ['Date', 'Events', '% of peak'],
                 'rows' => $dailyRows,
                 'chart' => ['title' => 'Daily activity', 'category_col' => 1, 'value_col' => 2],
             ],
             [
                 'name' => 'Hourly visits',
-                'headers' => ['Hour', 'Events'],
+                'headers' => ['Hour', 'Events', '% of peak'],
                 'rows' => $hourlyVisits,
                 'chart' => ['title' => 'Hourly visits', 'category_col' => 1, 'value_col' => 2],
             ],
             [
                 'name' => 'Hourly app usage',
-                'headers' => ['Hour', 'Events'],
+                'headers' => ['Hour', 'Events', '% of peak'],
                 'rows' => $hourlyApp,
                 'chart' => ['title' => 'Hourly app usage', 'category_col' => 1, 'value_col' => 2],
             ],
             [
                 'name' => 'Hourly content views',
-                'headers' => ['Hour', 'Events'],
+                'headers' => ['Hour', 'Events', '% of peak'],
                 'rows' => $hourlyViews,
                 'chart' => ['title' => 'Hourly content views', 'category_col' => 1, 'value_col' => 2],
             ],
             [
                 'name' => 'Hourly engagement',
-                'headers' => ['Hour', 'Events'],
+                'headers' => ['Hour', 'Events', '% of peak'],
                 'rows' => $hourlyEngagement,
                 'chart' => ['title' => 'Hourly engagement', 'category_col' => 1, 'value_col' => 2],
             ],
             [
                 'name' => 'Weekday',
-                'headers' => ['Weekday', 'Events'],
+                'headers' => ['Weekday', 'Events', '% of peak'],
                 'rows' => $weekdayRows,
                 'chart' => ['title' => 'Weekday performance', 'category_col' => 1, 'value_col' => 2],
             ],
@@ -371,6 +382,8 @@ class AnalyticsReportExporter
                 'headers' => ['Tone', 'Detail'],
                 'rows' => $insightRows,
             ],
+            $this->careToolsSheet($dashboard),
+            ...$this->contentCatalogSheets($dashboard),
         ];
     }
 
@@ -386,14 +399,19 @@ class AnalyticsReportExporter
                 'value' => (int) ($row['total'] ?? 0),
             ])->all();
         $types = collect($dashboard['by_event_type'] ?? [])
+            ->groupBy(fn ($row) => $this->humanizeEventType((string) ($row['event_type'] ?? '')))
+            ->map(fn ($rows, $label) => [
+                'label' => $label,
+                'value' => (int) $rows->sum(fn ($row) => (int) ($row['total'] ?? 0)),
+            ])
+            ->sortByDesc('value')
             ->take(8)
-            ->map(fn ($row) => [
-                'label' => (string) ($row['event_type'] ?? ''),
-                'value' => (int) ($row['total'] ?? 0),
-            ])->all();
+            ->values()
+            ->all();
         $hourly = collect($dashboard['hourly_by_metric']['series']['visits'] ?? $dashboard['hourly_counts'] ?? [])
+            ->filter(fn ($row) => (int) ($row['total'] ?? 0) > 0)
             ->map(fn ($row) => [
-                'label' => sprintf('%02d', (int) ($row['hour'] ?? 0)),
+                'label' => sprintf('%02d:00', (int) ($row['hour'] ?? 0)),
                 'value' => (int) ($row['total'] ?? 0),
             ])->all();
         $weekday = collect($dashboard['weekday_counts'] ?? [])
@@ -766,6 +784,7 @@ class AnalyticsReportExporter
                 'rows' => $ratings,
                 'chart' => ['title' => 'Rating distribution', 'category_col' => 1, 'value_col' => 2],
             ],
+            $this->careToolsSheet($dashboard),
             ...$this->contentCatalogSheets($dashboard),
         ];
     }
@@ -794,12 +813,16 @@ class AnalyticsReportExporter
                 ];
             })->all();
 
+            $viewLabel = (string) ($group['view_label'] ?? 'Views');
+            $shareLabel = (string) ($group['share_label'] ?? 'Shares');
+            $downloadLabel = (string) ($group['download_label'] ?? 'Downloads');
+
             $sheets[] = [
                 'name' => $label,
-                'headers' => ['ID', 'Title', 'Views', 'Shares', 'Downloads'],
+                'headers' => ['ID', 'Title', $viewLabel, $shareLabel, $downloadLabel],
                 'rows' => $rows,
                 'chart' => [
-                    'title' => $label.' shares',
+                    'title' => $label.' '.$shareLabel,
                     'category_col' => 2,
                     'value_col' => 4,
                     'max_points' => 10,
@@ -833,9 +856,33 @@ class AnalyticsReportExporter
                 'value' => (int) ($row['views'] ?? 0),
             ])->all();
 
+        $catalogGroups = collect($dashboard['content_catalog']['groups'] ?? []);
+        $catalogCharts = [];
+        foreach ([
+            'iec_materials' => ['shares' => 'IEC shares', 'downloads' => 'IEC downloads'],
+            'events' => ['shares' => 'Event shares'],
+            'contests' => ['shares' => 'Contest shares'],
+        ] as $groupKey => $metrics) {
+            $group = $catalogGroups->firstWhere('key', $groupKey);
+            if (! is_array($group)) {
+                continue;
+            }
+
+            foreach ($metrics as $metric => $title) {
+                $items = collect($group['items'] ?? [])
+                    ->take(8)
+                    ->map(fn ($item) => [
+                        'label' => mb_strimwidth((string) ($item['title'] ?? 'Item'), 0, 28, '…'),
+                        'value' => (int) ($item[$metric] ?? 0),
+                    ])->all();
+                $catalogCharts[] = ['title' => $title, 'items' => $items];
+            }
+        }
+
         return array_values(array_filter([
             ['title' => 'Top posts by views', 'items' => $posts],
             ['title' => 'Top categories', 'items' => $categories],
+            ...$catalogCharts,
         ], fn ($chart) => collect($chart['items'])->sum('value') > 0));
     }
 
@@ -1056,7 +1103,7 @@ class AnalyticsReportExporter
             foreach ($sheet['rows'] as $rowIndex => $row) {
                 foreach ($row as $colIndex => $value) {
                     $cell = Coordinate::stringFromColumnIndex($colIndex + 1).$rowNumber;
-                    $worksheet->setCellValue($cell, $value);
+                    $this->writeExcelValue($worksheet, $cell, $value);
                 }
 
                 $rowStyle = [
@@ -1244,6 +1291,142 @@ class AnalyticsReportExporter
         }
 
         return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $dashboard
+     * @return array{name: string, headers: list<string>, rows: list<list<mixed>>, chart?: array<string, mixed>}
+     */
+    private function careToolsSheet(array $dashboard): array
+    {
+        $totals = is_array($dashboard['care_tools']['totals'] ?? null)
+            ? $dashboard['care_tools']['totals']
+            : [];
+        $features = is_array($dashboard['care_tools']['features'] ?? null)
+            ? $dashboard['care_tools']['features']
+            : [];
+
+        $rows = [
+            ['Journal saves', (int) ($totals['journal_creates'] ?? 0)],
+            ['Care checks', (int) ($totals['care_checks'] ?? 0)],
+            ['Mood check-ins', (int) ($totals['mood_checkins'] ?? 0)],
+            ['Calm sessions', (int) ($totals['calm_sessions'] ?? 0)],
+            ['Color Fun opens', (int) ($totals['color_fun_opens'] ?? 0)],
+            ['Color Fun completes', (int) ($totals['color_fun_completes'] ?? 0)],
+            ['Notification opens', (int) ($totals['notification_opens'] ?? 0)],
+            ['Contest submissions', (int) ($totals['contest_submits'] ?? 0)],
+            ['Toolkit opens', (int) ($totals['toolkit_opens'] ?? 0)],
+            ['Get Support opens', (int) ($totals['support_opens'] ?? 0)],
+            ['Kid Listo opens', (int) ($totals['kid_listo_opens'] ?? 0)],
+            ['Sticker attaches', (int) ($totals['sticker_uses'] ?? 0)],
+        ];
+
+        foreach ($features as $feature => $count) {
+            $known = in_array((string) $feature, ['care_toolkit', 'care_support', 'kid_listo', 'sticker'], true);
+            if ($known) {
+                continue;
+            }
+            $rows[] = ['Feature: '.$this->humanizeEventType((string) $feature), (int) $count];
+        }
+
+        return [
+            'name' => 'Care and tools',
+            'headers' => ['Metric', 'Total'],
+            'rows' => $rows,
+            'chart' => ['title' => 'Care and tools', 'category_col' => 1, 'value_col' => 2],
+        ];
+    }
+
+    /**
+     * @param  iterable<int, mixed>  $rows
+     * @return list<list<mixed>>
+     */
+    private function hourlyRows(iterable $rows): array
+    {
+        $items = collect($rows)->map(fn ($row) => [
+            sprintf('%02d:00', (int) (is_array($row) ? ($row['hour'] ?? 0) : 0)),
+            (int) (is_array($row) ? ($row['total'] ?? 0) : 0),
+        ])->all();
+
+        return $this->rowsWithPeakShare($items);
+    }
+
+    /**
+     * @param  list<list<mixed>>  $rows
+     * @return list<list<mixed>>
+     */
+    private function rowsWithPeakShare(array $rows): array
+    {
+        $max = max(1, (int) collect($rows)->max(fn ($row) => (int) ($row[1] ?? 0)));
+
+        return array_map(function (array $row) use ($max) {
+            $value = (int) ($row[1] ?? 0);
+            $row[] = round(($value / $max) * 100, 1);
+
+            return $row;
+        }, $rows);
+    }
+
+    private function humanizeEventType(string $type): string
+    {
+        $canonical = AnalyticsEventTypes::canonicalize(trim($type));
+
+        return match ($canonical) {
+            'screen_view' => 'Screen view',
+            'page_view' => 'Page view',
+            'app_open' => 'App open',
+            'session_start' => 'Session start',
+            'post_view' => 'Post views',
+            'post_like' => 'Post likes',
+            'post_comment' => 'Post comments',
+            'iec_view' => 'IEC views',
+            'iec_share' => 'IEC shares',
+            'iec_download' => 'IEC downloads',
+            'event_view' => 'Event views',
+            'event_share' => 'Event shares',
+            'event_register' => 'Event registrations',
+            'contest_view' => 'Contest views',
+            'contest_share' => 'Contest shares',
+            'contest_submit' => 'Contest submissions',
+            'rehab_view' => 'Rehab views',
+            'rehab_call' => 'Rehab calls',
+            'rehab_directions' => 'Rehab directions',
+            'hope_org_view' => 'Hope directory views',
+            'journal_create' => 'Journal saves',
+            'care_check_submit' => 'Care checks',
+            'mood_checkin' => 'Mood check-ins',
+            'calm_complete' => 'Calm sessions',
+            'color_fun_open' => 'Color Fun opens',
+            'color_fun_complete' => 'Color Fun completes',
+            'notification_open' => 'Notification opens',
+            'feature_use' => 'Feature use',
+            'care_toolkit' => 'Self-care Toolkit',
+            'care_support' => 'Get Support',
+            'kid_listo' => 'Kid Listo',
+            default => $canonical === ''
+                ? 'Unknown'
+                : ucwords(str_replace('_', ' ', $canonical)),
+        };
+    }
+
+    private function writeExcelValue(
+        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $worksheet,
+        string $cell,
+        mixed $value,
+    ): void {
+        if (is_int($value) || is_float($value)) {
+            $worksheet->setCellValueExplicit($cell, $value, DataType::TYPE_NUMERIC);
+
+            return;
+        }
+
+        if (is_string($value) && is_numeric($value) && ! str_contains($value, ':') && ! preg_match('/^0\d+$/', $value)) {
+            $worksheet->setCellValueExplicit($cell, 0 + $value, DataType::TYPE_NUMERIC);
+
+            return;
+        }
+
+        $worksheet->setCellValue($cell, $value);
     }
 
     private function csvRow(array $columns): string

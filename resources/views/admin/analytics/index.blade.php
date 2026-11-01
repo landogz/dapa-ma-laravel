@@ -291,11 +291,11 @@
             <div class="analytics-panel-header">
                 <div>
                     <p class="analytics-panel-kicker">Catalog</p>
-                    <h3 class="analytics-panel-title">IEC, events, contests, and posts</h3>
-                    <p class="mt-1 text-[11px] text-slate-500">Views, shares, and IEC downloads from the mobile app in this range.</p>
+                    <h3 class="analytics-panel-title">IEC, events, contests, rehab, and posts</h3>
+                    <p class="mt-1 text-[11px] text-slate-500">Views, shares, IEC downloads, rehab calls, and Hope directory views from the mobile app in this range.</p>
                 </div>
             </div>
-            <div class="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
+            <div class="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
                 <article class="analytics-mini-kpi">
                     <p class="analytics-mini-kpi-label">IEC views</p>
                     <p class="analytics-mini-kpi-value" data-analytics-summary="iec-views">--</p>
@@ -328,8 +328,44 @@
                     <p class="analytics-mini-kpi-label">Post shares</p>
                     <p class="analytics-mini-kpi-value" data-analytics-summary="post-shares">--</p>
                 </article>
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">Rehab views</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="rehab-views">--</p>
+                </article>
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">Rehab calls</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="rehab-calls">--</p>
+                </article>
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">Rehab directions</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="rehab-directions">--</p>
+                </article>
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">Hope directory</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="hope-org-views">--</p>
+                </article>
             </div>
             <div class="mt-4" data-analytics-content-catalog></div>
+        </section>
+
+        <section class="analytics-panel mt-4">
+            <div class="analytics-panel-header">
+                <div>
+                    <p class="analytics-panel-kicker">Care and tools</p>
+                    <h3 class="analytics-panel-title">Journal, checks, Calm, and notifications</h3>
+                    <p class="mt-1 text-[11px] text-slate-500">Counts only. Journal text, mood scores, and check answers are not stored in analytics.</p>
+                </div>
+            </div>
+            <div class="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
+                <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Journal saves</p><p class="analytics-mini-kpi-value" data-analytics-summary="journal-creates">--</p></article>
+                <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Care checks</p><p class="analytics-mini-kpi-value" data-analytics-summary="care-checks">--</p></article>
+                <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Mood check-ins</p><p class="analytics-mini-kpi-value" data-analytics-summary="mood-checkins">--</p></article>
+                <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Calm sessions</p><p class="analytics-mini-kpi-value" data-analytics-summary="calm-sessions">--</p></article>
+                <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Color Fun opens</p><p class="analytics-mini-kpi-value" data-analytics-summary="color-fun-opens">--</p></article>
+                <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Color Fun done</p><p class="analytics-mini-kpi-value" data-analytics-summary="color-fun-completes">--</p></article>
+                <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Notification opens</p><p class="analytics-mini-kpi-value" data-analytics-summary="notification-opens">--</p></article>
+                <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Contest submits</p><p class="analytics-mini-kpi-value" data-analytics-summary="contest-submits">--</p></article>
+            </div>
         </section>
 
         <div class="mt-4 grid gap-4 xl:grid-cols-3">
@@ -436,11 +472,11 @@
                 <div class="analytics-panel-header">
                     <div>
                         <p class="analytics-panel-kicker">Catalog</p>
-                        <h3 class="analytics-panel-title">IEC, events, contests, and posts</h3>
-                        <p class="mt-1 text-[11px] text-slate-500">Views, shares, and IEC downloads from the mobile app in this range.</p>
+                        <h3 class="analytics-panel-title">IEC, events, contests, rehab, and posts</h3>
+                        <p class="mt-1 text-[11px] text-slate-500">Views, shares, IEC downloads, rehab calls, and Hope directory views from the mobile app in this range.</p>
                     </div>
                 </div>
-                <div class="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
+                <div class="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
                     <article class="analytics-mini-kpi">
                         <p class="analytics-mini-kpi-label">IEC views</p>
                         <p class="analytics-mini-kpi-value" data-analytics-summary="iec-views">--</p>
@@ -473,8 +509,42 @@
                         <p class="analytics-mini-kpi-label">Post shares</p>
                         <p class="analytics-mini-kpi-value" data-analytics-summary="post-shares">--</p>
                     </article>
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">Rehab views</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="rehab-views">--</p>
+                    </article>
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">Rehab calls</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="rehab-calls">--</p>
+                    </article>
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">Rehab directions</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="rehab-directions">--</p>
+                    </article>
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">Hope directory</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="hope-org-views">--</p>
+                    </article>
                 </div>
                 <div class="mt-4" data-analytics-content-catalog></div>
+            </section>
+            <section class="analytics-panel">
+                <div class="analytics-panel-header">
+                    <div>
+                        <p class="analytics-panel-kicker">Care and tools</p>
+                        <h3 class="analytics-panel-title">Journal, checks, Calm, and notifications</h3>
+                    </div>
+                </div>
+                <div class="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
+                    <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Journal saves</p><p class="analytics-mini-kpi-value" data-analytics-summary="journal-creates">--</p></article>
+                    <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Care checks</p><p class="analytics-mini-kpi-value" data-analytics-summary="care-checks">--</p></article>
+                    <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Mood check-ins</p><p class="analytics-mini-kpi-value" data-analytics-summary="mood-checkins">--</p></article>
+                    <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Calm sessions</p><p class="analytics-mini-kpi-value" data-analytics-summary="calm-sessions">--</p></article>
+                    <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Color Fun opens</p><p class="analytics-mini-kpi-value" data-analytics-summary="color-fun-opens">--</p></article>
+                    <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Color Fun done</p><p class="analytics-mini-kpi-value" data-analytics-summary="color-fun-completes">--</p></article>
+                    <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Notification opens</p><p class="analytics-mini-kpi-value" data-analytics-summary="notification-opens">--</p></article>
+                    <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Contest submits</p><p class="analytics-mini-kpi-value" data-analytics-summary="contest-submits">--</p></article>
+                </div>
             </section>
             <section class="analytics-panel">
                 <div class="analytics-panel-header"><div><p class="analytics-panel-kicker">Content</p><h3 class="analytics-panel-title">Post analytics</h3></div></div>

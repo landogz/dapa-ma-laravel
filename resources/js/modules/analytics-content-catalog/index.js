@@ -24,6 +24,10 @@ export function renderContentCatalog(catalog = {}) {
     setCatalogKpi('contest-views', totals.contest_views);
     setCatalogKpi('contest-shares', totals.contest_shares);
     setCatalogKpi('post-shares', totals.post_shares);
+    setCatalogKpi('rehab-views', totals.rehab_views);
+    setCatalogKpi('rehab-calls', totals.rehab_calls);
+    setCatalogKpi('rehab-directions', totals.rehab_directions);
+    setCatalogKpi('hope-org-views', totals.hope_org_views);
 
     document.querySelectorAll('[data-analytics-content-catalog]').forEach((root) => {
         root.innerHTML = renderCatalogGroups(groups);
@@ -42,7 +46,7 @@ function renderCatalogGroups(groups) {
     }
 
     return `
-        <div class="grid gap-4 xl:grid-cols-2 2xl:grid-cols-4">
+        <div class="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3">
             ${groups.map((group) => renderGroupCard(group)).join('')}
         </div>
     `;
@@ -53,6 +57,9 @@ function renderGroupCard(group) {
     const includeDownloads = Boolean(group.include_downloads);
     const href = escapeHtml(group.href || '#');
     const label = escapeHtml(group.label || 'Content');
+    const viewLabel = group.view_label || 'Views';
+    const shareLabel = group.share_label || 'Shares';
+    const downloadLabel = group.download_label || 'Downloads';
 
     return `
         <article class="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
@@ -64,15 +71,20 @@ function renderGroupCard(group) {
                 <a href="${href}" class="inline-flex min-h-11 items-center rounded-full px-3 text-xs font-semibold text-[#055498]">View all</a>
             </div>
             <div class="mt-3 grid grid-cols-2 ${includeDownloads ? 'sm:grid-cols-3' : ''} gap-2">
-                ${metricChip('Views', group.views)}
-                ${metricChip('Shares', group.shares)}
-                ${includeDownloads ? metricChip('Downloads', group.downloads) : ''}
+                ${metricChip(viewLabel, group.views)}
+                ${metricChip(shareLabel, group.shares)}
+                ${includeDownloads ? metricChip(downloadLabel, group.downloads) : ''}
             </div>
             <div class="mt-3 space-y-2">
-                ${items.length ? items.map((item, index) => renderCatalogItem(item, index, includeDownloads)).join('') : `<p class="text-xs text-slate-400">No ${label.toLowerCase()} activity in this range yet.</p>`}
+                ${items.length ? items.map((item, index) => renderCatalogItem(item, index, includeDownloads, viewLabel, shareLabel, downloadLabel)).join('') : `<p class="text-xs text-slate-400">No ${label.toLowerCase()} activity in this range yet.</p>`}
             </div>
         </article>
     `;
+}
+
+function unitLabel(label, value) {
+    const word = String(label || 'items').toLowerCase();
+    return Number(value) === 1 && word.endsWith('s') ? word.slice(0, -1) : word;
 }
 
 function metricChip(label, value) {
@@ -84,18 +96,18 @@ function metricChip(label, value) {
     `;
 }
 
-function renderCatalogItem(item, index, includeDownloads) {
+function renderCatalogItem(item, index, includeDownloads, viewLabel = 'Views', shareLabel = 'Shares', downloadLabel = 'Downloads') {
     const title = escapeHtml(item.title || 'Untitled');
     const href = item.href ? escapeHtml(item.href) : '';
     const titleMarkup = href
         ? `<a href="${href}" class="admin-table-link-chip block max-w-full truncate text-left" title="${title}">${title}</a>`
         : `<span class="block max-w-full truncate text-sm font-semibold text-slate-800">${title}</span>`;
     const stats = [
-        `${formatCount(item.views)} ${Number(item.views) === 1 ? 'view' : 'views'}`,
-        `${formatCount(item.shares)} ${Number(item.shares) === 1 ? 'share' : 'shares'}`,
+        `${formatCount(item.views)} ${unitLabel(viewLabel, item.views)}`,
+        `${formatCount(item.shares)} ${unitLabel(shareLabel, item.shares)}`,
     ];
     if (includeDownloads) {
-        stats.push(`${formatCount(item.downloads)} ${Number(item.downloads) === 1 ? 'download' : 'downloads'}`);
+        stats.push(`${formatCount(item.downloads)} ${unitLabel(downloadLabel, item.downloads)}`);
     }
 
     return `

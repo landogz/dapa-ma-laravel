@@ -50,6 +50,30 @@ final class AnalyticsEventTypes
 
     public const TRAINING_VIEW = 'training_view';
 
+    public const REHAB_VIEW = 'rehab_view';
+
+    public const REHAB_CALL = 'rehab_call';
+
+    public const REHAB_DIRECTIONS = 'rehab_directions';
+
+    public const HOPE_ORG_VIEW = 'hope_org_view';
+
+    public const JOURNAL_CREATE = 'journal_create';
+
+    public const CARE_CHECK_SUBMIT = 'care_check_submit';
+
+    public const MOOD_CHECKIN = 'mood_checkin';
+
+    public const CALM_COMPLETE = 'calm_complete';
+
+    public const COLOR_FUN_OPEN = 'color_fun_open';
+
+    public const COLOR_FUN_COMPLETE = 'color_fun_complete';
+
+    public const CONTEST_SUBMIT = 'contest_submit';
+
+    public const EVENT_REGISTER = 'event_register';
+
     /** Legacy aliases still accepted from older app builds. */
     public const LEGACY_VIEW = 'view';
 
@@ -98,6 +122,30 @@ final class AnalyticsEventTypes
             self::EVENT_SHARE,
             self::CONTEST_SHARE,
             self::REVIEW,
+            self::CONTEST_SUBMIT,
+            self::EVENT_REGISTER,
+            self::REHAB_CALL,
+            self::REHAB_DIRECTIONS,
+        ];
+    }
+
+    /**
+     * Care-tool and help-feature counts (no item body).
+     *
+     * @return list<string>
+     */
+    public static function careToolTypes(): array
+    {
+        return [
+            self::JOURNAL_CREATE,
+            self::CARE_CHECK_SUBMIT,
+            self::MOOD_CHECKIN,
+            self::CALM_COMPLETE,
+            self::COLOR_FUN_OPEN,
+            self::COLOR_FUN_COMPLETE,
+            self::NOTIFICATION_OPEN,
+            self::CONTEST_SUBMIT,
+            self::FEATURE_USE,
         ];
     }
 
@@ -141,6 +189,18 @@ final class AnalyticsEventTypes
             self::CONTEST_VIEW,
             self::CONTEST_SHARE,
             self::TRAINING_VIEW,
+            self::REHAB_VIEW,
+            self::REHAB_CALL,
+            self::REHAB_DIRECTIONS,
+            self::HOPE_ORG_VIEW,
+            self::JOURNAL_CREATE,
+            self::CARE_CHECK_SUBMIT,
+            self::MOOD_CHECKIN,
+            self::CALM_COMPLETE,
+            self::COLOR_FUN_OPEN,
+            self::COLOR_FUN_COMPLETE,
+            self::CONTEST_SUBMIT,
+            self::EVENT_REGISTER,
             self::LEGACY_VIEW,
             self::LEGACY_LESSON_COMPLETE,
             self::LEGACY_TRAINING_JOIN,

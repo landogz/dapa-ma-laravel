@@ -4,9 +4,11 @@ namespace App\Repositories\Analytics;
 
 use App\Models\AnalyticsEvent;
 use App\Models\Contest;
+use App\Models\HopeDirectoryOrganization;
 use App\Models\HopeEvent;
 use App\Models\IecMaterial;
 use App\Models\Post;
+use App\Models\RehabCenter;
 use App\Support\Analytics\AnalyticsDateRange;
 use App\Support\Analytics\AnalyticsEventTypes;
 use App\Support\ContentWorkflow\ContentWorkflowSections;
@@ -32,6 +34,8 @@ class ContentCatalogRepository
         $iecIds = $this->idsFor($resourceRows, 'iec_material');
         $eventIds = $this->idsFor($resourceRows, 'hope_event');
         $contestIds = $this->idsFor($resourceRows, 'contest');
+        $rehabIds = $this->idsFor($resourceRows, 'rehab_center');
+        $hopeOrgIds = $this->idsFor($resourceRows, 'hope_directory_org');
         $postIds = array_values(array_unique(array_merge(
             array_keys($postShareCounts),
             array_keys($postViewCounts),
@@ -91,6 +95,39 @@ class ContentCatalogRepository
                     ],
                 ),
             ),
+            $this->buildGroup(
+                key: 'rehab_centers',
+                label: 'Rehab centers',
+                section: 'rehab-centers',
+                includeDownloads: true,
+                viewLabel: 'Views',
+                shareLabel: 'Calls',
+                downloadLabel: 'Directions',
+                items: $this->resourceItems(
+                    $resourceRows->get('rehab_center', collect()),
+                    $this->titles(RehabCenter::class, $rehabIds, 'name'),
+                    'rehab-centers',
+                    [
+                        AnalyticsEventTypes::REHAB_VIEW => 'views',
+                        AnalyticsEventTypes::REHAB_CALL => 'shares',
+                        AnalyticsEventTypes::REHAB_DIRECTIONS => 'downloads',
+                    ],
+                ),
+            ),
+            $this->buildGroup(
+                key: 'hope_directory',
+                label: 'Hope directory',
+                section: 'hope-directory',
+                includeDownloads: false,
+                items: $this->resourceItems(
+                    $resourceRows->get('hope_directory_org', collect()),
+                    $this->titles(HopeDirectoryOrganization::class, $hopeOrgIds, 'name'),
+                    'hope-directory',
+                    [
+                        AnalyticsEventTypes::HOPE_ORG_VIEW => 'views',
+                    ],
+                ),
+            ),
         ];
 
         $totals = [
@@ -104,11 +141,17 @@ class ContentCatalogRepository
             'event_shares' => 0,
             'contest_views' => 0,
             'contest_shares' => 0,
+            'rehab_views' => 0,
+            'rehab_calls' => 0,
+            'rehab_directions' => 0,
+            'hope_org_views' => 0,
         ];
 
         foreach ($groups as $group) {
-            $totals['downloads'] += (int) $group['downloads'];
-            $totals['shares'] += (int) $group['shares'];
+            if (in_array($group['key'], ['posts', 'iec_materials', 'events', 'contests'], true)) {
+                $totals['downloads'] += (int) $group['downloads'];
+                $totals['shares'] += (int) $group['shares'];
+            }
 
             match ($group['key']) {
                 'posts' => $totals['post_shares'] = (int) $group['shares'],
@@ -125,6 +168,12 @@ class ContentCatalogRepository
                     $totals['contest_views'] = (int) $group['views'],
                     $totals['contest_shares'] = (int) $group['shares'],
                 ],
+                'rehab_centers' => [
+                    $totals['rehab_views'] = (int) $group['views'],
+                    $totals['rehab_calls'] = (int) $group['shares'],
+                    $totals['rehab_directions'] = (int) $group['downloads'],
+                ],
+                'hope_directory' => $totals['hope_org_views'] = (int) $group['views'],
                 default => null,
             };
         }
@@ -143,7 +192,7 @@ class ContentCatalogRepository
         return AnalyticsEvent::query()
             ->inWindow($range->from, $range->to)
             ->whereNotNull('resource_id')
-            ->whereIn('resource_type', ['iec_material', 'hope_event', 'contest'])
+            ->whereIn('resource_type', ['iec_material', 'hope_event', 'contest', 'rehab_center', 'hope_directory_org'])
             ->select(
                 'resource_type',
                 'resource_id',
@@ -208,7 +257,7 @@ class ContentCatalogRepository
      * @param  list<int>  $ids
      * @return array<int, string>
      */
-    private function titles(string $model, array $ids): array
+    private function titles(string $model, array $ids, string $column = 'title'): array
     {
         if ($ids === []) {
             return [];
@@ -216,7 +265,7 @@ class ContentCatalogRepository
 
         return $model::query()
             ->whereIn('id', $ids)
-            ->pluck('title', 'id')
+            ->pluck($column, 'id')
             ->map(fn ($title) => (string) $title)
             ->all();
     }
@@ -294,6 +343,9 @@ class ContentCatalogRepository
         string $section,
         bool $includeDownloads,
         array $items,
+        string $viewLabel = 'Views',
+        string $shareLabel = 'Shares',
+        string $downloadLabel = 'Downloads',
     ): array {
         $items = array_values(array_filter(
             $items,
@@ -319,6 +371,9 @@ class ContentCatalogRepository
             'section' => $section,
             'href' => ContentWorkflowSections::get($section)['path'] ?? '/admin/dashboard',
             'include_downloads' => $includeDownloads,
+            'view_label' => $viewLabel,
+            'share_label' => $shareLabel,
+            'download_label' => $downloadLabel,
             'views' => $views,
             'shares' => $shares,
             'downloads' => $downloads,

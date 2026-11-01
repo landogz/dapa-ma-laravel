@@ -120,15 +120,16 @@
             background: #fff;
         }
         .chart-title {
-            margin: 0 0 8px;
+            margin: 0 0 10px;
             color: #123a60;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
+            word-spacing: 0.18em;
         }
         .chart-row {
             border-collapse: collapse;
             width: 100%;
-            margin: 0 0 5px;
+            margin: 0 0 6px;
         }
         .chart-row td {
             padding: 0;
@@ -137,25 +138,31 @@
             color: #475569;
         }
         .chart-label {
-            width: 88px;
+            width: 110px;
             padding-right: 8px !important;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .chart-track {
-            background: #eef2f6;
-            border-radius: 999px;
+        .chart-bar-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
             height: 10px;
-            overflow: hidden;
         }
-        .chart-fill {
+        .chart-bar-table td {
             height: 10px;
-            border-radius: 999px;
-            background: linear-gradient(90deg, #3b82c4 0%, #055498 70%, #123a60 100%);
+            padding: 0;
+            border: 0;
+        }
+        .chart-fill-cell {
+            background: #055498;
+        }
+        .chart-track-cell {
+            background: #eef2f6;
         }
         .chart-value {
-            width: 48px;
+            width: 52px;
             text-align: right;
             padding-left: 8px !important;
             font-weight: 700;
@@ -218,19 +225,25 @@
                     @endphp
                     @if ($items->isNotEmpty())
                         <div class="chart-card" style="margin-bottom: 12px;">
-                            <p class="chart-title">{{ $chart['title'] ?? 'Chart' }}</p>
+                            <p class="chart-title">{{ str_replace(' ', html_entity_decode('&nbsp;'), (string) ($chart['title'] ?? 'Chart')) }}</p>
                             @foreach ($items->take(16) as $item)
                                 @php
                                     $value = (float) ($item['value'] ?? 0);
-                                    $width = max(2, round(($value / $max) * 100, 1));
+                                    $width = (int) max(2, min(100, round(($value / $max) * 100)));
+                                    $rest = 100 - $width;
+                                    $rawLabel = (string) ($item['label'] ?? '');
+                                    $label = \Illuminate\Support\Str::limit($rawLabel, 22, '…');
                                 @endphp
                                 <table class="chart-row">
                                     <tr>
-                                        <td class="chart-label">{{ $item['label'] ?? '' }}</td>
+                                        <td class="chart-label">{{ $label }}</td>
                                         <td>
-                                            <div class="chart-track">
-                                                <div class="chart-fill" style="width: {{ $width }}%;"></div>
-                                            </div>
+                                            <table class="chart-bar-table">
+                                                <tr>
+                                                    <td class="chart-fill-cell" width="{{ $width }}%"></td>
+                                                    <td class="chart-track-cell" width="{{ $rest }}%"></td>
+                                                </tr>
+                                            </table>
                                         </td>
                                         <td class="chart-value">{{ number_format($value) }}</td>
                                     </tr>
