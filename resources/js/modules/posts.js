@@ -11,11 +11,12 @@ import {
 import {
     buildSwalForm,
     buildSwalOptions,
+    bindZoomableImages,
     confirmWithSwal,
     failSwalValidation,
     formatApiValidationMessage,
 } from './shared/swal-forms';
-import { getRichTextValue, isRichTextEmpty } from './rich-text-editor';
+import { bindRichTextEditors, getRichTextValue, isRichTextEmpty } from './rich-text-editor';
 import { renderRatingBadge, renderStars } from './shared/ratings';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression, buildAdminActionButton } from './shared/table-actions';
 import { showSuccessToast, showErrorToast } from './shared/toast';
@@ -25,6 +26,11 @@ import {
 } from './shared/workflow-revision-diff';
 import { itemHasPublisherPendingReview, publisherReviewSwalButtons } from './shared/content-workflow';
 import { bindPostCommentDeletes, confirmDeletePostComment } from './post-comments';
+import {
+    ensureBlockedWordsLoaded,
+    maskBlockedWords,
+    maskBlockedWordsHtml,
+} from './shared/word-masker';
 
 let postsTable;
 let currentUserRole = null;
@@ -68,18 +74,20 @@ export function initPostsModule() {
     bindPostsStatusFilters();
     bindPostTableActions(tableEl);
 
-    if (postsTable && postsTableMode === getPostsTableMode()) {
+    const boot = async () => {
+        await ensureBlockedWordsLoaded();
+        if (postsTable && postsTableMode === getPostsTableMode()) {
+            loadPosts();
+            openPostFromQueryParam();
+            return;
+        }
+
+        await initializePostsTable(tableEl);
         loadPosts();
         openPostFromQueryParam();
+    };
 
-        return;
-    }
-
-    initializePostsTable(tableEl).then(() => {
-        loadPosts();
-        openPostFromQueryParam();
-    });
-
+    boot();
     bindPostsViewportListener(tableEl);
 }
 
@@ -226,7 +234,7 @@ function renderPostsTable() {
 }
 
 export async function promptCreateDraft() {
-    const categoryOptions = await loadCategoryOptions();
+    const categoryOptions = await loadCategoryOptions(null);
 
     if (!categoryOptions) {
         return;
@@ -253,6 +261,7 @@ export async function promptCreateDraft() {
 
 export async function viewPost(postId, { engagementTab = null } = {}) {
     try {
+        await ensureBlockedWordsLoaded();
         const { data } = await axios.get(`/admin/posts/${postId}`);
         const post = data?.data;
 
@@ -313,7 +322,7 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
                         ${renderStatusCell(post)}
                         <span class="post-view-id">#${escapeHtml(String(post.id))}</span>
                     </div>
-                    <h2 class="post-view-title">${escapeHtml(displayPost.title ?? 'Post')}</h2>
+                    <h2 class="post-view-title">${escapeHtml(maskBlockedWords(displayPost.title ?? 'Post'))}</h2>
                     <p class="post-view-subtitle">
                         <span>${escapeHtml(post.category?.name ?? 'Uncategorized')}</span>
                         <span class="post-view-dot" aria-hidden="true">·</span>
@@ -348,7 +357,7 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
                 </div>
 
                 <div class="post-view-content">
-                    ${displayPost.media_url ? `<img src="${escapeHtml(displayPost.media_url)}" alt="" class="post-view-media">` : ''}
+                    ${displayPost.media_url ? `<img src="${escapeHtml(displayPost.media_url)}" alt="Featured image" class="post-view-media" data-image-zoom>` : ''}
                     ${displayPost.youtube_url ? `
                         <a class="post-view-youtube" href="${escapeHtml(displayPost.youtube_url)}" target="_blank" rel="noopener noreferrer">
                             <i class="fas fa-play" aria-hidden="true"></i>
@@ -356,7 +365,9 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
                         </a>
                     ` : ''}
                     <div class="post-view-body diary-entry-preview">
-                        ${displayPost.body || '<p class="post-view-empty">No content yet.</p>'}
+                        ${displayPost.body
+                            ? maskBlockedWordsHtml(displayPost.body)
+                            : '<p class="post-view-empty">No content yet.</p>'}
                     </div>
                     ${hasEngagement ? renderPostEngagementPanel({ likes, comments, reviews, likesCount, commentsCount, reviewsCount, postId: post.id }) : ''}
                     ${toolbarHtml}
@@ -377,6 +388,10 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
             bindPostCommentDeletes(popup, deletePostComment);
             activatePostEngagementTab(engagementTab);
             bindPostViewToolbar(popup, post.id);
+            popup.querySelectorAll('.post-view-body img').forEach((img) => {
+                img.setAttribute('data-image-zoom', '');
+            });
+            bindZoomableImages(popup, 'img[data-image-zoom]');
         },
     });
 }
@@ -592,13 +607,13 @@ function renderPostCommentsSection(comments, postId) {
                 <div class="post-view-comment-head">
                     <div class="post-view-avatar" aria-hidden="true">${escapeHtml(initials(comment.user?.name))}</div>
                     <div class="post-view-comment-meta">
-                        <strong>${escapeHtml(comment.user?.name ?? 'Unknown user')}</strong>
+                        <strong>${escapeHtml(maskBlockedWords(comment.user?.name ?? 'Unknown user'))}</strong>
                         <em>${escapeHtml(formatDateTime(comment.created_at) || '')}</em>
                     </div>
                     <div class="post-view-comment-delete-wrap">${deleteButton}</div>
                 </div>
-                ${body ? `<p>${escapeHtml(body)}</p>` : ''}
-                ${imageUrl ? `<img class="post-view-comment-media" src="${escapeHtml(imageUrl)}" alt="Comment sticker">` : ''}
+                ${body ? `<p>${escapeHtml(maskBlockedWords(body))}</p>` : ''}
+                ${imageUrl ? `<img class="post-view-comment-media" src="${escapeHtml(imageUrl)}" alt="Comment sticker" data-image-zoom>` : ''}
                 ${children ? `<ul class="post-view-thread">${children}</ul>` : ''}
             </li>
         `;
@@ -648,7 +663,7 @@ export async function promptEditPost(postId) {
         return;
     }
 
-    const categoryOptions = await loadCategoryOptions();
+    const categoryOptions = await loadCategoryOptions(postForEditorForm(post));
 
     if (!categoryOptions) {
         return;
@@ -1133,7 +1148,7 @@ async function initializePostsTable(tableEl) {
             : [
                 { title: 'ID', className: 'dt-col-id' },
                 { title: 'Title', className: 'dt-col-primary dt-col-wide' },
-                { title: 'Category', className: 'dt-col-nowrap' },
+                { title: 'Category', className: 'dt-col-category' },
                 { title: 'Status', className: 'dt-col-nowrap' },
                 { title: 'Author', className: 'dt-col-nowrap' },
                 { title: 'Publish Date', className: 'dt-col-nowrap' },
@@ -1213,10 +1228,11 @@ function bindPostsViewportListener(tableEl) {
 }
 
 function buildPostRowData(post) {
+    const maskedTitle = maskBlockedWords(post.title ?? '');
     const titleLink = `
         <div class="flex min-w-0 flex-wrap items-center gap-2">
             <button type="button" class="admin-table-link-chip text-left" data-post-view="${post.id}" title="View post details">
-                ${escapeHtml(post.title)}
+                ${escapeHtml(maskedTitle)}
             </button>
             ${featuredBadge(post)}
         </div>
@@ -1229,7 +1245,7 @@ function buildPostRowData(post) {
                     <div>
                         <p class="admin-table-mobile-kicker">Post #${post.id}${isPostFeatured(post) ? ' · Featured' : ''}</p>
                         <button type="button" class="admin-table-mobile-title text-left" data-post-view="${post.id}" title="View post details">
-                            ${escapeHtml(post.title)}
+                            ${escapeHtml(maskedTitle)}
                         </button>
                     </div>
                     ${renderStatusCell(post)}
@@ -1403,6 +1419,7 @@ function buildPostForm(post = null, categoryOptions = [], {
             placeholder: 'Write the main content',
             value: post?.body ?? '',
             attribute: 'body',
+            hint: 'Use Add Media to insert images or videos into the body, or paste a YouTube URL via the media button.',
         },
         {
             id: 'post-category-id',
@@ -1502,8 +1519,10 @@ async function openPostEditorSwal({
                 confirmButtonText,
             }),
         focusConfirm: false,
-        didOpen: () => {
+        didOpen: async (popup) => {
             bindScheduledPublishDateField();
+            // Ensure Body CKEditor + Add Media mount even if Swal timing races.
+            await bindRichTextEditors(popup || document);
         },
         preConfirm: async () => {
             if (publisherReviewOnly) {
@@ -1617,16 +1636,13 @@ function syncPostsPageActions() {
     }
 }
 
-async function loadCategoryOptions() {
-    if (categoryOptionsCache && categoryOptionsCache.length > 1) {
-        return categoryOptionsCache;
-    }
-
+async function loadCategoryOptions(post = null) {
     try {
+        // Always refresh so Lookups → Post categories changes show up immediately.
         const { data } = await axios.get('/admin/categories');
-        const categories = data.data ?? [];
+        const categories = Array.isArray(data.data) ? data.data : [];
 
-        categoryOptionsCache = [
+        const options = [
             { value: '', label: 'Select a category' },
             ...categories.map((category) => ({
                 value: String(category.id),
@@ -1634,12 +1650,23 @@ async function loadCategoryOptions() {
             })),
         ];
 
+        // Keep the post's current category selectable even if Lookups marked it inactive.
+        const currentId = post?.category_id ?? post?.category?.id;
+        const currentName = post?.category?.name;
+        if (currentId && !options.some((option) => String(option.value) === String(currentId))) {
+            options.push({
+                value: String(currentId),
+                label: currentName ? `${currentName} (inactive)` : `Category #${currentId} (inactive)`,
+            });
+        }
+
+        categoryOptionsCache = options;
         return categoryOptionsCache;
     } catch ({ response }) {
         await Swal.fire({
             icon: 'error',
             title: 'Categories',
-            text: response?.data?.message ?? 'Failed to load categories.',
+            text: response?.data?.message ?? 'Failed to load categories from Lookups.',
             confirmButtonColor: '#CE2028',
         });
 
@@ -1654,9 +1681,8 @@ function buildMultipartPayload(formData, { method = 'POST' } = {}) {
     payload.append('body', formData.body);
     payload.append('category_id', String(formData.category_id));
 
-    if (formData.youtube_url) {
-        payload.append('youtube_url', formData.youtube_url);
-    }
+    // Always send youtube_url so clearing the field can null it out on update.
+    payload.append('youtube_url', formData.youtube_url ? String(formData.youtube_url) : '');
 
     if (formData.media_file) {
         payload.append('media_file', formData.media_file);

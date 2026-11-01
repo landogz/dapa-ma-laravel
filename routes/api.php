@@ -7,6 +7,7 @@ use App\Http\Controllers\API\Admin\DashboardAdminController;
 use App\Http\Controllers\API\Admin\CategoryAdminController;
 use App\Http\Controllers\API\Admin\DiaryAdminController;
 use App\Http\Controllers\API\Admin\NotificationAdminController;
+use App\Http\Controllers\API\Admin\EditorMediaAdminController;
 use App\Http\Controllers\API\Admin\PostAdminController;
 use App\Http\Controllers\API\Admin\PostComment\PostCommentAdminController;
 use App\Http\Controllers\API\Admin\RehabCenterAdminController;
@@ -27,6 +28,9 @@ use App\Http\Controllers\API\ReviewController;
 use App\Http\Controllers\API\TrainingController;
 use App\Http\Controllers\API\ContestController;
 use App\Http\Controllers\API\IecMaterialController;
+use App\Http\Controllers\API\StickerPackController;
+use App\Http\Controllers\API\Admin\StickerPackAdminController;
+use App\Http\Controllers\API\Admin\StickerAdminController;
 use App\Http\Controllers\API\AppTranslationController;
 use App\Http\Controllers\API\LegalPageController;
 use App\Http\Controllers\API\AppOptionController;
@@ -149,6 +153,9 @@ Route::prefix('v1')
         Route::get('/iec-materials/{iecMaterial}', [IecMaterialController::class, 'show'])
             ->whereNumber('iecMaterial')
             ->name('iec-materials.show');
+
+        Route::get('/sticker-packs', [StickerPackController::class, 'index'])
+            ->name('sticker-packs.index');
 
         // ── Public mobile app translations (EN / TL) ─────────────────────
         Route::get('/translations', [AppTranslationController::class, 'index'])
@@ -309,6 +316,7 @@ Route::prefix('v1')
                     Route::post('/posts',             [PostAdminController::class, 'store'])->name('posts.store');
                     Route::put('/posts/{post}',       [PostAdminController::class, 'update'])->name('posts.update');
                     Route::put('/posts/{post}/submit', [PostAdminController::class, 'submit'])->name('posts.submit');
+                    Route::post('/editor-media', [EditorMediaAdminController::class, 'store'])->name('editor-media.store');
                 });
 
                 // Publisher + Super Admin — review and scheduling
@@ -534,6 +542,21 @@ Route::prefix('v1')
                     Route::put('/trainings/{training}', [TrainingAdminController::class, 'update'])->name('trainings.update');
                     Route::put('/trainings/{training}/archive', [TrainingAdminController::class, 'archive'])->name('trainings.archive');
                     Route::put('/trainings/{training}/restore', [TrainingAdminController::class, 'restore'])->name('trainings.restore');
+
+                    // Sticker library — packs + stickers (Editor, Publisher, Super Admin)
+                    Route::get('/sticker-packs', [StickerPackAdminController::class, 'index'])->name('sticker-packs.index');
+                    Route::post('/sticker-packs', [StickerPackAdminController::class, 'store'])->name('sticker-packs.store');
+                    Route::put('/sticker-packs/reorder', [StickerPackAdminController::class, 'reorder'])->name('sticker-packs.reorder');
+                    Route::get('/sticker-packs/{stickerPack}', [StickerPackAdminController::class, 'show'])->name('sticker-packs.show');
+                    Route::put('/sticker-packs/{stickerPack}', [StickerPackAdminController::class, 'update'])->name('sticker-packs.update');
+                    Route::post('/sticker-packs/{stickerPack}', [StickerPackAdminController::class, 'update'])->name('sticker-packs.update.post');
+                    Route::delete('/sticker-packs/{stickerPack}', [StickerPackAdminController::class, 'destroy'])->name('sticker-packs.destroy');
+
+                    Route::post('/stickers', [StickerAdminController::class, 'store'])->name('stickers.store');
+                    Route::put('/stickers/reorder', [StickerAdminController::class, 'reorder'])->name('stickers.reorder');
+                    Route::put('/stickers/{sticker}', [StickerAdminController::class, 'update'])->name('stickers.update');
+                    Route::post('/stickers/{sticker}', [StickerAdminController::class, 'update'])->name('stickers.update.post');
+                    Route::delete('/stickers/{sticker}', [StickerAdminController::class, 'destroy'])->name('stickers.destroy');
                 });
 
                 Route::middleware('role:super_admin')->group(function (): void {

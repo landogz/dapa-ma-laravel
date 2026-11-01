@@ -35,6 +35,7 @@ class BlockedWordApiTest extends TestCase
         $this->assertSame('That class is fine', $service->mask('That class is fine'));
         $this->assertSame('What an ****.', $service->mask('What an ASS.'));
         $this->assertSame('This is damn loud', $service->mask('This is damn loud'));
+        $this->assertSame('<p>What an ****.</p>', $service->maskHtml('<p>What an ASS.</p>'));
     }
 
     public function test_admin_can_create_update_and_delete_word(): void

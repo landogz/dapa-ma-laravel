@@ -557,6 +557,114 @@ export function bindColorPickers(root = document) {
 /**
  * Live-update image previews for file inputs rendered with showPreview / previewUrl.
  */
+/**
+ * Open a full-size image lightbox above the current admin modal.
+ * Uses a dedicated overlay (not SweetAlert) so parent Swal forms stay open.
+ */
+export function openAdminImageViewer(url, { alt = 'Image preview' } = {}) {
+    const src = String(url || '').trim();
+    if (!src || typeof document === 'undefined') {
+        return;
+    }
+
+    document.getElementById('admin-image-viewer-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'admin-image-viewer-overlay';
+    overlay.className = 'admin-image-viewer-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Full image preview');
+    overlay.innerHTML = `
+        <button type="button" class="admin-image-viewer-close" aria-label="Close image preview">
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+        <div class="admin-image-viewer">
+            <img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" class="admin-image-viewer-img">
+        </div>
+    `;
+
+    const close = () => {
+        document.removeEventListener('keydown', onKeyDown, true);
+        overlay.remove();
+    };
+
+    const onKeyDown = (event) => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            close();
+        }
+    };
+
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay || event.target.closest('.admin-image-viewer-close')) {
+            close();
+        }
+    });
+
+    overlay.querySelector('.admin-image-viewer-img')?.addEventListener('click', (event) => {
+        event.stopPropagation();
+    });
+
+    document.addEventListener('keydown', onKeyDown, true);
+    document.body.appendChild(overlay);
+    overlay.querySelector('.admin-image-viewer-close')?.focus();
+}
+
+function bindImagePreviewViewer(preview, wrap) {
+    if (!preview || preview.dataset.viewerBound === '1') {
+        return;
+    }
+
+    const src = preview.getAttribute('src') || '';
+    if (!src || preview.hidden) {
+        return;
+    }
+
+    preview.dataset.viewerBound = '1';
+    preview.classList.add('is-zoomable');
+    preview.setAttribute('role', 'button');
+    preview.setAttribute('tabindex', '0');
+    preview.setAttribute('aria-label', 'View full image');
+    preview.title = 'Click to view full image';
+
+    if (wrap) {
+        wrap.classList.add('is-zoomable');
+    }
+
+    const open = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const currentSrc = preview.getAttribute('src') || '';
+        if (!currentSrc || preview.hidden) {
+            return;
+        }
+        openAdminImageViewer(currentSrc, { alt: preview.getAttribute('alt') || 'Image preview' });
+    };
+
+    preview.addEventListener('click', open);
+    preview.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            open(event);
+        }
+    });
+}
+
+/**
+ * Make matching images open the shared full-size lightbox.
+ * Safe to call repeatedly; already-bound images are skipped.
+ */
+export function bindZoomableImages(root = document, selector = 'img[data-image-zoom]') {
+    if (!root?.querySelectorAll) {
+        return;
+    }
+
+    root.querySelectorAll(selector).forEach((img) => {
+        bindImagePreviewViewer(img, img.closest('.admin-swal-image-preview-wrap'));
+    });
+}
+
 export function bindImageFilePreviews(root = document) {
     root.querySelectorAll('input[type="file"][data-image-preview-input="true"]').forEach((input) => {
         if (input.dataset.previewBound === '1') {
@@ -567,12 +675,25 @@ export function bindImageFilePreviews(root = document) {
 
         const preview = root.querySelector(`#${CSS.escape(input.id)}-preview`);
         const empty = root.querySelector(`#${CSS.escape(input.id)}-preview-empty`);
+        const wrap = root.querySelector(`[data-image-preview-for="${CSS.escape(input.id)}"]`)
+            || preview?.closest('.admin-swal-image-preview-wrap');
 
         if (!preview) {
             return;
         }
 
         let objectUrl = null;
+
+        const syncViewer = () => {
+            if (preview.hidden || !preview.getAttribute('src')) {
+                preview.classList.remove('is-zoomable');
+                wrap?.classList.remove('is-zoomable');
+                return;
+            }
+            bindImagePreviewViewer(preview, wrap);
+        };
+
+        syncViewer();
 
         input.addEventListener('change', () => {
             const file = input.files?.[0] ?? null;
@@ -589,11 +710,14 @@ export function bindImageFilePreviews(root = document) {
                     empty.hidden = true;
                     empty.setAttribute('aria-hidden', 'true');
                 }
+                syncViewer();
             };
 
             const showEmptyState = () => {
                 preview.removeAttribute('src');
                 preview.hidden = true;
+                preview.classList.remove('is-zoomable');
+                wrap?.classList.remove('is-zoomable');
                 if (empty) {
                     empty.hidden = false;
                     empty.setAttribute('aria-hidden', 'false');
@@ -1141,6 +1265,8 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
 
     return {
         ...restOptions,
+        // Keep dialogs on <body> so the admin sidebar (z-40) cannot paint above the backdrop.
+        target: restOptions.target ?? document.body,
         title: title || restOptions.title || ' ',
         text: confirmDialog ? (text ?? restOptions.text) : restOptions.text,
         html: confirmDialog && text && !html ? undefined : html,

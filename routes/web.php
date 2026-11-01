@@ -78,6 +78,8 @@ Route::get('/admin/contests', fn () => AdminPage::render('admin.contests.index',
 
 Route::get('/admin/iec-materials', fn () => AdminPage::render('admin.iec-materials.index', 'iec-materials', 'IEC Materials'));
 
+Route::get('/admin/sticker-library', fn () => AdminPage::render('admin.sticker-library.index', 'sticker-library', 'Sticker Library'));
+
 Route::get('/admin/app-translations', fn () => AdminPage::render('admin.app-translations.index', 'app-translations', 'App Translations'));
 
 Route::get('/admin/notifications', fn () => AdminPage::render('admin.notifications.index', 'notifications', 'In-app Notifications'));

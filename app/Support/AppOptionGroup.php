@@ -20,6 +20,8 @@ final class AppOptionGroup
 
     public const REHAB_CENTER = 'rehab_center';
 
+    public const POST_CATEGORY = 'post_category';
+
     public const SELECTION_SINGLE = 'single';
 
     public const SELECTION_MULTIPLE = 'multiple';
@@ -38,6 +40,7 @@ final class AppOptionGroup
             self::CARE_TOOLKIT,
             self::CARE_SUPPORT,
             self::REHAB_CENTER,
+            self::POST_CATEGORY,
         ];
     }
 
@@ -99,6 +102,12 @@ final class AppOptionGroup
                 'subtitle' => 'Treatment Rehabilitation Center types — set accent colors for badges and map pins',
                 'selection' => self::SELECTION_SINGLE,
                 'surface' => 'Find Help',
+            ],
+            self::POST_CATEGORY => [
+                'title' => 'Post categories',
+                'subtitle' => 'Categories for /admin/posts and the mobile post filters — set Active to show in the picker',
+                'selection' => self::SELECTION_SINGLE,
+                'surface' => 'Publish',
             ],
         ];
     }
@@ -308,6 +317,74 @@ final class AppOptionGroup
                 'Substance use at mental health care',
                 '#7C3AED',
             ),
+
+            // Post categories (keys match categories.slug / mobile filter tabs)
+            self::row(
+                self::POST_CATEGORY,
+                'drug-effects',
+                'Drug Effects',
+                'Drug Effects',
+                1,
+                'science_outlined',
+                'Effects of substance use',
+                'Epekto ng substance use',
+                '#055498',
+            ),
+            self::row(
+                self::POST_CATEGORY,
+                'rehabilitation',
+                'Rehabilitation',
+                'Rehabilitation',
+                2,
+                'medical_services_outlined',
+                'Recovery and rehabilitation',
+                'Paghilom at rehabilitasyon',
+                '#16A34A',
+            ),
+            self::row(
+                self::POST_CATEGORY,
+                'prevention',
+                'Prevention',
+                'Prevention',
+                3,
+                'shield_outlined',
+                'Prevention programs and tips',
+                'Programa at tip para sa prevention',
+                '#FBD116',
+            ),
+            self::row(
+                self::POST_CATEGORY,
+                'iec',
+                'Information, Education, and Communication (IEC)',
+                'Information, Education, and Communication (IEC)',
+                4,
+                'campaign_outlined',
+                'IEC materials and campaigns',
+                'IEC materials at kampanya',
+                '#7C3AED',
+            ),
+            self::row(
+                self::POST_CATEGORY,
+                'news',
+                'News',
+                'News',
+                5,
+                'newspaper_outlined',
+                'News and announcements',
+                'Balita at anunsyo',
+                '#CE2028',
+            ),
+            self::row(
+                self::POST_CATEGORY,
+                'legal',
+                'Legal',
+                'Legal',
+                6,
+                'gavel_outlined',
+                'Laws, policies, and regulations',
+                'Batas, polisiya, at regulasyon',
+                '#123a60',
+            ),
         ];
     }
 
@@ -356,6 +433,11 @@ final class AppOptionGroup
             'phone_outlined' => 'fas fa-phone',
             'chat_outlined' => 'fas fa-comments',
             'life_ring_outlined' => 'fas fa-life-ring',
+            'science_outlined' => 'fas fa-flask',
+            'shield_outlined' => 'fas fa-shield-halved',
+            'campaign_outlined' => 'fas fa-bullhorn',
+            'newspaper_outlined' => 'fas fa-newspaper',
+            'gavel_outlined' => 'fas fa-gavel',
             default => 'fas fa-icons',
         };
     }
@@ -401,6 +483,11 @@ final class AppOptionGroup
             ['value' => 'phone_outlined', 'label' => 'Phone'],
             ['value' => 'chat_outlined', 'label' => 'Chat'],
             ['value' => 'life_ring_outlined', 'label' => 'Life ring'],
+            ['value' => 'science_outlined', 'label' => 'Science'],
+            ['value' => 'shield_outlined', 'label' => 'Shield'],
+            ['value' => 'campaign_outlined', 'label' => 'Campaign'],
+            ['value' => 'newspaper_outlined', 'label' => 'News'],
+            ['value' => 'gavel_outlined', 'label' => 'Legal'],
         ];
 
         return array_map(static function (array $item): array {

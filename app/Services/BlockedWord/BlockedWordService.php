@@ -91,6 +91,28 @@ class BlockedWordService
     }
 
     /**
+     * Mask blocked words in HTML without altering tags/attributes.
+     */
+    public function maskHtml(?string $html): string
+    {
+        if ($html === null || $html === '') {
+            return '';
+        }
+
+        if ($this->activeWords() === []) {
+            return $html;
+        }
+
+        return preg_replace_callback(
+            '/(^|>)([^<]*)/u',
+            function (array $matches): string {
+                return $matches[1].$this->mask($matches[2]);
+            },
+            $html,
+        ) ?? $html;
+    }
+
+    /**
      * @return array<int, string>
      */
     public function activeWords(): array

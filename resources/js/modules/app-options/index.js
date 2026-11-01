@@ -175,6 +175,7 @@ function fillGroupTabs() {
         care_toolkit: 'fas fa-heart-pulse',
         care_support: 'fas fa-headset',
         rehab_center: 'fas fa-house-medical',
+        post_category: 'fas fa-folder-open',
         journal_sky: 'fas fa-palette',
         journal_feeling: 'fas fa-face-smile',
         journal_impact: 'fas fa-sun',

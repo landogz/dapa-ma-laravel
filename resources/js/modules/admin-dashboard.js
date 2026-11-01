@@ -10,6 +10,7 @@ import { enableAdminSwalHeaders } from './shared/swal-forms';
 import { startAdminFilterSelectWatcher } from './shared/filter-select';
 import { initContestsModule } from './contests/index';
 import { initIecMaterialsModule } from './iec-materials/index';
+import { initStickerLibraryModule } from './sticker-library/index';
 import { initAppTranslationsModule } from './app-translations/index';
 import { initSettingsModule } from './settings/index';
 import { initAppOptionsModule } from './app-options/index';
@@ -36,6 +37,7 @@ const ADMIN_ROLE_SECTIONS = {
         'rehab-centers',
         'contests',
         'iec-materials',
+        'sticker-library',
         'app-translations',
         'notifications',
         'analytics',
@@ -56,6 +58,7 @@ const ADMIN_ROLE_SECTIONS = {
         'rehab-centers',
         'contests',
         'iec-materials',
+        'sticker-library',
         'app-translations',
         'notifications',
         'care-toolkit',
@@ -72,6 +75,7 @@ const ADMIN_ROLE_SECTIONS = {
         'rehab-centers',
         'contests',
         'iec-materials',
+        'sticker-library',
         'app-translations',
         'notifications',
         'care-toolkit',
@@ -92,6 +96,7 @@ const PAGE_SECTION_REQUIREMENTS = {
     'admin-rehab-centers': 'rehab-centers',
     'admin-contests': 'contests',
     'admin-iec-materials': 'iec-materials',
+    'admin-sticker-library': 'sticker-library',
     'admin-app-translations': 'app-translations',
     'admin-notifications': 'notifications',
     'admin-analytics': 'analytics',
@@ -113,6 +118,7 @@ const SECTION_PATHS = {
     'rehab-centers': '/admin/rehab-centers',
     'contests': '/admin/contests',
     'iec-materials': '/admin/iec-materials',
+    'sticker-library': '/admin/sticker-library',
     'app-translations': '/admin/app-translations',
     notifications: '/admin/notifications',
     analytics: '/admin/analytics',
@@ -567,6 +573,9 @@ function initializePageContent(pageName, allowedSections, profile = null) {
         case 'admin-iec-materials':
             initIecMaterialsModule();
             break;
+        case 'admin-sticker-library':
+            initStickerLibraryModule();
+            break;
         case 'admin-app-translations':
             initAppTranslationsModule();
             break;
@@ -679,6 +688,16 @@ async function loadOverviewCounts(allowedSections) {
             allowed: allowedSections.includes('iec-materials'),
             request: () => window.axios.get('/admin/iec-materials', { params: { per_page: 1 } }),
             count: (response) => response.data.data?.total,
+        },
+        {
+            key: 'sticker-library',
+            allowed: allowedSections.includes('sticker-library'),
+            request: () => window.axios.get('/admin/sticker-packs'),
+            count: (response) => (
+                Array.isArray(response.data.data)
+                    ? response.data.data.reduce((sum, pack) => sum + Number(pack.stickers_count ?? pack.stickers?.length ?? 0), 0)
+                    : 0
+            ),
         },
         {
             key: 'app-translations',

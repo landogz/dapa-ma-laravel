@@ -38,5 +38,8 @@ class AppOptionSeeder extends Seeder
             ->where('group', AppOptionGroup::JOURNAL_SKY)
             ->whereNotIn('key', $skyKeys)
             ->update(['is_active' => false]);
+
+        // Keep posts.categories rows aligned with Lookups → Post categories.
+        app(\App\Services\CategoryService::class)->syncActiveLookupsToCategories();
     }
 }

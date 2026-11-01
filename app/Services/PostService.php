@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Repositories\PostRepository;
 use App\Services\AdminNotificationService;
+use App\Services\BlockedWord\BlockedWordService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -17,15 +18,18 @@ class PostService
     private PostRepository $postRepository;
     private AdminNotificationService $adminNotificationService;
     private UserNotificationService $userNotificationService;
+    private BlockedWordService $blockedWordService;
 
     public function __construct(
         PostRepository $postRepository,
         AdminNotificationService $adminNotificationService,
         UserNotificationService $userNotificationService,
+        BlockedWordService $blockedWordService,
     ) {
         $this->postRepository = $postRepository;
         $this->adminNotificationService = $adminNotificationService;
         $this->userNotificationService = $userNotificationService;
+        $this->blockedWordService = $blockedWordService;
     }
 
     public function listAdmin(int $perPage = 20, ?User $actor = null): LengthAwarePaginator
@@ -69,6 +73,7 @@ class PostService
 
     public function createDraft(array $data, User $author): Post
     {
+        $data = $this->applyWordBlocking($data);
         $mediaUrl = $this->storeMediaFile($data['media_file'] ?? null);
         $publishMeta = $this->resolveSuperAdminPublishMeta($author);
 
@@ -98,6 +103,8 @@ class PostService
 
     public function updateDraft(Post $post, array $data, ?User $actor = null): Post
     {
+        $data = $this->applyWordBlocking($data);
+
         if ($actor?->role === 'editor' && $post->status === 'published') {
             return $this->savePendingRevision($post, $data);
         }
@@ -109,7 +116,14 @@ class PostService
         $this->assertStatus($post, $allowedStatuses);
         $wasPublished = $post->status === 'published';
 
-        $payload = array_filter($data, fn ($value) => $value !== null);
+        // Keep explicit nulls for clearable nullable columns (e.g. removing YouTube URL).
+        $clearableNulls = ['youtube_url'];
+        $payload = [];
+        foreach ($data as $key => $value) {
+            if ($value !== null || in_array($key, $clearableNulls, true)) {
+                $payload[$key] = $value;
+            }
+        }
 
         if (($data['media_file'] ?? null) instanceof UploadedFile) {
             $this->deleteStoredMedia($post->media_url);
@@ -298,7 +312,12 @@ class PostService
             : $post->liveContentSnapshot();
 
         foreach (['title', 'body', 'category_id', 'youtube_url'] as $field) {
-            if (array_key_exists($field, $data) && $data[$field] !== null) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+
+            // youtube_url may be explicitly null to clear it from the pending revision.
+            if ($field === 'youtube_url' || $data[$field] !== null) {
                 $revision[$field] = $data[$field];
             }
         }
@@ -420,6 +439,23 @@ class PostService
         }
 
         return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function applyWordBlocking(array $data): array
+    {
+        if (array_key_exists('title', $data) && is_string($data['title'])) {
+            $data['title'] = $this->blockedWordService->mask($data['title']);
+        }
+
+        if (array_key_exists('body', $data) && is_string($data['body'])) {
+            $data['body'] = $this->blockedWordService->maskHtml($data['body']);
+        }
+
+        return $data;
     }
 
     private function assertStatus(Post $post, array $allowedStatuses): void

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Repositories\AppOptionRepository;
 use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Support\AppOptionGroup;
+use App\Support\ContentWorkflow\ContentWorkflowStatus;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -18,6 +19,7 @@ class AppOptionService
     public function __construct(
         private readonly AppOptionRepository $repository,
         private readonly ContentWorkflowService $contentWorkflow,
+        private readonly CategoryService $categoryService,
     ) {
     }
 
@@ -38,8 +40,10 @@ class AppOptionService
     public function create(array $data, User $actor): AppOption
     {
         $payload = $this->contentWorkflow->prepareCreatePayload($actor, $this->normalize($data));
+        $option = $this->repository->create($payload);
+        $this->syncPostCategoryLookup($option);
 
-        return $this->repository->create($payload);
+        return $option;
     }
 
     public function update(AppOption $option, array $data, User $actor): AppOption
@@ -58,7 +62,10 @@ class AppOptionService
             return $option->fresh() ?? $option;
         }
 
-        return $this->repository->update($option, $payload);
+        $updated = $this->repository->update($option, $payload);
+        $this->syncPostCategoryLookup($updated);
+
+        return $updated;
     }
 
     public function delete(AppOption $option): void
@@ -209,6 +216,21 @@ class AppOptionService
             return $this->repository->hasAny($group);
         } catch (\Throwable) {
             return false;
+        }
+    }
+
+    private function syncPostCategoryLookup(AppOption $option): void
+    {
+        if ($option->group !== AppOptionGroup::POST_CATEGORY) {
+            return;
+        }
+
+        // Keep categories.id stable for posts; rename/create from Lookups key + EN label.
+        if ($option->is_active && (
+            ! Schema::hasColumn('app_options', 'workflow_status')
+            || $option->workflow_status === ContentWorkflowStatus::PUBLISHED
+        )) {
+            $this->categoryService->syncFromLookup($option);
         }
     }
 

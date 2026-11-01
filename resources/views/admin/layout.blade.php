@@ -63,6 +63,10 @@
                         <i class="fas fa-photo-film w-5 text-[#FBD116]"></i>
                         <span>IEC Materials</span>
                     </a>
+                    <a href="/admin/sticker-library" class="admin-nav-link {{ ($activePage ?? '') === 'sticker-library' ? 'admin-nav-link-active' : '' }}" data-nav-section="sticker-library">
+                        <i class="fas fa-face-smile w-5 text-[#FBD116]"></i>
+                        <span>Sticker Library</span>
+                    </a>
                 </div>
 
                 <div class="admin-nav-group">
