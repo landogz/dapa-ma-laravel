@@ -38,6 +38,16 @@ final class AnalyticsEventTypes
 
     public const IEC_SHARE = 'iec_share';
 
+    public const IEC_DOWNLOAD = 'iec_download';
+
+    public const EVENT_VIEW = 'event_view';
+
+    public const EVENT_SHARE = 'event_share';
+
+    public const CONTEST_VIEW = 'contest_view';
+
+    public const CONTEST_SHARE = 'contest_share';
+
     public const TRAINING_VIEW = 'training_view';
 
     /** Legacy aliases still accepted from older app builds. */
@@ -62,7 +72,15 @@ final class AnalyticsEventTypes
      */
     public static function shareTypes(): array
     {
-        return [self::SHARE, self::IEC_SHARE];
+        return [self::SHARE, self::IEC_SHARE, self::EVENT_SHARE, self::CONTEST_SHARE];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function downloadTypes(): array
+    {
+        return [self::IEC_DOWNLOAD];
     }
 
     /**
@@ -76,6 +94,9 @@ final class AnalyticsEventTypes
             self::BOOKMARK,
             self::SHARE,
             self::IEC_SHARE,
+            self::IEC_DOWNLOAD,
+            self::EVENT_SHARE,
+            self::CONTEST_SHARE,
             self::REVIEW,
         ];
     }
@@ -114,6 +135,11 @@ final class AnalyticsEventTypes
             self::FEATURE_USE,
             self::IEC_VIEW,
             self::IEC_SHARE,
+            self::IEC_DOWNLOAD,
+            self::EVENT_VIEW,
+            self::EVENT_SHARE,
+            self::CONTEST_VIEW,
+            self::CONTEST_SHARE,
             self::TRAINING_VIEW,
             self::LEGACY_VIEW,
             self::LEGACY_LESSON_COMPLETE,

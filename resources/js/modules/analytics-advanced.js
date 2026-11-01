@@ -98,6 +98,7 @@ export function renderExtendedKpis(kpis = {}, tooltips = {}) {
         'app-opens': kpis.app_opens,
         'avg-session': kpis.avg_session_duration_seconds,
         'rel-engagements': kpis.relational_engagements,
+        downloads: kpis.downloads,
     };
     Object.entries(map).forEach(([key, value]) => {
         document.querySelectorAll(`[data-analytics-summary="${key}"]`).forEach((el) => {
@@ -264,7 +265,7 @@ async function loadContentTab(params) {
     const postId = Number(document.getElementById('analytics-content-post-id')?.value || 0);
     if (!detail) return;
     if (!postId) {
-        detail.innerHTML = '<p class="text-sm text-slate-400">Enter a post ID to inspect engagement.</p>';
+        detail.innerHTML = '<p class="text-sm text-slate-400">Catalog totals are in the panel above. Enter a post ID to inspect a single post.</p>';
         if (engagers) engagers.innerHTML = '';
         return;
     }

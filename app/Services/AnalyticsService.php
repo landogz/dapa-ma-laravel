@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Repositories\AnalyticsRepository;
+use App\Services\Analytics\ContentCatalogService;
 use App\Support\Analytics\AnalyticsDateRange;
 use Carbon\Carbon;
 
@@ -10,6 +11,7 @@ class AnalyticsService
 {
     public function __construct(
         private readonly AnalyticsRepository $analyticsRepository,
+        private readonly ContentCatalogService $contentCatalogService,
     ) {
     }
 
@@ -34,12 +36,15 @@ class AnalyticsService
         $views = (int) ($current['views'] ?? 0);
         $bookmarks = (int) ($current['bookmarks'] ?? 0);
         $shares = (int) ($current['shares'] ?? 0);
+        $downloads = (int) ($current['downloads'] ?? $extras['downloads'] ?? 0);
         $relational = (int) ($extras['relational_engagements'] ?? 0);
+        $contentCatalog = $this->contentCatalogService->dashboard($range);
 
         $payload = [
             'range' => $range->toArray(),
             'range_days' => $range->daySpan(),
             'by_event_type' => $this->analyticsRepository->countByEventType($range),
+            'content_catalog' => $contentCatalog,
             'top_posts' => $this->analyticsRepository->topPosts($range, 10),
             'top_rated_posts' => $this->analyticsRepository->topRatedPosts(10),
             'top_categories' => $this->analyticsRepository->topCategories($range, 6),
@@ -58,6 +63,7 @@ class AnalyticsService
                 'views' => $views,
                 'bookmarks' => $bookmarks,
                 'shares' => $shares,
+                'downloads' => $downloads,
                 'engagement' => $views > 0 ? round((($bookmarks + $shares) / $views) * 100, 1) : 0,
                 'relational_engagements' => $relational,
                 'formula' => '(bookmarks + shares) / views × 100; relational engagements also include likes/comments/bookmark rows',
@@ -73,6 +79,8 @@ class AnalyticsService
                 'mau' => 'Distinct users with a session or event in the last 30 days.',
                 'app_opens' => 'Count of app_open events in the selected range (available after mobile instrumentation deploy).',
                 'avg_session_duration_seconds' => 'Average duration from analytics_sessions in the selected range.',
+                'downloads' => 'IEC material downloads from the mobile app in the selected range.',
+                'shares' => 'Post, IEC, event, and contest shares from the mobile app.',
             ],
         ];
 

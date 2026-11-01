@@ -15,6 +15,7 @@ import {
     getAnalyticsQueryParams,
     renderExtendedKpis,
 } from './analytics-advanced';
+import { renderContentCatalog } from './analytics-content-catalog';
 
 const METRIC_COLORS = {
     total: '#055498',
@@ -35,10 +36,15 @@ const EVENT_TYPE_META = {
     post_view: { label: 'Post views', icon: 'fas fa-eye' },
     view: { label: 'Views', icon: 'fas fa-eye' },
     iec_view: { label: 'IEC views', icon: 'fas fa-photo-film' },
+    iec_download: { label: 'IEC downloads', icon: 'fas fa-download' },
     bookmark: { label: 'Bookmarks', icon: 'fas fa-bookmark' },
     search: { label: 'Searches', icon: 'fas fa-magnifying-glass' },
     share: { label: 'Shares', icon: 'fas fa-share-nodes' },
     iec_share: { label: 'IEC shares', icon: 'fas fa-share-nodes' },
+    event_view: { label: 'Event views', icon: 'fas fa-calendar-day' },
+    event_share: { label: 'Event shares', icon: 'fas fa-share-nodes' },
+    contest_view: { label: 'Contest views', icon: 'fas fa-trophy' },
+    contest_share: { label: 'Contest shares', icon: 'fas fa-share-nodes' },
 };
 
 let cachedDailyCounts = [];
@@ -258,6 +264,7 @@ export function loadAnalytics() {
             renderInsights(insights);
             renderEventTypeSummary(eventTypes);
             renderFunnel(funnel);
+            renderContentCatalog(payload.content_catalog ?? {});
             renderTopPosts(topPosts);
             renderTopRatedPosts(topRatedPosts);
             renderTopCategories(topCategories);
@@ -313,6 +320,7 @@ function summarizeEventTypes(events) {
         bookmarks: 0,
         searches: 0,
         shares: 0,
+        downloads: 0,
     };
 
     events.forEach((event) => {
@@ -327,6 +335,8 @@ function summarizeEventTypes(events) {
             summary.bookmarks += total;
         } else if (type.includes('search')) {
             summary.searches += total;
+        } else if (type.includes('download')) {
+            summary.downloads += total;
         } else if (type.includes('share')) {
             summary.shares += total;
         }
@@ -366,6 +376,7 @@ function renderAnalyticsSummary(periodComparison, generatedAt, eventTypes = [], 
     setValue('bookmarks', current.bookmarks ?? 0);
     setValue('searches', current.searches ?? 0);
     setValue('shares', current.shares ?? 0);
+    setValue('downloads', current.downloads ?? summarized.downloads ?? 0);
     setValue('engagement', engagement, `${engagement.toFixed(1)}%`);
 
     updatePeriodTrend('total-events', totalEvents, previous.total_events ?? 0, periodLabel);
@@ -375,6 +386,7 @@ function renderAnalyticsSummary(periodComparison, generatedAt, eventTypes = [], 
     updatePeriodTrend('bookmarks', current.bookmarks ?? 0, previous.bookmarks ?? 0, periodLabel);
     updatePeriodTrend('searches', current.searches ?? 0, previous.searches ?? 0, periodLabel);
     updatePeriodTrend('shares', current.shares ?? 0, previous.shares ?? 0, periodLabel);
+    updatePeriodTrend('downloads', current.downloads ?? 0, previous.downloads ?? 0, periodLabel);
     updateChangeBadge('engagement', engagement, previousEngagement);
 
     const avgDayEl = document.querySelector('[data-analytics-avg-day]');
@@ -1343,6 +1355,51 @@ function describeGroupedEvent(group) {
         };
     }
 
+    if (type === 'iec_download') {
+        return {
+            icon: 'fas fa-download',
+            tone: 'is-share',
+            title: 'IEC material downloaded',
+            details: `${userName} downloaded an IEC material.`,
+        };
+    }
+
+    if (type === 'event_view') {
+        return {
+            icon: 'fas fa-calendar-day',
+            tone: 'is-view',
+            title: 'Event viewed',
+            details: `${userName} opened an event.`,
+        };
+    }
+
+    if (type === 'event_share') {
+        return {
+            icon: 'fas fa-share-nodes',
+            tone: 'is-share',
+            title: 'Event shared',
+            details: `${userName} shared an event.`,
+        };
+    }
+
+    if (type === 'contest_view') {
+        return {
+            icon: 'fas fa-trophy',
+            tone: 'is-view',
+            title: 'Contest viewed',
+            details: `${userName} opened a contest.`,
+        };
+    }
+
+    if (type === 'contest_share') {
+        return {
+            icon: 'fas fa-share-nodes',
+            tone: 'is-share',
+            title: 'Contest shared',
+            details: `${userName} shared a contest.`,
+        };
+    }
+
     if (type === 'signup' || type === 'register' || type === 'user_registered') {
         return {
             icon: 'fas fa-user-plus',
@@ -1642,12 +1699,13 @@ function renderFunnel(funnel) {
     const views = Number(funnel.views) || 0;
     const bookmarks = Number(funnel.bookmarks) || 0;
     const shares = Number(funnel.shares) || 0;
-    const max = Math.max(views, bookmarks, shares, 1);
+    const downloads = Number(funnel.downloads) || 0;
+    const max = Math.max(views, bookmarks, shares, downloads, 1);
 
-    if (views + bookmarks + shares === 0) {
+    if (views + bookmarks + shares + downloads === 0) {
         container.innerHTML = buildAnalyticsEmptyState(
             'No funnel data yet',
-            'Views, bookmarks, and shares will populate this conversion path.',
+            'Views, bookmarks, shares, and downloads will populate this conversion path.',
             'fa-filter',
         );
 
@@ -1658,6 +1716,7 @@ function renderFunnel(funnel) {
         { key: 'views', label: 'Views', value: views, className: '' },
         { key: 'bookmarks', label: 'Bookmarks', value: bookmarks, className: 'is-bookmarks' },
         { key: 'shares', label: 'Shares', value: shares, className: 'is-shares' },
+        { key: 'downloads', label: 'Downloads', value: downloads, className: 'is-shares' },
     ];
 
     container.innerHTML = `

@@ -185,7 +185,7 @@
             </article>
         </div>
 
-        <div class="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-6">
+        <div class="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4">
             <article class="analytics-mini-kpi">
                 <p class="analytics-mini-kpi-label">Sessions</p>
                 <p class="analytics-mini-kpi-value" data-analytics-summary="unique-sessions">--</p>
@@ -205,6 +205,11 @@
                 <p class="analytics-mini-kpi-label">Shares</p>
                 <p class="analytics-mini-kpi-value" data-analytics-summary="shares">--</p>
                 <p class="admin-trend" data-analytics-trend="shares">–</p>
+            </article>
+            <article class="analytics-mini-kpi" data-analytics-tip="downloads">
+                <p class="analytics-mini-kpi-label">Downloads</p>
+                <p class="analytics-mini-kpi-value" data-analytics-summary="downloads">--</p>
+                <p class="admin-trend" data-analytics-trend="downloads">–</p>
             </article>
             <article class="analytics-mini-kpi">
                 <p class="analytics-mini-kpi-label">Reviews</p>
@@ -281,6 +286,51 @@
                 <div class="mt-4" id="analytics-audience-split"></div>
             </section>
         </div>
+
+        <section class="analytics-panel mt-4">
+            <div class="analytics-panel-header">
+                <div>
+                    <p class="analytics-panel-kicker">Catalog</p>
+                    <h3 class="analytics-panel-title">IEC, events, contests, and posts</h3>
+                    <p class="mt-1 text-[11px] text-slate-500">Views, shares, and IEC downloads from the mobile app in this range.</p>
+                </div>
+            </div>
+            <div class="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">IEC views</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="iec-views">--</p>
+                </article>
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">IEC shares</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="iec-shares">--</p>
+                </article>
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">IEC downloads</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="iec-downloads">--</p>
+                </article>
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">Event views</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="event-views">--</p>
+                </article>
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">Event shares</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="event-shares">--</p>
+                </article>
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">Contest views</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="contest-views">--</p>
+                </article>
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">Contest shares</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="contest-shares">--</p>
+                </article>
+                <article class="analytics-mini-kpi">
+                    <p class="analytics-mini-kpi-label">Post shares</p>
+                    <p class="analytics-mini-kpi-value" data-analytics-summary="post-shares">--</p>
+                </article>
+            </div>
+            <div class="mt-4" data-analytics-content-catalog></div>
+        </section>
 
         <div class="mt-4 grid gap-4 xl:grid-cols-3">
             <section class="analytics-panel">
@@ -382,6 +432,50 @@
         </div>
 
         <div class="mt-5 hidden space-y-4" data-analytics-panel="content">
+            <section class="analytics-panel">
+                <div class="analytics-panel-header">
+                    <div>
+                        <p class="analytics-panel-kicker">Catalog</p>
+                        <h3 class="analytics-panel-title">IEC, events, contests, and posts</h3>
+                        <p class="mt-1 text-[11px] text-slate-500">Views, shares, and IEC downloads from the mobile app in this range.</p>
+                    </div>
+                </div>
+                <div class="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">IEC views</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="iec-views">--</p>
+                    </article>
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">IEC shares</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="iec-shares">--</p>
+                    </article>
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">IEC downloads</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="iec-downloads">--</p>
+                    </article>
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">Event views</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="event-views">--</p>
+                    </article>
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">Event shares</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="event-shares">--</p>
+                    </article>
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">Contest views</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="contest-views">--</p>
+                    </article>
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">Contest shares</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="contest-shares">--</p>
+                    </article>
+                    <article class="analytics-mini-kpi">
+                        <p class="analytics-mini-kpi-label">Post shares</p>
+                        <p class="analytics-mini-kpi-value" data-analytics-summary="post-shares">--</p>
+                    </article>
+                </div>
+                <div class="mt-4" data-analytics-content-catalog></div>
+            </section>
             <section class="analytics-panel">
                 <div class="analytics-panel-header"><div><p class="analytics-panel-kicker">Content</p><h3 class="analytics-panel-title">Post analytics</h3></div></div>
                 <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">

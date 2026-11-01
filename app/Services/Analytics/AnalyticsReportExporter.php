@@ -766,7 +766,48 @@ class AnalyticsReportExporter
                 'rows' => $ratings,
                 'chart' => ['title' => 'Rating distribution', 'category_col' => 1, 'value_col' => 2],
             ],
+            ...$this->contentCatalogSheets($dashboard),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $dashboard
+     * @return list<array{name: string, headers: list<string>, rows: list<list<mixed>>, chart?: array<string, mixed>|null}>
+     */
+    private function contentCatalogSheets(array $dashboard): array
+    {
+        $catalog = $dashboard['content_catalog'] ?? [];
+        $groups = is_array($catalog['groups'] ?? null) ? $catalog['groups'] : [];
+        $sheets = [];
+
+        foreach ($groups as $group) {
+            $label = (string) ($group['label'] ?? 'Content');
+            $rows = collect($group['items'] ?? [])->map(function ($item) {
+                $data = is_array($item) ? $item : (array) $item;
+
+                return [
+                    $data['id'] ?? '',
+                    $data['title'] ?? '',
+                    (int) ($data['views'] ?? 0),
+                    (int) ($data['shares'] ?? 0),
+                    (int) ($data['downloads'] ?? 0),
+                ];
+            })->all();
+
+            $sheets[] = [
+                'name' => $label,
+                'headers' => ['ID', 'Title', 'Views', 'Shares', 'Downloads'],
+                'rows' => $rows,
+                'chart' => [
+                    'title' => $label.' shares',
+                    'category_col' => 2,
+                    'value_col' => 4,
+                    'max_points' => 10,
+                ],
+            ];
+        }
+
+        return $sheets;
     }
 
     /**

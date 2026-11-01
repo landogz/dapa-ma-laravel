@@ -471,6 +471,9 @@ class AnalyticsRepository
         $shareEvents = $this->eventsInRange($range)
             ->whereIn('event_type', AnalyticsEventTypes::shareTypes())
             ->count();
+        $downloads = $this->eventsInRange($range)
+            ->whereIn('event_type', AnalyticsEventTypes::downloadTypes())
+            ->count();
 
         $relationalEngagements = $likes + $comments + $bookmarks + $shareEvents;
 
@@ -487,6 +490,7 @@ class AnalyticsRepository
             'likes' => $likes,
             'comments' => $comments,
             'bookmark_rows' => $bookmarks,
+            'downloads' => $downloads,
             'relational_engagements' => $relationalEngagements,
             'tracking_since' => AnalyticsEvent::query()->min(DB::raw('COALESCE(occurred_at, created_at)')),
             'sessions_tracking_since' => AnalyticsSession::query()->min('started_at'),
@@ -1052,7 +1056,10 @@ class AnalyticsRepository
                 + (int) ($events[AnalyticsEventTypes::PAGE_VIEW] ?? 0);
             $likes = (int) ($events[AnalyticsEventTypes::POST_LIKE] ?? 0);
             $shares = (int) ($events[AnalyticsEventTypes::SHARE] ?? 0)
-                + (int) ($events[AnalyticsEventTypes::IEC_SHARE] ?? 0);
+                + (int) ($events[AnalyticsEventTypes::IEC_SHARE] ?? 0)
+                + (int) ($events[AnalyticsEventTypes::EVENT_SHARE] ?? 0)
+                + (int) ($events[AnalyticsEventTypes::CONTEST_SHARE] ?? 0);
+            $downloads = (int) ($events[AnalyticsEventTypes::IEC_DOWNLOAD] ?? 0);
             $searches = (int) ($events[AnalyticsEventTypes::SEARCH] ?? 0);
             $appOpens = (int) ($events[AnalyticsEventTypes::APP_OPEN] ?? 0);
             $visits = (int) collect($events)->sum(fn ($total) => (int) $total);
@@ -1090,7 +1097,7 @@ class AnalyticsRepository
                 'likes' => $likes,
                 'comments' => $comments,
                 'shares' => $shares,
-                'downloads' => 0,
+                'downloads' => $downloads,
                 'sessions' => $sessions,
                 'duration' => $duration,
                 'searches' => $searches,
@@ -1118,6 +1125,7 @@ class AnalyticsRepository
                 'likes' => $likes,
                 'comments' => $comments,
                 'shares' => $shares,
+                'downloads' => $downloads,
                 'bookmarks' => $bookmarks,
                 'engagements' => $engagements,
                 'app_opens' => $appOpens,
@@ -1502,6 +1510,7 @@ class AnalyticsRepository
             'bookmarks' => 0,
             'searches' => 0,
             'shares' => 0,
+            'downloads' => 0,
             'likes' => 0,
             'app_opens' => 0,
             'screen_views' => 0,
@@ -1522,6 +1531,8 @@ class AnalyticsRepository
                 $summary['searches'] += $total;
             } elseif (in_array($canonical, AnalyticsEventTypes::shareTypes(), true) || str_contains($type, 'share')) {
                 $summary['shares'] += $total;
+            } elseif (in_array($canonical, AnalyticsEventTypes::downloadTypes(), true) || str_contains($type, 'download')) {
+                $summary['downloads'] += $total;
             } elseif ($canonical === AnalyticsEventTypes::POST_LIKE) {
                 $summary['likes'] += $total;
             } elseif ($canonical === AnalyticsEventTypes::APP_OPEN) {
