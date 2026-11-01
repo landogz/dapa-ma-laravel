@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasContentWorkflow;
+use App\Models\Concerns\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 class IecMaterial extends Model
 {
     use HasContentWorkflow;
+    use HasPublicUuid;
 
     protected $fillable = [
         'title',

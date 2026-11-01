@@ -31,6 +31,8 @@ use App\Http\Controllers\API\IecMaterialController;
 use App\Http\Controllers\API\StickerPackController;
 use App\Http\Controllers\API\Admin\StickerPackAdminController;
 use App\Http\Controllers\API\Admin\StickerAdminController;
+use App\Http\Controllers\API\ColorFunWorksheetController;
+use App\Http\Controllers\API\Admin\ColorFunWorksheetAdminController;
 use App\Http\Controllers\API\AppTranslationController;
 use App\Http\Controllers\API\LegalPageController;
 use App\Http\Controllers\API\AppOptionController;
@@ -151,11 +153,14 @@ Route::prefix('v1')
         Route::get('/iec-materials', [IecMaterialController::class, 'index'])
             ->name('iec-materials.index');
         Route::get('/iec-materials/{iecMaterial}', [IecMaterialController::class, 'show'])
-            ->whereNumber('iecMaterial')
+            ->where('iecMaterial', '[0-9]+|[0-9a-fA-F-]{36}')
             ->name('iec-materials.show');
 
         Route::get('/sticker-packs', [StickerPackController::class, 'index'])
             ->name('sticker-packs.index');
+
+        Route::get('/color-fun-worksheets', [ColorFunWorksheetController::class, 'index'])
+            ->name('color-fun-worksheets.index');
 
         // ── Public mobile app translations (EN / TL) ─────────────────────
         Route::get('/translations', [AppTranslationController::class, 'index'])
@@ -557,6 +562,14 @@ Route::prefix('v1')
                     Route::put('/stickers/{sticker}', [StickerAdminController::class, 'update'])->name('stickers.update');
                     Route::post('/stickers/{sticker}', [StickerAdminController::class, 'update'])->name('stickers.update.post');
                     Route::delete('/stickers/{sticker}', [StickerAdminController::class, 'destroy'])->name('stickers.destroy');
+
+                    // Color Fun worksheet library (Editor, Publisher, Super Admin)
+                    Route::get('/color-fun-worksheets', [ColorFunWorksheetAdminController::class, 'index'])->name('color-fun-worksheets.index');
+                    Route::post('/color-fun-worksheets', [ColorFunWorksheetAdminController::class, 'store'])->name('color-fun-worksheets.store');
+                    Route::get('/color-fun-worksheets/{colorFunWorksheet}', [ColorFunWorksheetAdminController::class, 'show'])->name('color-fun-worksheets.show');
+                    Route::put('/color-fun-worksheets/{colorFunWorksheet}', [ColorFunWorksheetAdminController::class, 'update'])->name('color-fun-worksheets.update');
+                    Route::post('/color-fun-worksheets/{colorFunWorksheet}', [ColorFunWorksheetAdminController::class, 'update'])->name('color-fun-worksheets.update.post');
+                    Route::delete('/color-fun-worksheets/{colorFunWorksheet}', [ColorFunWorksheetAdminController::class, 'destroy'])->name('color-fun-worksheets.destroy');
                 });
 
                 Route::middleware('role:super_admin')->group(function (): void {

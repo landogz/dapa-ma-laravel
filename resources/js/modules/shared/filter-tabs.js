@@ -72,6 +72,7 @@ export function enhanceAdminFilterTabs(root) {
             icon,
             hint: tab.dataset.hint || '',
             swatch: tab.dataset.swatch || '',
+            color: tab.dataset.color || '',
             initials: tab.dataset.initials || '',
             spectrum: tab.dataset.spectrum === '1',
             count: count === undefined || count === '' ? null : Number(count),
@@ -121,6 +122,9 @@ function buildAdminFilterTab(item) {
     if (item.swatch) {
         button.dataset.swatch = item.swatch;
     }
+    if (item.color) {
+        button.dataset.color = item.color;
+    }
     if (item.hint) {
         button.dataset.hint = item.hint;
     }
@@ -141,7 +145,7 @@ function buildAdminFilterTabInner(item) {
 }
 
 function buildAdminFilterTabLead(item) {
-    if (item.spectrum || item.swatch) {
+    if (item.spectrum || item.swatch || item.color) {
         const swatch = document.createElement('span');
         swatch.className = 'admin-filter-tab-swatch';
         swatch.setAttribute('aria-hidden', 'true');
@@ -153,6 +157,10 @@ function buildAdminFilterTabLead(item) {
             if (item.swatch === 'sky_white') {
                 swatch.classList.add('is-light');
             }
+        }
+        if (item.color) {
+            swatch.style.background = item.color;
+            swatch.dataset.color = item.color;
         }
         return swatch;
     }

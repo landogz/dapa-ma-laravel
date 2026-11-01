@@ -93,10 +93,15 @@ class AnalyticsRepository
         ];
     }
 
-    public function hourlyCounts(AnalyticsDateRange $range): array
+    /**
+     * @return list<array{hour: int, total: int}>
+     */
+    public function hourlyCounts(AnalyticsDateRange $range, string $metric = 'visits'): array
     {
         $expression = $this->hourExpression();
-        $raw = $this->eventsInRange($range)
+        $query = $this->eventsInRange($range);
+        $this->applyHourlyMetricFilter($query, $metric);
+        $raw = $query
             ->select(DB::raw("{$expression} as hour"), DB::raw('count(*) as total'))
             ->groupBy(DB::raw($expression))
             ->pluck('total', 'hour');
@@ -110,6 +115,61 @@ class AnalyticsRepository
         }
 
         return $series;
+    }
+
+    /**
+     * Hourly series for each primary Timing metric (visits / app usage / views / engagement).
+     *
+     * @return array{
+     *     metric: string,
+     *     metrics: list<array{key: string, label: string}>,
+     *     series: array<string, list<array{hour: int, total: int}>>
+     * }
+     */
+    public function hourlyCountsByMetric(AnalyticsDateRange $range, string $defaultMetric = 'visits'): array
+    {
+        $metrics = [
+            ['key' => 'visits', 'label' => 'Visits'],
+            ['key' => 'app_usage', 'label' => 'App usage'],
+            ['key' => 'content_views', 'label' => 'Content views'],
+            ['key' => 'engagements', 'label' => 'Engagement'],
+        ];
+        $keys = array_column($metrics, 'key');
+        $metric = in_array($defaultMetric, $keys, true) ? $defaultMetric : 'visits';
+        $series = [];
+
+        foreach ($keys as $key) {
+            $series[$key] = $this->hourlyCounts($range, $key);
+        }
+
+        return [
+            'metric' => $metric,
+            'metrics' => $metrics,
+            'series' => $series,
+        ];
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder  $query
+     */
+    private function applyHourlyMetricFilter($query, string $metric): void
+    {
+        match ($metric) {
+            'app_usage' => $query->whereIn('event_type', [
+                AnalyticsEventTypes::APP_OPEN,
+                AnalyticsEventTypes::SESSION_START,
+                AnalyticsEventTypes::SCREEN_VIEW,
+            ]),
+            'content_views', 'views', 'page_views' => $query->whereIn(
+                'event_type',
+                AnalyticsEventTypes::viewTypes(),
+            ),
+            'engagements', 'engagement' => $query->whereIn(
+                'event_type',
+                AnalyticsEventTypes::engagementTypes(),
+            ),
+            default => null, // visits = all events
+        };
     }
 
     /**
@@ -409,7 +469,7 @@ class AnalyticsRepository
             ->where('created_at', '<=', $range->to)
             ->count();
         $shareEvents = $this->eventsInRange($range)
-            ->where('event_type', AnalyticsEventTypes::SHARE)
+            ->whereIn('event_type', AnalyticsEventTypes::shareTypes())
             ->count();
 
         $relationalEngagements = $likes + $comments + $bookmarks + $shareEvents;
@@ -991,7 +1051,8 @@ class AnalyticsRepository
                 + (int) ($events[AnalyticsEventTypes::LEGACY_VIEW] ?? 0)
                 + (int) ($events[AnalyticsEventTypes::PAGE_VIEW] ?? 0);
             $likes = (int) ($events[AnalyticsEventTypes::POST_LIKE] ?? 0);
-            $shares = (int) ($events[AnalyticsEventTypes::SHARE] ?? 0);
+            $shares = (int) ($events[AnalyticsEventTypes::SHARE] ?? 0)
+                + (int) ($events[AnalyticsEventTypes::IEC_SHARE] ?? 0);
             $searches = (int) ($events[AnalyticsEventTypes::SEARCH] ?? 0);
             $appOpens = (int) ($events[AnalyticsEventTypes::APP_OPEN] ?? 0);
             $visits = (int) collect($events)->sum(fn ($total) => (int) $total);
@@ -1459,7 +1520,7 @@ class AnalyticsRepository
                 $summary['bookmarks'] += $total;
             } elseif ($canonical === AnalyticsEventTypes::SEARCH || $type === 'search') {
                 $summary['searches'] += $total;
-            } elseif ($canonical === AnalyticsEventTypes::SHARE || $type === 'share') {
+            } elseif (in_array($canonical, AnalyticsEventTypes::shareTypes(), true) || str_contains($type, 'share')) {
                 $summary['shares'] += $total;
             } elseif ($canonical === AnalyticsEventTypes::POST_LIKE) {
                 $summary['likes'] += $total;

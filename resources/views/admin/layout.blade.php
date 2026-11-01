@@ -67,6 +67,10 @@
                         <i class="fas fa-face-smile w-5 text-[#FBD116]"></i>
                         <span>Sticker Library</span>
                     </a>
+                    <a href="/admin/color-fun-library" class="admin-nav-link {{ ($activePage ?? '') === 'color-fun-library' ? 'admin-nav-link-active' : '' }}" data-nav-section="color-fun-library">
+                        <i class="fas fa-palette w-5 text-[#FBD116]"></i>
+                        <span>Color Fun Library</span>
+                    </a>
                 </div>
 
                 <div class="admin-nav-group">

@@ -179,6 +179,7 @@ function fillGroupTabs() {
         care_support: 'fas fa-headset',
         rehab_center: 'fas fa-house-medical',
         post_category: 'fas fa-folder-open',
+        color_fun: 'fas fa-palette',
         journal_sky: 'fas fa-palette',
         journal_feeling: 'fas fa-face-smile',
         journal_impact: 'fas fa-sun',

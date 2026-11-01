@@ -34,14 +34,18 @@ const DEVICE_COLORS = {
 const EVENT_TYPE_META = {
     post_view: { label: 'Post views', icon: 'fas fa-eye' },
     view: { label: 'Views', icon: 'fas fa-eye' },
+    iec_view: { label: 'IEC views', icon: 'fas fa-photo-film' },
     bookmark: { label: 'Bookmarks', icon: 'fas fa-bookmark' },
     search: { label: 'Searches', icon: 'fas fa-magnifying-glass' },
     share: { label: 'Shares', icon: 'fas fa-share-nodes' },
+    iec_share: { label: 'IEC shares', icon: 'fas fa-share-nodes' },
 };
 
 let cachedDailyCounts = [];
 let cachedTopPosts = [];
 let cachedRecentEvents = [];
+let cachedHourlyByMetric = null;
+let hourlyMetric = 'visits';
 let topPostsSearchBound = false;
 let recentSearchBound = false;
 
@@ -240,7 +244,7 @@ export function loadAnalytics() {
             const audience = payload.audience ?? {};
             const funnel = payload.funnel ?? {};
             const hourlyCounts = payload.hourly_counts ?? [];
-            const hourlyHeatmap = payload.hourly_heatmap ?? null;
+            const hourlyByMetric = payload.hourly_by_metric ?? null;
             const weekdayCounts = payload.weekday_counts ?? [];
             const insights = payload.insights ?? [];
 
@@ -258,7 +262,29 @@ export function loadAnalytics() {
             renderTopRatedPosts(topRatedPosts);
             renderTopCategories(topCategories);
             renderDailyCounts(dailyCounts, audience);
-            renderHourlyHeatmap(hourlyHeatmap, hourlyCounts);
+            cachedHourlyByMetric = hourlyByMetric && typeof hourlyByMetric === 'object'
+                ? hourlyByMetric
+                : {
+                    metric: 'visits',
+                    metrics: [
+                        { key: 'visits', label: 'Visits' },
+                        { key: 'app_usage', label: 'App usage' },
+                        { key: 'content_views', label: 'Content views' },
+                        { key: 'engagements', label: 'Engagement' },
+                    ],
+                    series: { visits: hourlyCounts },
+                };
+            if (!cachedHourlyByMetric.series?.visits && Array.isArray(hourlyCounts)) {
+                cachedHourlyByMetric.series = {
+                    ...(cachedHourlyByMetric.series || {}),
+                    visits: hourlyCounts,
+                };
+            }
+            hourlyMetric = cachedHourlyByMetric.series?.[hourlyMetric]
+                ? hourlyMetric
+                : (cachedHourlyByMetric.metric || 'visits');
+            renderHourlyMetricCriteria(cachedHourlyByMetric.metrics || [], hourlyMetric);
+            renderHourlyCounts(cachedHourlyByMetric.series?.[hourlyMetric] || hourlyCounts);
             renderWeekdayChart(weekdayCounts);
             renderRatingDistribution(ratingDistribution);
             renderAudienceSplit(audience);
@@ -473,16 +499,16 @@ function categorizeEventType(eventType) {
 }
 
 const ANALYTICS_TAB_EXPORT_REPORT = {
-    overview: { type: 'summary', label: 'Overview summary' },
-    users: { type: 'users', label: 'Users' },
-    mobile: { type: 'mobile', label: 'Mobile / devices' },
-    content: { type: 'content', label: 'Content performance' },
-    retention: { type: 'retention', label: 'Retention cohorts' },
-    journeys: { type: 'journeys', label: 'Journeys / funnel' },
-    leaderboard: { type: 'leaderboard', label: 'Top users leaderboard' },
-    geography: { type: 'demographics', label: 'Demographics / Geography' },
-    alerts: { type: 'alerts', label: 'Anomaly alerts' },
-    reports: { type: 'complete', label: 'Complete pack' },
+    overview: { type: 'summary', label: 'Overview (detailed + charts)' },
+    users: { type: 'users', label: 'Users (detailed)' },
+    mobile: { type: 'mobile', label: 'Mobile / devices (detailed + charts)' },
+    content: { type: 'content', label: 'Content performance (detailed + charts)' },
+    retention: { type: 'retention', label: 'Retention cohorts (detailed)' },
+    journeys: { type: 'journeys', label: 'Journeys / funnel (detailed + charts)' },
+    leaderboard: { type: 'leaderboard', label: 'Top users leaderboard (detailed + charts)' },
+    geography: { type: 'demographics', label: 'Demographics (detailed + charts)' },
+    alerts: { type: 'alerts', label: 'Anomaly alerts (detailed)' },
+    reports: { type: 'complete', label: 'Complete pack (all + charts)' },
 };
 
 function getActiveAnalyticsTab() {
@@ -519,7 +545,7 @@ export function exportAnalyticsCsvWithRange() {
 
     Swal.fire(buildSwalOptions({
         title: 'Export analytics',
-        subtitle: `Exports the ${tabLabel} tab for the selected period.`,
+        subtitle: `Detailed ${tabLabel} export for the selected period. Excel and PDF include charts where available.`,
         confirmButtonText: 'Download',
         customClass: {
             popup: 'admin-swal-popup-export',
@@ -930,28 +956,44 @@ function buildYTicks(ceiling, steps = 4) {
     });
 }
 
-function buildActivityChartHtml(days, messages, options = {}) {
-    if (!days.length) {
+function buildActivityChartHtml(points, messages, options = {}) {
+    if (!points.length) {
         return buildAnalyticsEmptyState(messages.emptyTitle, messages.emptyMessage, 'fa-chart-line');
     }
 
-    const rawMax = Math.max(...days.map((day) => Number(day.total) || 0), 0);
+    const rawMax = Math.max(...points.map((point) => Number(point.total) || 0), 0);
+
+    if (rawMax === 0 && messages.emptyWhenZero) {
+        return buildAnalyticsEmptyState(messages.emptyTitle, messages.emptyMessage, 'fa-chart-line');
+    }
+
     const yMax = niceCeiling(rawMax, 4);
     const ticks = buildYTicks(yMax, 4);
-    const showAllLabels = days.length <= 7;
+    const showAllLabels = points.length <= 7;
     const useFlexFill = Boolean(options.flexFill);
+    const getLabel = typeof options.getLabel === 'function'
+        ? options.getLabel
+        : (point, index) => (
+            showAllLabels || index % 2 === 0 || index === points.length - 1
+                ? formatChartDateLabel(point.date)
+                : ''
+        );
+    const getTooltip = typeof options.getTooltip === 'function'
+        ? options.getTooltip
+        : (point) => {
+            const total = Number(point.total) || 0;
+            const fullDate = formatChartDateLabel(point.date, true);
+            const countLabel = `${total.toLocaleString()} event${total === 1 ? '' : 's'}`;
+            return `${fullDate}: ${countLabel}`;
+        };
 
-    const columns = days.map((day, index) => {
-        const total = Number(day.total) || 0;
+    const columns = points.map((point, index) => {
+        const total = Number(point.total) || 0;
         const heightPct = total === 0 || yMax === 0
             ? null
             : (total / yMax) * 100;
-        const label = showAllLabels || index % 2 === 0 || index === days.length - 1
-            ? formatChartDateLabel(day.date)
-            : '';
-        const fullDate = formatChartDateLabel(day.date, true);
-        const countLabel = `${total.toLocaleString()} event${total === 1 ? '' : 's'}`;
-        const tooltipLabel = `${fullDate}: ${countLabel}`;
+        const label = getLabel(point, index, points);
+        const tooltipLabel = getTooltip(point, index, points);
         const barStyle = heightPct === null
             ? ''
             : `height:${heightPct}%`;
@@ -962,7 +1004,7 @@ function buildActivityChartHtml(days, messages, options = {}) {
                 <div
                     class="dashboard-activity-bar analytics-activity-bar analytics-chart-column"
                     data-chart-bar
-                    data-chart-date="${escapeHtml(fullDate)}"
+                    data-chart-date="${escapeHtml(tooltipLabel)}"
                     data-chart-count="${escapeHtml(String(total))}"
                     tabindex="0"
                     role="img"
@@ -977,7 +1019,7 @@ function buildActivityChartHtml(days, messages, options = {}) {
                     </div>
                 </div>
             `,
-            labelHtml: `<span class="analytics-bar-label">${label}</span>`,
+            labelHtml: `<span class="analytics-bar-label">${escapeHtml(label || '')}</span>`,
         };
     });
 
@@ -997,11 +1039,11 @@ function buildActivityChartHtml(days, messages, options = {}) {
                             return `<span class="analytics-chart-gridline" style="top:${top}%"></span>`;
                         }).join('')}
                     </div>
-                    <div class="dashboard-activity-bars analytics-activity-bars" style="--bars:${days.length}">
+                    <div class="dashboard-activity-bars analytics-activity-bars" style="--bars:${points.length}">
                         ${columns.map((column) => column.html).join('')}
                     </div>
                 </div>
-                <div class="analytics-chart-x-labels" style="--bars:${days.length}" aria-hidden="true">
+                <div class="analytics-chart-x-labels" style="--bars:${points.length}" aria-hidden="true">
                     ${columns.map((column) => column.labelHtml).join('')}
                 </div>
             </div>
@@ -1280,6 +1322,24 @@ function describeGroupedEvent(group) {
             tone: 'is-share',
             title: 'Post shared',
             details: `${userName} shared "${postTitle}".`,
+        };
+    }
+
+    if (type === 'iec_view') {
+        return {
+            icon: 'fas fa-photo-film',
+            tone: 'is-view',
+            title: 'IEC material viewed',
+            details: `${userName} viewed an IEC material.`,
+        };
+    }
+
+    if (type === 'iec_share') {
+        return {
+            icon: 'fas fa-share-nodes',
+            tone: 'is-share',
+            title: 'IEC material shared',
+            details: `${userName} shared an IEC material.`,
         };
     }
 
@@ -1660,174 +1720,128 @@ function renderTopCategories(categories) {
     }).join('');
 }
 
-function renderHourlyHeatmap(matrix, fallbackHours = []) {
-    const container = document.getElementById('analytics-hourly-heatmap');
+function renderHourlyMetricCriteria(metrics, activeMetric) {
+    const root = document.getElementById('analytics-hourly-criteria');
+    if (!root) {
+        return;
+    }
+
+    const items = Array.isArray(metrics) && metrics.length
+        ? metrics
+        : [
+            { key: 'visits', label: 'Visits' },
+            { key: 'app_usage', label: 'App usage' },
+            { key: 'content_views', label: 'Content views' },
+            { key: 'engagements', label: 'Engagement' },
+        ];
+
+    root.innerHTML = items.map((item) => {
+        const key = item.key || item;
+        const label = item.label || hourlyMetricLabel(key);
+        return `
+            <button
+                type="button"
+                class="admin-range-toggle-button min-h-11 rounded-full px-4 text-xs ${key === activeMetric ? 'is-active' : ''}"
+                data-hourly-metric="${escapeHtml(key)}"
+            >${escapeHtml(label)}</button>
+        `;
+    }).join('');
+
+    root.querySelectorAll('[data-hourly-metric]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const next = button.getAttribute('data-hourly-metric');
+            if (!next || next === hourlyMetric) {
+                return;
+            }
+            hourlyMetric = next;
+            root.querySelectorAll('[data-hourly-metric]').forEach((el) => {
+                el.classList.toggle('is-active', el.getAttribute('data-hourly-metric') === hourlyMetric);
+            });
+            const series = cachedHourlyByMetric?.series?.[hourlyMetric]
+                || cachedHourlyByMetric?.series?.visits
+                || [];
+            renderHourlyCounts(series);
+        });
+    });
+}
+
+function hourlyMetricLabel(metric) {
+    const labels = {
+        visits: 'Visits',
+        app_usage: 'App usage',
+        content_views: 'Content views',
+        engagements: 'Engagement',
+    };
+
+    return labels[metric] || String(metric || 'Metric').replaceAll('_', ' ');
+}
+
+function renderHourlyCounts(hours) {
+    const container = document.getElementById('analytics-hourly-chart');
     const peakLabel = document.querySelector('[data-analytics-hourly-peak]');
 
     if (!container) {
         return;
     }
 
-    const rows = Array.isArray(matrix?.rows) ? matrix.rows : [];
-    const hours = Array.isArray(matrix?.hours) && matrix.hours.length
-        ? matrix.hours
-        : Array.from({ length: 24 }, (_, hour) => hour);
-    const max = Math.max(Number(matrix?.max) || 0, ...rows.flatMap((row) => (row.cells || []).map(Number)), 0);
-    const peak = matrix?.peak ?? null;
+    const series = Array.isArray(hours) && hours.length
+        ? hours
+        : Array.from({ length: 24 }, (_, hour) => ({ hour, total: 0 }));
+    const metricLabel = hourlyMetricLabel(hourlyMetric);
 
-    if (!rows.length || max === 0) {
-        // Fallback: single-row 24h strip when matrix is empty but totals exist.
-        if (Array.isArray(fallbackHours) && fallbackHours.some((row) => Number(row.total) > 0)) {
-            renderHourlyHeatmapFallback(container, fallbackHours, peakLabel);
-            return;
-        }
-
-        if (peakLabel) {
-            peakLabel.textContent = '—';
-        }
-        container.innerHTML = buildAnalyticsEmptyState(
-            'No hourly pattern yet',
-            'A weekday × hour heatmap will appear once events are recorded.',
-            'fa-clock',
-        );
-        return;
-    }
-
-    if (peakLabel && peak) {
-        peakLabel.textContent = `Peak ${peak.label} ${formatHourFull(peak.hour)} · ${Number(peak.total).toLocaleString()}`;
-    } else if (peakLabel) {
-        peakLabel.textContent = '—';
-    }
-
-    container.innerHTML = `
-        <div class="analytics-cohort-heat">
-            <div class="analytics-cohort-heat-scroll">
-                <table class="analytics-cohort-heat-table" aria-label="Hourly activity by weekday">
-                    <thead>
-                        <tr>
-                            <th scope="col" class="analytics-cohort-heat-corner">
-                                <span class="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Day</span>
-                                <span class="block text-[10px] font-medium text-slate-400">Events</span>
-                            </th>
-                            ${hours.map((hour) => `
-                                <th scope="col" class="analytics-cohort-heat-hour" title="${escapeHtml(formatHourFull(hour))}">
-                                    ${escapeHtml(formatHourCompact(hour))}
-                                </th>
-                            `).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows.map((row) => {
-                            const cells = Array.isArray(row.cells) ? row.cells : [];
-                            return `
-                                <tr>
-                                    <th scope="row" class="analytics-cohort-heat-day">
-                                        <span class="analytics-cohort-heat-day-label">${escapeHtml(row.label || '—')}</span>
-                                        <span class="analytics-cohort-heat-day-size">${Number(row.total || 0).toLocaleString()}</span>
-                                    </th>
-                                    ${hours.map((hour, index) => {
-                                        const total = Number(cells[index] ?? 0);
-                                        const ratio = max > 0 ? total / max : 0;
-                                        const style = heatCellStyle(ratio, total);
-                                        const aria = `${row.label} ${formatHourFull(hour)}: ${total.toLocaleString()} events`;
-                                        return `
-                                            <td class="analytics-cohort-heat-cell" style="${style}" title="${escapeHtml(aria)}" aria-label="${escapeHtml(aria)}">
-                                                ${total > 0 ? total.toLocaleString() : ''}
-                                            </td>
-                                        `;
-                                    }).join('')}
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                </table>
-            </div>
-            <div class="analytics-cohort-heat-legend" aria-hidden="true">
-                <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Low</span>
-                <div class="analytics-cohort-heat-scale"></div>
-                <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">High</span>
-            </div>
-        </div>
-        <p class="mt-3 text-[11px] text-slate-500">
-            Cell color is relative to the busiest weekday×hour cell in this range
-            ${peak ? ` · Peak ${escapeHtml(peak.label)} ${escapeHtml(formatHourFull(peak.hour))} (${Number(peak.total).toLocaleString()} events)` : ''}
-        </p>
-    `;
-}
-
-function renderHourlyHeatmapFallback(container, hours, peakLabel) {
-    const max = Math.max(...hours.map((row) => Number(row.total) || 0), 0);
-    const peak = hours.reduce((best, row) => (
-        Number(row.total) > Number(best.total) ? row : best
-    ), hours[0]);
+    const totals = series.map((row) => Number(row.total) || 0);
+    const peakTotal = Math.max(...totals, 0);
+    const peakIndex = totals.indexOf(peakTotal);
+    const peakHour = peakIndex >= 0 ? series[peakIndex]?.hour : null;
+    const activeHours = totals.filter((total) => total > 0).length;
+    const avg = activeHours > 0
+        ? Math.round((totals.reduce((sum, total) => sum + total, 0) / activeHours) * 10) / 10
+        : 0;
 
     if (peakLabel) {
-        peakLabel.textContent = `Peak ${formatHourFull(peak.hour)} · ${Number(peak.total).toLocaleString()}`;
+        peakLabel.textContent = peakTotal > 0
+            ? `Peak ${formatHourFull(peakHour)} · ${peakTotal.toLocaleString()} · avg ${avg.toLocaleString()} / active hour`
+            : '—';
     }
 
-    container.innerHTML = `
-        <div class="overflow-x-auto pb-1">
-            <div class="analytics-heat-grid">
-                ${hours.map((row) => {
-                    const total = Number(row.total) || 0;
-                    const ratio = max > 0 ? total / max : 0;
-                    const style = heatCellStyle(ratio, total);
-                    const aria = `${formatHourFull(row.hour)}: ${total.toLocaleString()} events`;
-                    return `
-                        <div class="analytics-heat-cell" style="${style}" title="${escapeHtml(aria)}" aria-label="${escapeHtml(aria)}">
-                            <span>${formatHourCompact(row.hour)}</span>
-                            <span>${total}</span>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-        </div>
-        <p class="mt-3 text-[11px] text-slate-500">Peak hour ${formatHourFull(peak.hour)} · ${Number(peak.total).toLocaleString()} events</p>
-    `;
+    container.innerHTML = buildActivityChartHtml(series, {
+        emptyTitle: `No ${metricLabel.toLowerCase()} yet`,
+        emptyMessage: `Hourly ${metricLabel.toLowerCase()} will appear once matching events are recorded.`,
+        emptyWhenZero: true,
+    }, {
+        getLabel: (point, index) => (
+            index % 3 === 0 || index === series.length - 1
+                ? formatHourCompact(point.hour)
+                : ''
+        ),
+        getTooltip: (point) => {
+            const total = Number(point.total) || 0;
+            const countLabel = `${total.toLocaleString()} ${metricLabel.toLowerCase()}`;
+            return `${formatHourRange(point.hour)}: ${countLabel}`;
+        },
+    });
 }
 
-/** Red → gold → green scale (relative intensity), matching cohort-style heatmaps. */
-function heatCellStyle(ratio, total) {
-    if (!total || ratio <= 0) {
-        return 'background:#f8fafc;color:#94a3b8';
+function formatHourRange(hour) {
+    const start = Math.max(0, Math.min(23, Number(hour) || 0));
+    const end = (start + 1) % 24;
+    const startLabel = formatHourClock(start);
+    const endLabel = formatHourClock(end);
+    const startSuffix = start >= 12 ? 'PM' : 'AM';
+    const endSuffix = end >= 12 ? 'PM' : 'AM';
+
+    if (startSuffix === endSuffix) {
+        return `${startLabel} to ${endLabel} ${endSuffix}`;
     }
 
-    const t = Math.max(0, Math.min(1, ratio));
-    const color = heatColorAt(t);
-    const text = t >= 0.55 ? '#ffffff' : '#123a60';
-
-    return `background:${color};color:${text}`;
+    return `${startLabel} ${startSuffix} to ${endLabel} ${endSuffix}`;
 }
 
-function heatColorAt(t) {
-    // #CE2028 (low) → #FBD116 (mid) → #059669 (high)
-    if (t < 0.5) {
-        const p = t / 0.5;
-        return mixHex('#CE2028', '#FBD116', p);
-    }
+function formatHourClock(hour) {
+    const value = Math.max(0, Math.min(23, Number(hour) || 0));
+    const twelve = value % 12 === 0 ? 12 : value % 12;
 
-    const p = (t - 0.5) / 0.5;
-    return mixHex('#FBD116', '#059669', p);
-}
-
-function mixHex(from, to, amount) {
-    const a = hexToRgb(from);
-    const b = hexToRgb(to);
-    const t = Math.max(0, Math.min(1, amount));
-    const r = Math.round(a.r + (b.r - a.r) * t);
-    const g = Math.round(a.g + (b.g - a.g) * t);
-    const bl = Math.round(a.b + (b.b - a.b) * t);
-
-    return `rgb(${r}, ${g}, ${bl})`;
-}
-
-function hexToRgb(hex) {
-    const raw = String(hex || '').replace('#', '');
-    return {
-        r: Number.parseInt(raw.slice(0, 2), 16) || 0,
-        g: Number.parseInt(raw.slice(2, 4), 16) || 0,
-        b: Number.parseInt(raw.slice(4, 6), 16) || 0,
-    };
+    return `${twelve}:00`;
 }
 
 function formatHourCompact(hour) {

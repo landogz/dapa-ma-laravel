@@ -36,6 +36,8 @@ final class AnalyticsEventTypes
 
     public const IEC_VIEW = 'iec_view';
 
+    public const IEC_SHARE = 'iec_share';
+
     public const TRAINING_VIEW = 'training_view';
 
     /** Legacy aliases still accepted from older app builds. */
@@ -58,6 +60,14 @@ final class AnalyticsEventTypes
     /**
      * @return list<string>
      */
+    public static function shareTypes(): array
+    {
+        return [self::SHARE, self::IEC_SHARE];
+    }
+
+    /**
+     * @return list<string>
+     */
     public static function engagementTypes(): array
     {
         return [
@@ -65,6 +75,7 @@ final class AnalyticsEventTypes
             self::POST_COMMENT,
             self::BOOKMARK,
             self::SHARE,
+            self::IEC_SHARE,
             self::REVIEW,
         ];
     }
@@ -102,6 +113,7 @@ final class AnalyticsEventTypes
             self::NOTIFICATION_OPEN,
             self::FEATURE_USE,
             self::IEC_VIEW,
+            self::IEC_SHARE,
             self::TRAINING_VIEW,
             self::LEGACY_VIEW,
             self::LEGACY_LESSON_COMPLETE,

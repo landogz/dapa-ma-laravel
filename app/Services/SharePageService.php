@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Contest;
 use App\Models\HopeEvent;
+use App\Models\IecMaterial;
 use App\Models\Post;
 use App\Support\ShareCard;
 use Illuminate\Support\Facades\Storage;
@@ -114,6 +115,39 @@ class SharePageService
             meta: $meta !== '' ? $meta : null,
             canonicalUrl: $this->canonical('contests', (string) $contest->uuid),
             appPath: 'contests/'.$contest->id,
+            imageIsLogo: $image['is_logo'],
+        );
+    }
+
+    public function iecMaterial(string $key): ShareCard
+    {
+        $material = IecMaterial::findByPublicKey($key);
+        if (! $material->is_active || ! $material->isWorkflowPublished()) {
+            throw new NotFoundHttpException('IEC material not found.');
+        }
+
+        $meta = collect([
+            strtoupper((string) $material->media_type),
+            $material->topic,
+        ])->filter()->implode(' · ');
+
+        $image = $this->resolveImage(
+            $this->iecShareImage($material),
+            self::LOGO_PATH,
+        );
+
+        return new ShareCard(
+            type: 'iec-material',
+            id: $material->id,
+            uuid: (string) $material->uuid,
+            typeLabel: 'IEC Material',
+            title: $material->title,
+            description: $this->excerpt($material->description),
+            imageUrl: $this->ogImageUrl('iec-materials', (string) $material->uuid),
+            imageSrc: $image['src'],
+            meta: $meta !== '' ? $meta : null,
+            canonicalUrl: $this->canonical('iec-materials', (string) $material->uuid),
+            appPath: 'iec-materials/'.$material->id,
             imageIsLogo: $image['is_logo'],
         );
     }
@@ -264,6 +298,34 @@ class SharePageService
         }
 
         return $this->origin().'/'.ltrim($stored, '/');
+    }
+
+    private function iecShareImage(IecMaterial $material): ?string
+    {
+        $thumbnail = $this->absoluteUrl($material->thumbnail_url);
+        if ($thumbnail) {
+            return $thumbnail;
+        }
+
+        $mediaType = strtolower((string) $material->media_type);
+        if (in_array($mediaType, ['gif', 'image'], true)) {
+            return $this->absoluteUrl($material->media_url);
+        }
+
+        return $this->youtubeThumbnail($material->media_url);
+    }
+
+    private function youtubeThumbnail(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        if (preg_match('#(?:youtu\.be/|youtube\.com/(?:embed/|shorts/|live/|watch\?.*?v=))([\w-]{11})#i', $url, $matches) !== 1) {
+            return null;
+        }
+
+        return 'https://img.youtube.com/vi/'.$matches[1].'/hqdefault.jpg';
     }
 
     private function formatEventDates(HopeEvent $event): ?string

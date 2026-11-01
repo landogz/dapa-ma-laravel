@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             KidListoQuoteSeeder::class,
             CareToolkitQuestionSeeder::class,
             StickerLibrarySeeder::class,
+            ColorFunWorksheetSeeder::class,
             CareSupportResourceSeeder::class,
             HopeModuleSeeder::class,
             PostSeeder::class,

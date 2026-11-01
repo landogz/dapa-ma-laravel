@@ -19,6 +19,7 @@ import {
     getRehabMapPickerCoords,
     initRehabCentersOverviewMap,
     initRehabMapPicker,
+    setRehabMapPickerColor,
 } from './rehab-map';
 
 const CATEGORY_ICONS = {
@@ -104,6 +105,7 @@ async function loadRehabCategories() {
             value: option.value,
             label: option.label,
             icon: option.icon,
+            color: option.color || undefined,
         })),
     ]);
     bindAdminFilterTabs(tabs, (value) => {
@@ -120,21 +122,31 @@ export function loadRehabCenters(search = '') {
         .then(({ data }) => {
             latestCenters = data.data?.data ?? [];
             renderRehabRows();
-            initRehabCentersOverviewMap('rehab-centers-overview-map', latestCenters);
         })
         .catch(() => {
             showErrorToast('Failed to load rehab center listings.');
         });
 }
 
-function renderRehabRows() {
-    if (!rehabTable) return;
-    const filtered = latestCenters.filter((center) => {
+function getFilteredRehabCenters() {
+    return latestCenters.filter((center) => {
         if (rehabStatusFilter === 'archived' && center.is_active !== false) return false;
         if (rehabStatusFilter === 'active' && center.is_active === false) return false;
         if (rehabCategoryFilter && String(center.category || '') !== rehabCategoryFilter) return false;
         return true;
     });
+}
+
+function refreshRehabOverviewMap(centers) {
+    initRehabCentersOverviewMap('rehab-centers-overview-map', centers, {
+        resolveColor: (center) => resolveCategoryMeta(center).color,
+        resolveLabel: (center) => resolveCategoryMeta(center).label,
+    });
+}
+
+function renderRehabRows() {
+    if (!rehabTable) return;
+    const filtered = getFilteredRehabCenters();
     applyAdminFilterTabCounts(document.getElementById('rehab-centers-status-tabs'), {
         active: latestCenters.filter((center) => center.is_active !== false).length,
         archived: latestCenters.filter((center) => center.is_active === false).length,
@@ -151,6 +163,7 @@ function renderRehabRows() {
         rehabTable.row.add(buildRowData(center));
     });
     rehabTable.draw();
+    refreshRehabOverviewMap(filtered);
 }
 
 function normalizeHexColor(value) {
@@ -274,12 +287,19 @@ function applyGeocodedFields(meta = {}) {
     }
 }
 
+function categoryColorForValue(value) {
+    const match = categoryOptions.find((option) => option.value === value);
+    return normalizeHexColor(match?.color) || '#055498';
+}
+
 function buildRehabCenterFormHtml(existing) {
     const statusValue = existing?.is_active === false ? '0' : '1';
     const selectedCategory = existing?.category || categoryOptions[0]?.value || '';
+    const selectedColor = categoryColorForValue(selectedCategory);
     const categorySelect = categoryOptions.map((option) => {
         const selected = option.value === selectedCategory ? ' selected' : '';
-        return `<option value="${escapeAttribute(option.value)}"${selected}>${escapeHtml(option.label)}</option>`;
+        const color = normalizeHexColor(option.color) || '#64748B';
+        return `<option value="${escapeAttribute(option.value)}" data-color="${escapeAttribute(color)}" style="color:${escapeAttribute(color)}"${selected}>${escapeHtml(option.label)}</option>`;
     }).join('');
 
     return `
@@ -294,10 +314,13 @@ function buildRehabCenterFormHtml(existing) {
                         </div>
                         <div class="admin-swal-field">
                             <label class="admin-swal-label" for="rc-category">Category *</label>
-                            <select id="rc-category" class="admin-swal-select">
-                                <option value="" disabled${selectedCategory ? '' : ' selected'}>Select a category</option>
-                                ${categorySelect}
-                            </select>
+                            <div class="rehab-category-select" style="--rehab-category-color:${escapeAttribute(selectedColor)}">
+                                <span class="rehab-category-select-swatch" aria-hidden="true"></span>
+                                <select id="rc-category" class="admin-swal-select rehab-category-select-input">
+                                    <option value="" disabled${selectedCategory ? '' : ' selected'}>Select a category</option>
+                                    ${categorySelect}
+                                </select>
+                            </div>
                             <p class="admin-swal-hint mt-1 text-xs text-slate-500">Managed in Lookups → Rehab center categories (with accent colors).</p>
                         </div>
                         <div class="admin-swal-field">
@@ -347,11 +370,23 @@ function showRehabForm(existing) {
         cancelButtonText: 'Cancel',
         confirmButtonText: isEdit ? 'Save Changes' : 'Create',
         didOpen: () => {
+            const categorySelect = document.getElementById('rc-category');
+            const categoryWrap = categorySelect?.closest('.rehab-category-select');
+            const syncCategoryColor = () => {
+                const color = categoryColorForValue(categorySelect?.value);
+                if (categoryWrap) {
+                    categoryWrap.style.setProperty('--rehab-category-color', color);
+                }
+                setRehabMapPickerColor(color);
+            };
+
             const picker = initRehabMapPicker({
                 lat: existing?.latitude ?? null,
                 lng: existing?.longitude ?? null,
+                color: categoryColorForValue(categorySelect?.value || existing?.category),
                 onLocationChange: (location) => applyGeocodedFields(location),
             });
+            categorySelect?.addEventListener('change', syncCategoryColor);
             document.getElementById('rc-address')?.addEventListener('address-autocomplete:select', (event) => {
                 const item = event.detail ?? {};
                 applyGeocodedFields(item);

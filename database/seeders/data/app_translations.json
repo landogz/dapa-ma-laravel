@@ -1368,6 +1368,18 @@
     "tl": "Mensahe"
   },
   {
+    "key": "careColorFunLoading",
+    "group": "care",
+    "en": "Loading worksheets…",
+    "tl": "Naglo-load ng worksheets…"
+  },
+  {
+    "key": "careColorFunEmpty",
+    "group": "care",
+    "en": "No coloring worksheets yet. Check back soon!",
+    "tl": "Wala pang coloring worksheets. Balikan mamaya!"
+  },
+  {
     "key": "careWorksheetDownloaded",
     "group": "care",
     "en": "Worksheet ready. Open it to print or color.",

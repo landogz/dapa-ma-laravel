@@ -32,12 +32,18 @@ class SharePageController extends Controller
         return $this->show('contests', $this->sharePageService->contest($key), $key);
     }
 
+    public function iecMaterial(string $key)
+    {
+        return $this->show('iec-materials', $this->sharePageService->iecMaterial($key), $key);
+    }
+
     public function ogImage(string $type, string $key): BinaryFileResponse
     {
         $card = match ($type) {
             'posts' => $this->sharePageService->post($key),
             'events' => $this->sharePageService->event($key),
             'contests' => $this->sharePageService->contest($key),
+            'iec-materials' => $this->sharePageService->iecMaterial($key),
             default => abort(404),
         };
 

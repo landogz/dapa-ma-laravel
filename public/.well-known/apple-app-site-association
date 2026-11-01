@@ -4,7 +4,7 @@
     "details": [
       {
         "appID": "TEAMID.com.ddb.dapeMaMobile",
-        "paths": ["/posts/*", "/events/*", "/contests/*"]
+        "paths": ["/posts/*", "/events/*", "/contests/*", "/iec-materials/*"]
       }
     ]
   }

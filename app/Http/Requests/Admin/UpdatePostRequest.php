@@ -21,6 +21,11 @@ class UpdatePostRequest extends FormRequest
             }
         }
 
+        // Empty string from multipart FormData should clear the nullable URL.
+        if ($this->exists('youtube_url') && trim((string) $this->input('youtube_url')) === '') {
+            $payload['youtube_url'] = null;
+        }
+
         if ($payload !== []) {
             $this->merge($payload);
         }

@@ -86,6 +86,7 @@
                 ['contests', 'Contests', 'Contests', 'fa-trophy', '/admin/contests'],
                 ['iec-materials', 'IEC', 'IEC Materials', 'fa-photo-film', '/admin/iec-materials'],
                 ['sticker-library', 'Stickers', 'Sticker Library', 'fa-face-smile', '/admin/sticker-library'],
+                ['color-fun-library', 'Care', 'Color Fun Library', 'fa-palette', '/admin/color-fun-library'],
                 ['app-translations', 'Admin', 'App Translations', 'fa-language', '/admin/app-translations'],
             ] as [$key, $label, $title, $icon, $href])
                 <a href="{{ $href }}" class="admin-stat-card admin-stat-card-tier-secondary admin-function-card admin-dashboard-summary text-left" data-card-section="{{ $key }}">

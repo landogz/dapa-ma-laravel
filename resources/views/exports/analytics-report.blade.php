@@ -107,6 +107,60 @@
             border-top: 0;
             border-radius: 0 0 8px 8px;
         }
+        .charts-grid {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 12px;
+            margin: 0 0 8px;
+        }
+        .chart-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 12px 8px;
+            background: #fff;
+        }
+        .chart-title {
+            margin: 0 0 8px;
+            color: #123a60;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .chart-row {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0 0 5px;
+        }
+        .chart-row td {
+            padding: 0;
+            vertical-align: middle;
+            font-size: 9px;
+            color: #475569;
+        }
+        .chart-label {
+            width: 88px;
+            padding-right: 8px !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .chart-track {
+            background: #eef2f6;
+            border-radius: 999px;
+            height: 10px;
+            overflow: hidden;
+        }
+        .chart-fill {
+            height: 10px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #3b82c4 0%, #055498 70%, #123a60 100%);
+        }
+        .chart-value {
+            width: 48px;
+            text-align: right;
+            padding-left: 8px !important;
+            font-weight: 700;
+            color: #123a60;
+        }
         .footer {
             position: fixed;
             left: 0;
@@ -151,6 +205,43 @@
             </td>
         </tr>
     </table>
+
+    @if (! empty($charts))
+        <section class="section">
+            <div class="section-head">Charts</div>
+            <div class="section-accent"></div>
+            <div style="border: 1px solid #e2e8f0; border-top: 0; border-radius: 0 0 8px 8px; padding: 12px;">
+                @foreach ($charts as $chart)
+                    @php
+                        $items = collect($chart['items'] ?? [])->filter(fn ($item) => (float) ($item['value'] ?? 0) > 0)->values();
+                        $max = max(1, (float) $items->max(fn ($item) => (float) ($item['value'] ?? 0)));
+                    @endphp
+                    @if ($items->isNotEmpty())
+                        <div class="chart-card" style="margin-bottom: 12px;">
+                            <p class="chart-title">{{ $chart['title'] ?? 'Chart' }}</p>
+                            @foreach ($items->take(16) as $item)
+                                @php
+                                    $value = (float) ($item['value'] ?? 0);
+                                    $width = max(2, round(($value / $max) * 100, 1));
+                                @endphp
+                                <table class="chart-row">
+                                    <tr>
+                                        <td class="chart-label">{{ $item['label'] ?? '' }}</td>
+                                        <td>
+                                            <div class="chart-track">
+                                                <div class="chart-fill" style="width: {{ $width }}%;"></div>
+                                            </div>
+                                        </td>
+                                        <td class="chart-value">{{ number_format($value) }}</td>
+                                    </tr>
+                                </table>
+                            @endforeach
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     @foreach ($sheets as $sheet)
         <section class="section">

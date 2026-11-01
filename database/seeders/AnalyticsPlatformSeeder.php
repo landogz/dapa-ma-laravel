@@ -23,6 +23,7 @@ class AnalyticsPlatformSeeder extends Seeder
             [AnalyticsEventTypes::POST_LIKE, 'Like', 2],
             ['post_comment', 'Comment', 3],
             [AnalyticsEventTypes::SHARE, 'Share', 5],
+            [AnalyticsEventTypes::IEC_SHARE, 'IEC share', 5],
             [AnalyticsEventTypes::BOOKMARK, 'Bookmark', 2],
             [AnalyticsEventTypes::SEARCH, 'Search', 1],
             [AnalyticsEventTypes::FEATURE_USE, 'Feature use', 2],

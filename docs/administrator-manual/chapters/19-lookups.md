@@ -2,7 +2,7 @@
 
 Left menu: **Administration → Lookups** (`/admin/lookups`).
 
-Option lists used in registration and the journal: pronouns, persona, sky colors, feelings, and what shaped your day.
+Option lists used in registration, the journal, posts, care, and Color Fun: pronouns, persona, sky colors, feelings, what shaped your day, post categories, and Color Fun categories (All, Nature, People, Messages).
 
 **Figure 21.** Lookups. 1 Catalogs, 2 Add option.
 

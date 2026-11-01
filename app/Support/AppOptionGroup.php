@@ -22,6 +22,8 @@ final class AppOptionGroup
 
     public const POST_CATEGORY = 'post_category';
 
+    public const COLOR_FUN = 'color_fun';
+
     public const SELECTION_SINGLE = 'single';
 
     public const SELECTION_MULTIPLE = 'multiple';
@@ -41,6 +43,7 @@ final class AppOptionGroup
             self::CARE_SUPPORT,
             self::REHAB_CENTER,
             self::POST_CATEGORY,
+            self::COLOR_FUN,
         ];
     }
 
@@ -108,6 +111,12 @@ final class AppOptionGroup
                 'subtitle' => 'Categories for /admin/posts and the mobile post filters — set Active to show in the picker',
                 'selection' => self::SELECTION_SINGLE,
                 'surface' => 'Publish',
+            ],
+            self::COLOR_FUN => [
+                'title' => 'Color Fun categories',
+                'subtitle' => 'Filters for Color Fun worksheets — All, Nature, People, Messages',
+                'selection' => self::SELECTION_SINGLE,
+                'surface' => 'Care',
             ],
         ];
     }
@@ -384,6 +393,52 @@ final class AppOptionGroup
                 'Laws, policies, and regulations',
                 'Batas, polisiya, at regulasyon',
                 '#123a60',
+            ),
+
+            // Color Fun worksheet filters (keys match color_fun_worksheets.category; "all" is the gallery chip)
+            self::row(
+                self::COLOR_FUN,
+                'all',
+                'All',
+                'Lahat',
+                1,
+                'label_outline',
+                'Show every coloring worksheet',
+                'Ipakita ang lahat ng coloring worksheet',
+                '#055498',
+            ),
+            self::row(
+                self::COLOR_FUN,
+                'nature',
+                'Nature',
+                'Kalikasan',
+                2,
+                'spa_outlined',
+                'Plants, animals, and the outdoors',
+                'Halaman, hayop, at kalikasan',
+                '#16A34A',
+            ),
+            self::row(
+                self::COLOR_FUN,
+                'people',
+                'People',
+                'Tao',
+                3,
+                'groups_outlined',
+                'Friends, family, and community',
+                'Kaibigan, pamilya, at komunidad',
+                '#055498',
+            ),
+            self::row(
+                self::COLOR_FUN,
+                'messages',
+                'Messages',
+                'Mensahe',
+                4,
+                'favorite_outline',
+                'Kind words and heart messages',
+                'Mabuting salita at mensahe ng puso',
+                '#CE2028',
             ),
         ];
     }

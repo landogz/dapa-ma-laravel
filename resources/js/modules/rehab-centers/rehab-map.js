@@ -5,6 +5,7 @@ import { reverseGeocodeAddress, searchAddresses } from '../address-autocomplete'
 const PH_CENTER = { lng: 121.7740, lat: 12.8797 };
 const PH_DEFAULT_ZOOM = 5.5;
 const PICKER_ZOOM = 14;
+const DEFAULT_PIN_COLOR = '#055498';
 
 const MAP_STYLE = {
     version: 8,
@@ -36,6 +37,15 @@ function escapeHtml(value = '') {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
+}
+
+function normalizePinColor(value, fallback = DEFAULT_PIN_COLOR) {
+    const raw = String(value ?? '').trim();
+    if (!raw) {
+        return fallback;
+    }
+    const withHash = raw.startsWith('#') ? raw : `#${raw}`;
+    return /^#[0-9A-Fa-f]{6}$/.test(withHash) ? withHash : fallback;
 }
 
 export async function searchLocations(query) {
@@ -72,7 +82,19 @@ export function buildRehabMapPickerHtml() {
     `;
 }
 
-export function initRehabMapPicker({ lat, lng, onLocationChange } = {}) {
+function bindPickerMarkerEvents(marker, applyLocation) {
+    marker.on('dragend', async () => {
+        const { lat: nextLat, lng: nextLng } = marker.getLngLat();
+        try {
+            const reverse = await reverseGeocode(nextLat, nextLng);
+            await applyLocation(nextLat, nextLng, reverse ?? {});
+        } catch {
+            await applyLocation(nextLat, nextLng);
+        }
+    });
+}
+
+export function initRehabMapPicker({ lat, lng, color, onLocationChange } = {}) {
     destroyRehabMapPicker();
 
     const canvas = document.getElementById('rc-map-canvas');
@@ -86,6 +108,7 @@ export function initRehabMapPicker({ lat, lng, onLocationChange } = {}) {
         return null;
     }
 
+    const pinColor = normalizePinColor(color);
     const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
     const initialCenter = hasCoords ? { lat, lng } : PH_CENTER;
     const initialZoom = hasCoords ? PICKER_ZOOM : PH_DEFAULT_ZOOM;
@@ -100,7 +123,7 @@ export function initRehabMapPicker({ lat, lng, onLocationChange } = {}) {
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
-    const marker = new maplibregl.Marker({ draggable: true, color: '#055498' });
+    let marker = new maplibregl.Marker({ draggable: true, color: pinColor });
     if (hasCoords) {
         marker.setLngLat([lng, lat]).addTo(map);
     }
@@ -157,18 +180,36 @@ export function initRehabMapPicker({ lat, lng, onLocationChange } = {}) {
         }
     });
 
-    marker.on('dragend', async () => {
-        const { lat: nextLat, lng: nextLng } = marker.getLngLat();
-        try {
-            const reverse = await reverseGeocode(nextLat, nextLng);
-            await applyLocation(nextLat, nextLng, reverse ?? {});
-        } catch {
-            await applyLocation(nextLat, nextLng);
-        }
-    });
+    bindPickerMarkerEvents(marker, applyLocation);
 
-    activePicker = { map, marker, applyLocation };
+    activePicker = {
+        map,
+        marker,
+        applyLocation,
+        color: pinColor,
+        replaceMarker(nextColor) {
+            const resolved = normalizePinColor(nextColor);
+            const lngLat = marker.getLngLat?.() ?? null;
+            const wasOnMap = Boolean(lngLat);
+            marker.remove();
+            marker = new maplibregl.Marker({ draggable: true, color: resolved });
+            if (wasOnMap) {
+                marker.setLngLat(lngLat).addTo(map);
+            }
+            bindPickerMarkerEvents(marker, applyLocation);
+            this.marker = marker;
+            this.color = resolved;
+        },
+    };
+
     return activePicker;
+}
+
+export function setRehabMapPickerColor(color) {
+    if (!activePicker?.replaceMarker) {
+        return;
+    }
+    activePicker.replaceMarker(color);
 }
 
 export function destroyRehabMapPicker() {
@@ -192,7 +233,7 @@ export function getRehabMapPickerCoords() {
     return { latitude: lat, longitude: lng };
 }
 
-export function initRehabCentersOverviewMap(containerId, centers = []) {
+export function initRehabCentersOverviewMap(containerId, centers = [], { resolveColor, resolveLabel } = {}) {
     const container = document.getElementById(containerId);
     if (!container) {
         return;
@@ -212,18 +253,22 @@ export function initRehabCentersOverviewMap(containerId, centers = []) {
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
     overviewMarkers = mapped.map((center) => {
+        const categoryLabel = typeof resolveLabel === 'function'
+            ? resolveLabel(center)
+            : (center.category_label || center.category || '');
+        const pinColor = !center.is_active
+            ? '#94a3b8'
+            : normalizePinColor(
+                typeof resolveColor === 'function' ? resolveColor(center) : center.category_color,
+            );
+
         const popup = new maplibregl.Popup({ offset: 16, closeButton: false }).setHTML(
             `<div class="rehab-map-popup">
                 <p class="rehab-map-popup-title">${escapeHtml(center.name)}</p>
+                ${categoryLabel ? `<p class="rehab-map-popup-category" style="--rehab-category-color:${escapeHtml(pinColor)}">${escapeHtml(categoryLabel)}</p>` : ''}
                 <p class="rehab-map-popup-meta">${escapeHtml(center.address)}</p>
             </div>`,
         );
-
-        const pinColor = !center.is_active
-            ? '#94a3b8'
-            : (String(center.category_color || '').match(/^#?[0-9A-Fa-f]{6}$/)
-                ? (String(center.category_color).startsWith('#') ? center.category_color : `#${center.category_color}`)
-                : '#055498');
 
         return new maplibregl.Marker({ color: pinColor })
             .setLngLat([center.longitude, center.latitude])

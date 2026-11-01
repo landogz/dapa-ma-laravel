@@ -230,15 +230,20 @@
                 <div id="analytics-daily-chart" class="mt-4"></div>
             </section>
             <section class="analytics-panel">
-                <div class="analytics-panel-header gap-3">
-                    <div class="min-w-0">
+                <div class="analytics-panel-header gap-3 flex-col sm:flex-row sm:flex-wrap sm:items-end">
+                    <div class="min-w-0 flex-1">
                         <p class="analytics-panel-kicker">Timing</p>
-                        <h3 class="analytics-panel-title">Hourly heatmap</h3>
-                        <p class="mt-1 text-[11px] text-slate-500">Relative event volume by weekday and hour (local time)</p>
+                        <h3 class="analytics-panel-title">Hourly activity</h3>
                     </div>
-                    <p class="shrink-0 text-[11px] text-slate-500" data-analytics-hourly-peak>—</p>
+                    <p class="text-[11px] text-slate-500" data-analytics-hourly-peak>—</p>
                 </div>
-                <div id="analytics-hourly-heatmap" class="mt-4"></div>
+                <div
+                    id="analytics-hourly-criteria"
+                    class="mt-4 flex flex-wrap gap-2"
+                    role="group"
+                    aria-label="Hourly activity metric"
+                ></div>
+                <div id="analytics-hourly-chart" class="mt-4"></div>
             </section>
         </div>
 
@@ -479,17 +484,17 @@
                 <div class="analytics-panel-header"><div><p class="analytics-panel-kicker">Exports</p><h3 class="analytics-panel-title">Queued reports</h3></div></div>
                 <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                     <select id="analytics-export-type" class="admin-auth-input min-h-11 text-xs" aria-label="Export report type">
-                        <option value="summary">Overview summary</option>
-                        <option value="events">Event log</option>
-                        <option value="demographics">Demographics</option>
-                        <option value="users">Users</option>
-                        <option value="leaderboard">Top users leaderboard</option>
-                        <option value="retention">Retention</option>
-                        <option value="mobile">Mobile / devices</option>
-                        <option value="content">Content performance</option>
-                        <option value="journeys">Journeys</option>
-                        <option value="alerts">Alerts</option>
-                        <option value="complete">Complete pack</option>
+                        <option value="summary">Overview (detailed + charts)</option>
+                        <option value="events">Event log (detailed)</option>
+                        <option value="demographics">Demographics (detailed + charts)</option>
+                        <option value="users">Users (detailed)</option>
+                        <option value="leaderboard">Top users leaderboard (detailed + charts)</option>
+                        <option value="retention">Retention (detailed)</option>
+                        <option value="mobile">Mobile / devices (detailed + charts)</option>
+                        <option value="content">Content performance (detailed + charts)</option>
+                        <option value="journeys">Journeys (detailed + charts)</option>
+                        <option value="alerts">Alerts (detailed)</option>
+                        <option value="complete">Complete pack (all + charts)</option>
                     </select>
                     <select id="analytics-export-format" class="admin-auth-input min-h-11 text-xs" aria-label="Export format">
                         <option value="csv">CSV</option>

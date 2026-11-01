@@ -1,5 +1,8 @@
 import axios from 'axios';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import Swal from 'sweetalert2';
+import { buildSwalOptions } from './shared/swal-forms';
 import { showErrorToast, showSuccessToast } from './shared/toast';
 
 function escapeHtml(value) {
@@ -34,6 +37,9 @@ export function bindAnalyticsTabs() {
                 panel.classList.toggle('hidden', panel.getAttribute('data-analytics-panel') !== key);
             });
             loadAnalyticsTab(key);
+            if (key === 'geography') {
+                requestAnimationFrame(() => geographyUsersMap?.resize?.());
+            }
         });
     });
 }
@@ -664,6 +670,52 @@ const PH_ISLAND_COLORS = {
     mindanao: '#CE2028',
 };
 
+const PH_MAP_CENTER = { lng: 121.7740, lat: 12.8797 };
+const PH_MAP_ZOOM = 5.15;
+
+const PH_ISLAND_ANCHORS = {
+    luzon: { lng: 121.05, lat: 15.85 },
+    visayas: { lng: 123.55, lat: 11.05 },
+    mindanao: { lng: 125.15, lat: 7.55 },
+};
+
+/** Approximate centroids for common Philippine region labels stored on profiles. */
+const PH_REGION_ANCHORS = [
+    { match: [/ncr/, /national capital/, /metro manila/], lng: 121.0, lat: 14.6 },
+    { match: [/region i\b/, /region 1\b/, /ilocos/], lng: 120.62, lat: 16.08 },
+    { match: [/\bcar\b/, /cordillera/], lng: 120.6, lat: 16.4 },
+    { match: [/region ii\b/, /region 2\b/, /cagayan valley/], lng: 121.55, lat: 17.35 },
+    { match: [/region iii\b/, /region 3\b/, /central luzon/], lng: 120.71, lat: 15.48 },
+    { match: [/region iv-?a\b/, /calabarzon/, /region 4a/], lng: 121.08, lat: 14.1 },
+    { match: [/region iv-?b\b/, /mimaropa/, /region 4b/], lng: 121.0, lat: 12.9 },
+    { match: [/region v\b/, /region 5\b/, /bicol/], lng: 123.41, lat: 13.42 },
+    { match: [/region vi\b/, /region 6\b/, /western visayas/], lng: 122.54, lat: 11.0 },
+    { match: [/region vii\b/, /region 7\b/, /central visayas/], lng: 123.89, lat: 10.32 },
+    { match: [/region viii\b/, /region 8\b/, /eastern visayas/], lng: 125.0, lat: 11.25 },
+    { match: [/region ix\b/, /region 9\b/, /zamboanga/], lng: 122.08, lat: 7.83 },
+    { match: [/region x\b/, /region 10\b/, /northern mindanao/], lng: 124.63, lat: 8.45 },
+    { match: [/region xi\b/, /region 11\b/, /davao/], lng: 125.46, lat: 7.19 },
+    { match: [/region xii\b/, /region 12\b/, /soccsksargen/], lng: 124.85, lat: 6.5 },
+    { match: [/region xiii\b/, /region 13\b/, /caraga/], lng: 125.5, lat: 8.95 },
+    { match: [/barmm/, /bangsamoro/, /armm/], lng: 124.23, lat: 7.2 },
+];
+
+const PH_MAP_STYLE = {
+    version: 8,
+    sources: {
+        osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors',
+        },
+    },
+    layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+};
+
+let geographyUsersMap = null;
+let geographyUsersMapMarkers = [];
+
 function aggregateIslandHeat(rows, valueKey) {
     const totals = { luzon: 0, visayas: 0, mindanao: 0 };
     rows.forEach((row) => {
@@ -686,70 +738,135 @@ function aggregateIslandHeat(rows, valueKey) {
     };
 }
 
-function renderIslandStatPin(island, label, count, percent, x, y) {
-    return `
-        <div class="analytics-demo-map-pin analytics-demo-map-pin--${escapeHtml(island)}"
-            style="left:${x}%; top:${y}%;"
-            title="${escapeHtml(label)}: ${formatCompactNumber(count)} (${percent}%)">
-            <span class="analytics-demo-map-pin-count">${formatCompactNumber(count)}</span>
-            <span class="analytics-demo-map-pin-pct">${percent}%</span>
-            <span class="analytics-demo-map-pin-name">${escapeHtml(label)}</span>
-        </div>
+function resolveRegionAnchor(location) {
+    const name = String(location || '').toLowerCase();
+    if (!name) return null;
+    const found = PH_REGION_ANCHORS.find((entry) => entry.match.some((rx) => rx.test(name)));
+    return found ? { lng: found.lng, lat: found.lat } : null;
+}
+
+function destroyGeographyUsersMap() {
+    geographyUsersMapMarkers.forEach((marker) => marker.remove());
+    geographyUsersMapMarkers = [];
+    if (geographyUsersMap) {
+        geographyUsersMap.remove();
+        geographyUsersMap = null;
+    }
+}
+
+function buildIslandMarkerElement(island, label, count, percent) {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = `analytics-geo-map-pin analytics-geo-map-pin--${island}`;
+    el.setAttribute('aria-label', `${label}: ${formatCompactNumber(count)} users (${percent}%)`);
+    el.innerHTML = `
+        <span class="analytics-geo-map-pin-count">${formatCompactNumber(count)}</span>
+        <span class="analytics-geo-map-pin-pct">${percent}%</span>
+        <span class="analytics-geo-map-pin-name">${escapeHtml(label)}</span>
     `;
+    return el;
+}
+
+function buildRegionMarkerElement(label, count, color) {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'analytics-geo-map-region-dot';
+    el.style.setProperty('--analytics-geo-dot', color);
+    el.style.color = String(color).toUpperCase() === '#FBD116' ? '#123a60' : '#ffffff';
+    el.setAttribute('aria-label', `${label}: ${formatCompactNumber(count)} users`);
+    el.innerHTML = `<span>${formatCompactNumber(count)}</span>`;
+    return el;
+}
+
+function mountGeographyUsersMap(rows, valueKey) {
+    const container = document.getElementById('analytics-geo-maplibre');
+    if (!container) {
+        return;
+    }
+
+    destroyGeographyUsersMap();
+
+    const heat = aggregateIslandHeat(rows, valueKey);
+    const map = new maplibregl.Map({
+        container,
+        style: PH_MAP_STYLE,
+        center: [PH_MAP_CENTER.lng, PH_MAP_CENTER.lat],
+        zoom: PH_MAP_ZOOM,
+        attributionControl: true,
+    });
+
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+    const bounds = new maplibregl.LngLatBounds();
+    let hasPoint = false;
+
+    [
+        ['luzon', 'Luzon', heat.luzon, heat.pct.luzon],
+        ['visayas', 'Visayas', heat.visayas, heat.pct.visayas],
+        ['mindanao', 'Mindanao', heat.mindanao, heat.pct.mindanao],
+    ].forEach(([island, label, count, percent]) => {
+        const anchor = PH_ISLAND_ANCHORS[island];
+        const el = buildIslandMarkerElement(island, label, count, percent);
+        const popup = new maplibregl.Popup({ offset: 18, closeButton: false }).setHTML(
+            `<div class="analytics-geo-map-popup">
+                <p class="analytics-geo-map-popup-title">${escapeHtml(label)}</p>
+                <p class="analytics-geo-map-popup-meta">${formatCompactNumber(count)} users · ${percent}%</p>
+            </div>`,
+        );
+        const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+            .setLngLat([anchor.lng, anchor.lat])
+            .setPopup(popup)
+            .addTo(map);
+        geographyUsersMapMarkers.push(marker);
+        bounds.extend([anchor.lng, anchor.lat]);
+        hasPoint = true;
+    });
+
+    rows.forEach((row) => {
+        const count = Number(row[valueKey]) || 0;
+        if (count <= 0) return;
+        const anchor = resolveRegionAnchor(row.location);
+        if (!anchor) return;
+        const island = classifyPhilippineIsland(row.location);
+        const color = PH_ISLAND_COLORS[island] || '#055498';
+        const el = buildRegionMarkerElement(row.location, count, color);
+        const popup = new maplibregl.Popup({ offset: 12, closeButton: false }).setHTML(
+            `<div class="analytics-geo-map-popup">
+                <p class="analytics-geo-map-popup-title">${escapeHtml(row.location)}</p>
+                <p class="analytics-geo-map-popup-meta">${formatCompactNumber(count)} users</p>
+            </div>`,
+        );
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+            .setLngLat([anchor.lng, anchor.lat])
+            .setPopup(popup)
+            .addTo(map);
+        geographyUsersMapMarkers.push(marker);
+        bounds.extend([anchor.lng, anchor.lat]);
+        hasPoint = true;
+    });
+
+    map.on('load', () => {
+        map.resize();
+        if (hasPoint) {
+            map.fitBounds(bounds, { padding: 48, maxZoom: 6.2, duration: 0 });
+        }
+    });
+
+    geographyUsersMap = map;
+    requestAnimationFrame(() => map.resize());
 }
 
 function renderPhilippinesMap(rows, valueKey) {
     const heat = aggregateIslandHeat(rows, valueKey);
 
     return `
-        <div class="analytics-demo-map analytics-demo-map--infographic" role="img"
+        <div class="analytics-demo-map analytics-demo-map--maplibre"
             aria-label="Philippines users by island group: Luzon ${formatCompactNumber(heat.luzon)}, Visayas ${formatCompactNumber(heat.visayas)}, Mindanao ${formatCompactNumber(heat.mindanao)}">
-            <div class="analytics-demo-map-canvas">
-                <svg viewBox="0 0 220 320" class="analytics-demo-map-svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
-                    <defs>
-                        <radialGradient id="analytics-demo-map-glow" cx="50%" cy="48%" r="58%">
-                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
-                            <stop offset="55%" stop-color="#eef2f7" stop-opacity="0.9"/>
-                            <stop offset="100%" stop-color="#e5e7eb" stop-opacity="0.75"/>
-                        </radialGradient>
-                        <filter id="analytics-demo-map-soft" x="-20%" y="-20%" width="140%" height="140%">
-                            <feDropShadow dx="0" dy="2" stdDeviation="2.2" flood-color="#0f172a" flood-opacity="0.12"/>
-                        </filter>
-                    </defs>
-                    <rect width="220" height="320" rx="18" fill="url(#analytics-demo-map-glow)"/>
-                    <circle cx="110" cy="150" r="118" fill="none" stroke="#d1d5db" stroke-width="1" opacity="0.45"/>
-                    <circle cx="110" cy="150" r="88" fill="none" stroke="#d1d5db" stroke-width="1" opacity="0.35"/>
-                    <circle cx="110" cy="150" r="58" fill="none" stroke="#d1d5db" stroke-width="1" opacity="0.25"/>
-
-                    <g filter="url(#analytics-demo-map-soft)" stroke="#ffffff" stroke-width="2.2" stroke-linejoin="round">
-                        <!-- Luzon -->
-                        <path fill="${PH_ISLAND_COLORS.luzon}"
-                            d="M108 18c8-1 18 2 24 11 5 8 5 18 2 27-2 7 1 13 5 18 5 6 4 14-1 19-6 6-15 6-22 2-4-2-9-2-12 1-5 4-13 3-16-2-3-6 0-13 4-18 3-4 3-10 1-15-2-8 3-16 15-25z"/>
-                        <path fill="${PH_ISLAND_COLORS.luzon}"
-                            d="M92 78c5 1 9 5 10 10 1 4-1 8-5 9-4 1-8-2-9-6-1-5 0-9 4-13z"/>
-                        <!-- Visayas cluster -->
-                        <path fill="${PH_ISLAND_COLORS.visayas}"
-                            d="M70 148c7-4 16-2 23 3 5 3 12 2 17-1 7-4 16-2 21 4 4 5 10 7 11 13 1 6-5 11-12 11-5 0-9 4-9 8 0 4-6 8-12 6-7-2-11-7-11-13 0-4-4-6-8-6-7 0-12-6-8-13 2-4 1-7-6-9-4-1-7-2-6-3z"/>
-                        <path fill="${PH_ISLAND_COLORS.visayas}"
-                            d="M128 172c5-2 11 1 13 6 2 5-1 10-6 11-5 2-10-1-12-6-2-5 1-9 5-11z"/>
-                        <path fill="${PH_ISLAND_COLORS.visayas}"
-                            d="M152 158c4-1 8 2 9 6 1 4-2 8-6 8-4 1-8-2-9-6 0-4 2-7 6-8z"/>
-                        <!-- Mindanao -->
-                        <path fill="${PH_ISLAND_COLORS.mindanao}"
-                            d="M84 214c14-8 34-6 45 5 10 10 15 25 10 38-5 13-20 21-36 21-15 0-30-8-35-20-5-13 0-28 10-36 2-2 3-5 6-8z"/>
-                        <path fill="${PH_ISLAND_COLORS.mindanao}"
-                            d="M78 268c5 1 9 5 9 10 0 4-4 7-8 7-5 0-9-4-9-8 0-5 3-9 8-9z"/>
-                    </g>
-                </svg>
-
-                ${renderIslandStatPin('luzon', 'Luzon', heat.luzon, heat.pct.luzon, 58, 14)}
-                ${renderIslandStatPin('visayas', 'Visayas', heat.visayas, heat.pct.visayas, 12, 46)}
-                ${renderIslandStatPin('mindanao', 'Mindanao', heat.mindanao, heat.pct.mindanao, 54, 72)}
-            </div>
+            <div id="analytics-geo-maplibre" class="analytics-demo-map-canvas analytics-demo-map-canvas--maplibre" role="application" aria-label="Philippines users map"></div>
             <div class="analytics-demo-map-legend">
-                <span><i style="background:${PH_ISLAND_COLORS.luzon}"></i>Luzon</span>
-                <span><i style="background:${PH_ISLAND_COLORS.visayas}"></i>Visayas</span>
-                <span><i style="background:${PH_ISLAND_COLORS.mindanao}"></i>Mindanao</span>
+                <span><i style="background:${PH_ISLAND_COLORS.luzon}"></i>Luzon · ${formatCompactNumber(heat.luzon)} (${heat.pct.luzon}%)</span>
+                <span><i style="background:${PH_ISLAND_COLORS.visayas}"></i>Visayas · ${formatCompactNumber(heat.visayas)} (${heat.pct.visayas}%)</span>
+                <span><i style="background:${PH_ISLAND_COLORS.mindanao}"></i>Mindanao · ${formatCompactNumber(heat.mindanao)} (${heat.pct.mindanao}%)</span>
             </div>
         </div>
     `;
@@ -850,6 +967,7 @@ function renderGeographyOverview() {
     const activeTotal = Number(summary.active_in_range || 0);
 
     if (!payload.has_location_data) {
+        destroyGeographyUsersMap();
         root.innerHTML = `
             <div class="analytics-demo-empty-state">
                 <p class="text-sm font-semibold text-slate-700">No profile locations yet</p>
@@ -859,6 +977,7 @@ function renderGeographyOverview() {
         return;
     }
 
+    destroyGeographyUsersMap();
     root.innerHTML = `
         <div class="analytics-demo-overview">
             <div class="analytics-demo-top">
@@ -874,11 +993,11 @@ function renderGeographyOverview() {
                         </div>
                     </div>
                     <footer class="analytics-demo-card-footer">
-                        <span class="analytics-demo-link">View regions →</span>
+                        <button type="button" class="analytics-demo-link" data-geo-view="region">View regions →</button>
                     </footer>
                 </article>
 
-                <article class="analytics-demo-card analytics-demo-card--realtime">
+                <article class="analytics-demo-card analytics-demo-card--realtime" id="analytics-geo-activity-card">
                     <header class="analytics-demo-card-header">
                         <h4>Active in selected range</h4>
                         ${geographyCardStatusIcons()}
@@ -896,13 +1015,13 @@ function renderGeographyOverview() {
                         </div>
                     </div>
                     <footer class="analytics-demo-card-footer">
-                        <span class="analytics-demo-link">View activity →</span>
+                        <button type="button" class="analytics-demo-link" data-geo-view="activity">View activity →</button>
                     </footer>
                 </article>
             </div>
 
             <div class="analytics-demo-bottom">
-                <article class="analytics-demo-card">
+                <article class="analytics-demo-card" id="analytics-geo-city-card">
                     <header class="analytics-demo-card-header">
                         <h4>Users by City</h4>
                         ${geographyCardStatusIcons()}
@@ -911,11 +1030,11 @@ function renderGeographyOverview() {
                         ${renderGeographyRankList(cityRows, valueKey, 'No city/municipality values on profiles yet.')}
                     </div>
                     <footer class="analytics-demo-card-footer">
-                        <span class="analytics-demo-link">View cities →</span>
+                        <button type="button" class="analytics-demo-link" data-geo-view="city">View cities →</button>
                     </footer>
                 </article>
 
-                <article class="analytics-demo-card analytics-demo-card--donut">
+                <article class="analytics-demo-card analytics-demo-card--donut" id="analytics-geo-coverage-card">
                     <header class="analytics-demo-card-header">
                         <h4>Location coverage</h4>
                         ${geographyCardStatusIcons()}
@@ -924,11 +1043,11 @@ function renderGeographyOverview() {
                         ${renderCoverageDoughnut(summary)}
                     </div>
                     <footer class="analytics-demo-card-footer">
-                        <span class="analytics-demo-link">View coverage →</span>
+                        <button type="button" class="analytics-demo-link" data-geo-view="coverage">View coverage →</button>
                     </footer>
                 </article>
 
-                <article class="analytics-demo-card">
+                <article class="analytics-demo-card" id="analytics-geo-province-card">
                     <header class="analytics-demo-card-header">
                         <h4>Users by Province</h4>
                         ${geographyCardStatusIcons()}
@@ -937,7 +1056,7 @@ function renderGeographyOverview() {
                         ${renderGeographyRankList(provinceRows, valueKey, 'No province values on profiles yet.')}
                     </div>
                     <footer class="analytics-demo-card-footer">
-                        <span class="analytics-demo-link">View provinces →</span>
+                        <button type="button" class="analytics-demo-link" data-geo-view="province">View provinces →</button>
                     </footer>
                 </article>
             </div>
@@ -945,6 +1064,119 @@ function renderGeographyOverview() {
             <p class="analytics-demo-source">${escapeHtml(payload.source || 'Authorized user profile location.')}</p>
         </div>
     `;
+
+    mountGeographyUsersMap(regionRows, valueKey);
+    bindGeographyViewLinks(root);
+}
+
+function bindGeographyViewLinks(root) {
+    root.querySelectorAll('[data-geo-view]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const view = button.getAttribute('data-geo-view');
+            if (view === 'coverage') {
+                openGeographyCoverageDetail();
+                return;
+            }
+            if (view === 'activity') {
+                openGeographyDistributionDetail('region', {
+                    title: 'Active users by region',
+                    forceMetric: 'active',
+                });
+                return;
+            }
+            if (view === 'region' || view === 'province' || view === 'city') {
+                openGeographyDistributionDetail(view);
+            }
+        });
+    });
+}
+
+async function openGeographyDistributionDetail(level, options = {}) {
+    const titles = {
+        region: 'Users by region',
+        province: 'Users by province',
+        city: 'Users by city / municipality',
+    };
+    const title = options.title || titles[level] || 'Geography detail';
+    const valueKey = options.forceMetric === 'active' ? 'active' : geographyMetricKey();
+
+    Swal.fire(buildSwalOptions({
+        title,
+        html: `
+            <div class="analytics-geo-detail" id="analytics-geo-detail">
+                <p class="analytics-geo-detail-loading">Loading full list…</p>
+            </div>
+        `,
+        showCancelButton: false,
+        confirmButtonText: 'Close',
+        focusConfirm: true,
+    }, { size: 'lg' }));
+
+    try {
+        const params = {
+            ...getAnalyticsQueryParams(),
+            level,
+            limit: 100,
+        };
+        const { data } = await axios.get('/admin/analytics/geography', { params });
+        const payload = data.data ?? {};
+        const rows = Array.isArray(payload.rows) ? payload.rows : [];
+        const detail = document.getElementById('analytics-geo-detail');
+        if (!detail) {
+            return;
+        }
+
+        const metricLabel = valueKey === 'active' ? 'Active in range' : 'Registered';
+        detail.innerHTML = `
+            <p class="analytics-geo-detail-meta">
+                ${escapeHtml(payload.label || level)} · ${formatCompactNumber(payload.total_locations || rows.length)} locations ·
+                showing ${metricLabel.toLowerCase()}
+            </p>
+            <div class="analytics-geo-detail-list">
+                ${renderGeographyRankList(rows, valueKey, `No ${level} values on profiles yet.`, {
+                    limit: 100,
+                    showBars: true,
+                })}
+            </div>
+            ${Number(payload.unknown || 0) > 0 ? `
+                <p class="analytics-geo-detail-unknown">
+                    ${formatCompactNumber(payload.unknown)} profiles are missing this location field.
+                </p>
+            ` : ''}
+        `;
+    } catch (error) {
+        const detail = document.getElementById('analytics-geo-detail');
+        if (detail) {
+            detail.innerHTML = `<p class="analytics-demo-empty">${escapeHtml(error.response?.data?.message ?? 'Unable to load geography detail.')}</p>`;
+        }
+        showErrorToast(error.response?.data?.message ?? 'Unable to load geography detail.', 'Analytics');
+    }
+}
+
+function openGeographyCoverageDetail() {
+    const summary = geographyOverviewCache?.summary ?? {};
+    const withLocation = Number(summary.with_location || 0);
+    const missing = Number(summary.missing_location || 0);
+    const total = Math.max(withLocation + missing, 0);
+    const coveragePct = Number(summary.location_coverage_pct ?? (total > 0 ? (withLocation / total) * 100 : 0));
+
+    Swal.fire(buildSwalOptions({
+        title: 'Location coverage',
+        html: `
+            <div class="analytics-geo-detail analytics-geo-detail--coverage">
+                ${renderCoverageDoughnut(summary)}
+                <ul class="analytics-geo-coverage-stats">
+                    <li><span>Profiles with location</span><strong>${formatCompactNumber(withLocation)}</strong></li>
+                    <li><span>Missing location</span><strong>${formatCompactNumber(missing)}</strong></li>
+                    <li><span>Coverage</span><strong>${coveragePct.toLocaleString(undefined, { maximumFractionDigits: 1 })}%</strong></li>
+                    <li><span>Active in selected range</span><strong>${formatCompactNumber(summary.active_in_range || 0)}</strong></li>
+                </ul>
+            </div>
+        `,
+        showCancelButton: false,
+        confirmButtonText: 'Close',
+        focusConfirm: true,
+    }, { size: 'md' }));
 }
 
 async function loadAlertsTab() {

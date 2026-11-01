@@ -34,7 +34,7 @@ class IecMaterialController extends Controller
 
     public function show(IecMaterial $iecMaterial): JsonResponse
     {
-        if (! $iecMaterial->is_active) {
+        if (! $iecMaterial->is_active || ! $iecMaterial->isWorkflowPublished()) {
             return response()->json([
                 'status' => false,
                 'message' => 'IEC material not found.',

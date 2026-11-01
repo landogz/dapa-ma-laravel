@@ -27,6 +27,9 @@ Route::get('/events/{key}', [SharePageController::class, 'event'])
 Route::get('/contests/{key}', [SharePageController::class, 'contest'])
     ->where('key', '[0-9]+|[0-9a-fA-F-]{36}')
     ->name('share.contests');
+Route::get('/iec-materials/{key}', [SharePageController::class, 'iecMaterial'])
+    ->where('key', '[0-9]+|[0-9a-fA-F-]{36}')
+    ->name('share.iec-materials');
 Route::get('/download/dape-ma.apk', [SharePageController::class, 'apk'])
     ->name('share.apk');
 Route::get('/download/dape-ma.ipa', [SharePageController::class, 'ipa'])
@@ -34,7 +37,7 @@ Route::get('/download/dape-ma.ipa', [SharePageController::class, 'ipa'])
 Route::get('/download/ios', [SharePageController::class, 'iosInstall'])
     ->name('share.ios');
 Route::get('/og-image/{type}/{key}.jpg', [SharePageController::class, 'ogImage'])
-    ->whereIn('type', ['posts', 'events', 'contests'])
+    ->whereIn('type', ['posts', 'events', 'contests', 'iec-materials'])
     ->where('key', '[0-9]+|[0-9a-fA-F-]{36}')
     ->name('share.og-image');
 
@@ -79,6 +82,7 @@ Route::get('/admin/contests', fn () => AdminPage::render('admin.contests.index',
 Route::get('/admin/iec-materials', fn () => AdminPage::render('admin.iec-materials.index', 'iec-materials', 'IEC Materials'));
 
 Route::get('/admin/sticker-library', fn () => AdminPage::render('admin.sticker-library.index', 'sticker-library', 'Sticker Library'));
+Route::get('/admin/color-fun-library', fn () => AdminPage::render('admin.color-fun-library.index', 'color-fun-library', 'Color Fun Library'));
 
 Route::get('/admin/app-translations', fn () => AdminPage::render('admin.app-translations.index', 'app-translations', 'App Translations'));
 
