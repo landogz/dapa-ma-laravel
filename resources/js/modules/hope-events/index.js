@@ -3,9 +3,10 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
-import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
+import { bindAdminFilterTabs } from '../shared/filter-tabs';
 import {
     attachWorkflowWindowHandlers,
+    applyQueueAwareFilterCounts,
     buildWorkflowTableActions,
     canCreateWorkflowDraft,
     ensureWorkflowStatusFilter,
@@ -38,7 +39,6 @@ let eventsTable;
 let eventsTableMode;
 let hasBoundViewportListener = false;
 let audienceFilter = '';
-let audienceCounts = null;
 let workflowStatusFilter = '';
 
 const AUDIENCE_LABELS = {
@@ -156,20 +156,23 @@ function loadRows() {
     axios.get('/admin/hope-events', {
         params: {
             per_page: 500,
-            audience: audienceFilter || undefined,
         },
     })
         .then(({ data }) => {
             const allRows = data.data?.data ?? [];
-            const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            const queueRows = filterByWorkflowStatus(allRows, workflowStatusFilter);
             applyWorkflowStatusCounts(null, allRows);
+            applyQueueAwareFilterCounts(
+                document.getElementById('hope-events-audience-tabs'),
+                queueRows,
+                (row) => row.audience || '',
+            );
+            const rows = audienceFilter
+                ? queueRows.filter((row) => String(row.audience || '') === audienceFilter)
+                : queueRows;
             eventsTable.clear();
             rows.forEach((row) => eventsTable.row.add(buildRow(row)));
             eventsTable.draw();
-            if (!audienceFilter && !workflowStatusFilter) {
-                audienceCounts = countByKey(data.data?.data ?? [], (row) => row.audience || '');
-            }
-            applyAdminFilterTabCounts(document.getElementById('hope-events-audience-tabs'), audienceCounts || {});
         })
         .catch(({ response }) => {
             showErrorToast(response?.data?.message ?? 'Failed to load Hope Events.');

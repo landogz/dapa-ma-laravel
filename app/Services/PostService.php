@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Repositories\PostRepository;
 use App\Services\AdminNotificationService;
 use App\Services\BlockedWord\BlockedWordService;
+use App\Support\Html\SafeHtml;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -65,15 +66,19 @@ class PostService
         $post = $this->postRepository->findAdminDetail($id);
 
         if ($actor?->role === 'publisher' && ! $this->publisherCanView($post)) {
+            $returnedForRevision = $post->status === 'draft'
+                || ($post->status === 'published' && ($post->revision_status ?? null) === 'draft');
             $alreadyResolved = $post->status === 'published' && ! $post->hasPendingRevision();
 
             abort(response()->json([
                 'status' => false,
-                'code' => $alreadyResolved ? 'review_resolved' : 'not_in_queue',
+                'code' => $alreadyResolved ? 'review_resolved' : ($returnedForRevision ? 'review_returned' : 'not_in_queue'),
                 'message' => $alreadyResolved
                     ? 'This post update was already published. It is no longer in your review queue.'
-                    : 'This post is not available in your publisher review queue.',
-            ], $alreadyResolved ? 409 : 404));
+                    : ($returnedForRevision
+                        ? 'This post was returned for revision. It will come back to your queue when the editor resubmits it.'
+                        : 'This post is not available in your publisher review queue.'),
+            ], ($alreadyResolved || $returnedForRevision) ? 409 : 404));
         }
 
         return $post;
@@ -201,6 +206,10 @@ class PostService
     public function reject(Post $post, string $reviewNotes, User $publisher): Post
     {
         if ($post->status === 'published' && $post->hasPendingRevision()) {
+            if ($publisher->role === 'publisher' && $post->revision_status !== 'pending_review') {
+                abort(403, 'This update is already with the editor for revision.');
+            }
+
             $post = $this->postRepository->update($post, [
                 'revision_status' => 'draft',
                 'review_notes' => $reviewNotes,
@@ -229,7 +238,8 @@ class PostService
             abort(422, 'Published updates cannot be scheduled. Approve the update to apply it now.');
         }
 
-        $this->assertStatus($post, ['pending_review']);
+        $this->assertStatus($post, ['pending_review', 'scheduled']);
+        $wasScheduled = $post->status === 'scheduled';
 
         $post = $this->postRepository->update($post, [
             'status'       => 'scheduled',
@@ -237,16 +247,18 @@ class PostService
             'review_notes' => null,
         ]);
 
-        $this->adminNotificationService->notifyPostScheduled($post, $publisher);
+        $this->adminNotificationService->notifyPostScheduled($post, $publisher, $wasScheduled);
 
         return $post;
     }
 
     public function publishNow(Post $post, User $publisher): Post
     {
-        // Apply staged published updates for publishers/super admins whether the
-        // revision is still an editor draft or already marked pending_review.
         if ($post->status === 'published' && $post->hasPendingRevision()) {
+            if ($publisher->role === 'publisher' && $post->revision_status !== 'pending_review') {
+                abort(403, 'This update is with the editor. It returns to your queue when they resubmit it.');
+            }
+
             return $this->applyPendingRevision($post, $publisher);
         }
 
@@ -272,34 +284,95 @@ class PostService
         return $post;
     }
 
-    public function archive(Post $post): Post
+    public function archive(Post $post, User $actor): Post
     {
+        if (! in_array($actor->role, ['editor', 'super_admin'], true)) {
+            abort(403, 'Only editors and Super Admin can archive posts.');
+        }
+
         $this->assertStatus($post, ['published', 'scheduled']);
 
-        return $this->postRepository->update($post, [
+        $post = $this->postRepository->update($post, [
             'status' => 'archived',
             'pending_revision' => null,
             'revision_status' => null,
             'review_notes' => null,
         ]);
+
+        if ($actor->role === 'editor') {
+            $this->adminNotificationService->notifyPostArchived($post, $actor);
+        }
+
+        return $post;
     }
 
-    public function restore(Post $post): Post
+    public function restore(Post $post, User $actor): Post
     {
         $this->assertStatus($post, ['archived']);
 
-        return $this->postRepository->update($post, [
-            'status'       => 'published',
-            'publish_date' => $post->publish_date ?? Carbon::now(),
+        if (! in_array($actor->role, ['editor', 'super_admin'], true)) {
+            abort(403, 'Only editors and Super Admin can restore archived posts.');
+        }
+
+        if ($actor->role === 'super_admin') {
+            return $this->postRepository->update($post, [
+                'status' => 'published',
+                'publish_date' => $post->publish_date ?? Carbon::now(),
+                'review_notes' => null,
+                'pending_revision' => null,
+                'revision_status' => null,
+            ]);
+        }
+
+        $post = $this->postRepository->update($post, [
+            'status' => 'pending_review',
             'review_notes' => null,
             'pending_revision' => null,
             'revision_status' => null,
         ]);
+
+        $this->adminNotificationService->notifyPostRestoreRequested($post, $actor);
+
+        return $post;
     }
 
     public function delete(Post $post): void
     {
+        $this->deleteStoredMedia($post->getRawOriginal('media_url') ?? $post->media_url);
         $post->delete();
+    }
+
+    /**
+     * Editors and Super Admin may delete draft posts, or discard a staged update on a live post.
+     *
+     * @return array{mode: string, post: ?Post}
+     */
+    public function deleteDraft(Post $post, User $actor): array
+    {
+        if (! in_array($actor->role, ['editor', 'super_admin'], true)) {
+            abort(403, 'Only editors and Super Admin can delete drafts.');
+        }
+
+        if ($post->status === 'published' && ($post->revision_status ?? null) === 'draft') {
+            $updated = $this->postRepository->update($post, [
+                'pending_revision' => null,
+                'revision_status' => null,
+                'review_notes' => null,
+            ]);
+
+            return [
+                'mode' => 'discarded',
+                'post' => $updated,
+            ];
+        }
+
+        $this->assertStatus($post, ['draft']);
+        $this->delete($post);
+
+        return [
+            'mode' => 'deleted',
+            'post' => null,
+        ];
     }
 
     public function publishScheduled(): int
@@ -403,8 +476,10 @@ class PostService
 
     private function publisherCanView(Post $post): bool
     {
-        return $post->status === 'pending_review'
-            || ($post->status === 'published' && $post->hasPendingRevision());
+        return in_array($post->status, ['pending_review', 'scheduled'], true)
+            || ($post->status === 'published'
+                && $post->revision_status === 'pending_review'
+                && $post->hasPendingRevision());
     }
 
     private function resolveSuperAdminPublishMeta(User $author, ?string $requestedStatus = null): array
@@ -467,7 +542,9 @@ class PostService
         }
 
         if (array_key_exists('body', $data) && is_string($data['body'])) {
-            $data['body'] = $this->blockedWordService->maskHtml($data['body']);
+            $data['body'] = $this->blockedWordService->maskHtml(
+                SafeHtml::sanitize($data['body']) ?? ''
+            );
         }
 
         return $data;

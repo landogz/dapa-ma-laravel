@@ -3,9 +3,10 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
 import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
-import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey, setAdminFilterTab } from '../shared/filter-tabs';
+import { bindAdminFilterTabs, setAdminFilterTab } from '../shared/filter-tabs';
 import {
     attachWorkflowWindowHandlers,
+    applyQueueAwareFilterCounts,
     buildWorkflowTableActions,
     defaultWorkflowFilter,
     ensureWorkflowStatusFilter,
@@ -46,8 +47,6 @@ let hasBoundViewportListener = false;
 let contestsCategoryFilter = '';
 let contestsStatusFilter = '';
 let contestsWorkflowFilter = '';
-let contestsCategoryCounts = null;
-let contestsStatusCounts = null;
 
 const CATEGORY_OPTIONS = [
     { value: 'song', label: 'Song Contest' },
@@ -114,25 +113,36 @@ export function loadContests(search = '') {
         params: {
             search,
             per_page: 200,
-            ...(contestsCategoryFilter ? { category: contestsCategoryFilter } : {}),
-            ...(contestsStatusFilter ? { status: contestsStatusFilter } : {}),
         },
     })
         .then(({ data }) => {
             const allRows = data.data?.data ?? [];
-            const rows = filterByWorkflowStatus(allRows, contestsWorkflowFilter);
+            const queueRows = filterByWorkflowStatus(allRows, contestsWorkflowFilter);
             applyWorkflowStatusCounts(null, allRows);
+            applyQueueAwareFilterCounts(
+                document.getElementById('contests-category-tabs'),
+                queueRows,
+                (row) => row.category || '',
+            );
+            applyQueueAwareFilterCounts(
+                document.getElementById('contests-status-tabs'),
+                queueRows,
+                (row) => row.status || '',
+            );
+            const rows = queueRows.filter((contest) => {
+                if (contestsCategoryFilter && String(contest.category || '') !== contestsCategoryFilter) {
+                    return false;
+                }
+                if (contestsStatusFilter && String(contest.status || '') !== contestsStatusFilter) {
+                    return false;
+                }
+                return true;
+            });
             contestsTable.clear();
             rows.forEach((contest) => {
                 contestsTable.row.add(buildRowData(contest));
             });
             contestsTable.draw();
-            if (!contestsCategoryFilter && !contestsStatusFilter && !contestsWorkflowFilter) {
-                contestsCategoryCounts = countByKey(data.data?.data ?? [], (row) => row.category || '');
-                contestsStatusCounts = countByKey(data.data?.data ?? [], (row) => row.status || '');
-            }
-            applyAdminFilterTabCounts(document.getElementById('contests-category-tabs'), contestsCategoryCounts || {});
-            applyAdminFilterTabCounts(document.getElementById('contests-status-tabs'), contestsStatusCounts || {});
         })
         .catch(({ response }) => {
             showErrorToast(response?.data?.message ?? 'Failed to load contests.');

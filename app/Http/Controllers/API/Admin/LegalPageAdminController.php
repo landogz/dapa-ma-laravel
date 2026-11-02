@@ -8,8 +8,10 @@ use App\Http\Requests\Admin\RejectContentRequest;
 use App\Http\Requests\Admin\UpdateLegalPageRequest;
 use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Services\LegalPageService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 class LegalPageAdminController extends Controller
 {
@@ -17,6 +19,7 @@ class LegalPageAdminController extends Controller
         submit as protected workflowSubmit;
         reject as protected workflowReject;
         publish as protected workflowPublish;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -87,5 +90,15 @@ class LegalPageAdminController extends Controller
     public function publish(Request $request, string $slug): JsonResponse
     {
         return $this->workflowPublish($request, $this->legalPageService->findForAdmin($slug));
+    }
+
+    public function destroy(Request $request, string $slug): JsonResponse
+    {
+        return $this->workflowDestroy($request, $this->legalPageService->findForAdmin($slug));
+    }
+
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        throw new InvalidArgumentException('Legal pages cannot be deleted. Discard a draft update instead.');
     }
 }

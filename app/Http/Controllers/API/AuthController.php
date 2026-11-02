@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\BootstrapAdminRequest;
 use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\CheckEmailRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
@@ -15,15 +16,17 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\AccessTokenService;
 use App\Services\Auth\EmailCheckService;
 use App\Services\LoginVerificationService;
 use App\Services\NotificationService;
 use App\Services\Password\PasswordService;
 use App\Services\PasswordResetService;
 use App\Services\ProfileService;
+use App\Support\Auth\AdminGateCookie;
+use App\Support\Auth\LoginOtp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -35,6 +38,7 @@ class AuthController extends Controller
         private readonly LoginVerificationService $loginVerificationService,
         private readonly EmailCheckService $emailCheckService,
         private readonly PasswordService $passwordService,
+        private readonly AccessTokenService $accessTokenService,
         private readonly AuditLogger $auditLogger,
     ) {
     }
@@ -54,36 +58,12 @@ class AuthController extends Controller
 
     public function register(RegisterRequest $request): JsonResponse
     {
-        $isFirstAdmin = ! User::query()->where('role', 'super_admin')->exists();
-        $fullName = trim($request->validated('name'));
-        $nameParts = preg_split('/\s+/', $fullName, 2);
-
-        $user = User::query()->create([
-            'name' => $fullName,
-            'first_name' => $nameParts[0] ?? $fullName,
-            'last_name' => $nameParts[1] ?? '',
-            'email' => $request->validated('email'),
-            'password' => $request->validated('password'),
-            'password_changed_at' => now(),
-            'must_change_password' => false,
-            'role' => $isFirstAdmin ? 'super_admin' : 'app_user',
-            'last_login_at' => now(),
-            'accepted_terms_of_use_at' => now(),
-            'accepted_privacy_policy_at' => now(),
-            'accepted_privacy_notice_at' => now(),
-        ]);
-
-        $token = $user->createToken(
-            $isFirstAdmin ? 'admin-setup-token' : 'api-token',
-            ['*'],
-            now()->addDays(30)
-        )->plainTextToken;
+        $user = $this->createAccount($request->validated(), 'app_user');
+        $token = $this->accessTokenService->issueFull($user);
 
         return response()->json([
             'status' => true,
-            'message' => $isFirstAdmin
-                ? 'Administrator account created successfully.'
-                : 'Account created successfully.',
+            'message' => 'Account created successfully.',
             'data' => [
                 'token' => $token,
                 'user' => $this->profileService->formatUser($user),
@@ -91,11 +71,28 @@ class AuthController extends Controller
         ], 201);
     }
 
+    public function bootstrapAdmin(BootstrapAdminRequest $request): JsonResponse
+    {
+        $user = $this->createAccount($request->validated(), 'super_admin');
+        $token = $this->accessTokenService->issueFull($user, 'admin-setup-token');
+
+        return $this->withAdminGate(response()->json([
+            'status' => true,
+            'message' => 'Administrator account created successfully.',
+            'data' => [
+                'token' => $token,
+                'user' => $this->profileService->formatUser($user),
+            ],
+        ], 201));
+    }
+
     public function login(LoginRequest $request): JsonResponse
     {
         $email = (string) $request->input('email');
 
-        if (! Auth::attempt($request->only('email', 'password'))) {
+        $user = User::query()->where('email', $email)->first();
+
+        if (! $user || ! Hash::check((string) $request->input('password'), $user->password)) {
             $this->auditLogger->record([
                 'actor' => [
                     'id' => null,
@@ -115,11 +112,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user = $request->user();
-
         if ($user->is_active === false) {
-            Auth::logout();
-
             $this->auditLogger->record([
                 'actor' => $user,
                 'category' => 'auth',
@@ -139,29 +132,19 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $user->forceFill(['last_login_at' => now()])->save();
+        if (! LoginOtp::required()) {
+            return $this->completeVerifiedLogin($user, $request, 'Signed in.');
+        }
 
         $verification = $this->loginVerificationService->sendCode($user);
         if (! $verification['status']) {
-            Auth::logout();
-
             return response()->json([
                 'status' => false,
                 'message' => $verification['message'],
             ], $verification['http']);
         }
 
-        $token = $user->createToken('api-token', ['*'], now()->addDays(30))->plainTextToken;
-
-        $this->auditLogger->record([
-            'actor' => $user,
-            'category' => 'auth',
-            'action' => 'login',
-            'description' => 'Signed in successfully',
-            'subject_type' => $user->getMorphClass(),
-            'subject_id' => $user->id,
-            'subject_label' => $user->email,
-        ], $request);
+        $token = $this->accessTokenService->issuePending($user);
 
         return response()->json([
             'status'  => true,
@@ -186,15 +169,22 @@ class AuthController extends Controller
 
     public function verifyLoginCode(VerifyLoginCodeRequest $request): JsonResponse
     {
+        $user = $request->user();
         $result = $this->loginVerificationService->verifyCode(
-            $request->user(),
+            $user,
             (string) $request->validated('code')
         );
 
-        return response()->json([
-            'status' => $result['status'],
-            'message' => $result['message'],
-        ], $result['http']);
+        if (! $result['status']) {
+            return response()->json([
+                'status' => false,
+                'message' => $result['message'],
+            ], $result['http']);
+        }
+
+        $this->accessTokenService->revokeCurrent($user);
+
+        return $this->completeVerifiedLogin($user, $request, $result['message']);
     }
 
     public function logout(Request $request): JsonResponse
@@ -218,15 +208,21 @@ class AuthController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Logged out successfully.',
-        ]);
+        ])->withCookie(AdminGateCookie::forget());
     }
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json([
+        $response = response()->json([
             'status' => true,
             'data'   => $this->profileService->formatUser($request->user()),
         ]);
+
+        if ($this->accessTokenService->isPending($request->user())) {
+            return $response;
+        }
+
+        return $this->withAdminGate($response);
     }
 
     public function updateProfile(UpdateProfileRequest $request): JsonResponse
@@ -278,6 +274,7 @@ class AuthController extends Controller
         }
 
         $this->passwordService->apply($user, (string) $request->input('password'), false);
+        $this->accessTokenService->revokeOthers($user);
 
         $this->auditLogger->record([
             'actor' => $user,
@@ -340,5 +337,63 @@ class AuthController extends Controller
         }
 
         return response()->json($payload, $result['http']);
+    }
+
+    /**
+     * @param  array{name: string, email: string, password: string}  $validated
+     */
+    private function createAccount(array $validated, string $role): User
+    {
+        $fullName = trim($validated['name']);
+        $nameParts = preg_split('/\s+/', $fullName, 2) ?: [];
+
+        $user = new User();
+        $user->forceFill([
+            'name' => $fullName,
+            'first_name' => $nameParts[0] ?? $fullName,
+            'last_name' => $nameParts[1] ?? '',
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'password_changed_at' => now(),
+            'must_change_password' => false,
+            'role' => $role,
+            'is_active' => true,
+            'accepted_terms_of_use_at' => now(),
+            'accepted_privacy_policy_at' => now(),
+            'accepted_privacy_notice_at' => now(),
+        ])->save();
+
+        return $user;
+    }
+
+    private function completeVerifiedLogin(User $user, Request $request, string $message): JsonResponse
+    {
+        $token = $this->accessTokenService->issueFull($user);
+        $user->forceFill(['last_login_at' => now()])->save();
+
+        $this->auditLogger->record([
+            'actor' => $user,
+            'category' => 'auth',
+            'action' => 'login',
+            'description' => 'Signed in successfully',
+            'subject_type' => $user->getMorphClass(),
+            'subject_id' => $user->id,
+            'subject_label' => $user->email,
+        ], $request);
+
+        return $this->withAdminGate(response()->json([
+            'status' => true,
+            'message' => $message,
+            'data' => [
+                'token' => $token,
+                'user' => $this->profileService->formatUser($user->fresh() ?? $user),
+                'requires_verification' => false,
+            ],
+        ]));
+    }
+
+    private function withAdminGate(JsonResponse $response): JsonResponse
+    {
+        return $response->withCookie(AdminGateCookie::make());
     }
 }

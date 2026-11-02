@@ -122,9 +122,9 @@
                     @endunless
 
                     @if (!empty($demoAccounts))
-                        <details class="admin-login-demo-accounts mt-4">
+                        <details class="admin-login-demo-accounts mt-4" open>
                             <summary class="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl px-1 text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#055498]">
-                                <span>Show demo accounts</span>
+                                <span>Demo accounts</span>
                                 <span class="rounded-full bg-[#FBD116] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#123a60]">Demo</span>
                             </summary>
                             <p class="admin-login-demo-hint">Tap an account to fill the form and sign in.</p>
@@ -145,6 +145,40 @@
                             </div>
                         </details>
                     @endif
+                    </div>
+
+                    <div id="admin-login-otp-view" class="hidden">
+                        <button type="button" data-login-otp-back class="mb-5 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[#055498] hover:text-[#123a60] focus:outline-none focus:ring-2 focus:ring-[#055498] focus:ring-offset-2">
+                            <i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i>
+                            Back to Login
+                        </button>
+                        <h2 class="text-3xl font-bold tracking-tight text-slate-950">Check your email</h2>
+                        <p class="mt-4 text-sm leading-normal text-[#055498]" data-login-otp-sent-to></p>
+                        <p class="mt-2 text-sm leading-normal text-slate-600">Enter the 6-digit code to finish signing in.</p>
+                        <form id="login-otp-form" class="mt-6 space-y-5" novalidate>
+                            <div class="grid grid-cols-6 gap-1.5 sm:gap-2" data-login-otp-code>
+                                @for ($digit = 0; $digit < 6; $digit++)
+                                    <input
+                                        type="text"
+                                        inputmode="numeric"
+                                        autocomplete="one-time-code"
+                                        maxlength="1"
+                                        aria-label="Digit {{ $digit + 1 }}"
+                                        class="admin-reset-code"
+                                        data-login-otp-digit
+                                    >
+                                @endfor
+                            </div>
+                            <span id="login-otp-error" class="admin-auth-error" role="alert"></span>
+                            <button type="submit" class="admin-primary-button admin-login-submit w-full gap-2 rounded-xl" data-busy-spinner="true" disabled>
+                                Verify Code
+                            </button>
+                        </form>
+                        <p class="mt-4 text-center text-sm text-slate-600">
+                            Didn't receive a code?
+                            <span data-login-otp-resend-wait class="font-semibold text-[#055498]">Resend in 00:45</span>
+                            <button type="button" data-login-otp-resend class="hidden min-h-11 font-semibold text-[#055498] hover:text-[#123a60] focus:outline-none focus:ring-2 focus:ring-[#055498] focus:ring-offset-2">Resend</button>
+                        </p>
                     </div>
 
                     <div id="admin-forgot-view" class="hidden">

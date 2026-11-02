@@ -12,6 +12,7 @@ use App\Models\Contest;
 use App\Models\ContestEntry;
 use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Services\ContestService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -24,6 +25,7 @@ class ContestAdminController extends Controller
         publish as protected workflowPublish;
         archive as protected workflowArchive;
         restore as protected workflowRestore;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -120,14 +122,14 @@ class ContestAdminController extends Controller
         return $this->workflowRestore($request, $contest);
     }
 
-    public function destroy(Contest $contest): JsonResponse
+    public function destroy(Request $request, Contest $contest): JsonResponse
     {
-        $this->contestService->deleteContest($contest);
+        return $this->workflowDestroy($request, $contest);
+    }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Contest deleted.',
-        ]);
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $this->contestService->deleteContest($model);
     }
 
     public function entries(Request $request, Contest $contest): JsonResponse

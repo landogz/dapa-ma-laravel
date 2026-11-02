@@ -10,6 +10,7 @@ use App\Http\Requests\HopeDirectory\UpdateHopeDirectoryOrganizationRequest;
 use App\Models\HopeDirectoryOrganization;
 use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Services\HopeDirectoryService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,7 @@ class HopeDirectoryAdminController extends Controller
         publish as protected workflowPublish;
         archive as protected workflowArchive;
         restore as protected workflowRestore;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -130,13 +132,13 @@ class HopeDirectoryAdminController extends Controller
         return $this->workflowRestore($request, $hopeDirectory);
     }
 
-    public function destroy(HopeDirectoryOrganization $hopeDirectory): JsonResponse
+    public function destroy(Request $request, HopeDirectoryOrganization $hopeDirectory): JsonResponse
     {
-        $this->hopeDirectoryService->delete($hopeDirectory);
+        return $this->workflowDestroy($request, $hopeDirectory);
+    }
 
-        return response()->json([
-            'status'  => true,
-            'message' => 'Directory organization deleted.',
-        ]);
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $this->hopeDirectoryService->delete($model);
     }
 }

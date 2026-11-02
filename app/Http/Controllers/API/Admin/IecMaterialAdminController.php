@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\UpdateIecMaterialRequest;
 use App\Models\IecMaterial;
 use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Services\IecMaterialService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,7 @@ class IecMaterialAdminController extends Controller
         publish as protected workflowPublish;
         archive as protected workflowArchive;
         restore as protected workflowRestore;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -119,13 +121,13 @@ class IecMaterialAdminController extends Controller
         return $this->workflowRestore($request, $iecMaterial);
     }
 
-    public function destroy(IecMaterial $iecMaterial): JsonResponse
+    public function destroy(Request $request, IecMaterial $iecMaterial): JsonResponse
     {
-        $this->iecMaterialService->delete($iecMaterial);
+        return $this->workflowDestroy($request, $iecMaterial);
+    }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'IEC material deleted.',
-        ]);
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $this->iecMaterialService->delete($model);
     }
 }

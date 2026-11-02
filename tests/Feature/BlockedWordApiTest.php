@@ -77,4 +77,29 @@ class BlockedWordApiTest extends TestCase
             'word' => 'nope',
         ])->assertUnauthorized();
     }
+
+    public function test_publisher_status_counts_only_include_pending_review(): void
+    {
+        BlockedWord::query()->create([
+            'word' => 'publishedword',
+            'is_active' => true,
+            'workflow_status' => 'published',
+        ]);
+        BlockedWord::query()->create([
+            'word' => 'pendingword',
+            'is_active' => true,
+            'workflow_status' => 'pending_review',
+        ]);
+
+        $publisher = User::factory()->create(['role' => 'publisher']);
+        Sanctum::actingAs($publisher);
+
+        $counts = $this->getJson('/api/v1/admin/blocked-words')
+            ->assertOk()
+            ->json('meta.status_counts');
+
+        $this->assertSame(1, (int) ($counts[''] ?? 0));
+        $this->assertSame(1, (int) ($counts['1'] ?? 0));
+        $this->assertSame(0, (int) ($counts['0'] ?? 0));
+    }
 }

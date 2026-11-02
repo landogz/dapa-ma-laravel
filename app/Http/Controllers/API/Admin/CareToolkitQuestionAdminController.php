@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\UpdateCareToolkitQuestionRequest;
 use App\Models\CareToolkitQuestion;
 use App\Services\CareToolkitQuestionService;
 use App\Services\ContentWorkflow\ContentWorkflowService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,7 @@ class CareToolkitQuestionAdminController extends Controller
         publish as protected workflowPublish;
         archive as protected workflowArchive;
         restore as protected workflowRestore;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -120,13 +122,13 @@ class CareToolkitQuestionAdminController extends Controller
         return $this->workflowRestore($request, $careToolkitQuestion);
     }
 
-    public function destroy(CareToolkitQuestion $careToolkitQuestion): JsonResponse
+    public function destroy(Request $request, CareToolkitQuestion $careToolkitQuestion): JsonResponse
     {
-        $this->careToolkitQuestionService->delete($careToolkitQuestion);
+        return $this->workflowDestroy($request, $careToolkitQuestion);
+    }
 
-        return response()->json([
-            'status'  => true,
-            'message' => 'Care toolkit question deleted.',
-        ]);
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $this->careToolkitQuestionService->delete($model);
     }
 }

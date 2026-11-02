@@ -5,6 +5,7 @@ import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatab
 import {
     applyAdminFilterTabCounts,
     bindAdminFilterTabs,
+    hideEmptyFilterTabs,
     renderAdminFilterTabs,
     setAdminFilterTab,
 } from './shared/filter-tabs';
@@ -33,6 +34,7 @@ import {
     maskBlockedWords,
     maskBlockedWordsHtml,
 } from './shared/word-masker';
+import { sanitizeHtml } from './shared/safe-html';
 
 let postsTable;
 let currentUserRole = null;
@@ -51,13 +53,55 @@ const STATUS_FILTER_TABS_ALL = [
     { value: 'pending_review', label: 'Pending', icon: 'fas fa-clock', hint: 'Awaiting publisher' },
     { value: 'scheduled', label: 'Scheduled', icon: 'fas fa-calendar-check', hint: 'Approved, not live' },
     { value: 'published', label: 'Published', icon: 'fas fa-circle-check', hint: 'Live in the app' },
-    { value: 'archived', label: 'Archived', icon: 'fas fa-box-archive', hint: 'Hidden — restore anytime' },
+    { value: 'archived', label: 'Archived', icon: 'fas fa-box-archive', hint: 'Hidden — restore for publisher approval' },
 ];
+
+function isPublisherAccount(role = currentUserRole) {
+    return role === 'publisher';
+}
+
+function postsDateColumnTitle() {
+    return isPublisherAccount() ? 'Draft Date' : 'Publish Date';
+}
+
+function formatPostsTableDate(post) {
+    if (isPublisherAccount()) {
+        return formatDateTime(post?.created_at || post?.updated_at) || '—';
+    }
+
+    return formatDateTime(post?.publish_date) || '—';
+}
+
+function sortPostsByIdDesc(posts) {
+    return [...posts].sort((left, right) => Number(right?.id ?? 0) - Number(left?.id ?? 0));
+}
+
+function postsTableIdSortOrder(forInit = false) {
+    if (postsTableMode === 'mobile') {
+        return [[0, 'desc']];
+    }
+
+    // Desktop init uses the ID column index before the shared control column is prepended.
+    return forInit ? [[0, 'desc']] : [[1, 'desc']];
+}
+
+function renderMobilePostCell(data, type) {
+    if (data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'html')) {
+        if (type === 'sort' || type === 'type') {
+            return Number(data.id) || 0;
+        }
+
+        return data.html ?? '';
+    }
+
+    return data;
+}
 
 function postsStatusFilterTabs(role = currentUserRole) {
     if (role === 'publisher') {
         return [
             { value: 'pending_review', label: 'Pending', icon: 'fas fa-clock', hint: 'Awaiting your review' },
+            { value: 'scheduled', label: 'Scheduled', icon: 'fas fa-calendar-check', hint: 'Approved, not live' },
         ];
     }
 
@@ -170,6 +214,10 @@ function isPublishedUpdatePending(post) {
 }
 
 function isPublishedUpdateAwaitingPublisher(post) {
+    if (isPublisherAccount()) {
+        return isPublishedUpdatePending(post);
+    }
+
     return isPublishedUpdatePending(post) || isPublishedUpdateDraft(post);
 }
 
@@ -198,7 +246,7 @@ function postMatchesStatusFilter(post, filter) {
     }
 
     if (filter === 'pending_review') {
-        return String(post.status) === 'pending_review' || isPublishedUpdateAwaitingPublisher(post);
+        return String(post.status) === 'pending_review' || isPublishedUpdatePending(post);
     }
 
     if (filter === 'draft') {
@@ -220,7 +268,11 @@ function updatePostsStatusCounts() {
         const key = String(post.status || '');
         counts[key] = (counts[key] ?? 0) + 1;
     });
-    applyAdminFilterTabCounts(document.getElementById('posts-status-tabs'), counts);
+    const root = document.getElementById('posts-status-tabs');
+    applyAdminFilterTabCounts(root, counts);
+    if (isPublisherAccount()) {
+        hideEmptyFilterTabs(root, counts);
+    }
 }
 
 function renderPostsTable() {
@@ -228,14 +280,20 @@ function renderPostsTable() {
         return;
     }
 
-    const rows = activeStatusFilter
+    const filtered = activeStatusFilter
         ? allPostsCache.filter((post) => postMatchesStatusFilter(post, activeStatusFilter))
         : allPostsCache.filter((post) => String(post.status || '') !== 'archived');
+    const rows = sortPostsByIdDesc(filtered);
 
     postsTable.clear();
     rows.forEach((post) => {
         postsTable.row.add(buildPostRowData(post));
     });
+
+    if (activeStatusFilter === 'draft') {
+        postsTable.order(postsTableIdSortOrder());
+    }
+
     postsTable.draw();
 }
 
@@ -356,7 +414,9 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
                         <span class="post-view-dot" aria-hidden="true">·</span>
                         <span>${escapeHtml(post.author?.name ?? 'Unknown author')}</span>
                         <span class="post-view-dot" aria-hidden="true">·</span>
-                        <span>${escapeHtml(formatDateTime(post.publish_date) || 'Not scheduled')}</span>
+                        <span>${escapeHtml(isPublisherAccount()
+                            ? (formatDateTime(post.created_at || post.updated_at) || 'No draft date')
+                            : (formatDateTime(post.publish_date) || 'Not scheduled'))}</span>
                     </p>
                     ${renderReviewNotesBanner(post)}
                     ${revisionBanner}
@@ -394,7 +454,7 @@ function openPostViewModal(post, { engagementTab = null } = {}) {
                     ` : ''}
                     <div class="post-view-body diary-entry-preview">
                         ${displayPost.body
-                            ? maskBlockedWordsHtml(displayPost.body)
+                            ? maskBlockedWordsHtml(sanitizeHtml(displayPost.body))
                             : '<p class="post-view-empty">No content yet.</p>'}
                     </div>
                     ${hasEngagement ? renderPostEngagementPanel({ likes, comments, reviews, likesCount, commentsCount, reviewsCount, postId: post.id }) : ''}
@@ -890,7 +950,12 @@ export function rejectPost(postId) {
         if (!isConfirmed) return;
         axios.put(`/admin/posts/${postId}/reject`, { review_notes: value })
             .then(({ data }) => {
-                showSuccessToast(data.message ?? 'Post returned to draft for revision.', 'Revision requested');
+                showSuccessToast(
+                    data.message ?? (currentUserRole === 'publisher'
+                        ? 'Returned to the editor. It leaves your queue until they resubmit.'
+                        : 'Post returned to draft for revision.'),
+                    'Revision requested',
+                );
                 if (currentUserRole !== 'publisher') {
                     activeStatusFilter = 'draft';
                     setAdminFilterTab(document.getElementById('posts-status-tabs'), 'draft');
@@ -904,32 +969,50 @@ export function rejectPost(postId) {
 }
 
 export function schedulePost(postId) {
+    const post = postsById.get(String(postId));
+    const isReschedule = String(post?.status) === 'scheduled';
+    const minDate = datetimeLocalMinNow();
+
     Swal.fire(buildSwalOptions({
-        title: 'Schedule Post',
+        title: isReschedule ? 'Edit schedule' : 'Schedule Post',
         html: buildSwalForm({
-            description: 'Select when this post should go live.',
+            description: isReschedule
+                ? 'Choose a new date and time for this post to go live. The live app will not show it until then.'
+                : 'Select when this post should go live.',
             fields: [
                 {
                     id: 'swal-publish-date',
                     label: 'Publish Date & Time *',
                     type: 'datetime-local',
+                    value: toDatetimeLocalValue(post?.publish_date) || minDate,
+                    min: minDate,
+                    hint: 'Required. The server publishes automatically at this time (Asia/Manila).',
                 },
             ],
         }),
         showCancelButton: true,
-        confirmButtonText: 'Schedule',
+        confirmButtonText: isReschedule ? 'Update schedule' : 'Schedule',
         preConfirm: () => {
             const val = document.getElementById('swal-publish-date')?.value;
             if (!val) {
                 return failSwalValidation('Please pick a publish date and time.', ['swal-publish-date']);
             }
+
+            const picked = new Date(val);
+            if (Number.isNaN(picked.getTime()) || picked.getTime() < Date.now() - 60_000) {
+                return failSwalValidation('Pick a date and time that is now or in the future.', ['swal-publish-date']);
+            }
+
             return val;
         },
     })).then(({ isConfirmed, value }) => {
         if (!isConfirmed) return;
         axios.put(`/admin/posts/${postId}/schedule`, { publish_date: value })
             .then(({ data }) => {
-                showSuccessToast(data.message, 'Scheduled');
+                showSuccessToast(
+                    data.message ?? (isReschedule ? 'Schedule updated.' : 'Post scheduled for publishing.'),
+                    isReschedule ? 'Schedule updated' : 'Scheduled',
+                );
                 loadPosts();
             })
             .catch(({ response }) => {
@@ -980,6 +1063,8 @@ export function archivePost(postId) {
         axios.put(`/admin/posts/${postId}/archive`)
             .then(({ data }) => {
                 showSuccessToast(data.message, 'Archived');
+                activeStatusFilter = 'archived';
+                setAdminFilterTab(document.getElementById('posts-status-tabs'), activeStatusFilter);
                 loadPosts();
             })
             .catch(({ response }) => {
@@ -989,17 +1074,26 @@ export function archivePost(postId) {
 }
 
 export function restorePost(postId) {
+    const needsApproval = currentUserRole === 'editor';
+
     confirmWithSwal({
         icon: 'question',
-        title: 'Restore Post?',
-        text: 'This will publish the post again and show it in the public feed.',
-        confirmButtonText: 'Restore',
+        title: needsApproval ? 'Request restore?' : 'Restore Post?',
+        text: needsApproval
+            ? 'This sends the archived post to a Publisher for approval. It will not go live until they publish it.'
+            : 'This will publish the post again and show it in the public feed.',
+        confirmButtonText: needsApproval ? 'Submit for approval' : 'Restore',
     }).then(({ isConfirmed }) => {
         if (!isConfirmed) return;
         axios.put(`/admin/posts/${postId}/restore`)
             .then(({ data }) => {
-                showSuccessToast(data.message ?? 'Post restored.', 'Restored');
-                activeStatusFilter = 'published';
+                showSuccessToast(
+                    data.message ?? (needsApproval
+                        ? 'Restore submitted for publisher review.'
+                        : 'Post restored.'),
+                    needsApproval ? 'Submitted for review' : 'Restored',
+                );
+                activeStatusFilter = needsApproval ? 'pending_review' : 'published';
                 setAdminFilterTab(document.getElementById('posts-status-tabs'), activeStatusFilter);
                 loadPosts();
             })
@@ -1160,6 +1254,7 @@ async function initializePostsTable(tableEl) {
         pageLength: nextMode === 'mobile' ? 5 : 10,
         scrollX: nextMode !== 'mobile',
         scrollCollapse: nextMode !== 'mobile',
+        order: postsTableIdSortOrder(true),
         deferRender: false,
         drawCallback: () => {
             refreshVisiblePostActions();
@@ -1170,7 +1265,11 @@ async function initializePostsTable(tableEl) {
         },
         columns: nextMode === 'mobile'
             ? [
-                { title: 'Post', className: 'dt-col-mobile-summary' },
+                {
+                    title: 'Post',
+                    className: 'dt-col-mobile-summary',
+                    render: renderMobilePostCell,
+                },
                 { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
             ]
             : [
@@ -1179,7 +1278,7 @@ async function initializePostsTable(tableEl) {
                 { title: 'Category', className: 'dt-col-category' },
                 { title: 'Status', className: 'dt-col-nowrap' },
                 { title: 'Author', className: 'dt-col-nowrap' },
-                { title: 'Publish Date', className: 'dt-col-nowrap' },
+                { title: postsDateColumnTitle(), className: 'dt-col-nowrap' },
                 { title: 'Comments', className: 'dt-col-nowrap' },
                 { title: 'Rating', className: 'dt-col-nowrap' },
                 { title: 'Actions', orderable: false, searchable: false, className: 'dt-col-actions' },
@@ -1268,7 +1367,9 @@ function buildPostRowData(post) {
 
     if (postsTableMode === 'mobile') {
         return [
-            `<div class="admin-table-mobile-card">
+            {
+                id: post.id,
+                html: `<div class="admin-table-mobile-card">
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">Post #${post.id}${isPostFeatured(post) ? ' · Featured' : ''}</p>
@@ -1281,7 +1382,9 @@ function buildPostRowData(post) {
                 <div class="admin-table-mobile-details">
                     <p><span>Category:</span> ${escapeHtml(post.category?.name ?? 'Uncategorized')}</p>
                     <p><span>Author:</span> ${escapeHtml(post.author?.name ?? 'N/A')}</p>
-                    <p><span>Publish Date:</span> ${escapeHtml(formatDateTime(post.publish_date) || 'Not scheduled')}</p>
+                    <p><span>${escapeHtml(postsDateColumnTitle())}:</span> ${escapeHtml(isPublisherAccount()
+                        ? (formatDateTime(post.created_at || post.updated_at) || '—')
+                        : (formatDateTime(post.publish_date) || 'Not scheduled'))}</p>
                     <p><span>Featured:</span> ${isPostFeatured(post) ? 'Yes' : 'No'}</p>
                     <p><span>Comments:</span> ${isPostCommentsEnabled(post) ? 'Enabled' : 'Disabled'}</p>
                     <p><span>Engagement:</span> ${Number(post.likes_count ?? 0)} reactions · ${Number(post.comments_count ?? 0)} comments</p>
@@ -1291,6 +1394,7 @@ function buildPostRowData(post) {
                         : ''}
                 </div>
             </div>`,
+            },
             renderPostActions(post, true),
         ];
     }
@@ -1301,7 +1405,7 @@ function buildPostRowData(post) {
         escapeHtml(post.category?.name ?? '—'),
         renderStatusCell(post),
         escapeHtml(post.author?.name ?? '—'),
-        escapeHtml(formatDateTime(post.publish_date) || '—'),
+        escapeHtml(formatPostsTableDate(post)),
         commentsEnabledBadge(post),
         renderRatingBadge(post),
         actionButtons(post),
@@ -1366,6 +1470,10 @@ function bindScheduledPublishDateField() {
 
     statusEl.addEventListener('change', sync);
     sync();
+}
+
+function datetimeLocalMinNow() {
+    return toDatetimeLocalValue(new Date().toISOString());
 }
 
 function toDatetimeLocalValue(value) {
@@ -1477,6 +1585,7 @@ function buildPostForm(post = null, categoryOptions = [], {
             label: 'Go live date & time *',
             type: 'datetime-local',
             value: toDatetimeLocalValue(post?.publish_date),
+            min: datetimeLocalMinNow(),
             hint: 'Required for Scheduled. The server publishes automatically at this time (Asia/Manila).',
         });
     }
@@ -1750,6 +1859,16 @@ function getAvailableActions(post) {
         },
     ];
 
+    if (canSchedulePost(post) && post.status === 'scheduled') {
+        actions.push({
+            handler: 'schedulePost',
+            label: 'Edit schedule',
+            tooltip: 'Change go-live date and time',
+            icon: 'fas fa-calendar-check',
+            className: 'admin-table-action-primary',
+        });
+    }
+
     if (canEditPost(post)) {
         actions.push({
             handler: 'editPost',
@@ -1803,12 +1922,13 @@ function getAvailableActions(post) {
         });
     }
 
-    if (canSchedulePost(post)) {
+    if (canSchedulePost(post) && post.status !== 'scheduled') {
         actions.push({
             handler: 'schedulePost',
             label: 'Approve & Schedule',
             tooltip: 'Approve and schedule publish date',
             icon: 'fas fa-calendar-check',
+            className: 'admin-table-action-primary',
         });
     }
 
@@ -1834,12 +1954,26 @@ function getAvailableActions(post) {
     }
 
     if (canRestorePost(post)) {
+        const needsApproval = currentUserRole === 'editor';
         actions.push({
             handler: 'restorePost',
             label: 'Restore',
-            tooltip: 'Restore to published',
+            tooltip: needsApproval
+                ? 'Submit restore for publisher approval'
+                : 'Restore to published',
             icon: 'fas fa-rotate-left',
             className: 'admin-table-action-primary',
+        });
+    }
+
+    if (canDeleteDraftPost(post)) {
+        const discardUpdate = isPublishedUpdateDraft(post);
+        actions.push({
+            handler: 'deleteDraft',
+            label: discardUpdate ? 'Discard update' : 'Delete',
+            tooltip: discardUpdate ? 'Discard unpublished update' : 'Delete draft',
+            icon: 'fas fa-trash',
+            className: 'admin-table-action-danger',
         });
     }
 
@@ -1879,7 +2013,7 @@ function canRejectPost(post) {
 
 function canSchedulePost(post) {
     return (currentUserRole === 'publisher' || currentUserRole === 'super_admin')
-        && post.status === 'pending_review';
+        && (post.status === 'pending_review' || post.status === 'scheduled');
 }
 
 function canPublishPost(post) {
@@ -1897,12 +2031,50 @@ function canPublishPost(post) {
 }
 
 function canArchivePost(post) {
-    return currentUserRole === 'super_admin'
-        && ['draft', 'pending_review', 'published', 'scheduled'].includes(post.status);
+    return (currentUserRole === 'editor' || currentUserRole === 'super_admin')
+        && ['published', 'scheduled'].includes(post.status);
 }
 
 function canRestorePost(post) {
-    return currentUserRole === 'super_admin' && post.status === 'archived';
+    return (currentUserRole === 'editor' || currentUserRole === 'super_admin')
+        && post.status === 'archived';
+}
+
+function canDeleteDraftPost(post) {
+    if (currentUserRole !== 'editor' && currentUserRole !== 'super_admin') {
+        return false;
+    }
+
+    return post.status === 'draft' || isPublishedUpdateDraft(post);
+}
+
+async function deleteDraftPost(id) {
+    const post = postsById.get(String(id));
+    const discardUpdate = isPublishedUpdateDraft(post);
+    const { isConfirmed } = await confirmWithSwal({
+        icon: 'warning',
+        title: discardUpdate ? 'Discard this draft update?' : 'Delete this draft?',
+        text: discardUpdate
+            ? 'The live published post stays. Only the unpublished update will be removed.'
+            : 'This draft will be permanently deleted. This cannot be undone.',
+        confirmButtonText: discardUpdate ? 'Discard update' : 'Delete draft',
+        danger: true,
+    });
+
+    if (!isConfirmed) {
+        return;
+    }
+
+    try {
+        const { data } = await axios.delete(`/admin/posts/${id}`);
+        showSuccessToast(
+            data.message ?? (discardUpdate ? 'Draft update discarded.' : 'Draft deleted.'),
+            discardUpdate ? 'Update discarded' : 'Deleted',
+        );
+        loadPosts();
+    } catch ({ response }) {
+        showErrorToast(response?.data?.message ?? 'Unable to delete this draft.', 'Post');
+    }
 }
 
 window.Posts = {
@@ -1916,5 +2088,6 @@ window.Posts = {
     rejectPost,
     archivePost,
     restorePost,
+    deleteDraft: deleteDraftPost,
     deleteComment: deletePostComment,
 };

@@ -26,7 +26,7 @@ class UserAdminController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
+        $perPage = min(max((int) $request->integer('per_page', 20), 1), 50);
         $filters = [
             'audience' => $request->query('audience'),
             'role' => $request->query('role'),

@@ -12,6 +12,7 @@ use Throwable;
 class LoginVerificationService
 {
     private const OTP_TTL_SECONDS = 600;
+    private const MAX_ATTEMPTS = 5;
 
     /**
      * @return array{status: bool, message: string, http: int}
@@ -31,7 +32,7 @@ class LoginVerificationService
 
         Cache::put($this->cacheKey($user), [
             'code_hash' => Hash::make($code),
-            'verified' => false,
+            'attempts' => 0,
         ], self::OTP_TTL_SECONDS);
 
         try {
@@ -72,7 +73,21 @@ class LoginVerificationService
             ];
         }
 
+        $attempts = (int) ($payload['attempts'] ?? 0);
+        if ($attempts >= self::MAX_ATTEMPTS) {
+            Cache::forget($this->cacheKey($user));
+
+            return [
+                'status' => false,
+                'message' => 'Too many incorrect codes. Request a new one.',
+                'http' => 422,
+            ];
+        }
+
         if (! Hash::check($code, (string) $payload['code_hash'])) {
+            $payload['attempts'] = $attempts + 1;
+            Cache::put($this->cacheKey($user), $payload, self::OTP_TTL_SECONDS);
+
             return [
                 'status' => false,
                 'message' => 'That code does not match. Check your email and try again.',
@@ -80,10 +95,7 @@ class LoginVerificationService
             ];
         }
 
-        Cache::put($this->cacheKey($user), [
-            'code_hash' => $payload['code_hash'],
-            'verified' => true,
-        ], self::OTP_TTL_SECONDS);
+        Cache::forget($this->cacheKey($user));
 
         return [
             'status' => true,

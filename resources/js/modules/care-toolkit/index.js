@@ -3,9 +3,10 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildSwalForm, buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
-import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
+import { bindAdminFilterTabs } from '../shared/filter-tabs';
 import {
     attachWorkflowWindowHandlers,
+    applyQueueAwareFilterCounts,
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
@@ -26,7 +27,6 @@ let toolkitTable;
 let toolkitTableMode;
 let hasBoundViewportListener = false;
 let currentTypeFilter = '';
-let typeCounts = null;
 let workflowStatusFilter = '';
 
 const TYPE_LABELS = {
@@ -153,20 +153,23 @@ export function loadCareToolkitQuestions() {
     axios.get('/admin/care-toolkit-questions', {
         params: {
             per_page: 500,
-            toolkit_type: currentTypeFilter || undefined,
         },
     })
         .then(({ data }) => {
             const allRows = data.data?.data ?? [];
-            const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            const queueRows = filterByWorkflowStatus(allRows, workflowStatusFilter);
             applyWorkflowStatusCounts(null, allRows);
+            applyQueueAwareFilterCounts(
+                document.getElementById('care-toolkit-type-tabs'),
+                queueRows,
+                (row) => row.toolkit_type || '',
+            );
+            const rows = currentTypeFilter
+                ? queueRows.filter((row) => String(row.toolkit_type || '') === currentTypeFilter)
+                : queueRows;
             toolkitTable.clear();
             rows.forEach((row) => toolkitTable.row.add(buildRowData(row)));
             toolkitTable.draw();
-            if (!currentTypeFilter && !workflowStatusFilter) {
-                typeCounts = countByKey(data.data?.data ?? [], (row) => row.toolkit_type || '');
-            }
-            applyAdminFilterTabCounts(document.getElementById('care-toolkit-type-tabs'), typeCounts || {});
         })
         .catch(({ response }) => {
             showErrorToast(response?.data?.message ?? 'Failed to load Care Toolkit questions.');

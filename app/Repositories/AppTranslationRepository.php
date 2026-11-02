@@ -64,9 +64,10 @@ class AppTranslationRepository
         $translation->delete();
     }
 
-    public function groups(): Collection
+    public function groups(?User $actor = null): Collection
     {
         return AppTranslation::query()
+            ->visibleInAdminFor($actor)
             ->whereNotNull('group')
             ->where('group', '!=', '')
             ->where('group', '!=', 'bible')
@@ -75,9 +76,10 @@ class AppTranslationRepository
             ->pluck('group');
     }
 
-    public function groupCounts(): Collection
+    public function groupCounts(?User $actor = null): Collection
     {
         return AppTranslation::query()
+            ->visibleInAdminFor($actor)
             ->whereNotNull('group')
             ->where('group', '!=', '')
             ->where('group', '!=', 'bible')
@@ -85,6 +87,21 @@ class AppTranslationRepository
             ->groupBy('group')
             ->orderBy('group')
             ->pluck('total', 'group');
+    }
+
+    /**
+     * @param  list<string>  $keys
+     */
+    public function countForKeys(array $keys, ?User $actor = null): int
+    {
+        if ($keys === []) {
+            return 0;
+        }
+
+        return AppTranslation::query()
+            ->visibleInAdminFor($actor)
+            ->whereIn('key', $keys)
+            ->count();
     }
 
     public function deleteBibleCatalog(): int

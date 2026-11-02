@@ -19,9 +19,16 @@ $action = (string) ($input['action'] ?? '');
 try {
     switch ($action) {
         case 'status':
+            if (installer_is_locked()) {
+                installer_json([
+                    'status' => true,
+                    'installed' => true,
+                ]);
+            }
+
             installer_json([
                 'status' => true,
-                'installed' => installer_is_locked(),
+                'installed' => false,
                 'checks' => installer_php_checks(),
             ]);
 

@@ -64,7 +64,8 @@ class AppOptionApiTest extends TestCase
 
     public function test_admin_lookups_page_is_labeled_lookups(): void
     {
-        $this->get('/admin/lookups')
+        $this->withAdminGate()
+            ->get('/admin/lookups')
             ->assertOk()
             ->assertSee('Lookups')
             ->assertDontSee('Admin Settings');
@@ -72,7 +73,8 @@ class AppOptionApiTest extends TestCase
 
     public function test_legacy_admin_settings_url_redirects_to_lookups(): void
     {
-        $this->get('/admin/app-options')
+        $this->withAdminGate()
+            ->get('/admin/app-options')
             ->assertRedirect('/admin/lookups');
     }
 

@@ -2,6 +2,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { ensurePublicAuth, hydratePublicAuth } from './auth';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
+import { sanitizeHtml } from '../shared/safe-html';
 
 let postId = null;
 let currentPost = null;
@@ -45,7 +46,7 @@ async function loadPost() {
         }
 
         if (bodyEl) {
-            bodyEl.innerHTML = currentPost.body ?? '';
+            bodyEl.innerHTML = sanitizeHtml(currentPost.body ?? '');
         }
 
         if (categoryEl) {

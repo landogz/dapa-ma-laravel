@@ -57,7 +57,7 @@ class AdminNotificationService
         ]);
     }
 
-    public function notifyPostScheduled(Post $post, User $publisher): void
+    public function notifyPostScheduled(Post $post, User $publisher, bool $rescheduled = false): void
     {
         $author = $post->author;
 
@@ -66,10 +66,13 @@ class AdminNotificationService
         }
 
         $isLive = $post->status === 'published';
+        $when = optional($post->publish_date)->format('M d, Y h:i A') ?? 'a future date';
 
         $this->repository->createForUser($author, [
             'type' => $isLive ? 'post_published' : 'post_scheduled',
-            'title' => $isLive ? 'Post published' : 'Post approved and scheduled',
+            'title' => $isLive
+                ? 'Post published'
+                : ($rescheduled ? 'Post schedule updated' : 'Post approved and scheduled'),
             'body' => $isLive
                 ? sprintf(
                     'Your post "%s" was published by %s.',
@@ -77,13 +80,65 @@ class AdminNotificationService
                     $publisher->name,
                 )
                 : sprintf(
-                    'Your post "%s" was scheduled to publish on %s by %s.',
+                    $rescheduled
+                        ? 'The go-live time for "%s" was changed to %s by %s.'
+                        : 'Your post "%s" was scheduled to publish on %s by %s.',
                     $post->title,
-                    optional($post->publish_date)->format('M d, Y H:i') ?? 'a future date',
+                    $when,
                     $publisher->name,
                 ),
             'data' => $this->postPayload($post, $publisher->name),
         ]);
+    }
+
+    public function notifyPostArchived(Post $post, User $editor): void
+    {
+        $recipients = User::query()
+            ->whereIn('role', ['publisher', 'super_admin'])
+            ->where('id', '!=', $editor->id)
+            ->get();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        foreach ($recipients as $recipient) {
+            $this->repository->createForUser($recipient, [
+                'type' => 'post_archived',
+                'title' => 'Post archived',
+                'body' => sprintf(
+                    '%s archived "%s". It is hidden from the app until restored and approved.',
+                    $editor->name,
+                    $post->title,
+                ),
+                'data' => $this->postPayload($post, $editor->name),
+            ]);
+        }
+    }
+
+    public function notifyPostRestoreRequested(Post $post, User $editor): void
+    {
+        $recipients = User::query()
+            ->whereIn('role', ['publisher', 'super_admin'])
+            ->where('id', '!=', $editor->id)
+            ->get();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        foreach ($recipients as $recipient) {
+            $this->repository->createForUser($recipient, [
+                'type' => 'post_restore_requested',
+                'title' => 'Archived post restore requested',
+                'body' => sprintf(
+                    '%s requested to restore "%s". Approve it to publish again. It stays hidden until then.',
+                    $editor->name,
+                    $post->title,
+                ),
+                'data' => $this->postPayload($post, $editor->name),
+            ]);
+        }
     }
 
     public function notifyPostSubmitted(Post $post, User $editor): void
@@ -172,6 +227,56 @@ class AdminNotificationService
                 ['review_notes' => $reviewNotes],
             ),
         ]);
+    }
+
+    public function notifyContentArchived(string $section, Model $model, User $editor): void
+    {
+        $meta = ContentWorkflowSections::get($section);
+        $label = $meta['label'] ?? 'Item';
+        $title = method_exists($model, 'workflowTitle') ? $model->workflowTitle() : (string) $model->getKey();
+
+        $recipients = User::query()
+            ->whereIn('role', ['publisher', 'super_admin'])
+            ->where('id', '!=', $editor->id)
+            ->get();
+
+        foreach ($recipients as $recipient) {
+            $this->repository->createForUser($recipient, [
+                'type' => 'content_archived',
+                'title' => $label.' archived',
+                'body' => sprintf(
+                    '%s archived "%s". It is hidden from the app until restored and approved.',
+                    $editor->name,
+                    $title,
+                ),
+                'data' => $this->contentPayload($section, $model, $editor->name, $title),
+            ]);
+        }
+    }
+
+    public function notifyContentRestoreRequested(string $section, Model $model, User $editor): void
+    {
+        $meta = ContentWorkflowSections::get($section);
+        $label = $meta['label'] ?? 'Item';
+        $title = method_exists($model, 'workflowTitle') ? $model->workflowTitle() : (string) $model->getKey();
+
+        $recipients = User::query()
+            ->whereIn('role', ['publisher', 'super_admin'])
+            ->where('id', '!=', $editor->id)
+            ->get();
+
+        foreach ($recipients as $recipient) {
+            $this->repository->createForUser($recipient, [
+                'type' => 'content_restore_requested',
+                'title' => 'Archived '.$label.' restore requested',
+                'body' => sprintf(
+                    '%s requested to restore "%s". Approve it to publish again. It stays hidden until then.',
+                    $editor->name,
+                    $title,
+                ),
+                'data' => $this->contentPayload($section, $model, $editor->name, $title),
+            ]);
+        }
     }
 
     public function notifyContentPublished(string $section, Model $model, User $publisher): void

@@ -104,19 +104,22 @@ class PostAdminController extends Controller
         return response()->json([
             'status'  => true,
             'message' => $wasLiveUpdate
-                ? 'Update returned to the editor for revision. The live published post is unchanged.'
-                : 'Post returned to draft for revision.',
+                ? 'Update returned to the editor for revision. It leaves the publisher queue until they resubmit. The live published post is unchanged.'
+                : 'Post returned to the editor for revision. It leaves the publisher queue until they resubmit.',
             'data'    => $post,
         ]);
     }
 
     public function schedule(SchedulePostRequest $request, Post $post): JsonResponse
     {
+        $wasScheduled = $post->status === 'scheduled';
         $post = $this->postService->schedule($post, $request->validated('publish_date'), $request->user());
 
         return response()->json([
             'status'  => true,
-            'message' => 'Post scheduled for publishing.',
+            'message' => $wasScheduled
+                ? 'Schedule updated.'
+                : 'Post scheduled for publishing.',
             'data'    => $post,
         ]);
     }
@@ -135,9 +138,9 @@ class PostAdminController extends Controller
         ]);
     }
 
-    public function archive(Post $post): JsonResponse
+    public function archive(Request $request, Post $post): JsonResponse
     {
-        $post = $this->postService->archive($post);
+        $post = $this->postService->archive($post, $request->user());
 
         return response()->json([
             'status'  => true,
@@ -146,24 +149,36 @@ class PostAdminController extends Controller
         ]);
     }
 
-    public function restore(Post $post): JsonResponse
+    public function restore(Request $request, Post $post): JsonResponse
     {
-        $post = $this->postService->restore($post);
+        $post = $this->postService->restore($post, $request->user());
+        $awaitingApproval = $post->status === 'pending_review';
 
         return response()->json([
             'status'  => true,
-            'message' => 'Post restored to published.',
+            'message' => $awaitingApproval
+                ? 'Restore submitted for publisher review. Publishers were notified. The post stays hidden until approved.'
+                : 'Post restored to published.',
             'data'    => $post,
         ]);
     }
 
-    public function destroy(Post $post): JsonResponse
+    public function destroy(Request $request, Post $post): JsonResponse
     {
-        $this->postService->delete($post);
+        $result = $this->postService->deleteDraft($post, $request->user());
+
+        if (($result['mode'] ?? null) === 'discarded') {
+            return response()->json([
+                'status' => true,
+                'message' => 'Draft update discarded. The live published post is unchanged.',
+                'data' => $result['post'],
+            ]);
+        }
 
         return response()->json([
-            'status'  => true,
-            'message' => 'Post deleted permanently.',
+            'status' => true,
+            'message' => 'Draft deleted.',
+            'data' => null,
         ]);
     }
 }

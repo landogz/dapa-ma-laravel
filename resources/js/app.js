@@ -15,6 +15,7 @@ import { initPublicPostShow } from './modules/public/post-show';
 import { initPublicSharePage } from './modules/public/share-page';
 import { initPublicAnalytics } from './modules/public-analytics';
 import { bindPasswordPolicyFields } from './modules/password-validation';
+import { showErrorToast } from './modules/shared/toast';
 
 axios.defaults.baseURL = '/api/v1';
 axios.defaults.headers.common.Accept = 'application/json';
@@ -28,22 +29,22 @@ axios.interceptors.response.use(
         const requestUrl = error.config?.url ?? '';
         const isAuthFormRequest = requestUrl.includes('/auth/login')
             || requestUrl.includes('/auth/register')
+            || requestUrl.includes('/auth/bootstrap-admin')
             || requestUrl.includes('/auth/forgot-password')
             || requestUrl.includes('/auth/verify-reset-code')
-            || requestUrl.includes('/auth/reset-password');
+            || requestUrl.includes('/auth/reset-password')
+            || requestUrl.includes('/auth/login-code')
+            || requestUrl.includes('/auth/verify-login-code');
         const isPublicPage =
             document.body.dataset.page === 'public-post-show' ||
             document.body.dataset.page === 'public-share' ||
             document.body.dataset.page === 'reset-password';
 
         if (status === 401 && !isAuthFormRequest && !isPublicPage) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Session expired',
-                text: 'Please log in again.',
-            }).then(() => {
+            const page = document.body?.dataset?.page;
+            if (page !== 'admin-login' && page !== 'admin-register') {
                 window.location.href = '/admin/login';
-            });
+            }
         }
 
         if (status === 403 && error.response?.data?.data?.must_change_password) {
@@ -54,12 +55,16 @@ axios.interceptors.response.use(
             return Promise.reject(error);
         }
 
-        if (status === 403) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Forbidden',
-                text: error.response?.data?.message ?? 'You do not have permission.',
-            });
+        if (status === 403 && error.response?.data?.data?.requires_verification) {
+            return Promise.reject(error);
+        }
+
+        const currentPage = document.body?.dataset?.page;
+        if (status === 403 && currentPage !== 'admin-login' && currentPage !== 'admin-register') {
+            showErrorToast(
+                error.response?.data?.message ?? 'You do not have permission.',
+                'Forbidden',
+            );
         }
 
         return Promise.reject(error);

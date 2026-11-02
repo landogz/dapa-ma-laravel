@@ -14,6 +14,7 @@ import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { highlightAdminPageMatches, readAdminPageFocus } from '../shared/page-focus';
 import {
     buildWorkflowTableActions,
+    deleteDraftContent,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     applyWorkflowStatusCounts,
@@ -153,6 +154,7 @@ function buildLegalWorkflowActionsHtml(page, slug) {
         submit: `window.Settings.legalSubmitWorkflow(${JSON.stringify(slug)})`,
         publish: `window.Settings.legalPublishWorkflow(${JSON.stringify(slug)})`,
         reject: `window.Settings.legalRejectWorkflow(${JSON.stringify(slug)})`,
+        discard: `window.Settings.legalDiscardWorkflow(${JSON.stringify(slug)})`,
     };
     const actions = workflowActionDefs(page, { basePath: '/admin/legal-pages', id: slug })
         .filter((action) => handlerMap[action.key]);
@@ -161,9 +163,13 @@ function buildLegalWorkflowActionsHtml(page, slug) {
         return '';
     }
 
-    const buttons = actions.map((action) => (
-        `<button type="button" class="admin-secondary-button min-h-11 text-xs" onclick="${handlerMap[action.key]}">${escapeHtml(action.label)}</button>`
-    )).join('');
+    const buttons = actions.map((action) => {
+        const danger = action.key === 'discard' || action.key === 'delete'
+            ? ' admin-table-action-danger'
+            : '';
+
+        return `<button type="button" class="admin-secondary-button min-h-11 text-xs${danger}" onclick="${handlerMap[action.key]}">${escapeHtml(action.label)}</button>`;
+    }).join('');
 
     return `<div class="mb-3 flex flex-wrap gap-2">${buttons}</div>`;
 }
@@ -421,25 +427,10 @@ export function editKidListoQuote(id) {
 }
 
 export function removeKidListoQuote(id) {
-    Swal.fire(buildSwalOptions({
-        icon: 'warning',
-        title: 'Delete Kid Listo quote?',
-        html: '<p class="admin-swal-description">This quote will no longer appear in the mobile app.</p>',
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel',
-    }, { danger: true, size: 'sm' })).then(({ isConfirmed }) => {
-        if (!isConfirmed) {
-            return;
-        }
-
-        axios.delete(`/admin/kid-listo-quotes/${id}`)
-            .then(({ data }) => {
-                showSuccessToast(data.message ?? 'Quote deleted.', 'Deleted');
-                loadKidListoQuotes();
-            })
-            .catch(({ response }) => {
-                showErrorToast(response?.data?.message ?? 'Delete failed.');
-            });
+    const quote = quotesById.get(String(id));
+    return deleteDraftContent('/admin/kid-listo-quotes', id, {
+        onSuccess: () => loadKidListoQuotes(),
+        isPublishedUpdate: isPublishedUpdateDraft(quote),
     });
 }
 
@@ -719,6 +710,13 @@ window.KidListoQuotes = {
     rejectWorkflow: (id) => rejectContent('/admin/kid-listo-quotes', id, {
         onSuccess: () => loadKidListoQuotes(),
     }),
+    deleteDraft: (id) => deleteDraftContent('/admin/kid-listo-quotes', id, {
+        onSuccess: () => loadKidListoQuotes(),
+    }),
+    discardWorkflow: (id) => deleteDraftContent('/admin/kid-listo-quotes', id, {
+        onSuccess: () => loadKidListoQuotes(),
+        isPublishedUpdate: true,
+    }),
 };
 
 window.Settings = {
@@ -773,6 +771,25 @@ window.Settings = {
         const slug = page?.slug || slugOrId;
         return rejectContent('/admin/legal-pages', slug, {
             onSuccess: () => openLegalEditor(slug),
+        });
+    },
+    legalDiscardWorkflow: async (slugOrId) => {
+        let page = null;
+        try {
+            const { data } = await axios.get(`/admin/legal-pages/${slugOrId}`);
+            page = data.data;
+        } catch {
+            // Fall through with generic copy.
+        }
+        const slug = page?.slug || slugOrId;
+        return deleteDraftContent('/admin/legal-pages', slug, {
+            onSuccess: () => {
+                const listEl = document.querySelector('[data-settings-legal-list]');
+                if (listEl) {
+                    loadLegalPages(listEl);
+                }
+            },
+            isPublishedUpdate: true,
         });
     },
 };

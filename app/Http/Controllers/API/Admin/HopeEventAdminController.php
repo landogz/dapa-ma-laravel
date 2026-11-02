@@ -10,6 +10,7 @@ use App\Http\Requests\HopeEvent\UpdateHopeEventRequest;
 use App\Models\HopeEvent;
 use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Services\HopeEventService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,7 @@ class HopeEventAdminController extends Controller
         publish as protected workflowPublish;
         archive as protected workflowArchive;
         restore as protected workflowRestore;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -143,14 +145,14 @@ class HopeEventAdminController extends Controller
         return $this->workflowRestore($request, $hopeEvent);
     }
 
-    public function destroy(HopeEvent $hopeEvent): JsonResponse
+    public function destroy(Request $request, HopeEvent $hopeEvent): JsonResponse
     {
-        $this->hopeEventService->delete($hopeEvent);
+        return $this->workflowDestroy($request, $hopeEvent);
+    }
 
-        return response()->json([
-            'status'  => true,
-            'message' => 'Hope event deleted.',
-        ]);
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $this->hopeEventService->delete($model);
     }
 
     /**

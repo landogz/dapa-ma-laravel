@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\UpdateKidListoQuoteRequest;
 use App\Models\KidListoQuote;
 use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Services\KidListoQuoteService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,7 @@ class KidListoQuoteAdminController extends Controller
         publish as protected workflowPublish;
         archive as protected workflowArchive;
         restore as protected workflowRestore;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -115,13 +117,13 @@ class KidListoQuoteAdminController extends Controller
         return $this->workflowRestore($request, $kidListoQuote);
     }
 
-    public function destroy(KidListoQuote $kidListoQuote): JsonResponse
+    public function destroy(Request $request, KidListoQuote $kidListoQuote): JsonResponse
     {
-        $this->kidListoQuoteService->delete($kidListoQuote);
+        return $this->workflowDestroy($request, $kidListoQuote);
+    }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Kid Listo quote deleted.',
-        ]);
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $this->kidListoQuoteService->delete($model);
     }
 }

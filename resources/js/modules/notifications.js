@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
-import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from './shared/filter-tabs';
+import { bindAdminFilterTabs } from './shared/filter-tabs';
 import { enhanceAdminFilterSelects } from './shared/filter-select';
 import { buildSwalForm, buildSwalOptions, confirmWithSwal } from './shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
@@ -9,6 +9,7 @@ import {
     attachWorkflowWindowHandlers,
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
+    applyQueueAwareFilterCounts,
     filterByWorkflowStatus,
     applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
@@ -27,7 +28,6 @@ let hasBoundFilters = false;
 const notificationsCache = new Map();
 
 let topicFilter = '';
-let topicCounts = null;
 let workflowStatusFilter = '';
 
 const TOPIC_LABELS = {
@@ -160,25 +160,27 @@ export function loadNotifications() {
     axios.get('/admin/notifications', {
         params: {
             per_page: 200,
-            ...(topicFilter ? { topic: topicFilter } : {}),
         },
     }).then(({ data }) => {
         notifTable.clear();
         notificationsCache.clear();
         const allRows = data.data?.data ?? [];
-        const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+        const queueRows = filterByWorkflowStatus(allRows, workflowStatusFilter);
         applyWorkflowStatusCounts(null, allRows);
+        applyQueueAwareFilterCounts(
+            document.getElementById('notifications-topic-tabs'),
+            queueRows,
+            (row) => row.topic || '',
+        );
+        const rows = topicFilter
+            ? queueRows.filter((row) => String(row.topic || '') === topicFilter)
+            : queueRows;
         rows.forEach((n) => {
             notificationsCache.set(String(n.id), n);
             notifTable.row.add(buildNotificationRowData(n));
         });
         notifTable.draw();
         bindNotificationActions();
-        const cachedRows = [...notificationsCache.values()];
-        if (!topicFilter) {
-            topicCounts = countByKey(cachedRows, (row) => row.topic || '');
-        }
-        applyAdminFilterTabCounts(document.getElementById('notifications-topic-tabs'), topicCounts || {});
     }).catch(() => {
         showErrorToast('Failed to load notifications.', 'Notifications');
     });

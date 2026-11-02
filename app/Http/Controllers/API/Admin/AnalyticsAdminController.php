@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\API\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\Analytics\ProcessAnalyticsExportJob;
 use App\Models\AnalyticsAnomalyAlert;
 use App\Models\AnalyticsExport;
 use App\Models\AnalyticsFunnelDefinition;
 use App\Repositories\AnalyticsRepository;
+use App\Services\Analytics\AnalyticsExportService;
 use App\Services\Analytics\AnalyticsReportExporter;
 use App\Services\AnalyticsService;
 use App\Support\Analytics\AnalyticsDateRange;
@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class AnalyticsAdminController extends Controller
 {
@@ -25,6 +26,7 @@ class AnalyticsAdminController extends Controller
         private readonly AnalyticsService $analyticsService,
         private readonly AnalyticsRepository $analyticsRepository,
         private readonly AnalyticsReportExporter $analyticsReportExporter,
+        private readonly AnalyticsExportService $analyticsExportService,
     ) {
     }
 
@@ -249,20 +251,7 @@ class AnalyticsAdminController extends Controller
             'filters' => ['nullable', 'array'],
         ]);
 
-        $export = AnalyticsExport::query()->create([
-            'requested_by' => $request->user()->id,
-            'report_type' => $validated['report_type'],
-            'format' => $validated['format'],
-            'status' => 'pending',
-            'filters' => array_merge($validated['filters'] ?? [], [
-                'range' => $validated['range'] ?? '30',
-                'from' => $validated['from'] ?? null,
-                'to' => $validated['to'] ?? null,
-            ]),
-            'columns' => $validated['columns'] ?? null,
-        ]);
-
-        ProcessAnalyticsExportJob::dispatch($export->id);
+        $export = $this->analyticsExportService->queue($request->user(), $validated);
 
         return response()->json([
             'status' => true,
@@ -273,6 +262,12 @@ class AnalyticsAdminController extends Controller
 
     public function exports(Request $request): JsonResponse
     {
+        try {
+            $this->analyticsExportService->processPendingFor($request->user());
+        } catch (Throwable $e) {
+            report($e);
+        }
+
         $rows = AnalyticsExport::query()
             ->where('requested_by', $request->user()->id)
             ->orderByDesc('id')

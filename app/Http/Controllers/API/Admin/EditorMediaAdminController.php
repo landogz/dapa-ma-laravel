@@ -31,6 +31,7 @@ class EditorMediaAdminController extends Controller
                 'required',
                 'file',
                 'max:51200',
+                'mimes:jpg,jpeg,png,webp,gif,mp4,webm,ogg,mov',
                 'mimetypes:image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/ogg,video/quicktime',
             ],
         ]);

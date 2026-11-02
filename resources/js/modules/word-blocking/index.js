@@ -3,15 +3,17 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildSwalForm, buildSwalOptions, confirmWithSwal } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
-import { applyAdminFilterTabCounts, bindAdminFilterTabs } from '../shared/filter-tabs';
+import { bindAdminFilterTabs } from '../shared/filter-tabs';
 import {
     attachWorkflowWindowHandlers,
+    applyQueueAwareFilterCounts,
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
     isPublisherReviewOnly,
+    isPublisherRole,
     itemForEditorForm,
     openItemFromQuery,
     publisherReviewSwalButtons,
@@ -75,6 +77,9 @@ async function initializeTable(tableElement) {
             columns: buildColumns(nextMode),
             searchPlaceholder: 'Search words...',
             infoLabel: 'Showing _START_ to _END_ of _TOTAL_ words',
+            language: isPublisherRole()
+                ? { emptyTable: 'No words are waiting for your review.' }
+                : {},
             pageLength: nextMode === 'mobile' ? 8 : 25,
             scrollX: nextMode !== 'mobile',
             scrollCollapse: nextMode !== 'mobile',
@@ -121,24 +126,23 @@ export function loadBlockedWords() {
         return;
     }
 
-    const params = { per_page: 500 };
-    if (currentStatusFilter !== '') {
-        params.is_active = currentStatusFilter;
-    }
-
-    axios.get('/admin/blocked-words', { params })
+    axios.get('/admin/blocked-words', { params: { per_page: 500 } })
         .then(({ data }) => {
             const rows = data.data?.data ?? data.data ?? [];
             const allRows = Array.isArray(rows) ? rows : [];
-            const list = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            const queueRows = filterByWorkflowStatus(allRows, workflowStatusFilter);
             applyWorkflowStatusCounts(null, allRows);
+            applyQueueAwareFilterCounts(
+                document.getElementById('word-blocking-status-tabs'),
+                queueRows,
+                (row) => (row.is_active ? '1' : '0'),
+            );
+            const list = currentStatusFilter === ''
+                ? queueRows
+                : queueRows.filter((row) => Boolean(row.is_active) === (currentStatusFilter === '1'));
             wordsTable.clear();
             list.forEach((row) => wordsTable.row.add(buildRowData(row)));
             wordsTable.draw();
-            applyAdminFilterTabCounts(
-                document.getElementById('word-blocking-status-tabs'),
-                data.meta?.status_counts || {},
-            );
         })
         .catch(({ response }) => {
             showErrorToast(response?.data?.message ?? 'Unable to load blocked words.');

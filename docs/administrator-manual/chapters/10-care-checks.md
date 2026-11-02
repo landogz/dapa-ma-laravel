@@ -2,17 +2,19 @@
 
 Left menu: **Care → Care Checks** (`/admin/care-checks`).
 
-This page shows submitted Stress, Anxiety, and Sleep Quality results from the mobile app. It is **self-reported screening for reflection only — not a clinical diagnosis**.
+This page lists submitted Stress, Anxiety, and Sleep Quality results from the mobile app. It is **self-reported screening for reflection only — not a clinical diagnosis**.
 
-**Figure 11.** Care Checks. 1 Range (7 / 30 / 90 days), 2 Export CSV, 3 Completions and people cards.
+Volume, mix, and trend charts for care tools live on **Analytics** (`/admin/analytics`), not on this listing.
+
+**Figure 11.** Care Checks. 1 Period filter, 2 Export CSV, 3 Type and result filters, 4 Results table.
 
 ![Figure 11. Care Checks](../figures/09-care-checks.png)
 
-## 10.1 How to read the page
+## 10.1 How to use the page
 
-- Switch **7 days**, **30 days**, or **90 days**.
+- Choose a **period** (7 days, 30 days, custom range, and so on) to limit the table.
 - Filter by check type and lower / higher tier.
-- Open a row to see the user’s result, score, and date.
-- Click **Export CSV** to download the filtered set.
+- Open a row to see the user’s result, score, answers, and date.
+- Click **Export** to download a CSV of the filtered set.
 
-Use this page to watch volume, not to diagnose a person. Follow your office protocol if a result suggests someone may need support — point them to **Care Support** hotlines.
+Use this page to review individual completions, not to diagnose a person. Follow your office protocol if a result suggests someone may need support — point them to **Care Support** hotlines.

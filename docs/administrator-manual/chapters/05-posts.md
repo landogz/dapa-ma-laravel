@@ -45,9 +45,10 @@ From Actions or right-click:
 
 - **Edit** — change title, body, image, category, comments, YouTube, featured flag, and (when allowed) status.
 - **Submit** — send a draft for review.
-- **Reject** — return a pending post with review notes.
+- **Reject** — return a pending post with review notes. Publishers then leave the queue; they see it again only after the editor resubmits.
 - **Approve & Schedule** — pick a go-live date and time.
 - **Publish now** — make it public immediately.
-- **Archive** / **Delete** — confirm in the dialog.
+- **Archive** / **Delete** — Editors and Super Admin can archive published or scheduled posts (hidden from the app). Confirm in the dialog.
+- **Restore** — Editors send an archived post to a Publisher for approval. Super Admin restore publishes it immediately.
 
-> **Important.** Deleting a post cannot be undone. Archive if you might need it later.
+> **Important.** Deleting a post cannot be undone. Archive if you might need it later. Editor restore does not go live until a Publisher (or Super Admin) approves it.

@@ -25,14 +25,18 @@ trait HandlesContentWorkflow
             && $model->isWorkflowPublished()
             && method_exists($model, 'hasPendingRevision')
             && ! $model->hasPendingRevision();
+        $returnedForRevision = (method_exists($model, 'isWorkflowDraft') && $model->isWorkflowDraft())
+            || (method_exists($model, 'isRevisionDraft') && $model->isRevisionDraft());
 
         abort(response()->json([
             'status' => false,
-            'code' => $alreadyResolved ? 'review_resolved' : 'not_in_queue',
+            'code' => $alreadyResolved ? 'review_resolved' : ($returnedForRevision ? 'review_returned' : 'not_in_queue'),
             'message' => $alreadyResolved
                 ? 'This update was already published. It is no longer in your review queue.'
-                : 'This item is not available in your publisher review queue.',
-        ], $alreadyResolved ? 409 : 404));
+                : ($returnedForRevision
+                    ? 'This item was returned for revision. It will come back to your queue when the editor resubmits it.'
+                    : 'This item is not available in your publisher review queue.'),
+        ], ($alreadyResolved || $returnedForRevision) ? 409 : 404));
     }
 
     public function submit(Request $request, Model $model): JsonResponse
@@ -153,10 +157,48 @@ trait HandlesContentWorkflow
             return response()->json(['status' => false, 'message' => $e->getMessage()], 422);
         }
 
+        $editorRestore = $request->user()?->role === 'editor';
+
         return response()->json([
             'status' => true,
-            'message' => 'Restored and published.',
+            'message' => $editorRestore
+                ? 'Restore submitted for publisher review. It stays hidden until they publish it.'
+                : 'Restored and published.',
             'data' => $updated,
         ]);
+    }
+
+    public function destroy(Request $request, Model $model): JsonResponse
+    {
+        $this->assertVisibleToAdmin($request, $model);
+
+        try {
+            $result = $this->contentWorkflowService()->deleteDraft(
+                $model,
+                $request->user(),
+                fn (Model $record) => $this->permanentlyDeleteDraft($record),
+            );
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        if (($result['mode'] ?? null) === 'discarded') {
+            return response()->json([
+                'status' => true,
+                'message' => 'Draft update discarded. The live published version is unchanged.',
+                'data' => $result['model'],
+            ]);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Draft deleted.',
+            'data' => null,
+        ]);
+    }
+
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $model->delete();
     }
 }

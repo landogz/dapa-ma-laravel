@@ -395,12 +395,21 @@ class AnalyticsRepository
             ]);
     }
 
-    public function allForExport(AnalyticsDateRange $range): Collection
+    public function countForExport(AnalyticsDateRange $range): int
+    {
+        return $this->eventsInRange($range)->count();
+    }
+
+    public function allForExport(AnalyticsDateRange $range, int $limit = 10000): Collection
     {
         return $this->eventsInRange($range)
             ->with(['post:id,title', 'user:id,name,email'])
             ->orderByDesc(DB::raw('COALESCE(occurred_at, created_at)'))
-            ->get();
+            ->limit(max(1, $limit))
+            ->get([
+                'id', 'event_type', 'post_id', 'user_id', 'session_id', 'platform',
+                'screen_name', 'resource_type', 'resource_id', 'occurred_at', 'created_at',
+            ]);
     }
 
     public function deviceBreakdown(AnalyticsDateRange $range): array

@@ -6,6 +6,7 @@ import { SKY_FILTER_ITEMS, userInitials } from './sky-filters';
 import { buildSwalOptions, confirmWithSwal } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
+import { sanitizeHtml } from '../shared/safe-html';
 
 let diaryTable;
 let diaryTableMode;
@@ -651,7 +652,7 @@ function openDiaryView(entry) {
     const title = distinctDiaryTitle(entry, skyLabel) || skyLabel || 'Journal entry';
     const userName = entry.user?.name ?? 'Unknown user';
     const entryDate = formatDate(entry.entry_date);
-    const bodyHtml = entry.body_html ?? '<p><em>No written notes</em></p>';
+    const bodyHtml = sanitizeHtml(entry.body_html ?? '<p><em>No written notes</em></p>');
     const impact = entry.impact ? formatFeelingLabel(entry.impact) : '';
     const feelings = Array.isArray(entry.feelings)
         ? entry.feelings.map((feeling) => formatFeelingLabel(feeling)).filter(Boolean)

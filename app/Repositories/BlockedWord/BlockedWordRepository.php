@@ -64,12 +64,14 @@ class BlockedWordRepository
         return $latest ? (string) $latest : now()->toIso8601String();
     }
 
-    public function statusCounts(): array
+    public function statusCounts(?User $actor = null): array
     {
+        $base = BlockedWord::query()->visibleInAdminFor($actor);
+
         return [
-            '' => BlockedWord::query()->count(),
-            '1' => BlockedWord::query()->where('is_active', true)->count(),
-            '0' => BlockedWord::query()->where('is_active', false)->count(),
+            '' => (clone $base)->count(),
+            '1' => (clone $base)->where('is_active', true)->count(),
+            '0' => (clone $base)->where('is_active', false)->count(),
         ];
     }
 }

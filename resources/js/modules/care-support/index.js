@@ -4,14 +4,13 @@ import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datata
 import { buildSwalForm, buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import {
-    applyAdminFilterTabCounts,
     bindAdminFilterTabs,
-    countByKey,
     renderAdminFilterTabs,
     setAdminFilterTab,
 } from '../shared/filter-tabs';
 import {
     attachWorkflowWindowHandlers,
+    applyQueueAwareFilterCounts,
     buildWorkflowTableActions,
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
@@ -33,7 +32,6 @@ let supportTable;
 let supportTableMode;
 let hasBoundViewportListener = false;
 let currentCategoryFilter = '';
-let categoryCounts = null;
 let workflowStatusFilter = '';
 let categoryOptions = [
     { value: 'hotline', label: '24/7 Hotlines' },
@@ -203,20 +201,23 @@ export function loadCareSupportResources() {
     axios.get('/admin/care-support-resources', {
         params: {
             per_page: 500,
-            category: currentCategoryFilter || undefined,
         },
     })
         .then(({ data }) => {
             const allRows = data.data?.data ?? [];
-            const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            const queueRows = filterByWorkflowStatus(allRows, workflowStatusFilter);
             applyWorkflowStatusCounts(null, allRows);
+            applyQueueAwareFilterCounts(
+                document.getElementById('care-support-category-tabs'),
+                queueRows,
+                (row) => row.category || '',
+            );
+            const rows = currentCategoryFilter
+                ? queueRows.filter((row) => String(row.category || '') === currentCategoryFilter)
+                : queueRows;
             supportTable.clear();
             rows.forEach((row) => supportTable.row.add(buildRowData(row)));
             supportTable.draw();
-            if (!currentCategoryFilter && !workflowStatusFilter) {
-                categoryCounts = countByKey(data.data?.data ?? [], (row) => row.category || '');
-            }
-            applyAdminFilterTabCounts(document.getElementById('care-support-category-tabs'), categoryCounts || {});
         })
         .catch(({ response }) => {
             showErrorToast(response?.data?.message ?? 'Failed to load Care Support resources.');

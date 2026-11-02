@@ -171,7 +171,11 @@ function fillGroupTabs() {
         return;
     }
 
-    const total = groupMeta.reduce((sum, group) => sum + Number(group.count ?? 0), 0);
+    const publisherQueue = isPublisherRole();
+    const visibleGroups = publisherQueue
+        ? groupMeta.filter((group) => Number(group.count ?? 0) > 0)
+        : groupMeta;
+    const total = visibleGroups.reduce((sum, group) => sum + Number(group.count ?? 0), 0);
     const icons = {
         pronouns: 'fas fa-user',
         persona: 'fas fa-id-card',
@@ -185,9 +189,19 @@ function fillGroupTabs() {
         journal_impact: 'fas fa-sun',
         care_toolkit: 'fas fa-heart-pulse',
     };
+    if (publisherQueue && visibleGroups.length === 0) {
+        tabs.replaceChildren();
+        const empty = document.createElement('p');
+        empty.className = 'mb-3 px-1 text-sm leading-snug text-slate-500';
+        empty.textContent = 'No lookups are waiting for review.';
+        tabs.appendChild(empty);
+        tabs.dataset.filled = signature;
+        return;
+    }
+
     renderAdminFilterTabs(tabs, [
         { value: '', label: 'All catalogs', icon: 'fas fa-layer-group', count: total },
-        ...groupMeta.map((group) => ({
+        ...visibleGroups.map((group) => ({
             value: group.key,
             label: group.title,
             icon: icons[group.key] || 'fas fa-table',

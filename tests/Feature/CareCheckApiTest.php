@@ -87,6 +87,14 @@ class CareCheckApiTest extends TestCase
             ->assertJsonPath('data.answers.0.label', 'Nearly every day');
     }
 
+    public function test_editor_cannot_list_admin_care_checks(): void
+    {
+        $editor = User::factory()->create(['role' => 'editor']);
+        Sanctum::actingAs($editor);
+
+        $this->getJson('/api/v1/admin/care-checks')->assertForbidden();
+    }
+
     public function test_incomplete_answers_are_rejected(): void
     {
         $user = User::factory()->create();
@@ -120,7 +128,7 @@ class CareCheckApiTest extends TestCase
             ->assertJsonPath('data.previous.total', 2)
             ->assertJsonPath('data.previous.unique_users', 1)
             ->assertJsonPath('data.previous.by_display_tier.high', 1)
-            ->assertJsonPath('data.period_label', 'previous 30 days')
+            ->assertJsonPath('data.period_label', 'previous period')
             ->assertJsonPath('data.tier_counts.low', 2)
             ->assertJsonPath('data.tier_counts.high', 1);
 

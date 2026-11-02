@@ -6,6 +6,7 @@ use App\Repositories\AnalyticsRepository;
 use App\Services\AnalyticsService;
 use App\Support\Analytics\AnalyticsDateRange;
 use App\Support\Analytics\AnalyticsEventTypes;
+use App\Support\Analytics\AnalyticsExportDate;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use PhpOffice\PhpSpreadsheet\Chart\Chart;
@@ -21,6 +22,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Throwable;
 
 class AnalyticsReportExporter
 {
@@ -31,6 +33,10 @@ class AnalyticsReportExporter
     private const BRAND_GOLD = 'FBD116';
 
     private const BRAND_SLATE = 'F8FAFC';
+
+    private const PDF_ROW_LIMIT = 400;
+
+    private const TABULAR_ROW_LIMIT = 10000;
 
     public function __construct(
         private readonly AnalyticsService $analyticsService,
@@ -43,9 +49,17 @@ class AnalyticsReportExporter
      */
     public function export(string $reportType, string $format, AnalyticsDateRange $range): array
     {
+        if (function_exists('ini_set')) {
+            ini_set('memory_limit', '512M');
+        }
+
         $format = in_array($format, ['csv', 'xlsx', 'pdf'], true) ? $format : 'csv';
         $reportType = $this->normalizeReportType($reportType);
-        $dataset = $this->dataset($reportType, $range);
+        $dataset = $this->dataset($reportType, $range, $format);
+        $dataset = $this->formatDatasetCells($dataset);
+        if ($format === 'pdf') {
+            $dataset = $this->limitPdfDataset($dataset);
+        }
 
         $extension = match ($format) {
             'xlsx' => 'xlsx',
@@ -122,10 +136,10 @@ class AnalyticsReportExporter
      *     charts: list<array{title: string, items: list<array{label: string, value: float|int}>}>
      * }
      */
-    private function dataset(string $reportType, AnalyticsDateRange $range): array
+    private function dataset(string $reportType, AnalyticsDateRange $range, string $format = 'csv'): array
     {
         $subtitle = 'Detailed report · Range: '.$range->label
-            .' · '.$range->from->toDateString().' to '.$range->to->toDateString()
+            .' · '.AnalyticsExportDate::date($range->from).' to '.AnalyticsExportDate::date($range->to)
             .' · Includes tables'
             .(in_array($reportType, ['summary', 'mobile', 'content', 'complete'], true) ? ' and charts' : '');
 
@@ -145,13 +159,13 @@ class AnalyticsReportExporter
             'users' => [
                 'title' => 'DAPE-MA Analytics — Users (detailed)',
                 'subtitle' => $subtitle,
-                'sheets' => [$this->usersSheet($range)],
+                'sheets' => [$this->usersSheet($range, $format)],
                 'charts' => [],
             ],
             'leaderboard' => [
                 'title' => 'DAPE-MA Analytics — Top users leaderboard (detailed)',
                 'subtitle' => $subtitle,
-                'sheets' => [$this->leaderboardSheet($range)],
+                'sheets' => [$this->leaderboardSheet($range, $format)],
                 'charts' => $this->leaderboardCharts($range),
             ],
             'retention' => [
@@ -190,8 +204,8 @@ class AnalyticsReportExporter
                 'sheets' => array_merge(
                     $this->summarySheets($range),
                     $this->demographicsSheets($range),
-                    [$this->usersSheet($range)],
-                    [$this->leaderboardSheet($range)],
+                    [$this->usersSheet($range, $format)],
+                    [$this->leaderboardSheet($range, $format)],
                     [$this->retentionSheet($range)],
                     $this->contentSheets($range),
                     $this->mobileSheets($range),
@@ -208,7 +222,7 @@ class AnalyticsReportExporter
             default => [
                 'title' => 'DAPE-MA Analytics — Event log (detailed)',
                 'subtitle' => $subtitle,
-                'sheets' => [$this->eventsSheet($range)],
+                'sheets' => [$this->eventsSheet($range, $format)],
                 'charts' => [],
             ],
         };
@@ -258,14 +272,14 @@ class AnalyticsReportExporter
             ['Engagement rate %', $funnel['engagement'] ?? 0, '—', '(bookmarks + shares) / views'],
             ['Relational engagements', $funnel['relational_engagements'] ?? ($kpis['relational_engagements'] ?? 0), '—', 'Likes/comments/bookmarks/shares'],
             ['Avg events / day', $audience['avg_per_day'] ?? 0, '—', 'Volume / day span'],
-            ['Peak day', $audience['peak_day']['date'] ?? '—', $audience['peak_day']['total'] ?? 0, 'Busiest calendar day'],
+            ['Peak day', AnalyticsExportDate::auto($audience['peak_day']['date'] ?? '—'), $audience['peak_day']['total'] ?? 0, 'Busiest calendar day'],
             ['Comparison window', $periodLabel, '—', 'Previous period label'],
         ];
 
         $daily = collect($dashboard['daily_counts'] ?? [])->values();
         $dailyMax = max(1, (int) $daily->max(fn ($row) => (int) ($row['total'] ?? 0)));
         $dailyRows = $daily->map(fn ($row) => [
-            $row['date'] ?? '',
+            AnalyticsExportDate::date($row['date'] ?? ''),
             (int) ($row['total'] ?? 0),
             round(((int) ($row['total'] ?? 0) / $dailyMax) * 100, 1),
         ])->all();
@@ -395,7 +409,7 @@ class AnalyticsReportExporter
         $dashboard = $this->analyticsService->dashboard($range);
         $daily = collect($dashboard['daily_counts'] ?? [])
             ->map(fn ($row) => [
-                'label' => (string) ($row['date'] ?? ''),
+                'label' => AnalyticsExportDate::date($row['date'] ?? ''),
                 'value' => (int) ($row['total'] ?? 0),
             ])->all();
         $types = collect($dashboard['by_event_type'] ?? [])
@@ -411,7 +425,7 @@ class AnalyticsReportExporter
         $hourly = collect($dashboard['hourly_by_metric']['series']['visits'] ?? $dashboard['hourly_counts'] ?? [])
             ->filter(fn ($row) => (int) ($row['total'] ?? 0) > 0)
             ->map(fn ($row) => [
-                'label' => sprintf('%02d:00', (int) ($row['hour'] ?? 0)),
+                'label' => AnalyticsExportDate::hour($row['hour'] ?? 0),
                 'value' => (int) ($row['total'] ?? 0),
             ])->all();
         $weekday = collect($dashboard['weekday_counts'] ?? [])
@@ -511,28 +525,45 @@ class AnalyticsReportExporter
     /**
      * @return array{name: string, headers: list<string>, rows: list<list<mixed>>}
      */
-    private function usersSheet(AnalyticsDateRange $range): array
+    private function usersSheet(AnalyticsDateRange $range, string $format = 'csv'): array
     {
-        $page = $this->analyticsRepository->filterUsers([], $range, 5000);
-        $rows = collect($page['data'] ?? [])->map(fn ($row) => [
-            $row['id'] ?? '',
-            $row['name'] ?? '',
-            $row['email'] ?? '',
-            $row['age'] ?? '',
-            $row['region'] ?? '',
-            $row['province'] ?? '',
-            $row['city'] ?? '',
-            $row['registered_at'] ?? '',
-            $row['events_in_range'] ?? 0,
-            $row['last_active_at'] ?? '',
-        ])->all();
+        $compact = $format === 'pdf';
+        $limit = $compact ? self::PDF_ROW_LIMIT : 5000;
+        $page = $this->analyticsRepository->filterUsers([], $range, $limit);
+        $rows = collect($page['data'] ?? [])->map(function ($row) use ($compact) {
+            if ($compact) {
+                return [
+                    $row['name'] ?? '',
+                    $row['email'] ?? '',
+                    $this->formatLocation($row),
+                    AnalyticsExportDate::dateTime($row['registered_at'] ?? ''),
+                    (int) ($row['events_in_range'] ?? 0),
+                    AnalyticsExportDate::dateTime($row['last_active_at'] ?? ''),
+                ];
+            }
+
+            return [
+                $row['id'] ?? '',
+                $row['name'] ?? '',
+                $row['email'] ?? '',
+                $row['age'] ?? '',
+                $row['region'] ?? '',
+                $row['province'] ?? '',
+                $row['city'] ?? '',
+                AnalyticsExportDate::dateTime($row['registered_at'] ?? ''),
+                $row['events_in_range'] ?? 0,
+                AnalyticsExportDate::dateTime($row['last_active_at'] ?? ''),
+            ];
+        })->all();
 
         return [
             'name' => 'Users',
-            'headers' => [
-                'ID', 'Name', 'Email', 'Age', 'Region', 'Province', 'City',
-                'Registered at', 'Events in range', 'Last active at',
-            ],
+            'headers' => $compact
+                ? ['Name', 'Email', 'Location', 'Registered', 'Events', 'Last active']
+                : [
+                    'ID', 'Name', 'Email', 'Age', 'Region', 'Province', 'City',
+                    'Registered at', 'Events in range', 'Last active at',
+                ],
             'rows' => $rows,
         ];
     }
@@ -540,38 +571,57 @@ class AnalyticsReportExporter
     /**
      * @return array{name: string, headers: list<string>, rows: list<list<mixed>>, chart?: array<string, mixed>|null}
      */
-    private function leaderboardSheet(AnalyticsDateRange $range): array
+    private function leaderboardSheet(AnalyticsDateRange $range, string $format = 'csv'): array
     {
-        $payload = $this->analyticsRepository->leaderboard($range, 'engagements', 100);
-        $rows = collect($payload['rows'] ?? [])->map(fn ($row) => [
-            $row['rank'] ?? '',
-            $row['user_id'] ?? '',
-            $row['name'] ?? '',
-            $row['subtitle'] ?? '',
-            $row['city'] ?? '',
-            $row['province'] ?? '',
-            $row['visits'] ?? 0,
-            $row['app_usage'] ?? 0,
-            $row['views'] ?? 0,
-            $row['likes'] ?? 0,
-            $row['comments'] ?? 0,
-            $row['shares'] ?? 0,
-            $row['bookmarks'] ?? 0,
-            $row['engagements'] ?? 0,
-            $row['app_opens'] ?? 0,
-            $row['sessions'] ?? 0,
-            $row['duration_seconds'] ?? 0,
-            $row['engagement_score'] ?? 0,
-            $row['metric_value'] ?? 0,
-        ])->all();
+        $compact = $format === 'pdf';
+        $payload = $this->analyticsRepository->leaderboard($range, 'engagements', $compact ? 50 : 100);
+        $rows = collect($payload['rows'] ?? [])->map(function ($row) use ($compact) {
+            if ($compact) {
+                return [
+                    $row['rank'] ?? '',
+                    $row['name'] ?? '',
+                    $this->formatLocation($row),
+                    (int) ($row['visits'] ?? 0),
+                    (int) ($row['views'] ?? 0),
+                    (int) ($row['engagements'] ?? 0),
+                    (int) ($row['app_opens'] ?? 0),
+                    (int) ($row['sessions'] ?? 0),
+                    (int) ($row['engagement_score'] ?? 0),
+                ];
+            }
+
+            return [
+                $row['rank'] ?? '',
+                $row['user_id'] ?? '',
+                $row['name'] ?? '',
+                $row['subtitle'] ?? '',
+                $row['city'] ?? '',
+                $row['province'] ?? '',
+                $row['visits'] ?? 0,
+                $row['app_usage'] ?? 0,
+                $row['views'] ?? 0,
+                $row['likes'] ?? 0,
+                $row['comments'] ?? 0,
+                $row['shares'] ?? 0,
+                $row['bookmarks'] ?? 0,
+                $row['engagements'] ?? 0,
+                $row['app_opens'] ?? 0,
+                $row['sessions'] ?? 0,
+                $row['duration_seconds'] ?? 0,
+                $row['engagement_score'] ?? 0,
+                $row['metric_value'] ?? 0,
+            ];
+        })->all();
 
         return [
             'name' => 'Leaderboard',
-            'headers' => [
-                'Rank', 'User ID', 'Name', 'Subtitle', 'City', 'Province',
-                'Visits', 'App usage', 'Content views', 'Likes', 'Comments', 'Shares', 'Bookmarks',
-                'Engagement', 'App opens', 'Sessions', 'Duration (s)', 'Engagement score', 'Metric value',
-            ],
+            'headers' => $compact
+                ? ['Rank', 'Name', 'Location', 'Visits', 'Views', 'Engaged', 'Opens', 'Sessions', 'Score']
+                : [
+                    'Rank', 'User ID', 'Name', 'Subtitle', 'City', 'Province',
+                    'Visits', 'App usage', 'Content views', 'Likes', 'Comments', 'Shares', 'Bookmarks',
+                    'Engagement', 'App opens', 'Sessions', 'Duration (s)', 'Engagement score', 'Metric value',
+                ],
             'rows' => $rows,
             'chart' => ['title' => 'Top users by engagement', 'category_col' => 3, 'value_col' => 14, 'max_points' => 10],
         ];
@@ -604,7 +654,7 @@ class AnalyticsReportExporter
         $offsets = $payload['offsets'] ?? [1, 7, 14, 30];
         $headers = array_merge(['Cohort', 'Size'], array_map(fn ($d) => 'D'.$d.' %', $offsets));
         $rows = collect($payload['rows'] ?? [])->map(function ($row) use ($offsets) {
-            $cells = [$row['cohort'] ?? '', $row['size'] ?? 0];
+            $cells = [AnalyticsExportDate::date($row['cohort'] ?? ''), $row['size'] ?? 0];
             foreach ($offsets as $offset) {
                 $cells[] = $row['retention'][strval($offset)] ?? $row['retention'][$offset] ?? '';
             }
@@ -632,7 +682,7 @@ class AnalyticsReportExporter
             $row['total'] ?? ($row['count'] ?? 0),
         ])->all();
         $hourlyApp = collect($dashboard['hourly_by_metric']['series']['app_usage'] ?? [])->map(fn ($row) => [
-            sprintf('%02d:00', (int) ($row['hour'] ?? 0)),
+            AnalyticsExportDate::hour($row['hour'] ?? 0),
             (int) ($row['total'] ?? 0),
         ])->all();
 
@@ -943,7 +993,7 @@ class AnalyticsReportExporter
                 $row->percent_change,
                 $row->severity,
                 $row->status,
-                optional($row->detected_at)?->toIso8601String(),
+                AnalyticsExportDate::dateTime($row->detected_at),
             ])->all();
 
         return [
@@ -958,32 +1008,61 @@ class AnalyticsReportExporter
     /**
      * @return array{name: string, headers: list<string>, rows: list<list<mixed>>}
      */
-    private function eventsSheet(AnalyticsDateRange $range): array
+    private function eventsSheet(AnalyticsDateRange $range, string $format = 'csv'): array
     {
-        $rows = $this->analyticsRepository->allForExport($range)->map(fn ($row) => [
-            $row->id,
-            $row->event_type,
-            $row->post_id ?? '',
-            $row->post->title ?? '',
-            $row->user_id ?? '',
-            $row->user->email ?? '',
-            $row->platform ?? '',
-            $row->session_id ?? '',
-            $row->screen_name ?? '',
-            $row->resource_type ?? '',
-            $row->resource_id ?? '',
-            optional($row->occurred_at)?->toIso8601String() ?? '',
-            optional($row->created_at)?->toIso8601String() ?? '',
-        ])->all();
+        $compact = $format === 'pdf';
+        $limit = $compact ? self::PDF_ROW_LIMIT : self::TABULAR_ROW_LIMIT;
+        $total = $this->analyticsRepository->countForExport($range);
+        $rows = $this->analyticsRepository->allForExport($range, $limit)->map(function ($row) use ($compact) {
+            $eventType = $this->humanizeEventType((string) $row->event_type);
+            $occurred = AnalyticsExportDate::dateTime($row->occurred_at ?? $row->created_at);
+            $created = AnalyticsExportDate::dateTime($row->created_at);
 
-        return [
+            if ($compact) {
+                return [
+                    $row->id,
+                    $eventType,
+                    $row->post->title ?? ($row->screen_name ?? ''),
+                    $row->user->email ?? '',
+                    $row->platform ?? '',
+                    $occurred,
+                ];
+            }
+
+            return [
+                $row->id,
+                $eventType,
+                $row->post_id ?? '',
+                $row->post->title ?? '',
+                $row->user_id ?? '',
+                $row->user->email ?? '',
+                $row->platform ?? '',
+                $row->session_id ?? '',
+                $row->screen_name ?? '',
+                $row->resource_type ?? '',
+                $row->resource_id ?? '',
+                $occurred,
+                $created,
+            ];
+        })->all();
+
+        $sheet = [
             'name' => 'Events',
-            'headers' => [
-                'ID', 'Event type', 'Post ID', 'Post title', 'User ID', 'User email',
-                'Platform', 'Session ID', 'Screen', 'Resource type', 'Resource ID', 'Occurred at', 'Created at',
-            ],
+            'headers' => $compact
+                ? ['ID', 'Event type', 'Title / screen', 'User email', 'Platform', 'Occurred at']
+                : [
+                    'ID', 'Event type', 'Post ID', 'Post title', 'User ID', 'User email',
+                    'Platform', 'Session ID', 'Screen', 'Resource type', 'Resource ID', 'Occurred at', 'Created at',
+                ],
             'rows' => $rows,
         ];
+
+        if ($total > $limit) {
+            $sheet['note'] = 'Showing latest '.number_format($limit).' of '.number_format($total)
+                .' events. Use CSV or XLSX for a larger extract.';
+        }
+
+        return $sheet;
     }
 
     /**
@@ -995,7 +1074,7 @@ class AnalyticsReportExporter
             $this->csvRow([$dataset['title']]),
             $this->csvRow([$dataset['subtitle']]),
             $this->csvRow(['Dangerous Drugs Board · DAPE-MA Analytics']),
-            $this->csvRow(['Generated', now()->toDateTimeString()]),
+            $this->csvRow(['Generated', AnalyticsExportDate::dateTime(now())]),
             '',
         ];
 
@@ -1055,7 +1134,10 @@ class AnalyticsReportExporter
             $worksheet->getRowDimension(1)->setRowHeight(28);
 
             $worksheet->mergeCells('A2:'.$lastCol.'2');
-            $worksheet->setCellValue('A2', $dataset['subtitle'].' · '.$sheet['name']);
+            $worksheet->setCellValue(
+                'A2',
+                $dataset['subtitle'].' · '.$sheet['name'].' · Generated '.AnalyticsExportDate::dateTime(now()),
+            );
             $worksheet->getStyle('A2')->applyFromArray([
                 'font' => [
                     'size' => 10,
@@ -1240,20 +1322,81 @@ class AnalyticsReportExporter
     /**
      * @param  array{title: string, subtitle: string, sheets: list<array{name: string, headers: list<string>, rows: list<list<mixed>>}>, charts?: list<array{title: string, items: list<array{label: string, value: float|int}>}>}  $dataset
      */
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function formatLocation(array $row): string
+    {
+        return collect([
+            $row['city'] ?? null,
+            $row['province'] ?? null,
+            $row['region'] ?? null,
+        ])
+            ->map(fn ($part) => trim((string) $part))
+            ->filter()
+            ->unique()
+            ->implode(', ');
+    }
+
+    /**
+     * @param  array{title: string, subtitle: string, sheets: list<array<string, mixed>>, charts?: list<array<string, mixed>>}  $dataset
+     * @return array{title: string, subtitle: string, sheets: list<array<string, mixed>>, charts?: list<array<string, mixed>>}
+     */
+    private function formatDatasetCells(array $dataset): array
+    {
+        $dataset['sheets'] = array_map(function (array $sheet): array {
+            $sheet['rows'] = array_map(function ($row): array {
+                $cells = is_array($row) ? $row : [];
+
+                return array_map(fn ($cell) => AnalyticsExportDate::cell($cell), $cells);
+            }, $sheet['rows'] ?? []);
+
+            return $sheet;
+        }, $dataset['sheets'] ?? []);
+
+        return $dataset;
+    }
+
+    /**
+     * @param  array{title: string, subtitle: string, sheets: list<array<string, mixed>>, charts?: list<array<string, mixed>>}  $dataset
+     * @return array{title: string, subtitle: string, sheets: list<array<string, mixed>>, charts?: list<array<string, mixed>>}
+     */
+    private function limitPdfDataset(array $dataset): array
+    {
+        $dataset['sheets'] = array_map(function (array $sheet): array {
+            $rows = $sheet['rows'] ?? [];
+            $total = count($rows);
+            if ($total > self::PDF_ROW_LIMIT) {
+                $sheet['rows'] = array_slice($rows, 0, self::PDF_ROW_LIMIT);
+                $sheet['note'] = $sheet['note']
+                    ?? 'Showing latest '.number_format(self::PDF_ROW_LIMIT).' of '.number_format($total).' rows.';
+            }
+
+            return $sheet;
+        }, $dataset['sheets']);
+
+        return $dataset;
+    }
+
     private function toPdf(array $dataset): string
     {
+        $wide = collect($dataset['sheets'] ?? [])
+            ->contains(fn ($sheet) => count($sheet['headers'] ?? []) >= 7);
+
         $html = view('exports.analytics-report', [
             'title' => $dataset['title'],
             'subtitle' => $dataset['subtitle'],
             'sheets' => $dataset['sheets'],
             'charts' => $dataset['charts'] ?? [],
-            'generatedAt' => now()->timezone(config('app.timezone'))->format('M j, Y g:i A'),
+            'generatedAt' => AnalyticsExportDate::dateTime(now()),
             'sealSrc' => $this->sealDataUri(),
+            'wide' => $wide,
         ])->render();
 
         $options = new Options();
         $options->set('isRemoteEnabled', false);
-        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isHtml5ParserEnabled', false);
+        $options->set('isFontSubsettingEnabled', true);
         $options->set('defaultFont', 'DejaVu Sans');
         $options->setChroot([
             base_path(),
@@ -1263,8 +1406,25 @@ class AnalyticsReportExporter
 
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->setPaper('A4', $wide ? 'landscape' : 'portrait');
         $dompdf->render();
+
+        try {
+            $canvas = $dompdf->getCanvas();
+            $font = $dompdf->getFontMetrics()->getFont('DejaVu Sans');
+            if ($canvas && $font) {
+                $canvas->page_text(
+                    $canvas->get_width() - 120,
+                    $canvas->get_height() - 22,
+                    'Page {PAGE_NUM} of {PAGE_COUNT}',
+                    $font,
+                    8,
+                    [0.29, 0.33, 0.41],
+                );
+            }
+        } catch (Throwable) {
+            // Page numbers are optional if the PDF engine cannot paint them.
+        }
 
         return $dompdf->output() ?? '';
     }
@@ -1344,7 +1504,7 @@ class AnalyticsReportExporter
     private function hourlyRows(iterable $rows): array
     {
         $items = collect($rows)->map(fn ($row) => [
-            sprintf('%02d:00', (int) (is_array($row) ? ($row['hour'] ?? 0) : 0)),
+            AnalyticsExportDate::hour(is_array($row) ? ($row['hour'] ?? 0) : 0),
             (int) (is_array($row) ? ($row['total'] ?? 0) : 0),
         ])->all();
 

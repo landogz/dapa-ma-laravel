@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\UpdateAppOptionRequest;
 use App\Models\AppOption;
 use App\Services\AppOptionService;
 use App\Services\ContentWorkflow\ContentWorkflowService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,7 @@ class AppOptionAdminController extends Controller
         publish as protected workflowPublish;
         archive as protected workflowArchive;
         restore as protected workflowRestore;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -122,13 +124,13 @@ class AppOptionAdminController extends Controller
         return $this->workflowRestore($request, $appOption);
     }
 
-    public function destroy(AppOption $appOption): JsonResponse
+    public function destroy(Request $request, AppOption $appOption): JsonResponse
     {
-        $this->appOptionService->delete($appOption);
+        return $this->workflowDestroy($request, $appOption);
+    }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Option deleted.',
-        ]);
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $this->appOptionService->delete($model);
     }
 }

@@ -7,6 +7,7 @@ use App\Services\Analytics\AnalyticsReportExporter;
 use App\Support\Analytics\AnalyticsDateRange;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -21,14 +22,36 @@ class ProcessAnalyticsExportJob implements ShouldQueue
 
     public function handle(AnalyticsReportExporter $exporter): void
     {
+        if (function_exists('ini_set')) {
+            ini_set('memory_limit', '512M');
+        }
+
         $export = AnalyticsExport::query()->find($this->exportId);
         if (! $export) {
             return;
         }
 
-        $export->update(['status' => 'processing']);
+        if ($export->status === 'ready' && $export->disk_path && Storage::disk('local')->exists($export->disk_path)) {
+            return;
+        }
+
+        $lock = Cache::lock('analytics-export-'.$this->exportId, 180);
+        if (! $lock->get()) {
+            $stale = in_array($export->status, ['pending', 'processing'], true)
+                && (! $export->disk_path || ! Storage::disk('local')->exists($export->disk_path));
+            if (! $stale) {
+                return;
+            }
+
+            $lock->forceRelease();
+            if (! $lock->get()) {
+                return;
+            }
+        }
 
         try {
+            $export->update(['status' => 'processing']);
+
             $filters = $export->filters ?? [];
             $range = AnalyticsDateRange::fromRequest([
                 'range' => $filters['range'] ?? '30',
@@ -57,7 +80,9 @@ class ProcessAnalyticsExportJob implements ShouldQueue
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
             ]);
-            throw $e;
+            report($e);
+        } finally {
+            $lock->release();
         }
     }
 }

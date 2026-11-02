@@ -6,6 +6,7 @@ import { initNotificationsModule } from './notifications';
 import { initPostsModule } from './posts';
 import { initProfileModule } from './profile';
 import { initRehabCentersModule } from './rehab-centers/index';
+import { bindDatetimePickerFields } from './datetime-picker';
 import { enableAdminSwalHeaders } from './shared/swal-forms';
 import { startAdminFilterSelectWatcher } from './shared/filter-select';
 import { initContestsModule } from './contests/index';
@@ -65,7 +66,6 @@ const ADMIN_ROLE_SECTIONS = {
         'app-translations',
         'notifications',
         'care-toolkit',
-        'care-checks',
         'care-support',
         'hope-directory',
         'hope-events',
@@ -83,7 +83,6 @@ const ADMIN_ROLE_SECTIONS = {
         'app-translations',
         'notifications',
         'care-toolkit',
-        'care-checks',
         'care-support',
         'hope-directory',
         'hope-events',
@@ -203,6 +202,7 @@ export async function initAdminPage(pageName) {
 
     bindQuickActions();
     initializePageContent(pageName, allowedSections, profile);
+    bindDatetimePickerFields(appRoot);
     startAdminFilterSelectWatcher(appRoot);
 }
 
@@ -1225,6 +1225,14 @@ function renderInboxItem(item) {
         typeLabel = 'Draft submitted';
         typeClass = 'bg-[#055498]/10 text-[#055498]';
         icon = 'fas fa-paper-plane';
+    } else if (type === 'post_archived') {
+        typeLabel = 'Archived';
+        typeClass = 'bg-[#CE2028]/10 text-[#CE2028]';
+        icon = 'fas fa-box-archive';
+    } else if (type === 'post_restore_requested') {
+        typeLabel = 'Restore requested';
+        typeClass = 'bg-[#055498]/10 text-[#055498]';
+        icon = 'fas fa-rotate-left';
     } else if (type === 'post_rejected') {
         typeLabel = 'Rejected';
         typeClass = 'bg-[#FBD116]/15 text-[#123a60]';
@@ -1241,6 +1249,14 @@ function renderInboxItem(item) {
         typeLabel = 'Submitted for review';
         typeClass = 'bg-[#055498]/10 text-[#055498]';
         icon = 'fas fa-paper-plane';
+    } else if (type === 'content_archived') {
+        typeLabel = 'Archived';
+        typeClass = 'bg-[#CE2028]/10 text-[#CE2028]';
+        icon = 'fas fa-box-archive';
+    } else if (type === 'content_restore_requested') {
+        typeLabel = 'Restore requested';
+        typeClass = 'bg-[#055498]/10 text-[#055498]';
+        icon = 'fas fa-rotate-left';
     } else if (type === 'content_rejected') {
         typeLabel = 'Content rejected';
         typeClass = 'bg-[#FBD116]/15 text-[#123a60]';

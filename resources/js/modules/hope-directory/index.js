@@ -3,9 +3,10 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
 import { buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
-import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey } from '../shared/filter-tabs';
+import { bindAdminFilterTabs } from '../shared/filter-tabs';
 import {
     attachWorkflowWindowHandlers,
+    applyQueueAwareFilterCounts,
     buildWorkflowTableActions,
     canCreateWorkflowDraft,
     ensureWorkflowStatusFilter,
@@ -41,7 +42,6 @@ let directoryTable;
 let directoryTableMode;
 let hasBoundViewportListener = false;
 let categoryFilter = '';
-let categoryCounts = null;
 let workflowStatusFilter = '';
 
 const CATEGORY_LABELS = {
@@ -158,20 +158,23 @@ function loadRows() {
     axios.get('/admin/hope-directory', {
         params: {
             per_page: 500,
-            category: categoryFilter || undefined,
         },
     })
         .then(({ data }) => {
             const allRows = data.data?.data ?? [];
-            const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
+            const queueRows = filterByWorkflowStatus(allRows, workflowStatusFilter);
             applyWorkflowStatusCounts(null, allRows);
+            applyQueueAwareFilterCounts(
+                document.getElementById('hope-directory-category-tabs'),
+                queueRows,
+                (row) => row.category || '',
+            );
+            const rows = categoryFilter
+                ? queueRows.filter((row) => String(row.category || '') === categoryFilter)
+                : queueRows;
             directoryTable.clear();
             rows.forEach((row) => directoryTable.row.add(buildRow(row)));
             directoryTable.draw();
-            if (!categoryFilter && !workflowStatusFilter) {
-                categoryCounts = countByKey(data.data?.data ?? [], (row) => row.category || '');
-            }
-            applyAdminFilterTabCounts(document.getElementById('hope-directory-category-tabs'), categoryCounts || {});
         })
         .catch(({ response }) => {
             showErrorToast(response?.data?.message ?? 'Failed to load Hope Directory.');

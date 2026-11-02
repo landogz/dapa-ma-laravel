@@ -21,11 +21,10 @@ class PostRepository
             ->withAvg('reviews', 'rating')
             ->when($actor?->role === 'publisher', function (Builder $q): void {
                 $q->where(function (Builder $inner): void {
-                    $inner->where('status', 'pending_review')
+                    $inner->whereIn('status', ['pending_review', 'scheduled'])
                         ->orWhere(function (Builder $revision): void {
-                            // Include editor update drafts and submitted updates.
                             $revision->where('status', 'published')
-                                ->whereNotNull('revision_status')
+                                ->where('revision_status', 'pending_review')
                                 ->whereNotNull('pending_revision');
                         });
                 });

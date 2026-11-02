@@ -396,7 +396,9 @@ function showRehabForm(existing) {
             });
             requestAnimationFrame(() => {
                 picker?.map?.resize();
+                requestAnimationFrame(() => picker?.map?.resize());
             });
+            window.setTimeout(() => picker?.map?.resize(), 320);
         },
         willClose: () => {
             destroyRehabMapPicker();

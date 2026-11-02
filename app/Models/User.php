@@ -36,12 +36,6 @@ class User extends Authenticatable
         'accepted_privacy_notice_at',
         'email',
         'password',
-        'must_change_password',
-        'password_changed_at',
-        'role',
-        'is_active',
-        'fcm_token',
-        'fcm_platform',
         'profile_image_url',
         'about',
         'region',
@@ -58,6 +52,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'fcm_token',
+        'fcm_platform',
     ];
 
     /**

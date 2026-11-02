@@ -60,9 +60,9 @@ class BlockedWordService
         $this->forgetCache();
     }
 
-    public function statusCounts(): array
+    public function statusCounts(?User $actor = null): array
     {
-        return $this->blockedWordRepository->statusCounts();
+        return $this->blockedWordRepository->statusCounts($actor);
     }
 
     /**

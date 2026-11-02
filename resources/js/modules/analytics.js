@@ -17,6 +17,7 @@ import {
 } from './analytics-advanced';
 import { renderContentCatalog } from './analytics-content-catalog';
 import { renderCareTools } from './analytics-care-tools';
+import { initAnalyticsMotion, writeAnimatedMetric } from './analytics-motion';
 
 const METRIC_COLORS = {
     total: '#055498',
@@ -71,6 +72,7 @@ let topPostsSearchBound = false;
 let recentSearchBound = false;
 
 export function initAnalyticsModule() {
+    initAnalyticsMotion();
     initializeAnalyticsRange();
     bindAnalyticsTabs();
     bindAdvancedAnalyticsActions(() => loadAnalytics());
@@ -229,7 +231,9 @@ function bindAnalyticsRefresh() {
 
 function setAnalyticsLoading(isLoading) {
     const overlay = document.querySelector('[data-analytics-loading]');
+    const shell = document.querySelector('[data-analytics-shell]');
     overlay?.classList.toggle('hidden', !isLoading);
+    shell?.classList.toggle('is-refreshing', isLoading);
 }
 
 export function loadAnalytics() {
@@ -381,7 +385,7 @@ function renderAnalyticsSummary(periodComparison, generatedAt, eventTypes = [], 
         const el = document.querySelector(`[data-analytics-summary="${key}"]`);
 
         if (el) {
-            el.textContent = formatted ?? Number(value).toLocaleString();
+            writeAnimatedMetric(el, formatted ?? Number(value).toLocaleString());
         }
     };
 
@@ -431,7 +435,7 @@ function renderRatingsSummary(ratings, periodLabel = 'previous period') {
     const averageEl = document.querySelector('[data-analytics-summary="ratings-average"]');
 
     if (totalEl) {
-        totalEl.textContent = total.toLocaleString();
+        writeAnimatedMetric(totalEl, total.toLocaleString());
     }
 
     if (averageEl) {
@@ -499,7 +503,7 @@ function buildSparklineSvg(values, color) {
 
     return `
         <svg viewBox="0 0 ${width} ${height}" class="analytics-sparkline" aria-hidden="true">
-            <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            <polyline pathLength="1" points="${points}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
         </svg>
     `;
 }
@@ -1030,10 +1034,11 @@ function buildActivityChartHtml(points, messages, options = {}) {
             label,
             html: `
                 <div
-                    class="dashboard-activity-bar analytics-activity-bar analytics-chart-column"
+                        class="dashboard-activity-bar analytics-activity-bar analytics-chart-column"
                     data-chart-bar
                     data-chart-date="${escapeHtml(tooltipLabel)}"
                     data-chart-count="${escapeHtml(String(total))}"
+                    style="--bar-i:${index}"
                     tabindex="0"
                     role="img"
                     aria-label="${escapeHtml(tooltipLabel)}"
@@ -1940,42 +1945,27 @@ function renderHourlyCounts(hours) {
     });
 }
 
-function formatHourRange(hour) {
-    const start = Math.max(0, Math.min(23, Number(hour) || 0));
-    const end = (start + 1) % 24;
-    const startLabel = formatHourClock(start);
-    const endLabel = formatHourClock(end);
-    const startSuffix = start >= 12 ? 'PM' : 'AM';
-    const endSuffix = end >= 12 ? 'PM' : 'AM';
-
-    if (startSuffix === endSuffix) {
-        return `${startLabel} to ${endLabel} ${endSuffix}`;
-    }
-
-    return `${startLabel} ${startSuffix} to ${endLabel} ${endSuffix}`;
-}
-
-function formatHourClock(hour) {
+function formatHour12(hour) {
     const value = Math.max(0, Math.min(23, Number(hour) || 0));
-    const twelve = value % 12 === 0 ? 12 : value % 12;
-
-    return `${twelve}:00`;
-}
-
-function formatHourCompact(hour) {
-    const value = Number(hour) || 0;
-    const suffix = value >= 12 ? 'p' : 'a';
+    const suffix = value >= 12 ? 'pm' : 'am';
     const twelve = value % 12 === 0 ? 12 : value % 12;
 
     return `${twelve}${suffix}`;
 }
 
-function formatHourFull(hour) {
-    const value = Math.max(0, Math.min(23, Number(hour) || 0));
-    const date = new Date();
-    date.setHours(value, 0, 0, 0);
+function formatHourRange(hour) {
+    const start = Math.max(0, Math.min(23, Number(hour) || 0));
+    const end = (start + 1) % 24;
 
-    return date.toLocaleTimeString(undefined, { hour: 'numeric' });
+    return `${formatHour12(start)} to ${formatHour12(end)}`;
+}
+
+function formatHourCompact(hour) {
+    return formatHour12(hour);
+}
+
+function formatHourFull(hour) {
+    return formatHour12(hour);
 }
 
 function renderWeekdayChart(weekdays) {

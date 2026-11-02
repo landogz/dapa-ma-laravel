@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\AdminNotificationService;
 use App\Services\UserNotificationService;
 use App\Support\ContentWorkflow\ContentWorkflowStatus;
+use App\Support\Html\SafeHtml;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -26,6 +27,8 @@ class ContentWorkflowService
      */
     public function prepareCreatePayload(User $actor, array $data): array
     {
+        $data = $this->sanitizeHtmlFields($data);
+
         if ($actor->role === 'super_admin') {
             $data['workflow_status'] = ContentWorkflowStatus::PUBLISHED;
             $data['authored_by'] = $data['authored_by'] ?? $actor->id;
@@ -64,6 +67,7 @@ class ContentWorkflowService
     public function prepareUpdatePayload(Model $model, User $actor, array $data, ?string $section = null): array
     {
         $this->assertUsesWorkflow($model);
+        $data = $this->sanitizeHtmlFields($data);
 
         if ($actor->role === 'publisher') {
             throw new InvalidArgumentException('Publishers cannot edit content. Publish or reject instead.');
@@ -186,6 +190,10 @@ class ContentWorkflowService
         }
 
         if ($model->isRevisionAwaitingPublisher()) {
+            if ($publisher->role === 'publisher' && $model->revision_status !== ContentWorkflowStatus::PENDING) {
+                throw new InvalidArgumentException('This update is already with the editor for revision.');
+            }
+
             $model->forceFill([
                 'revision_status' => ContentWorkflowStatus::DRAFT,
                 'review_notes' => $reviewNotes,
@@ -234,8 +242,13 @@ class ContentWorkflowService
             abort(403, 'Only publishers can publish.');
         }
 
-        // Apply staged published updates whether still an editor draft or pending review.
         if ($model->isWorkflowPublished() && $model->hasPendingRevision()) {
+            if ($publisher->role === 'publisher' && $model->revision_status !== ContentWorkflowStatus::PENDING) {
+                throw new InvalidArgumentException(
+                    'This update is with the editor. It returns to your queue when they resubmit it.',
+                );
+            }
+
             return $this->applyPendingRevision($model, $publisher, $section);
         }
 
@@ -380,18 +393,85 @@ class ContentWorkflowService
     {
         $this->assertUsesWorkflow($model);
 
-        if ($actor->role !== 'super_admin') {
-            throw new InvalidArgumentException('Only Super Admin can archive content.');
+        if (! in_array($actor->role, ['editor', 'super_admin'], true)) {
+            throw new InvalidArgumentException('Only editors and Super Admin can archive content.');
         }
 
         if (($model->workflow_status ?? null) === ContentWorkflowStatus::ARCHIVED) {
             throw new InvalidArgumentException('This item is already archived.');
         }
 
+        if ($actor->role === 'editor' && ($model->workflow_status ?? null) === ContentWorkflowStatus::DRAFT) {
+            throw new InvalidArgumentException('Archive published or pending items. Delete drafts instead.');
+        }
+
         $model->forceFill([
             'workflow_status' => ContentWorkflowStatus::ARCHIVED,
             'pending_revision' => null,
             'revision_status' => null,
+            'reviewed_by' => $actor->id,
+            'reviewed_at' => now(),
+        ])->save();
+
+        $fresh = $model->fresh() ?? $model;
+
+        if ($actor->role === 'editor') {
+            $this->adminNotificationService->notifyContentArchived($section, $fresh, $actor);
+        }
+
+        return $fresh;
+    }
+
+    /**
+     * Editors and Super Admin may delete true drafts, or discard a staged update on a live item.
+     *
+     * @param  callable(Model):void  $hardDelete
+     * @return array{mode: string, model: ?Model}
+     */
+    public function deleteDraft(Model $model, User $actor, callable $hardDelete): array
+    {
+        $this->assertUsesWorkflow($model);
+
+        if (! in_array($actor->role, ['editor', 'super_admin'], true)) {
+            abort(403, 'Only editors and Super Admin can delete drafts.');
+        }
+
+        if (method_exists($model, 'isRevisionDraft') && $model->isRevisionDraft()) {
+            return [
+                'mode' => 'discarded',
+                'model' => $this->discardRevision($model, $actor),
+            ];
+        }
+
+        if (! method_exists($model, 'isWorkflowDraft') || ! $model->isWorkflowDraft()) {
+            throw new InvalidArgumentException('Only drafts can be deleted. Archive published items instead.');
+        }
+
+        $hardDelete($model);
+
+        return [
+            'mode' => 'deleted',
+            'model' => null,
+        ];
+    }
+
+    public function discardRevision(Model $model, User $actor): Model
+    {
+        $this->assertUsesWorkflow($model);
+
+        if (! in_array($actor->role, ['editor', 'super_admin'], true)) {
+            abort(403, 'Only editors and Super Admin can discard draft updates.');
+        }
+
+        if (! method_exists($model, 'isRevisionDraft') || ! $model->isRevisionDraft()) {
+            throw new InvalidArgumentException('There is no draft update to discard.');
+        }
+
+        $model->forceFill([
+            'pending_revision' => null,
+            'revision_status' => null,
+            'review_notes' => null,
+            'submitted_at' => null,
             'reviewed_by' => $actor->id,
             'reviewed_at' => now(),
         ])->save();
@@ -403,26 +483,42 @@ class ContentWorkflowService
     {
         $this->assertUsesWorkflow($model);
 
-        if ($actor->role !== 'super_admin') {
-            throw new InvalidArgumentException('Only Super Admin can restore archived content.');
+        if (! in_array($actor->role, ['editor', 'super_admin'], true)) {
+            throw new InvalidArgumentException('Only editors and Super Admin can restore archived content.');
         }
 
         if (($model->workflow_status ?? null) !== ContentWorkflowStatus::ARCHIVED) {
             throw new InvalidArgumentException('Only archived items can be restored.');
         }
 
+        if ($actor->role === 'super_admin') {
+            $model->forceFill([
+                'workflow_status' => ContentWorkflowStatus::PUBLISHED,
+                'pending_revision' => null,
+                'revision_status' => null,
+                'reviewed_by' => $actor->id,
+                'reviewed_at' => now(),
+                'review_notes' => null,
+            ])->save();
+
+            $fresh = $model->fresh() ?? $model;
+            $this->userNotificationService->notifyPublishedContent($section, $fresh);
+
+            return $fresh;
+        }
+
         $model->forceFill([
-            'workflow_status' => ContentWorkflowStatus::PUBLISHED,
+            'workflow_status' => ContentWorkflowStatus::PENDING,
             'pending_revision' => null,
             'revision_status' => null,
-            'reviewed_by' => $actor->id,
-            'reviewed_at' => now(),
+            'submitted_at' => now(),
+            'reviewed_by' => null,
+            'reviewed_at' => null,
             'review_notes' => null,
         ])->save();
 
         $fresh = $model->fresh() ?? $model;
-
-        $this->userNotificationService->notifyPublishedContent($section, $fresh);
+        $this->adminNotificationService->notifyContentRestoreRequested($section, $fresh, $actor);
 
         return $fresh;
     }
@@ -434,5 +530,20 @@ class ContentWorkflowService
         if (! $uses) {
             throw new InvalidArgumentException('Model does not support content workflow.');
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function sanitizeHtmlFields(array $data): array
+    {
+        foreach (['body', 'body_en', 'body_tl', 'intro_en', 'intro_tl'] as $field) {
+            if (array_key_exists($field, $data) && is_string($data[$field])) {
+                $data[$field] = SafeHtml::sanitize($data[$field]) ?? '';
+            }
+        }
+
+        return $data;
     }
 }

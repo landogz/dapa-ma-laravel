@@ -11,6 +11,7 @@ use App\Models\AppTranslation;
 use App\Services\AppTranslationService;
 use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Support\AppTranslation\Visual;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,6 +23,7 @@ class AppTranslationAdminController extends Controller
         publish as protected workflowPublish;
         archive as protected workflowArchive;
         restore as protected workflowRestore;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -58,10 +60,7 @@ class AppTranslationAdminController extends Controller
             $keys = Visual::CARD_KEYS;
         }
 
-        $counts = $this->appTranslationService->groupCounts();
-        $counts['bottom_menu'] = AppTranslation::query()
-            ->whereIn('key', Visual::MENU_KEYS)
-            ->count();
+        $actor = $request->user();
 
         return response()->json([
             'status' => true,
@@ -71,11 +70,11 @@ class AppTranslationAdminController extends Controller
                 $group,
                 $active,
                 $keys,
-                $request->user(),
+                $actor,
             )->through(fn (AppTranslation $row) => Visual::formatAdmin($row)),
             'meta' => [
-                'groups' => $this->appTranslationService->groups()->values(),
-                'counts' => $counts,
+                'groups' => $this->appTranslationService->groups($actor)->values(),
+                'counts' => $this->appTranslationService->groupCounts($actor),
                 'icons' => Visual::iconChoices(),
                 'card_keys' => Visual::visualKeys(),
                 'menu_keys' => Visual::MENU_KEYS,
@@ -146,14 +145,14 @@ class AppTranslationAdminController extends Controller
         return $this->workflowRestore($request, $appTranslation);
     }
 
-    public function destroy(AppTranslation $appTranslation): JsonResponse
+    public function destroy(Request $request, AppTranslation $appTranslation): JsonResponse
     {
-        $this->appTranslationService->delete($appTranslation);
+        return $this->workflowDestroy($request, $appTranslation);
+    }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Translation deleted.',
-        ]);
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $this->appTranslationService->delete($model);
     }
 
     /**

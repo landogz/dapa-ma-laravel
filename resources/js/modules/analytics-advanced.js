@@ -4,6 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import Swal from 'sweetalert2';
 import { buildSwalOptions } from './shared/swal-forms';
 import { showErrorToast, showSuccessToast } from './shared/toast';
+import { writeAnimatedMetric } from './analytics-motion';
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -12,6 +13,27 @@ function escapeHtml(value) {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
+}
+
+function formatExportTimestamp(value) {
+    if (!value) {
+        return '';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return String(value);
+    }
+
+    return new Intl.DateTimeFormat('en-PH', {
+        timeZone: 'Asia/Manila',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+    }).format(date);
 }
 
 export function getAnalyticsQueryParams() {
@@ -34,7 +56,13 @@ export function bindAnalyticsTabs() {
             const key = tab.getAttribute('data-analytics-tab');
             tabs.forEach((t) => t.classList.toggle('is-active', t === tab));
             document.querySelectorAll('[data-analytics-panel]').forEach((panel) => {
-                panel.classList.toggle('hidden', panel.getAttribute('data-analytics-panel') !== key);
+                const active = panel.getAttribute('data-analytics-panel') === key;
+                panel.classList.toggle('hidden', !active);
+                if (active) {
+                    panel.classList.remove('is-entering');
+                    void panel.offsetWidth;
+                    panel.classList.add('is-entering');
+                }
             });
             loadAnalyticsTab(key);
             if (key === 'geography') {
@@ -104,10 +132,10 @@ export function renderExtendedKpis(kpis = {}, tooltips = {}) {
         document.querySelectorAll(`[data-analytics-summary="${key}"]`).forEach((el) => {
             if (key === 'avg-session') {
                 const secs = Number(value) || 0;
-                el.textContent = secs > 0 ? `${Math.round(secs)}s` : '—';
+                writeAnimatedMetric(el, secs > 0 ? `${Math.round(secs)}s` : '—');
                 return;
             }
-            el.textContent = value == null ? '—' : Number(value).toLocaleString();
+            writeAnimatedMetric(el, value == null ? '—' : Number(value).toLocaleString());
         });
     });
 
@@ -1231,20 +1259,84 @@ async function loadAlertsTab() {
     });
 }
 
-async function loadReportsTab() {
+const EXPORT_REPORT_LABELS = {
+    summary: 'Overview (detailed + charts)',
+    traffic: 'Overview (detailed + charts)',
+    events: 'Event log (detailed)',
+    demographics: 'Demographics (detailed + charts)',
+    geography: 'Demographics (detailed + charts)',
+    users: 'Users (detailed)',
+    user_activity: 'Users (detailed)',
+    sessions: 'Users (detailed)',
+    leaderboard: 'Top users leaderboard (detailed + charts)',
+    retention: 'Retention cohorts (detailed)',
+    mobile: 'Mobile / devices (detailed + charts)',
+    content: 'Content performance (detailed + charts)',
+    posts: 'Content performance (detailed + charts)',
+    journeys: 'Journeys / funnel (detailed + charts)',
+    alerts: 'Anomaly alerts (detailed)',
+    complete: 'Complete pack (all sections + charts)',
+};
+
+const EXPORT_STATUS_LABELS = {
+    pending: 'Preparing…',
+    processing: 'Generating file…',
+    ready: 'Ready',
+    failed: 'Failed',
+};
+
+let exportHistoryPoll = null;
+
+function exportReportLabel(type) {
+    return EXPORT_REPORT_LABELS[type] || String(type || 'Report').replaceAll('_', ' ');
+}
+
+async function exportDownloadError(error) {
+    const data = error.response?.data;
+    if (data instanceof Blob) {
+        try {
+            const parsed = JSON.parse(await data.text());
+            return parsed.message || 'Download failed.';
+        } catch {
+            return 'Download failed.';
+        }
+    }
+
+    return error.response?.data?.message ?? 'Download failed.';
+}
+
+function stopExportHistoryPoll() {
+    if (exportHistoryPoll) {
+        window.clearTimeout(exportHistoryPoll);
+        exportHistoryPoll = null;
+    }
+}
+
+async function loadReportsTab({ silent = false } = {}) {
     const history = document.getElementById('analytics-exports-history');
     if (!history) return;
     const { data } = await axios.get('/admin/analytics/exports');
     const rows = data.data?.data ?? [];
-    history.innerHTML = rows.length ? rows.map((row) => `
+    const waiting = rows.some((row) => row.status === 'pending' || row.status === 'processing');
+
+    history.innerHTML = rows.length ? rows.map((row) => {
+        const status = String(row.status || 'pending');
+        const failed = status === 'failed';
+        const ready = status === 'ready';
+        const fileName = row.download_name || `analytics-export-${row.id}.${row.format || 'csv'}`;
+        const statusLabel = EXPORT_STATUS_LABELS[status] || status;
+
+        return `
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 py-2 text-sm">
-            <div>
-                <p class="font-medium">${escapeHtml(row.report_type)} · ${escapeHtml(row.format)}</p>
-                <p class="text-xs text-slate-500">${escapeHtml(row.status)} · ${escapeHtml(String(row.created_at || '').replace('T', ' ').slice(0, 19))}</p>
+            <div class="min-w-0">
+                <p class="font-medium">${escapeHtml(exportReportLabel(row.report_type))} · ${escapeHtml(String(row.format || '').toUpperCase())}</p>
+                <p class="text-xs text-slate-500">${escapeHtml(statusLabel)} · ${escapeHtml(formatExportTimestamp(row.created_at))}</p>
+                ${failed && row.error_message ? `<p class="mt-1 text-xs text-[#CE2028]">${escapeHtml(row.error_message)}</p>` : ''}
             </div>
-            ${row.status === 'ready' ? `<button type="button" class="admin-secondary-button min-h-11 px-3 text-xs" data-analytics-export-download="${row.id}">Download</button>` : ''}
+            ${ready ? `<button type="button" class="admin-secondary-button min-h-11 px-3 text-xs" data-analytics-export-download="${row.id}" data-analytics-export-name="${escapeHtml(fileName)}">Download</button>` : `<span class="text-xs text-slate-400">${escapeHtml(statusLabel)}</span>`}
         </div>
-    `).join('') : '<p class="text-sm text-slate-400">No export history yet.</p>';
+    `;
+    }).join('') : '<p class="text-sm text-slate-400">No export history yet.</p>';
 
     history.querySelectorAll('[data-analytics-export-download]').forEach((btn) => {
         btn.addEventListener('click', async () => {
@@ -1254,14 +1346,21 @@ async function loadReportsTab() {
                 const url = window.URL.createObjectURL(response.data);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `analytics-export-${id}`;
+                link.download = btn.getAttribute('data-analytics-export-name') || `analytics-export-${id}`;
+                document.body.appendChild(link);
                 link.click();
+                link.remove();
                 window.URL.revokeObjectURL(url);
             } catch (error) {
-                showErrorToast(error.response?.data?.message ?? 'Download failed.', 'Analytics');
+                showErrorToast(await exportDownloadError(error), 'Analytics');
             }
         });
     });
+
+    stopExportHistoryPoll();
+    if (waiting) {
+        exportHistoryPoll = window.setTimeout(() => loadReportsTab({ silent: true }), silent ? 2500 : 1200);
+    }
 }
 
 export function bindAdvancedAnalyticsActions(reloadOverview) {
@@ -1290,7 +1389,7 @@ export function bindAdvancedAnalyticsActions(reloadOverview) {
                 from: params.from,
                 to: params.to,
             });
-            showSuccessToast('Export queued.');
+            showSuccessToast('Preparing export…');
             loadReportsTab();
         } catch (error) {
             showErrorToast(error.response?.data?.message ?? 'Unable to queue export.', 'Analytics');

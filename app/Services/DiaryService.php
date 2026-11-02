@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\DiaryEntry;
 use App\Models\User;
 use App\Repositories\DiaryRepository;
+use App\Support\Html\SafeHtml;
 use App\Support\Journal\CustomFeelings;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -46,7 +47,7 @@ class DiaryService
             'feelings'  => $this->normalizeFeelings($data['feelings'] ?? null),
             'impact'    => $data['impact'] ?? null,
             'gratitude' => $this->nullableTrim($data['gratitude'] ?? null),
-            'body_html' => $this->nullableTrim($data['body_html'] ?? null),
+            'body_html' => SafeHtml::sanitize($this->nullableTrim($data['body_html'] ?? null)),
         ];
 
         $this->applyImagePayload(null, $data, $payload);
@@ -77,7 +78,7 @@ class DiaryService
             $payload['gratitude'] = $this->nullableTrim($data['gratitude']);
         }
         if (array_key_exists('body_html', $data)) {
-            $payload['body_html'] = $this->nullableTrim($data['body_html']);
+            $payload['body_html'] = SafeHtml::sanitize($this->nullableTrim($data['body_html']));
         }
 
         $this->applyImagePayload($entry, $data, $payload);

@@ -82,6 +82,26 @@ export function buildRehabMapPickerHtml() {
     `;
 }
 
+function scheduleMapResize(map) {
+    if (!map || typeof map.resize !== 'function') {
+        return;
+    }
+
+    const run = () => {
+        if (typeof map.resize === 'function') {
+            map.resize();
+        }
+    };
+
+    requestAnimationFrame(() => {
+        run();
+        requestAnimationFrame(run);
+    });
+    map.once('load', run);
+    window.setTimeout(run, 80);
+    window.setTimeout(run, 320);
+}
+
 function bindPickerMarkerEvents(marker, applyLocation) {
     marker.on('dragend', async () => {
         const { lat: nextLat, lng: nextLng } = marker.getLngLat();
@@ -181,6 +201,7 @@ export function initRehabMapPicker({ lat, lng, color, onLocationChange } = {}) {
     });
 
     bindPickerMarkerEvents(marker, applyLocation);
+    scheduleMapResize(map);
 
     activePicker = {
         map,

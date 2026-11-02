@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\SendNotificationRequest;
 use App\Models\Notification;
 use App\Services\ContentWorkflow\ContentWorkflowService;
 use App\Services\NotificationService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
@@ -20,6 +21,7 @@ class NotificationAdminController extends Controller
         reject as protected workflowReject;
         archive as protected workflowArchive;
         restore as protected workflowRestore;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -99,15 +101,14 @@ class NotificationAdminController extends Controller
         return $this->workflowRestore($request, $notification);
     }
 
-    public function destroy(Notification $notification): JsonResponse
+    public function destroy(Request $request, Notification $notification): JsonResponse
     {
-        $this->notificationService->delete($notification->id);
+        return $this->workflowDestroy($request, $notification);
+    }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Campaign history deleted. User inboxes were not changed.',
-            'data' => null,
-        ]);
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $this->notificationService->delete((int) $model->getKey());
     }
 
     public function send(SendNotificationRequest $request): JsonResponse

@@ -3,6 +3,8 @@
 use App\Http\Controllers\SharePageController;
 use App\Models\User;
 use App\Support\AdminPage;
+use App\Support\Auth\DemoLogin;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -41,16 +43,10 @@ Route::get('/og-image/{type}/{key}.jpg', [SharePageController::class, 'ogImage']
     ->where('key', '[0-9]+|[0-9a-fA-F-]{36}')
     ->name('share.og-image');
 
-Route::get('/admin', function () {
-    return redirect('/admin/dashboard');
-});
-
-Route::get('/admin/login', function () {
-    $showDemoAccounts = filter_var(config('dape.show_demo_login'), FILTER_VALIDATE_BOOL);
-
+Route::get('/admin/login', function (Request $request) {
     return view('admin-login', [
         'hasSuperAdmin' => User::query()->where('role', 'super_admin')->exists(),
-        'demoAccounts' => $showDemoAccounts ? config('dape.demo_login_accounts', []) : [],
+        'demoAccounts' => DemoLogin::accountsFor($request),
     ]);
 });
 
@@ -67,6 +63,11 @@ Route::get('/admin/register', function () {
     }
 
     return view('admin-register');
+});
+
+Route::middleware('admin.page')->group(function (): void {
+Route::get('/admin', function () {
+    return redirect('/admin/dashboard');
 });
 
 Route::get('/admin/dashboard', fn () => AdminPage::render('admin.dashboard.index', 'dashboard', 'Dashboard'));
@@ -113,3 +114,4 @@ Route::get('/admin/audit-trail', fn () => AdminPage::render('admin.audit-trail.i
 Route::get('/admin/app-options', fn () => redirect('/admin/lookups', 301));
 
 Route::get('/admin/profile', fn () => AdminPage::render('admin.profile.index', 'profile', 'Edit Profile'));
+});

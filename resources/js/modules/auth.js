@@ -1,11 +1,14 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { showSuccessToast } from './shared/toast';
+import { showErrorToast, showSuccessToast } from './shared/toast';
 import { bindPasswordToggles } from './shared/password-toggle';
 import { assertPasswordFields, bindPasswordPolicyFields } from './password-validation';
 
 const TOKEN_KEY = 'dape_ma_admin_token';
 const USER_KEY = 'dape_ma_admin_user';
+const VERIFIED_KEY = 'dape_ma_admin_verified';
+const GATE_HOP_KEY = 'dape_admin_gate_hop';
+const OTP_RESEND_SECONDS = 45;
 
 export function hydrateApiAuth() {
     const token = sessionStorage.getItem(TOKEN_KEY);
@@ -16,7 +19,8 @@ export function hydrateApiAuth() {
 }
 
 export function isAuthenticated() {
-    return Boolean(sessionStorage.getItem(TOKEN_KEY));
+    return Boolean(sessionStorage.getItem(TOKEN_KEY))
+        && sessionStorage.getItem(VERIFIED_KEY) === '1';
 }
 
 export function getStoredUser() {
@@ -33,9 +37,10 @@ export function getStoredUser() {
     }
 }
 
-export function persistAuth(payload) {
+export function persistAuth(payload, { pending = false } = {}) {
     sessionStorage.setItem(TOKEN_KEY, payload.token);
-    sessionStorage.setItem(USER_KEY, JSON.stringify(payload.user));
+    sessionStorage.setItem(USER_KEY, JSON.stringify(payload.user ?? {}));
+    sessionStorage.setItem(VERIFIED_KEY, pending ? '0' : '1');
     axios.defaults.headers.common.Authorization = `Bearer ${payload.token}`;
 }
 
@@ -52,16 +57,35 @@ export function mergeStoredUser(updates) {
 export function clearAuth() {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(VERIFIED_KEY);
     delete axios.defaults.headers.common.Authorization;
 }
 
-export function redirectIfAuthenticated() {
-    if (isAuthenticated()) {
-        window.location.href = '/admin';
+export async function redirectIfAuthenticated() {
+    if (!isAuthenticated()) {
+        sessionStorage.removeItem(GATE_HOP_KEY);
+        return;
+    }
+
+    if (sessionStorage.getItem(GATE_HOP_KEY) === '1') {
+        sessionStorage.removeItem(GATE_HOP_KEY);
+        return;
+    }
+
+    sessionStorage.setItem(GATE_HOP_KEY, '1');
+
+    try {
+        await axios.get('/auth/me');
+        window.location.replace('/admin/dashboard');
+    } catch {
+        sessionStorage.removeItem(GATE_HOP_KEY);
+        clearAuth();
     }
 }
 
 export function requireAuthentication() {
+    sessionStorage.removeItem(GATE_HOP_KEY);
+
     if (!isAuthenticated()) {
         window.location.href = '/admin/login';
     }
@@ -76,6 +100,7 @@ export function bindLoginForm() {
 
     bindPasswordToggles(form);
     bindDemoLoginAccounts(form);
+    bindLoginOtpFlow();
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -91,10 +116,7 @@ export function bindLoginForm() {
                 email: formData.get('email'),
                 password: formData.get('password'),
             });
-
-            window.location.href = payload?.data?.user?.must_change_password
-                ? '/admin/profile?force_password=1'
-                : '/admin';
+            await continueAfterLogin(payload);
         } catch (error) {
             showLoginFailure(form, error);
             setBusy(submitButton, false, 'Sign In');
@@ -104,8 +126,22 @@ export function bindLoginForm() {
 
 async function submitLogin({ email, password }) {
     const response = await axios.post('/auth/login', { email, password });
-    persistAuth(response.data.data);
+    const pending = Boolean(response.data?.data?.requires_verification);
+    persistAuth(response.data.data, { pending });
     return response.data;
+}
+
+async function continueAfterLogin(payload) {
+    if (payload?.data?.requires_verification) {
+        showLoginOtp(payload?.data?.user?.email ?? '');
+        const submitButton = document.querySelector('#admin-login-form [type="submit"]');
+        setBusy(submitButton, false, 'Sign In');
+        return;
+    }
+
+    window.location.replace(payload?.data?.user?.must_change_password
+        ? '/admin/profile?force_password=1'
+        : '/admin/dashboard');
 }
 
 function bindDemoLoginAccounts(form) {
@@ -133,9 +169,7 @@ function bindDemoLoginAccounts(form) {
             try {
                 const payload = await submitLogin({ email, password });
                 showSuccessToast(`Signed in as ${label}`, 'Welcome');
-                window.location.href = payload?.data?.user?.must_change_password
-                    ? '/admin/profile?force_password=1'
-                    : '/admin';
+                await continueAfterLogin(payload);
             } catch (error) {
                 showLoginFailure(form, error);
             } finally {
@@ -144,6 +178,193 @@ function bindDemoLoginAccounts(form) {
             }
         });
     });
+}
+
+function bindLoginOtpFlow() {
+    const loginView = document.getElementById('admin-login-view');
+    const otpView = document.getElementById('admin-login-otp-view');
+    const form = document.getElementById('login-otp-form');
+
+    if (!loginView || !otpView || !form) {
+        return;
+    }
+
+    const digits = [...otpView.querySelectorAll('[data-login-otp-digit]')];
+    const backButton = otpView.querySelector('[data-login-otp-back]');
+    const resendWait = otpView.querySelector('[data-login-otp-resend-wait]');
+    const resendButton = otpView.querySelector('[data-login-otp-resend]');
+    const sentTo = otpView.querySelector('[data-login-otp-sent-to]');
+    let secondsLeft = 0;
+    let timerId = null;
+    let verifying = false;
+
+    window.showLoginOtpView = (email) => {
+        loginView.classList.add('hidden');
+        document.getElementById('admin-forgot-view')?.classList.add('hidden');
+        otpView.classList.remove('hidden');
+        if (sentTo) {
+            sentTo.textContent = email ? `We sent a code to ${email}.` : 'We sent a code to your email.';
+        }
+        digits.forEach((input) => {
+            input.value = '';
+        });
+        clearOtpError();
+        startTimer();
+        digits[0]?.focus();
+        syncVerifyButton();
+    };
+
+    backButton?.addEventListener('click', async () => {
+        stopTimer();
+        try {
+            await axios.post('/auth/logout');
+        } catch {
+            // Ignore stale pending tokens.
+        }
+        clearAuth();
+        otpView.classList.add('hidden');
+        loginView.classList.remove('hidden');
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await verifyOtp();
+    });
+
+    digits.forEach((input, index) => {
+        input.addEventListener('input', (event) => {
+            const value = event.target.value.replace(/\D/g, '').slice(-1);
+            event.target.value = value;
+            if (value && digits[index + 1]) {
+                digits[index + 1].focus();
+            }
+            syncVerifyButton();
+            if (currentOtp().length === digits.length) {
+                verifyOtp();
+            }
+        });
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Backspace' && !event.target.value && digits[index - 1]) {
+                digits[index - 1].focus();
+            }
+        });
+        input.addEventListener('paste', (event) => {
+            event.preventDefault();
+            const pasted = String(event.clipboardData?.getData('text') ?? '').replace(/\D/g, '').slice(0, digits.length);
+            pasted.split('').forEach((char, offset) => {
+                if (digits[offset]) {
+                    digits[offset].value = char;
+                }
+            });
+            digits[Math.min(pasted.length, digits.length) - 1]?.focus();
+            syncVerifyButton();
+            if (pasted.length === digits.length) {
+                verifyOtp();
+            }
+        });
+    });
+
+    resendButton?.addEventListener('click', async () => {
+        try {
+            await axios.post('/auth/login-code');
+            showSuccessToast('A new code is on its way.', 'Check your email');
+            startTimer();
+        } catch (error) {
+            showErrorToast(error.response?.data?.message ?? 'Unable to resend the code.', 'Verification');
+        }
+    });
+
+    function currentOtp() {
+        return digits.map((input) => input.value).join('');
+    }
+
+    function syncVerifyButton() {
+        const button = form.querySelector('[type="submit"]');
+        if (!button || button.getAttribute('aria-busy') === 'true') {
+            return;
+        }
+        button.disabled = currentOtp().length !== digits.length;
+    }
+
+    function clearOtpError() {
+        const errorLabel = document.getElementById('login-otp-error');
+        if (!errorLabel) {
+            return;
+        }
+        errorLabel.textContent = '';
+        errorLabel.classList.remove('is-visible');
+    }
+
+    async function verifyOtp() {
+        if (verifying || currentOtp().length !== digits.length) {
+            return;
+        }
+        verifying = true;
+        clearOtpError();
+        const button = form.querySelector('[type="submit"]');
+        setBusy(button, true, 'Verifying...');
+        try {
+            const { data } = await axios.post('/auth/verify-login-code', {
+                code: currentOtp(),
+            });
+            persistAuth(data.data);
+            window.location.href = data?.data?.user?.must_change_password
+                ? '/admin/profile?force_password=1'
+                : '/admin';
+        } catch (error) {
+            const message = error.response?.data?.message ?? 'That code does not match. Check your email and try again.';
+            const errorLabel = document.getElementById('login-otp-error');
+            if (errorLabel) {
+                errorLabel.textContent = message;
+                errorLabel.classList.add('is-visible');
+            }
+            setBusy(button, false, 'Verify Code');
+            syncVerifyButton();
+        } finally {
+            verifying = false;
+        }
+    }
+
+    function startTimer() {
+        stopTimer();
+        secondsLeft = OTP_RESEND_SECONDS;
+        renderTimer();
+        timerId = window.setInterval(() => {
+            secondsLeft -= 1;
+            if (secondsLeft <= 0) {
+                secondsLeft = 0;
+                stopTimer();
+            }
+            renderTimer();
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerId) {
+            window.clearInterval(timerId);
+            timerId = null;
+        }
+    }
+
+    function renderTimer() {
+        const waiting = secondsLeft > 0;
+        if (resendWait) {
+            const minutes = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+            const seconds = String(secondsLeft % 60).padStart(2, '0');
+            resendWait.textContent = `Resend in ${minutes}:${seconds}`;
+            resendWait.classList.toggle('hidden', !waiting);
+        }
+        if (resendButton) {
+            resendButton.classList.toggle('hidden', waiting);
+            resendButton.disabled = waiting;
+        }
+    }
+}
+
+function showLoginOtp(email) {
+    if (typeof window.showLoginOtpView === 'function') {
+        window.showLoginOtpView(email);
+    }
 }
 
 export function bindRegisterForm() {
@@ -194,12 +415,10 @@ export function bindRegisterForm() {
         const acceptedPrivacyNotice = Boolean(form.querySelector('[name="accepted_privacy_notice"]')?.checked);
 
         if (!acceptedTerms || !acceptedPrivacyPolicy || !acceptedPrivacyNotice) {
-            await Swal.fire({
-                icon: 'warning',
-                title: 'Agreements required',
-                text: 'Please accept the Terms of Use, Privacy Policy, and Privacy Notice before continuing.',
-                confirmButtonColor: '#055498',
-            });
+            showErrorToast(
+                'Please accept the Terms of Use, Privacy Policy, and Privacy Notice before continuing.',
+                'Agreements required',
+            );
             return;
         }
 
@@ -211,7 +430,7 @@ export function bindRegisterForm() {
         setBusy(submitButton, true, 'Creating account...');
 
         try {
-            const response = await axios.post('/auth/register', {
+            const response = await axios.post('/auth/bootstrap-admin', {
                 name: formData.get('name'),
                 email: formData.get('email'),
                 password: formData.get('password'),
@@ -222,24 +441,14 @@ export function bindRegisterForm() {
             });
 
             persistAuth(response.data.data);
-
-            await Swal.fire({
-                icon: 'success',
-                title: 'Admin ready',
-                text: response.data.message,
-                confirmButtonColor: '#055498',
-            });
-
-            window.location.href = '/admin';
+            showSuccessToast(response.data.message ?? 'Administrator account created.', 'Admin ready');
+            window.location.replace('/admin/dashboard');
         } catch (error) {
             applyFieldErrors(form, error.response?.data?.errors ?? {});
-
-            await Swal.fire({
-                icon: 'error',
-                title: 'Registration failed',
-                text: buildErrorPrompt(error.response?.data?.errors, error.response?.data?.message, 'Unable to create the administrator account.'),
-                confirmButtonColor: '#CE2028',
-            });
+            showErrorToast(
+                buildErrorPrompt(error.response?.data?.errors, error.response?.data?.message, 'Unable to create the administrator account.'),
+                'Registration failed',
+            );
         } finally {
             setBusy(submitButton, false, 'Create Administrator');
             syncConsent();
@@ -367,12 +576,7 @@ async function showLegalPreview(slug) {
             width: '36rem',
         });
     } catch (error) {
-        await Swal.fire({
-            icon: 'error',
-            title: 'Unable to load document',
-            text: error.response?.data?.message ?? 'Please try again.',
-            confirmButtonColor: '#CE2028',
-        });
+        showErrorToast(error.response?.data?.message ?? 'Please try again.', 'Unable to load document');
     }
 }
 

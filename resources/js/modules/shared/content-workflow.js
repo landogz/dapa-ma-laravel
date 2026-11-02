@@ -5,6 +5,7 @@ import {
     applyAdminFilterTabCounts,
     bindAdminFilterTabs,
     countByKey,
+    hideEmptyFilterTabs,
     renderAdminFilterTabs,
     setAdminFilterTab,
 } from './filter-tabs';
@@ -97,8 +98,7 @@ export function itemHasPublisherPendingReview(item = null) {
         return false;
     }
 
-    // Published live + staged update (draft or pending) needs Approve / Revision.
-    if (isPublishedUpdateAwaitingPublisher(item)) {
+    if (isPublishedUpdatePending(item)) {
         return true;
     }
 
@@ -252,7 +252,14 @@ export function workflowFilterTabs(role = currentAdminRole()) {
         { value: WORKFLOW_DRAFT, label: 'Draft', icon: 'fas fa-pen', hint: 'Editor drafts & rejected' },
         { value: WORKFLOW_PENDING, label: 'Pending', icon: 'fas fa-clock', hint: 'Awaiting publisher' },
         { value: WORKFLOW_PUBLISHED, label: 'Published', icon: 'fas fa-circle-check', hint: 'Live in the app' },
-        { value: WORKFLOW_ARCHIVED, label: 'Archived', icon: 'fas fa-box-archive', hint: 'Hidden — restore anytime' },
+        {
+            value: WORKFLOW_ARCHIVED,
+            label: 'Archived',
+            icon: 'fas fa-box-archive',
+            hint: isEditorRole(role)
+                ? 'Hidden — restore for publisher approval'
+                : 'Hidden — restore anytime',
+        },
     ];
 }
 
@@ -346,21 +353,47 @@ export function workflowActionDefs(item, {
         }
     }
 
-    if (superAdmin && status === WORKFLOW_ARCHIVED) {
+    const editor = isEditorRole(role);
+    const canArchive = (editor || superAdmin)
+        && status !== WORKFLOW_ARCHIVED
+        && !(editor && status === WORKFLOW_DRAFT);
+    const canRestore = (editor || superAdmin) && status === WORKFLOW_ARCHIVED;
+
+    if (canRestore) {
         actions.push({
             key: 'restore',
             label: 'Restore',
-            tooltip: 'Restore and publish',
+            tooltip: editor
+                ? 'Submit restore for publisher approval'
+                : 'Restore and publish',
             icon: 'fas fa-rotate-left',
             className: 'admin-table-action-primary',
         });
-    } else if (superAdmin && status !== WORKFLOW_ARCHIVED) {
+    } else if (canArchive) {
         actions.push({
             key: 'archive',
             label: 'Archive',
             tooltip: 'Archive (hide from app)',
             icon: 'fas fa-box-archive',
             className: 'admin-table-action-warning',
+        });
+    }
+
+    if (canCreateWorkflowDraft(role) && isPublishedUpdateDraft(item)) {
+        actions.push({
+            key: 'discard',
+            label: 'Discard update',
+            tooltip: 'Discard unpublished update',
+            icon: 'fas fa-trash',
+            className: 'admin-table-action-danger',
+        });
+    } else if (canCreateWorkflowDraft(role) && status === WORKFLOW_DRAFT) {
+        actions.push({
+            key: 'delete',
+            label: 'Delete',
+            tooltip: 'Delete draft',
+            icon: 'fas fa-trash',
+            className: 'admin-table-action-danger',
         });
     }
 
@@ -395,11 +428,15 @@ export async function archiveContent(basePath, id, { onSuccess } = {}) {
 }
 
 export async function restoreContent(basePath, id, { onSuccess } = {}) {
+    const needsApproval = isEditorRole();
+
     const { isConfirmed } = await confirmWithSwal({
         icon: 'question',
-        title: 'Restore this item?',
-        text: 'It will be published again and visible in the mobile app.',
-        confirmButtonText: 'Restore',
+        title: needsApproval ? 'Request restore?' : 'Restore this item?',
+        text: needsApproval
+            ? 'This sends the archived item to a Publisher for approval. It will not go live until they publish it.'
+            : 'It will be published again and visible in the mobile app.',
+        confirmButtonText: needsApproval ? 'Submit for approval' : 'Restore',
     });
 
     if (!isConfirmed) {
@@ -408,7 +445,12 @@ export async function restoreContent(basePath, id, { onSuccess } = {}) {
 
     try {
         const { data } = await axios.put(`${basePath}/${id}/restore`);
-        showSuccessToast(data.message ?? 'Restored.', 'Restored');
+        showSuccessToast(
+            data.message ?? (needsApproval
+                ? 'Restore submitted for publisher review.'
+                : 'Restored.'),
+            needsApproval ? 'Submitted for review' : 'Restored',
+        );
         onSuccess?.(data.data);
         return true;
     } catch ({ response }) {
@@ -470,6 +512,35 @@ export async function publishContent(basePath, id, { onSuccess, isPublishedUpdat
         return true;
     } catch ({ response }) {
         showErrorToast(response?.data?.message ?? 'Publish failed.', 'Error');
+        return false;
+    }
+}
+
+export async function deleteDraftContent(basePath, id, { onSuccess, isPublishedUpdate = false } = {}) {
+    const { isConfirmed } = await confirmWithSwal({
+        icon: 'warning',
+        title: isPublishedUpdate ? 'Discard this draft update?' : 'Delete this draft?',
+        text: isPublishedUpdate
+            ? 'The live published version stays. Only the unpublished update will be removed.'
+            : 'This draft will be permanently deleted. This cannot be undone.',
+        confirmButtonText: isPublishedUpdate ? 'Discard update' : 'Delete draft',
+        danger: true,
+    });
+
+    if (!isConfirmed) {
+        return false;
+    }
+
+    try {
+        const { data } = await axios.delete(`${basePath}/${id}`);
+        showSuccessToast(
+            data.message ?? (isPublishedUpdate ? 'Draft update discarded.' : 'Draft deleted.'),
+            isPublishedUpdate ? 'Update discarded' : 'Deleted',
+        );
+        onSuccess?.(data.data);
+        return true;
+    } catch ({ response }) {
+        showErrorToast(response?.data?.message ?? 'Delete failed.', 'Error');
         return false;
     }
 }
@@ -575,20 +646,16 @@ const WORKFLOW_ACTION_HANDLERS = {
     reject: 'rejectWorkflow',
     archive: 'archiveWorkflow',
     restore: 'restoreWorkflow',
+    delete: 'deleteDraft',
+    discard: 'discardWorkflow',
 };
 
 export function buildWorkflowTableActions(item, globalName, {
     basePath,
     extraBefore = [],
     extraAfter = [],
-    includeDelete = false,
 } = {}) {
-    let defs = workflowActionDefs(item, { basePath, id: item?.id });
-
-    // Legacy flag — permanent delete is no longer exposed in the UI.
-    if (!includeDelete) {
-        defs = defs.filter((def) => def.key !== 'delete');
-    }
+    const defs = workflowActionDefs(item, { basePath, id: item?.id });
 
     const mapped = defs.map((def) => {
         const handler = WORKFLOW_ACTION_HANDLERS[def.key] ?? def.key;
@@ -613,7 +680,12 @@ export function attachWorkflowWindowHandlers(globalName, basePath, reloadFn) {
     root.rejectWorkflow = (id) => rejectContent(basePath, id, { onSuccess: reloadFn });
     root.archiveWorkflow = (id) => archiveContent(basePath, id, { onSuccess: reloadFn });
     root.restoreWorkflow = (id) => restoreContent(basePath, id, { onSuccess: reloadFn });
-    // Back-compat: older onclick="remove" handlers archive instead of hard-deleting.
+    root.deleteDraft = (id) => deleteDraftContent(basePath, id, { onSuccess: reloadFn });
+    root.discardWorkflow = (id) => deleteDraftContent(basePath, id, {
+        onSuccess: reloadFn,
+        isPublishedUpdate: true,
+    });
+    // Back-compat: older onclick="remove" handlers archive published items.
     root.remove = root.archiveWorkflow;
     window[globalName] = root;
 }
@@ -776,6 +848,16 @@ export function ensureWorkflowStatusFilter({
     return root;
 }
 
+export function applyQueueAwareFilterCounts(root, rows, keyFn) {
+    const list = Array.isArray(rows) ? rows : [];
+    const counts = typeof keyFn === 'function' ? countByKey(list, keyFn) : {};
+    applyAdminFilterTabCounts(root, counts);
+    if (isPublisherRole()) {
+        hideEmptyFilterTabs(root, counts);
+    }
+    return counts;
+}
+
 export function applyWorkflowStatusCounts(tabsRoot, rows) {
     const root = tabsRoot
         || document.querySelector('[data-workflow-status-tabs]');
@@ -787,7 +869,14 @@ export function applyWorkflowStatusCounts(tabsRoot, rows) {
     const counts = countByKey(list, (row) => String(row.workflow_status || WORKFLOW_DRAFT));
     // "All" excludes archived.
     counts[''] = list.filter((row) => String(row.workflow_status || WORKFLOW_DRAFT) !== WORKFLOW_ARCHIVED).length;
+    counts[WORKFLOW_PENDING] = list.filter((row) => (
+        String(row.workflow_status || WORKFLOW_DRAFT) === WORKFLOW_PENDING
+        || isPublishedUpdatePending(row)
+    )).length;
     applyAdminFilterTabCounts(root, counts);
+    if (isPublisherRole()) {
+        hideEmptyFilterTabs(root, counts);
+    }
 }
 
 function escapeWorkflowHtml(value) {

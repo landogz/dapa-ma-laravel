@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\UpdateCareSupportResourceRequest;
 use App\Models\CareSupportResource;
 use App\Services\CareSupportResourceService;
 use App\Services\ContentWorkflow\ContentWorkflowService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,7 @@ class CareSupportResourceAdminController extends Controller
         publish as protected workflowPublish;
         archive as protected workflowArchive;
         restore as protected workflowRestore;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -120,13 +122,13 @@ class CareSupportResourceAdminController extends Controller
         return $this->workflowRestore($request, $careSupportResource);
     }
 
-    public function destroy(CareSupportResource $careSupportResource): JsonResponse
+    public function destroy(Request $request, CareSupportResource $careSupportResource): JsonResponse
     {
-        $this->careSupportResourceService->delete($careSupportResource);
+        return $this->workflowDestroy($request, $careSupportResource);
+    }
 
-        return response()->json([
-            'status'  => true,
-            'message' => 'Care support resource deleted.',
-        ]);
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $this->careSupportResourceService->delete($model);
     }
 }

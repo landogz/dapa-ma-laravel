@@ -93,7 +93,21 @@ export function applyAdminFilterTabCounts(root, counts = {}) {
 
         const value = tab.dataset.filterValue ?? '';
         const count = counts[value];
-        countEl.textContent = count == null || Number.isNaN(Number(count)) ? '' : String(count);
+        const numeric = Number(count);
+        countEl.textContent = count == null || Number.isNaN(numeric) || numeric < 1 ? '' : String(count);
+    });
+}
+
+export function hideEmptyFilterTabs(root, counts = {}) {
+    if (!root) {
+        return;
+    }
+
+    root.querySelectorAll('[data-filter-value]').forEach((tab) => {
+        const value = tab.dataset.filterValue ?? '';
+        const count = Number(counts[value] ?? 0);
+        const keep = count > 0 || tab.classList.contains('is-active');
+        tab.classList.toggle('hidden', !keep);
     });
 }
 
@@ -204,7 +218,7 @@ function buildAdminFilterTabCopy(item) {
 function buildAdminFilterTabCount(item) {
     const count = document.createElement('span');
     count.className = 'admin-filter-tab-count';
-    if (item.count != null && item.count !== '') {
+    if (item.count != null && item.count !== '' && Number(item.count) > 0) {
         count.textContent = String(item.count);
     }
     return count;

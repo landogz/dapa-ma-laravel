@@ -12,6 +12,7 @@ import {
     applyWorkflowStatusCounts,
     guardWorkflowCreateAction,
     isPublisherReviewOnly,
+    isPublisherRole,
     openItemFromQuery,
     publisherReviewSwalButtons,
     renderReviewNotesBanner,
@@ -156,13 +157,12 @@ export function loadAppTranslations(search = '') {
             translationLogoKeys = data.meta?.logo_keys ?? translationLogoKeys;
             translationPageKeys = data.meta?.page_keys ?? translationPageKeys;
             const requestedGroup = translationsGroupFilter;
-            if (!isKnownGroup(translationsGroupFilter)) {
-                translationsGroupFilter = firstAvailableGroup();
-                if (translationsGroupFilter !== requestedGroup) {
-                    renderTranslationGroupTabs();
-                    loadAppTranslations(search);
-                    return;
-                }
+            const nextGroup = firstAvailableGroup();
+            if (nextGroup && nextGroup !== requestedGroup) {
+                translationsGroupFilter = nextGroup;
+                renderTranslationGroupTabs();
+                loadAppTranslations(search);
+                return;
             }
             const allRows = sortTranslationRows(data.data?.data ?? []);
             const rows = filterByWorkflowStatus(allRows, workflowStatusFilter);
@@ -212,15 +212,28 @@ export function removeAppTranslation(id) {
     });
 }
 
-function isVirtualGroup(group) {
-    return Boolean(GROUP_META[group]?.virtual);
-}
-
 function isKnownGroup(group) {
     return Boolean(GROUP_META[group]) || translationGroups.includes(group);
 }
 
+function groupHasVisibleRows(group) {
+    return (translationGroupCounts[group] ?? 0) > 0;
+}
+
 function firstAvailableGroup() {
+    if (isPublisherRole()) {
+        if (groupHasVisibleRows(translationsGroupFilter)) {
+            return translationsGroupFilter;
+        }
+
+        const ordered = [
+            ...GROUP_SECTIONS.flatMap((section) => section.groups.map((group) => group.value)),
+            ...translationGroups,
+        ];
+
+        return ordered.find((group) => groupHasVisibleRows(group)) || translationsGroupFilter || 'bottom_menu';
+    }
+
     if (isKnownGroup(translationsGroupFilter)) {
         return translationsGroupFilter;
     }
@@ -242,8 +255,17 @@ function renderTranslationGroupTabs() {
     }
 
     tabs.replaceChildren();
+    const publisherQueue = isPublisherRole();
     GROUP_SECTIONS.forEach((section) => {
-        const visible = section.groups.filter((group) => group.virtual || translationGroups.includes(group.value));
+        const visible = section.groups.filter((group) => {
+            if (!(group.virtual || translationGroups.includes(group.value))) {
+                return false;
+            }
+            if (publisherQueue && !groupHasVisibleRows(group.value)) {
+                return false;
+            }
+            return true;
+        });
         if (visible.length === 0) {
             return;
         }
@@ -257,11 +279,12 @@ function renderTranslationGroupTabs() {
         tabs.appendChild(list);
     });
 
-    if (extraGroups.length > 0) {
+    const visibleExtra = extraGroups.filter((group) => !publisherQueue || groupHasVisibleRows(group));
+    if (visibleExtra.length > 0) {
         tabs.appendChild(buildSectionTitle('Other'));
         const list = document.createElement('div');
         list.className = 'admin-filter-tabs';
-        extraGroups.forEach((group) => {
+        visibleExtra.forEach((group) => {
             list.appendChild(buildGroupTab({
                 value: group,
                 label: formatGroupLabel(group),
@@ -269,6 +292,13 @@ function renderTranslationGroupTabs() {
             }, counts[group] ?? 0));
         });
         tabs.appendChild(list);
+    }
+
+    if (publisherQueue && tabs.childElementCount === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'mb-3 px-1 text-sm leading-snug text-slate-500';
+        empty.textContent = 'No labels are waiting for review.';
+        tabs.appendChild(empty);
     }
 
     tabs.dataset.filled = signature;
@@ -288,10 +318,13 @@ function buildGroupTab(group, count) {
     button.className = 'admin-filter-tab';
     button.setAttribute('role', 'tab');
     button.dataset.filterValue = group.value;
+    const countMarkup = Number(count) > 0
+        ? `<span class="admin-filter-tab-count">${escapeHtml(String(count))}</span>`
+        : '<span class="admin-filter-tab-count"></span>';
     button.innerHTML = `
         <span class="admin-filter-tab-icon" aria-hidden="true"><i class="${escapeHtml(group.icon || 'fas fa-language')}"></i></span>
         <span class="admin-filter-tab-label">${escapeHtml(group.label)}</span>
-        <span class="admin-filter-tab-count">${escapeHtml(String(count))}</span>
+        ${countMarkup}
     `;
     return button;
 }
@@ -307,9 +340,13 @@ function updateGroupHeading() {
             : `${label} labels`;
     }
     if (subtitle) {
-        subtitle.textContent = translationsGroupFilter === 'bottom_menu'
-            ? 'Home, Hope, FAQ, Care, and Account — upload an icon or image for each tab.'
-            : `Edit the ${count} English and Tagalog ${label.toLowerCase()} strings used in the mobile app.`;
+        if (isPublisherRole() && count < 1) {
+            subtitle.textContent = 'No labels in this group are waiting for your review.';
+        } else if (translationsGroupFilter === 'bottom_menu') {
+            subtitle.textContent = 'Home, Hope, FAQ, Care, and Account — upload an icon or image for each tab.';
+        } else {
+            subtitle.textContent = `Edit the ${count} English and Tagalog ${label.toLowerCase()} strings used in the mobile app.`;
+        }
     }
 }
 
@@ -605,6 +642,9 @@ async function initializeTranslationsTable(tableEl) {
         searchLabel: 'Search translations:',
         searchPlaceholder: 'Search key, English, or Tagalog',
         infoLabel: 'Showing _START_ to _END_ of _TOTAL_ translations',
+        language: isPublisherRole()
+            ? { emptyTable: 'No labels are waiting for your review.' }
+            : {},
         columns: buildColumns(nextMode),
         pageLength: nextMode === 'mobile' ? 5 : 10,
         scrollX: nextMode !== 'mobile',

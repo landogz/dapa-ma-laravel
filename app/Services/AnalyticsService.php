@@ -6,6 +6,7 @@ use App\Repositories\AnalyticsRepository;
 use App\Services\Analytics\CareToolsService;
 use App\Services\Analytics\ContentCatalogService;
 use App\Support\Analytics\AnalyticsDateRange;
+use App\Support\Analytics\AnalyticsExportDate;
 use Carbon\Carbon;
 
 class AnalyticsService
@@ -132,8 +133,8 @@ class AnalyticsService
                 $row->screen_name ?? '',
                 $row->resource_type ?? '',
                 $row->resource_id ?? '',
-                optional($row->occurred_at)?->toIso8601String() ?? '',
-                optional($row->created_at)?->toIso8601String() ?? '',
+                AnalyticsExportDate::dateTime($row->occurred_at),
+                AnalyticsExportDate::dateTime($row->created_at),
             ]);
         }
 
@@ -265,6 +266,6 @@ class AnalyticsService
     {
         $normalized = max(0, min(23, $hour));
 
-        return Carbon::createFromTime($normalized, 0)->format('g A');
+        return AnalyticsExportDate::hour($normalized);
     }
 }

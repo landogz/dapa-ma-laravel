@@ -20,7 +20,7 @@
                             <i class="fas fa-file-lines"></i>
                         </span>
                         <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-3">
-                            <h2 class="admin-shell-title text-base sm:text-lg">Content lifecycle management</h2>
+                            <h2 class="admin-shell-title text-base sm:text-lg">Content Management</h2>
                             <p class="mt-0.5 text-xs sm:mt-0 sm:text-sm admin-shell-subtitle">Create, review, schedule, archive.</p>
                         </div>
                     </div>

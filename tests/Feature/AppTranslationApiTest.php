@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\AppTranslation;
+use App\Models\User;
 use App\Services\AppTranslationService;
 use Database\Seeders\AppTranslationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class AppTranslationApiTest extends TestCase
@@ -55,7 +57,8 @@ class AppTranslationApiTest extends TestCase
 
     public function test_admin_translations_page_is_grouped(): void
     {
-        $this->get('/admin/app-translations')
+        $this->withAdminGate()
+            ->get('/admin/app-translations')
             ->assertOk()
             ->assertSee('Edit by group')
             ->assertSee('Choose a group, then edit its English and Tagalog labels.')
@@ -73,6 +76,30 @@ class AppTranslationApiTest extends TestCase
         $this->assertGreaterThan(0, (int) $counts->get('care'));
     }
 
+    public function test_publisher_group_counts_only_include_pending_review(): void
+    {
+        $this->seed(AppTranslationSeeder::class);
+
+        AppTranslation::query()->where('key', 'careTitle')->update([
+            'workflow_status' => 'pending_review',
+            'revision_status' => null,
+            'pending_revision' => null,
+        ]);
+
+        $publisher = User::factory()->create(['role' => 'publisher']);
+        Sanctum::actingAs($publisher);
+
+        $response = $this->getJson('/api/v1/admin/app-translations?group=care')->assertOk();
+        $counts = $response->json('meta.counts');
+        $groups = $response->json('meta.groups');
+
+        $this->assertSame(1, (int) ($counts['care'] ?? 0));
+        $this->assertSame(0, (int) ($counts['ddb_services'] ?? 0));
+        $this->assertSame(0, (int) ($counts['bottom_menu'] ?? 0));
+        $this->assertContains('care', $groups);
+        $this->assertNotContains('ddb_services', $groups);
+    }
+
     public function test_public_bundle_includes_uploaded_image_and_icon(): void
     {
         Storage::fake('public');
@@ -85,13 +112,14 @@ class AppTranslationApiTest extends TestCase
             'is_active' => true,
         ]);
 
+        $admin = User::factory()->create(['role' => 'super_admin']);
         app(AppTranslationService::class)->update($translation, [
             'value_en' => 'My Journal',
             'value_tl' => 'Aking Journal',
             'is_active' => true,
             'icon' => 'menu_book_rounded',
             'image' => UploadedFile::fake()->image('journal.png', 80, 80),
-        ]);
+        ], $admin);
 
         $response = $this->getJson('/api/v1/translations?locale=en')->assertOk();
         $asset = $response->json('data.assets.careSpeedJournal');

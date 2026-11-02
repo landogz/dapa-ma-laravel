@@ -64,14 +64,17 @@ class AppTranslationService
         $this->appTranslationRepository->delete($translation);
     }
 
-    public function groups(): Collection
+    public function groups(?User $actor = null): Collection
     {
-        return $this->appTranslationRepository->groups();
+        return $this->appTranslationRepository->groups($actor);
     }
 
-    public function groupCounts(): Collection
+    public function groupCounts(?User $actor = null): Collection
     {
-        return $this->appTranslationRepository->groupCounts();
+        $counts = $this->appTranslationRepository->groupCounts($actor);
+        $counts['bottom_menu'] = $this->appTranslationRepository->countForKeys(Visual::MENU_KEYS, $actor);
+
+        return $counts;
     }
 
     /**

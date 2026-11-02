@@ -1,5 +1,6 @@
 import Swal from 'sweetalert2';
 import { bindAddressFields, destroyAddressAutocompletes } from '../address-autocomplete';
+import { bindDatetimePickerFields, destroyDatetimePickerFields } from '../datetime-picker';
 import { bindPhilippinePhoneFields, destroyPhilippinePhoneFields } from '../phone-validation';
 import {
     assertPasswordFields,
@@ -98,11 +99,19 @@ function fieldChangedHint(field) {
     return `<p class="admin-swal-changed-hint">${escapeHtml(text)}</p>`;
 }
 
+function isDatetimePickerField(field) {
+    return field?.type === 'datetime-local'
+        || field?.type === 'date'
+        || field?.type === 'time';
+}
+
 function renderField(field) {
     const label = `<label class="admin-swal-label" for="${field.id}"><span>${escapeHtml(field.label)}</span>${fieldChangedBadge(field)}</label>`;
     const placeholder = field.placeholder ? ` placeholder="${escapeHtml(field.placeholder)}"` : '';
     const value = field.value ? ` value="${escapeHtml(field.value)}"` : '';
     const min = field.min ? ` min="${escapeHtml(field.min)}"` : '';
+    const max = field.max ? ` max="${escapeHtml(field.max)}"` : '';
+    const step = field.step ? ` step="${escapeHtml(String(field.step))}"` : '';
     const hint = field.hint ? `<p class="admin-swal-hint">${escapeHtml(field.hint)}</p>` : '';
     const changedHint = fieldChangedHint(field);
     const shellClass = fieldShellClass(field);
@@ -311,6 +320,23 @@ function renderField(field) {
         `;
     }
 
+    if (isDatetimePickerField(field)) {
+        const icon = field.type === 'time' ? 'fas fa-clock' : 'fas fa-calendar-days';
+
+        return `
+            <div class="${shellClass}">
+                ${label}
+                <div class="admin-datetime-picker">
+                    <input id="${field.id}" class="admin-swal-input" type="${escapeHtml(field.type)}"${placeholder}${value}${min}${max}${step} data-datetime-picker autocomplete="off">
+                    <span class="admin-datetime-picker-icon" aria-hidden="true"><i class="${icon}"></i></span>
+                </div>
+                ${hint}
+                ${changedHint}
+                ${fieldErrorMarkup(field.id)}
+            </div>
+        `;
+    }
+
     if (field.type === 'color') {
         const hex = normalizeHexColor(field.value);
         const pickerValue = (hex || normalizeHexColor(field.placeholder) || DEFAULT_PICKER_COLOR).toLowerCase();
@@ -353,7 +379,7 @@ function renderField(field) {
     return `
         <div class="${shellClass}">
             ${label}
-            <input id="${field.id}" class="admin-swal-input" type="${field.type ?? 'text'}"${placeholder}${value}${min}>
+            <input id="${field.id}" class="admin-swal-input" type="${field.type ?? 'text'}"${placeholder}${value}${min}${max}${step}>
             ${hint}
             ${changedHint}
             ${fieldErrorMarkup(field.id)}
@@ -1208,7 +1234,7 @@ export function isInboxReviewResolvedError(error) {
     const code = String(error?.response?.data?.code || '');
     const message = String(error?.response?.data?.message || '').toLowerCase();
 
-    if (code === 'review_resolved') {
+    if (code === 'review_resolved' || code === 'review_returned') {
         return true;
     }
 
@@ -1419,6 +1445,9 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
 
     return {
         ...restOptions,
+        // Keep the admin shell from growing a blank sidebar while the dialog is open.
+        heightAuto: restOptions.heightAuto ?? false,
+        scrollbarPadding: restOptions.scrollbarPadding ?? false,
         // Keep dialogs on <body> so the admin sidebar (z-40) cannot paint above the backdrop.
         target: restOptions.target ?? document.body,
         title: title || restOptions.title || ' ',
@@ -1458,6 +1487,7 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
             bindColorPickers(popup);
             bindSvgIconPickers(popup);
             bindAddressFields(popup);
+            bindDatetimePickerFields(popup);
             bindPhilippinePhoneFields(popup);
             bindPasswordPolicyFields(popup);
             await bindRichTextEditors(popup);
@@ -1480,6 +1510,7 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
         },
         willClose: (popup) => {
             destroyAddressAutocompletes(popup);
+            destroyDatetimePickerFields(popup);
             destroyPhilippinePhoneFields(popup);
             destroyPasswordPolicyFields(popup);
             destroyRichTextEditors(popup);

@@ -52,12 +52,15 @@ class UserRepository
 
     public function create(array $attributes): User
     {
-        return User::query()->create($attributes);
+        $user = new User();
+        $user->forceFill($attributes)->save();
+
+        return $user;
     }
 
     public function update(User $user, array $attributes): User
     {
-        $user->update($attributes);
+        $user->forceFill($attributes)->save();
 
         return $user;
     }

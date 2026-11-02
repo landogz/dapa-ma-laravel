@@ -81,7 +81,6 @@ Route::prefix('v1')
                 'status'  => true,
                 'message' => 'DAPE-MA API is healthy.',
                 'data'    => [
-                    'environment' => app()->environment(),
                     'version'     => config('app.version'),
                 ],
             ]);
@@ -92,11 +91,24 @@ Route::prefix('v1')
             Route::get('/check-email', [AuthController::class, 'checkEmail'])
                 ->middleware('throttle:20,1')
                 ->name('check-email');
-            Route::post('/register', [AuthController::class, 'register'])->name('register');
-            Route::post('/login', [AuthController::class, 'login'])->name('login');
-            Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password');
-            Route::post('/verify-reset-code', [AuthController::class, 'verifyResetCode'])->name('verify-reset-code');
-            Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('reset-password');
+            Route::post('/register', [AuthController::class, 'register'])
+                ->middleware('throttle:auth')
+                ->name('register');
+            Route::post('/bootstrap-admin', [AuthController::class, 'bootstrapAdmin'])
+                ->middleware('throttle:auth')
+                ->name('bootstrap-admin');
+            Route::post('/login', [AuthController::class, 'login'])
+                ->middleware('throttle:auth')
+                ->name('login');
+            Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
+                ->middleware('throttle:auth')
+                ->name('forgot-password');
+            Route::post('/verify-reset-code', [AuthController::class, 'verifyResetCode'])
+                ->middleware('throttle:auth-verify')
+                ->name('verify-reset-code');
+            Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+                ->middleware('throttle:auth-verify')
+                ->name('reset-password');
         });
 
         // ── Public content ────────────────────────────────────────────────
@@ -121,6 +133,7 @@ Route::prefix('v1')
 
         // ── Public analytics events (mobile, unauthenticated) ───────────
         Route::post('/analytics/events', [\App\Http\Controllers\API\AnalyticsEventController::class, 'store'])
+            ->middleware('throttle:analytics')
             ->name('analytics.events.store');
 
         // ── Public rehab centers directory ───────────────────────────────
@@ -197,7 +210,7 @@ Route::prefix('v1')
             ->name('care-support.resources');
 
         // ── Authenticated ─────────────────────────────────────────────────
-        Route::middleware(['auth:sanctum', 'user.active', 'password.current'])->group(function (): void {
+        Route::middleware(['auth:sanctum', 'user.active', 'login.verified', 'password.current'])->group(function (): void {
 
             Route::get('/geocode/search', [GeocodeController::class, 'search'])
                 ->middleware('throttle:30,1')
@@ -207,8 +220,12 @@ Route::prefix('v1')
                 ->name('geocode.reverse');
 
             Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
-            Route::post('/auth/login-code', [AuthController::class, 'sendLoginCode'])->name('auth.login-code');
-            Route::post('/auth/verify-login-code', [AuthController::class, 'verifyLoginCode'])->name('auth.verify-login-code');
+            Route::post('/auth/login-code', [AuthController::class, 'sendLoginCode'])
+                ->middleware('throttle:auth-verify')
+                ->name('auth.login-code');
+            Route::post('/auth/verify-login-code', [AuthController::class, 'verifyLoginCode'])
+                ->middleware('throttle:auth-verify')
+                ->name('auth.verify-login-code');
             Route::get('/auth/me', [AuthController::class, 'me'])->name('auth.me');
             Route::get('/me/profile', [ProfileStatsController::class, 'show'])->name('me.profile');
             Route::put('/auth/profile', [AuthController::class, 'updateProfile'])->name('auth.profile.update');
@@ -217,8 +234,9 @@ Route::prefix('v1')
             Route::post('/auth/onboarding', [AuthController::class, 'updateOnboarding'])->name('auth.onboarding.update.post');
             Route::put('/auth/password', [AuthController::class, 'changePassword'])->name('auth.password.update');
 
-            // Basic user list (any authenticated user)
-            Route::get('/users', [UserController::class, 'index'])->name('users.index');
+            Route::get('/users', [UserController::class, 'index'])
+                ->middleware('role:super_admin')
+                ->name('users.index');
 
             // ── Bookmarks ────────────────────────────────────────────────
             Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks.index');
@@ -300,9 +318,11 @@ Route::prefix('v1')
                     Route::get('/diary-users',               [DiaryAdminController::class, 'users'])->name('diary-users.index');
                     Route::get('/diary-entries/{id}',       [DiaryAdminController::class, 'show'])->whereNumber('id')->name('diary-entries.show');
                     Route::delete('/diary-entries/{id}',    [DiaryAdminController::class, 'destroy'])->whereNumber('id')->name('diary-entries.destroy');
-                    Route::put('/posts/{post}/archive',      [PostAdminController::class, 'archive'])->name('posts.archive');
-                    Route::put('/posts/{post}/restore',      [PostAdminController::class, 'restore'])->name('posts.restore');
-                    Route::delete('/posts/{post}',           [PostAdminController::class, 'destroy'])->name('posts.destroy');
+
+                    Route::get('/care-checks/summary', [CareCheckAdminController::class, 'summary'])->name('care-checks.summary');
+                    Route::get('/care-checks/export', [CareCheckAdminController::class, 'export'])->name('care-checks.export');
+                    Route::get('/care-checks', [CareCheckAdminController::class, 'index'])->name('care-checks.index');
+                    Route::get('/care-checks/{id}', [CareCheckAdminController::class, 'show'])->whereNumber('id')->name('care-checks.show');
                 });
 
                 // Editors, publishers, and super admin can review the content queue
@@ -321,6 +341,9 @@ Route::prefix('v1')
                     Route::post('/posts',             [PostAdminController::class, 'store'])->name('posts.store');
                     Route::put('/posts/{post}',       [PostAdminController::class, 'update'])->name('posts.update');
                     Route::put('/posts/{post}/submit', [PostAdminController::class, 'submit'])->name('posts.submit');
+                    Route::put('/posts/{post}/archive', [PostAdminController::class, 'archive'])->name('posts.archive');
+                    Route::put('/posts/{post}/restore', [PostAdminController::class, 'restore'])->name('posts.restore');
+                    Route::delete('/posts/{post}',    [PostAdminController::class, 'destroy'])->name('posts.destroy');
                     Route::post('/editor-media', [EditorMediaAdminController::class, 'store'])->name('editor-media.store');
                 });
 
@@ -353,11 +376,6 @@ Route::prefix('v1')
 
                     Route::get('/app-options', [AppOptionAdminController::class, 'index'])->name('app-options.index');
                     Route::get('/app-options/{appOption}', [AppOptionAdminController::class, 'show'])->name('app-options.show');
-
-                    Route::get('/care-checks/summary', [CareCheckAdminController::class, 'summary'])->name('care-checks.summary');
-                    Route::get('/care-checks/export', [CareCheckAdminController::class, 'export'])->name('care-checks.export');
-                    Route::get('/care-checks', [CareCheckAdminController::class, 'index'])->name('care-checks.index');
-                    Route::get('/care-checks/{id}', [CareCheckAdminController::class, 'show'])->whereNumber('id')->name('care-checks.show');
 
                     Route::get('/care-toolkit-questions', [CareToolkitQuestionAdminController::class, 'index'])->name('care-toolkit-questions.index');
                     Route::get('/care-toolkit-questions/{careToolkitQuestion}', [CareToolkitQuestionAdminController::class, 'show'])->name('care-toolkit-questions.show');
@@ -437,6 +455,21 @@ Route::prefix('v1')
                     Route::put('/app-translations/{appTranslation}', [AppTranslationAdminController::class, 'update'])->name('app-translations.update');
                     Route::put('/app-translations/{appTranslation}/submit', [AppTranslationAdminController::class, 'submit'])->name('app-translations.submit');
                     Route::post('/app-translations/{appTranslation}', [AppTranslationAdminController::class, 'update'])->name('app-translations.update.post');
+
+                    Route::delete('/notifications/{notification}', [NotificationAdminController::class, 'destroy'])->name('notifications.destroy');
+                    Route::delete('/legal-pages/{slug}', [LegalPageAdminController::class, 'destroy'])
+                        ->where('slug', 'privacy_policy|terms_of_use|privacy_notice|[0-9]+')
+                        ->name('legal-pages.destroy');
+                    Route::delete('/blocked-words/{blockedWord}', [BlockedWordAdminController::class, 'destroy'])->name('blocked-words.destroy');
+                    Route::delete('/kid-listo-quotes/{kidListoQuote}', [KidListoQuoteAdminController::class, 'destroy'])->name('kid-listo-quotes.destroy');
+                    Route::delete('/app-options/{appOption}', [AppOptionAdminController::class, 'destroy'])->name('app-options.destroy');
+                    Route::delete('/care-toolkit-questions/{careToolkitQuestion}', [CareToolkitQuestionAdminController::class, 'destroy'])->name('care-toolkit-questions.destroy');
+                    Route::delete('/care-support-resources/{careSupportResource}', [CareSupportResourceAdminController::class, 'destroy'])->name('care-support-resources.destroy');
+                    Route::delete('/hope-directory/{hopeDirectory}', [HopeDirectoryAdminController::class, 'destroy'])->name('hope-directory.destroy');
+                    Route::delete('/hope-events/{hopeEvent}', [HopeEventAdminController::class, 'destroy'])->name('hope-events.destroy');
+                    Route::delete('/contests/{contest}', [ContestAdminController::class, 'destroy'])->name('contests.destroy');
+                    Route::delete('/iec-materials/{iecMaterial}', [IecMaterialAdminController::class, 'destroy'])->name('iec-materials.destroy');
+                    Route::delete('/app-translations/{appTranslation}', [AppTranslationAdminController::class, 'destroy'])->name('app-translations.destroy');
                 });
 
                 // Workflow modules — review and publish (Publisher, Super Admin)
@@ -484,8 +517,8 @@ Route::prefix('v1')
                     Route::put('/app-translations/{appTranslation}/publish', [AppTranslationAdminController::class, 'publish'])->name('app-translations.publish');
                 });
 
-                // Workflow modules — archive / restore (Super Admin). Hard delete routes removed from UI.
-                Route::middleware('role:super_admin')->group(function (): void {
+                // Workflow modules — archive / restore (Editor, Super Admin). Hard delete routes removed from UI.
+                Route::middleware('role:editor,super_admin')->group(function (): void {
                     Route::put('/notifications/{notification}/archive', [NotificationAdminController::class, 'archive'])->name('notifications.archive');
                     Route::put('/notifications/{notification}/restore', [NotificationAdminController::class, 'restore'])->name('notifications.restore');
 

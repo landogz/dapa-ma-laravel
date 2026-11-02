@@ -1,3 +1,5 @@
+import { writeAnimatedMetric } from '../analytics-motion';
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -36,7 +38,7 @@ export function renderContentCatalog(catalog = {}) {
 
 function setCatalogKpi(key, value) {
     document.querySelectorAll(`[data-analytics-summary="${key}"]`).forEach((el) => {
-        el.textContent = value == null ? '0' : formatCount(value);
+        writeAnimatedMetric(el, value == null ? '0' : formatCount(value));
     });
 }
 

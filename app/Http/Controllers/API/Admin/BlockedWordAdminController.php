@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\UpdateBlockedWordRequest;
 use App\Models\BlockedWord;
 use App\Services\BlockedWord\BlockedWordService;
 use App\Services\ContentWorkflow\ContentWorkflowService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,6 +23,7 @@ class BlockedWordAdminController extends Controller
         publish as protected workflowPublish;
         archive as protected workflowArchive;
         restore as protected workflowRestore;
+        destroy as protected workflowDestroy;
     }
 
     public function __construct(
@@ -60,7 +62,7 @@ class BlockedWordAdminController extends Controller
             'message' => 'Blocked words fetched successfully.',
             'data' => $paginator->through(fn (BlockedWord $word) => $word->toAdminArray()),
             'meta' => [
-                'status_counts' => $this->blockedWordService->statusCounts(),
+                'status_counts' => $this->blockedWordService->statusCounts($request->user()),
             ],
         ]);
     }
@@ -123,13 +125,13 @@ class BlockedWordAdminController extends Controller
         return $this->workflowRestore($request, $blockedWord);
     }
 
-    public function destroy(BlockedWord $blockedWord): JsonResponse
+    public function destroy(Request $request, BlockedWord $blockedWord): JsonResponse
     {
-        $this->blockedWordService->delete($blockedWord);
+        return $this->workflowDestroy($request, $blockedWord);
+    }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Blocked word deleted.',
-        ]);
+    protected function permanentlyDeleteDraft(Model $model): void
+    {
+        $this->blockedWordService->delete($model);
     }
 }

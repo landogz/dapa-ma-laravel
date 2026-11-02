@@ -1,10 +1,12 @@
+import { writeAnimatedMetric } from '../analytics-motion';
+
 function formatCount(value) {
     return Number(value || 0).toLocaleString();
 }
 
 function setKpi(key, value) {
     document.querySelectorAll(`[data-analytics-summary="${key}"]`).forEach((el) => {
-        el.textContent = value == null ? '0' : formatCount(value);
+        writeAnimatedMetric(el, value == null ? '0' : formatCount(value));
     });
 }
 
