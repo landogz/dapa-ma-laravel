@@ -18,6 +18,8 @@ This folder is the **source** for the printed Word manual. Edit the Markdown cha
 
 The published Word file is the copy staff should keep at their desks. The Markdown files are for authors who update the guide.
 
+IT operators who install, update, and support the production host should use the **System Administrator Training** pack (`docs/DAPE-MA-SYSADMIN-TRAINING.docx`, source in [`../sysadmin-training/`](../sysadmin-training/README.md)).
+
 ---
 
 ## Files
@@ -111,7 +113,14 @@ Do not document installer database passwords, Code Snippets, or plugin updates. 
 ## How to update a chapter
 
 1. Edit the matching file in `chapters/`.
-2. Replace screenshots in `figures/` when the screen layout changes. Keep the existing file names so the builder still finds them.
+2. Replace screenshots in `figures/` at **1440×812** when the screen layout changes. Keep the existing file names so the builder still finds them.
+
+   ```bash
+   cd docs/administrator-manual/capture
+   npm install
+   node capture-screenshots.mjs
+   ```
+
 3. Rebuild the Word document and review the chapter in Word before you circulate it.
 
 Write for staff who will click through the panel: short steps, the exact button labels, and the role that may perform the action.

@@ -1,0 +1,9 @@
+{
+  "name": "dape-ma-admin-manual-capture",
+  "private": true,
+  "type": "module",
+  "description": "Capture 1440x812 admin screenshots for the administrator manual",
+  "dependencies": {
+    "playwright": "^1.64.1"
+  }
+}

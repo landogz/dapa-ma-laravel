@@ -8,7 +8,7 @@ The DAPE-MA Admin Control Panel is the web workspace at `/admin`. Content you sa
 |---|---|---|
 | Sign in, reset a password, or change my own profile | Sign In / account menu | 1 |
 | Know who should have which role | Users | 2, 17 |
-| Search, sort, or use Actions on any list | (every list page) | 3 |
+| Search, sort, turn on Scrollable, or use Actions on any list | (every list page) | 3 |
 | See counts and jump to a task | Dashboard | 4 |
 | Write or publish a post, manage comments | Content → Posts | 5 |
 | Run a song, poster, or video contest | Content → Contests | 6 |

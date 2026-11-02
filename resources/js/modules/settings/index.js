@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary } from '../shared/datatables';
+import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary, getAdminTableMode, bindAdminTableModeChange } from '../shared/datatables';
 import {
     buildSwalForm,
     buildSwalOptions,
@@ -670,11 +670,13 @@ function bindQuotesViewportListener(tableEl) {
         mobileQuery.addListener(handleViewportChange);
     }
 
+    bindAdminTableModeChange(handleViewportChange);
+
     hasBoundQuotesViewportListener = true;
 }
 
 function getQuotesTableMode() {
-    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
+    return getAdminTableMode();
 }
 
 function truncate(value, max = 100) {

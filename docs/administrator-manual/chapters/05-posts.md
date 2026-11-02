@@ -20,7 +20,7 @@ Posts are articles the mobile app shows in Home and categories. Super Admins pub
 
 ![Figure 6. Create Post](../figures/04-posts-create.png)
 
-> **Tip.** Super Admin posts go live as soon as you create them. Editors submit drafts; a Super Admin (or Publisher with review actions) approves, schedules, or publishes.
+> **Tip.** Super Admin posts go live as soon as you create them. Editors submit drafts; a Publisher (or Super Admin) approves, schedules, or publishes.
 
 ## 5.2 Statuses
 

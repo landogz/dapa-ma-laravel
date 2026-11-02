@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
+import { createAdminDataTable, getAdminDataTableOptions, getAdminTableMode, bindAdminTableModeChange } from '../shared/datatables';
 import {
     applyAdminFilterTabCounts,
     bindAdminFilterTabs,
@@ -281,7 +281,7 @@ function renderRows(rows) {
 }
 
 function getTableMode() {
-    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
+    return getAdminTableMode();
 }
 
 async function initializeTable(tableElement) {
@@ -332,6 +332,8 @@ function bindViewportListener(tableElement) {
     } else {
         query.addListener(onChange);
     }
+
+    bindAdminTableModeChange(onChange);
 
     viewportBound = true;
 }

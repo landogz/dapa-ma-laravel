@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { getStoredUser } from './auth';
-import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
+import { createAdminDataTable, getAdminDataTableOptions, getAdminTableMode, bindAdminTableModeChange } from './shared/datatables';
 import {
     applyAdminFilterTabCounts,
     bindAdminFilterTabs,
@@ -1059,7 +1059,7 @@ function renderUserIdentity(user) {
 }
 
 function getUsersTableMode() {
-    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
+    return getAdminTableMode();
 }
 
 async function initializeUsersTable(tableElement) {
@@ -1125,6 +1125,8 @@ function bindUsersViewportListener(tableElement) {
     } else {
         query.addListener(onChange);
     }
+
+    bindAdminTableModeChange(onChange);
 
     usersViewportBound = true;
 }

@@ -2,15 +2,16 @@
 
 Almost every admin page uses the same list. Learn it once.
 
-**Figure 4.** A typical list (Posts). 1 Page title and primary button, 2 Search, 3 Sortable columns, 4 Actions (view, edit, more), 5 Rows per page.
+**Figure 4.** A typical list (Posts). 1 Page title and primary button, 2 Search with **Scrollable** beside it, 3 Sortable columns, 4 Actions (view, edit, more), 5 Rows per page.
 
 ![Figure 4. Posts list](../figures/03-posts.png)
 
-## 3.1 Search and sort
+## 3.1 Search, sort, and Scrollable
 
 - Type in **Search** to filter the current table.
 - Click a column header (Title, Name, Date) to sort. Click again to reverse.
-- Use **Show extra columns** when the table hides fields on a narrower screen.
+- Next to Search, check **Scrollable** to keep every column visible and move the table sideways. **Actions** stay pinned on the right. Uncheck it to return to the compact layout (extra fields hide; use **Show extra columns** to open them).
+- The **Scrollable** choice is remembered in this browser for all lists.
 
 The top search bar (**Search pages, actions, and records…** or ⌘K) searches the whole admin, not only the current table.
 
@@ -20,7 +21,8 @@ The last column stays on the right on desktop.
 
 - The first two icons are the main commands (often View and Edit).
 - Extra commands sit under **More actions** (…).
-- Hover an icon to see the tooltip (View, Edit, Delete).
+- Hover an icon to see the tooltip (View, Edit, Archive, Restore).
+- Editors see **Archive** on published or pending items and **Restore** on archived items (restore goes to a Publisher).
 - On a phone, each row becomes a card with labeled buttons.
 
 ## 3.3 Right-click / long-press

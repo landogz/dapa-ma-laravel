@@ -20,4 +20,4 @@ Messages appear in the mobile **Notifications** inbox for matching users. Device
 
 ## 15.2 History
 
-Filter by audience. **View** opens the campaign. **Delete** removes it from history after confirmation.
+Filter by audience. **View** opens the campaign. **Archive** hides a campaign from the app until restored.

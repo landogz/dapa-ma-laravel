@@ -7,6 +7,7 @@
 | Sign In does nothing / error under the field | Check email spelling. Use Forgot password. Confirm you are on `/admin/login`. |
 | “You do not have permission” | Your role does not include that menu. Ask a Super Admin. |
 | List is empty | Clear Search. Wait for load. Check filters (All types / All statuses). |
+| Columns are missing from a list | Check **Scrollable** beside Search to keep all columns and scroll sideways. |
 | Address suggestions do not appear | Type at least 3 letters of a Philippine place. Do not paste a foreign address. |
 | Phone will not save | Use a Philippine mobile or landline. Hotlines may use short codes and `\|`. |
 | Password rejected | 8+ characters, upper and lower case, a number, a symbol. Do not reuse the last 5 passwords. Avoid known leaked passwords. |
@@ -20,7 +21,7 @@
 ## 22.2 Security checklist
 
 - [ ] Super Admin accounts are limited to people who must manage Users and Journal.
-- [ ] Staff who only write posts are **Editor**; content + directories are **Publisher**.
+- [ ] Staff who draft and archive content are **Editor**; people who approve the queue are **Publisher**.
 - [ ] When someone leaves, delete the user the same day.
 - [ ] Temporary passwords are unique and force a change on first sign-in.
 - [ ] You sign out on shared computers.

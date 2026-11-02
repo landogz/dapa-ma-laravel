@@ -26,6 +26,6 @@ Song, Poster, and Video contests are managed on this one page. Filter by type an
 2. Open an entry to view the song, poster, or video.
 3. Use the status filters when judging.
 
-## 6.3 Edit or delete
+## 6.3 Edit or archive
 
-Edit from the pencil action. **Delete Contest** also deletes all submissions under it — confirm only if you mean it.
+Edit from the pencil action. **Archive** hides the contest from the app. Editors restore it for Publisher approval; Super Admin restore publishes it immediately. Draft contests can be deleted.

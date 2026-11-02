@@ -1,5 +1,14 @@
 import { bindAdminPageFocus } from './page-focus';
 import { bindAdminTableContextMenu } from './table-context-menu';
+import {
+    applyAdminTableScrollableState,
+    bindAdminTableModeChange,
+    bindAdminTableScrollSettings,
+    getAdminTableMode,
+    isAdminTableScrollable,
+} from './table-scroll-settings';
+
+export { bindAdminTableModeChange, getAdminTableMode, isAdminTableScrollable };
 
 let dataTablesLibraryPromise;
 
@@ -108,6 +117,23 @@ export async function createAdminDataTable(tableElement, options) {
     bindAdminTableSearchField(table, ariaSearchLabel
         || tableOptions.language?.searchPlaceholder
         || 'Search');
+    bindAdminTableScrollSettings(table, () => {
+        try {
+            scheduleAdminTableCollapse(table);
+        } catch {
+            // Table may already be destroyed while the layout is switching.
+        }
+    });
+    applyAdminTableScrollableState(table);
+    const unbindScrollableChange = bindAdminTableModeChange(() => {
+        applyAdminTableScrollableState(table);
+        try {
+            scheduleAdminTableCollapse(table);
+        } catch {
+            // Ignore collapse sync after destroy.
+        }
+    });
+    table.on('destroy', unbindScrollableChange);
     bindAdminTableCollapseControls(table, tableOptions);
     bindAdminDataTableFooter(table, hidePagingWhenSinglePage);
     bindAdminPageFocus(table);
@@ -288,6 +314,11 @@ function syncAdminTableCollapse(table) {
         return;
     }
 
+    if (isAdminTableScrollable()) {
+        clearAdminTableCollapse(table);
+        return;
+    }
+
     const columnCount = table.columns().count();
     if (columnCount < 3) {
         return;
@@ -350,6 +381,32 @@ function syncAdminTableCollapse(table) {
         syncAdminTableCollapseLabels(container);
     } finally {
         table._adminCollapsing = false;
+    }
+}
+
+function clearAdminTableCollapse(table) {
+    const container = table.table().container();
+    const tableNode = table.table().node();
+    if (!container || !tableNode) {
+        return;
+    }
+
+    applyHiddenColumnClasses(tableNode, [], false);
+    tableNode.classList.remove('collapsed');
+    table._adminHiddenIndexes = [];
+    container.classList.add('admin-dt-has-x-overflow');
+
+    table.rows().every(function hideOpenChild() {
+        if (this.child.isShown()) {
+            this.child.hide();
+            this.node()?.classList.remove('parent');
+        }
+    });
+
+    syncAdminTableCollapseLabels(container);
+
+    if (typeof table.columns?.adjust === 'function') {
+        table.columns.adjust();
     }
 }
 

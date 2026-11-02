@@ -4,7 +4,7 @@ Left menu: **Content → IEC Materials** (`/admin/iec-materials`).
 
 IEC (Information, Education, and Communication) items fill the mobile gallery: animated GIFs, still images, YouTube clips, or Lottie JSON URLs.
 
-**Figure 8.** IEC Materials list. 1 Add IEC Material, 2 Preview, title, topic, 3 Actions (preview, edit, delete).
+**Figure 8.** IEC Materials list. 1 Add IEC Material, 2 Preview, title, topic, 3 Actions (preview, edit, archive).
 
 ![Figure 8. IEC Materials](../figures/06-iec-materials.png)
 
@@ -21,6 +21,6 @@ IEC (Information, Education, and Communication) items fill the mobile gallery: a
 
 - **Preview** opens the animation or clip without leaving the page.
 - **Edit** updates title, topic, or file.
-- **Delete** removes it after confirmation.
+- **Archive** hides it from the app. Editors restore it for Publisher approval; Super Admin restore publishes it immediately.
 
 > **Tip.** Keep file sizes reasonable so the app downloads quickly on mobile data.

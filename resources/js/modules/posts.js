@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { getStoredUser } from './auth';
-import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
+import { createAdminDataTable, getAdminDataTableOptions, getAdminTableMode, bindAdminTableModeChange } from './shared/datatables';
 import {
     applyAdminFilterTabCounts,
     bindAdminFilterTabs,
@@ -1234,7 +1234,7 @@ function bindPostTableActions(tableEl) {
 }
 
 function getPostsTableMode() {
-    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
+    return getAdminTableMode();
 }
 
 async function initializePostsTable(tableEl) {
@@ -1350,6 +1350,8 @@ function bindPostsViewportListener(tableEl) {
     } else {
         query.addListener(onChange);
     }
+
+    bindAdminTableModeChange(onChange);
 
     postsViewportBound = true;
 }
@@ -1555,7 +1557,7 @@ function buildPostForm(post = null, categoryOptions = [], {
             placeholder: 'Write the main content',
             value: post?.body ?? '',
             attribute: 'body',
-            hint: 'Use Add Media to insert images or videos into the body, or paste a YouTube URL via the media button.',
+            hint: 'Use Add Media to insert images or videos into the body, or paste a YouTube URL in the editor.',
         },
         {
             id: 'post-category-id',

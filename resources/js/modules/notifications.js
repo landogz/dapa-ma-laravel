@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { createAdminDataTable, getAdminDataTableOptions } from './shared/datatables';
+import { createAdminDataTable, getAdminDataTableOptions, getAdminTableMode, bindAdminTableModeChange } from './shared/datatables';
 import { bindAdminFilterTabs } from './shared/filter-tabs';
 import { enhanceAdminFilterSelects } from './shared/filter-select';
 import { buildSwalForm, buildSwalOptions, confirmWithSwal } from './shared/swal-forms';
@@ -393,7 +393,7 @@ async function loadLinkOptions(linkType) {
 }
 
 function getNotificationsTableMode() {
-    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
+    return getAdminTableMode();
 }
 
 async function initializeNotificationsTable(tableEl) {
@@ -451,6 +451,8 @@ function bindNotificationsViewportListener(tableEl) {
     } else {
         query.addListener(onChange);
     }
+
+    bindAdminTableModeChange(onChange);
 
     notificationsViewportBound = true;
 }

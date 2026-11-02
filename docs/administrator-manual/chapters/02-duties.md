@@ -15,9 +15,9 @@
 
 | Role | What they can open |
 |---|---|
-| Super Admin | Everything, including Users, Analytics, and Journal. |
-| Publisher | Content, rehab centers, contests, IEC, care toolkit/checks/support, Hope, notifications, settings, lookups, translations, word blocking. **Not** Users, Analytics, or Journal. |
-| Editor | **Posts** only. |
+| Super Admin | Everything, including Users, Analytics, and Journal. Publishes and restores immediately. |
+| Publisher | Review queue for content, rehab centers, contests, IEC, care toolkit/checks/support, Hope, notifications, settings, lookups, translations, word blocking. **Not** Users, Analytics, or Journal. |
+| Editor | Draft, submit, archive, and request restore across those same content pages. Archive hides an item from the app; restore waits for a Publisher (or Super Admin) to publish it. |
 | Analytics Viewer | **Analytics** only. |
 
 > **Tip.** Most content staff should be **Publisher**, not Super Admin. Keep Super Admin for a small IT / records set.

@@ -5,6 +5,8 @@
 | Sign in | `/admin/login` |
 | Dashboard | Overview → Dashboard |
 | Create a post | Content → Posts → Create Post |
+| Archive or restore content | Actions column or right-click → Archive / Restore |
+| Keep every list column visible | Any list → **Scrollable** beside Search |
 | Delete a comment | Posts → View → Comments → Delete |
 | Add a contest | Content → Contests → Add Contest |
 | Add IEC material | Content → IEC Materials → Add IEC Material |

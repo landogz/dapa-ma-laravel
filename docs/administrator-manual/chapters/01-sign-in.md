@@ -13,7 +13,7 @@ Open the admin sign-in page: `/admin/login`.
 3. Click **Sign In**.
 4. You land on the **Dashboard**.
 
-If you see a 6-digit verification step, check that email inbox and type the code. Use **Forgot password?** if you cannot sign in.
+On the live server, a 6-digit email code may appear after Sign In. Check that inbox and type the code. Local development skips this step. Use **Forgot password?** if you cannot sign in.
 
 > **Important.** Passwords you create or reset must include at least 8 characters, upper and lower case, a number, and a symbol. Known breached passwords are rejected. The sign-in **current password** is not checked for complexity.
 

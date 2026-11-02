@@ -9,7 +9,7 @@ import {
     normalizeHexColor,
     showInboxResolvedNotice,
 } from '../shared/swal-forms';
-import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
+import { createAdminDataTable, getAdminDataTableOptions, getAdminTableMode, bindAdminTableModeChange } from '../shared/datatables';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import {
     applyAdminFilterTabCounts,
@@ -133,11 +133,13 @@ function bindViewportListener(tableEl) {
         mobileQuery.addListener(handleViewportChange);
     }
 
+    bindAdminTableModeChange(handleViewportChange);
+
     hasBoundViewportListener = true;
 }
 
 function getTableMode() {
-    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
+    return getAdminTableMode();
 }
 
 function buildColumns(mode) {

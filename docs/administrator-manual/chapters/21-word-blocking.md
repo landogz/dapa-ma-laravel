@@ -15,4 +15,4 @@ Words the mobile app replaces with `****` in comments, journal notes, profiles, 
 3. Set **Active** or **Inactive**.
 4. Save.
 
-Edit or delete from Actions. Inactive words stay in the list but are not applied.
+Edit or archive from Actions. Inactive words stay in the list but are not applied. Editors archive published words; restore waits for a Publisher.

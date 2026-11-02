@@ -20,6 +20,6 @@ This directory drives rehab listings in the mobile app, including the map pin.
 
 > **Important.** Do not type a foreign address. Suggestions come from the shared Philippine map search. Phone-like contact values should be Philippine numbers when you collect a phone.
 
-## 8.2 Edit or delete
+## 8.2 Edit or archive
 
-Use **Edit rehab center** or **Delete rehab center** on the row. Deleting cannot be undone.
+Use **Edit rehab center** or **Archive rehab center** on the row. Archived centers are hidden from the mobile app until restored.

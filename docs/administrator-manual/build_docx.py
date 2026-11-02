@@ -209,7 +209,7 @@ def add_cover(doc: Document):
 
     version = doc.add_paragraph()
     version.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = version.add_run("VERSION 1.0")
+    run = version.add_run("VERSION 1.2")
     set_run_font(run, size=14, bold=True, color=NAVY)
 
     note = doc.add_paragraph()

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { createAdminDataTable, getAdminDataTableOptions } from '../shared/datatables';
+import { createAdminDataTable, getAdminDataTableOptions, getAdminTableMode, bindAdminTableModeChange } from '../shared/datatables';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey, renderAdminFilterTabs, setAdminFilterTab } from '../shared/filter-tabs';
 import { SKY_FILTER_ITEMS, userInitials } from './sky-filters';
 import { buildSwalOptions, confirmWithSwal } from '../shared/swal-forms';
@@ -442,11 +442,13 @@ function bindViewportListener(tableEl) {
         mobileQuery.addListener(handleViewportChange);
     }
 
+    bindAdminTableModeChange(handleViewportChange);
+
     hasBoundViewportListener = true;
 }
 
 function getTableMode() {
-    return window.matchMedia('(max-width: 1023px)').matches ? 'mobile' : 'desktop';
+    return getAdminTableMode();
 }
 
 function buildColumns(mode) {
