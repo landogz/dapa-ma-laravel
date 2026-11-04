@@ -72,6 +72,7 @@
         </div>
 
         <nav class="mt-5 flex min-h-11 gap-2 overflow-x-auto pb-1" aria-label="Analytics sections">
+            {{-- Alerts tab hidden for now; panel/API kept for a later release. --}}
             @foreach ([
                 'overview' => 'Overview',
                 'users' => 'Users',
@@ -81,7 +82,6 @@
                 'journeys' => 'Journeys',
                 'leaderboard' => 'Leaderboard',
                 'geography' => 'Geography',
-                'alerts' => 'Alerts',
                 'reports' => 'Reports',
             ] as $tabKey => $tabLabel)
                 <button
@@ -657,7 +657,7 @@
                         <option value="mobile">Mobile / devices (detailed + charts)</option>
                         <option value="content">Content performance (detailed + charts)</option>
                         <option value="journeys">Journeys (detailed + charts)</option>
-                        <option value="alerts">Alerts (detailed)</option>
+                        {{-- Alerts export hidden for now --}}
                         <option value="complete">Complete pack (all + charts)</option>
                     </select>
                     <select id="analytics-export-format" class="admin-auth-input min-h-11 text-xs" aria-label="Export format">
