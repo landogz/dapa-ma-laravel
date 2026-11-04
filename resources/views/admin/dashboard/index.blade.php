@@ -104,7 +104,7 @@
                                     @endunless
                                 </div>
                                 @unless (str_starts_with($key, 'analytics-'))
-                                    <canvas class="admin-stat-sparkline hidden" data-overview-sparkline="{{ $key }}" width="80" height="24" aria-hidden="true"></canvas>
+                                    <canvas class="admin-stat-sparkline hidden" data-overview-sparkline="{{ $key }}" width="96" height="32" aria-hidden="true"></canvas>
                                 @endunless
                             </div>
                         </div>

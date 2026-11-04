@@ -187,9 +187,59 @@
     }
 
     .admin-stat-sparkline {
-        width: 80px;
-        height: 24px;
+        width: 96px;
+        height: 32px;
         flex-shrink: 0;
+    }
+
+    .admin-stat-sparkline-interactive {
+        cursor: crosshair;
+        border-radius: 0.35rem;
+    }
+
+    .admin-sparkline-tooltip {
+        position: fixed;
+        z-index: 80;
+        min-width: 7rem;
+        max-width: 12rem;
+        padding: 0.45rem 0.65rem;
+        border-radius: 0.65rem;
+        border: 1px solid #dbe7f3;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        box-shadow: 0 10px 24px rgba(18, 58, 96, 0.18);
+        color: #123a60;
+        pointer-events: none;
+    }
+
+    .admin-sparkline-tooltip-title {
+        margin: 0;
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: #055498;
+    }
+
+    .admin-sparkline-tooltip-sub {
+        margin: 0.15rem 0 0;
+        font-size: 0.6875rem;
+        line-height: 1.2;
+        color: #64748b;
+    }
+
+    .analytics-sparkline.is-interactive {
+        overflow: visible;
+    }
+
+    .analytics-sparkline-hit {
+        fill: transparent;
+        cursor: crosshair;
+    }
+
+    .analytics-sparkline-active {
+        fill: #055498;
+        stroke: #ffffff;
+        stroke-width: 1.5;
+        pointer-events: none;
     }
 
     .admin-function-card {
@@ -4989,8 +5039,8 @@ select.admin-filter-select:not(.admin-choice-select-native),
     }
 
     .admin-stat-sparkline {
-        width: 64px;
-        height: 20px;
+        width: 72px;
+        height: 28px;
     }
 
     .analytics-column-tooltip {

@@ -779,6 +779,7 @@ async function loadOverviewTrends(allowedSections) {
         const key = el.getAttribute('data-overview-trend');
         if (key) setNeutralTrend(key, fallbackLabel);
     });
+    hideSparklineTooltip();
     document.querySelectorAll('[data-overview-sparkline]').forEach((canvas) => {
         canvas.classList.add('hidden');
         if (canvas instanceof HTMLCanvasElement) {
@@ -898,14 +899,14 @@ function applyTrendMetric(key, metric, periodLabel) {
     const canvas = document.querySelector(`[data-overview-sparkline="${key}"]`);
     const available = Boolean(metric?.available);
     const delta = Number(metric?.delta) || 0;
-    const sparkline = Array.isArray(metric?.sparkline) ? metric.sparkline.map(Number) : [];
-    const hasSparkline = sparkline.some((value) => value > 0);
+    const sparkline = normalizeSparklinePoints(metric?.sparkline);
+    const hasSparkline = sparkline.some((point) => point.total > 0);
 
     if (!available || delta === 0) {
         setNeutralTrend(key, periodLabel);
         if (canvas instanceof HTMLCanvasElement && hasSparkline) {
             canvas.classList.remove('hidden');
-            drawSparkline(canvas, sparkline);
+            drawSparkline(canvas, sparkline, { label: metricCardLabel(key) });
         }
         return;
     }
@@ -926,7 +927,7 @@ function applyTrendMetric(key, metric, periodLabel) {
     if (canvas instanceof HTMLCanvasElement) {
         if (hasSparkline) {
             canvas.classList.remove('hidden');
-            drawSparkline(canvas, sparkline);
+            drawSparkline(canvas, sparkline, { label: metricCardLabel(key) });
         } else {
             canvas.classList.add('hidden');
             const ctx = canvas.getContext('2d');
@@ -935,29 +936,216 @@ function applyTrendMetric(key, metric, periodLabel) {
     }
 }
 
-function drawSparkline(canvas, values) {
+function metricCardLabel(key) {
+    const labels = {
+        users: 'Users',
+        posts: 'Posts',
+        notifications: 'Notifications',
+        diary: 'Journal',
+    };
+    return labels[key] || 'Activity';
+}
+
+function normalizeSparklinePoints(raw) {
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+
+    return raw.map((point, index) => {
+        if (point && typeof point === 'object') {
+            return {
+                date: point.date ? String(point.date) : null,
+                total: Number(point.total ?? point.value ?? 0) || 0,
+                index,
+            };
+        }
+
+        return {
+            date: null,
+            total: Number(point) || 0,
+            index,
+        };
+    });
+}
+
+function formatSparklineDate(value) {
+    if (!value) {
+        return null;
+    }
+
+    const date = new Date(`${value}T12:00:00`);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+
+    return date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
+}
+
+function getSparklineTooltip() {
+    let tip = document.getElementById('admin-sparkline-tooltip');
+    if (tip) {
+        return tip;
+    }
+
+    tip = document.createElement('div');
+    tip.id = 'admin-sparkline-tooltip';
+    tip.className = 'admin-sparkline-tooltip';
+    tip.setAttribute('role', 'tooltip');
+    tip.hidden = true;
+    document.body.appendChild(tip);
+    return tip;
+}
+
+function hideSparklineTooltip() {
+    const tip = document.getElementById('admin-sparkline-tooltip');
+    if (tip) {
+        tip.hidden = true;
+    }
+}
+
+function showSparklineTooltip(clientX, clientY, title, subtitle) {
+    const tip = getSparklineTooltip();
+    tip.replaceChildren();
+    const titleEl = document.createElement('p');
+    titleEl.className = 'admin-sparkline-tooltip-title';
+    titleEl.textContent = title;
+    tip.appendChild(titleEl);
+    if (subtitle) {
+        const subEl = document.createElement('p');
+        subEl.className = 'admin-sparkline-tooltip-sub';
+        subEl.textContent = subtitle;
+        tip.appendChild(subEl);
+    }
+    tip.hidden = false;
+
+    const pad = 12;
+    const rect = tip.getBoundingClientRect();
+    let left = clientX + pad;
+    let top = clientY - rect.height - pad;
+    if (left + rect.width > window.innerWidth - 8) {
+        left = clientX - rect.width - pad;
+    }
+    if (top < 8) {
+        top = clientY + pad;
+    }
+    tip.style.left = `${Math.max(8, left)}px`;
+    tip.style.top = `${Math.max(8, top)}px`;
+}
+
+function drawSparkline(canvas, pointsInput, options = {}) {
     const width = canvas.width || 80;
     const height = canvas.height || 24;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, width, height);
-    const points = values.length ? values : [0];
-    const min = Math.min(...points);
-    const max = Math.max(...points);
+    const points = (pointsInput?.length ? pointsInput : [{ total: 0 }]).map((point, index) => ({
+        date: point.date ?? null,
+        total: Number(point.total) || 0,
+        index,
+    }));
+    const values = points.map((point) => point.total);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
     const span = Math.max(max - min, 1);
     const step = points.length > 1 ? width / (points.length - 1) : width;
-
-    ctx.strokeStyle = '#055498';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    points.forEach((value, index) => {
+    const coords = points.map((point, index) => {
         const x = index * step;
-        const y = height - (((value - min) / span) * (height - 4)) - 2;
-        if (index === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        const y = height - (((point.total - min) / span) * (height - 4)) - 2;
+        return { ...point, x, y };
     });
-    ctx.stroke();
+
+    const paint = (activeIndex = -1) => {
+        ctx.clearRect(0, 0, width, height);
+        ctx.strokeStyle = '#055498';
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        coords.forEach((point, index) => {
+            if (index === 0) ctx.moveTo(point.x, point.y);
+            else ctx.lineTo(point.x, point.y);
+        });
+        ctx.stroke();
+
+        if (activeIndex >= 0 && coords[activeIndex]) {
+            const active = coords[activeIndex];
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(5, 84, 152, 0.15)';
+            ctx.arc(active.x, active.y, 5.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.fillStyle = '#055498';
+            ctx.arc(active.x, active.y, 2.75, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    };
+
+    paint();
+    canvas.classList.add('admin-stat-sparkline-interactive');
+    canvas.style.touchAction = 'manipulation';
+    canvas.__sparkPoints = coords;
+    canvas.__sparkPaint = paint;
+    canvas.__sparkWidth = width;
+    canvas.__sparkLabel = options.label || 'Activity';
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute(
+        'aria-label',
+        `${canvas.__sparkLabel} trend chart with ${coords.length} daily points. Hover or focus for details.`,
+    );
+
+    if (canvas.dataset.sparkListeners === '1') {
+        return;
+    }
+    canvas.dataset.sparkListeners = '1';
+
+    const nearestIndex = (clientX) => {
+        const livePoints = canvas.__sparkPoints || [];
+        const chartWidth = canvas.__sparkWidth || canvas.width || 80;
+        const rect = canvas.getBoundingClientRect();
+        const x = ((clientX - rect.left) / Math.max(rect.width, 1)) * chartWidth;
+        let best = 0;
+        let bestDist = Number.POSITIVE_INFINITY;
+        livePoints.forEach((point, index) => {
+            const dist = Math.abs(point.x - x);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = index;
+            }
+        });
+        return best;
+    };
+
+    const reveal = (clientX, clientY) => {
+        const livePoints = canvas.__sparkPoints || [];
+        if (!livePoints.length) return;
+        const index = nearestIndex(clientX);
+        const point = livePoints[index];
+        canvas.__sparkPaint?.(index);
+        const dateLabel = formatSparklineDate(point.date) || `Day ${index + 1}`;
+        showSparklineTooltip(
+            clientX,
+            clientY,
+            `${Number(point.total).toLocaleString()} ${String(canvas.__sparkLabel || 'items').toLowerCase()}`,
+            dateLabel,
+        );
+    };
+
+    canvas.addEventListener('pointerenter', (event) => reveal(event.clientX, event.clientY));
+    canvas.addEventListener('pointermove', (event) => {
+        event.preventDefault();
+        reveal(event.clientX, event.clientY);
+    });
+    canvas.addEventListener('pointerleave', () => {
+        canvas.__sparkPaint?.(-1);
+        hideSparklineTooltip();
+    });
+    canvas.addEventListener('pointerdown', (event) => {
+        reveal(event.clientX, event.clientY);
+    });
 }
 
 async function loadNeedsAttention(allowedSections) {

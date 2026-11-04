@@ -280,7 +280,7 @@ class DashboardAdminController extends Controller
 
     /**
      * @param  \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>|\Illuminate\Database\Query\Builder  $query
-     * @return list<int>
+     * @return list<array{date: string, total: int}>
      */
     private function dailyCreatedCounts($query, int $days = 7, ?Carbon $end = null): array
     {
@@ -297,7 +297,10 @@ class DashboardAdminController extends Controller
         $series = [];
         for ($i = 0; $i < $days; $i++) {
             $date = $from->copy()->addDays($i)->toDateString();
-            $series[] = (int) ($rows[$date] ?? 0);
+            $series[] = [
+                'date' => $date,
+                'total' => (int) ($rows[$date] ?? 0),
+            ];
         }
 
         return $series;

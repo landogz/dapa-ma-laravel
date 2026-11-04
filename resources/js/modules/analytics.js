@@ -511,7 +511,10 @@ function renderRatingsSummary(ratings, periodLabel = 'previous period') {
 
 function renderMetricSparklines(dailyByEventType, filledDays) {
     const sparklines = buildMetricSparklineSeries(dailyByEventType, filledDays);
-    sparklines.total = (filledDays ?? []).map((day) => Number(day.total) || 0);
+    sparklines.total = (filledDays ?? []).map((day) => ({
+        date: day.date,
+        total: Number(day.total) || 0,
+    }));
 
     Object.entries(sparklines).forEach(([metric, values]) => {
         const container = document.querySelector(`[data-analytics-sparkline="${metric}"]`);
@@ -520,8 +523,20 @@ function renderMetricSparklines(dailyByEventType, filledDays) {
             return;
         }
 
-        container.innerHTML = buildSparklineSvg(values, METRIC_COLORS[metric] ?? '#055498');
+        container.innerHTML = buildSparklineSvg(values, METRIC_COLORS[metric] ?? '#055498', metricSparklineLabel(metric));
+        bindAnalyticsSparklineHover(container);
     });
+}
+
+function metricSparklineLabel(metric) {
+    const labels = {
+        total: 'Events',
+        views: 'Views',
+        bookmarks: 'Bookmarks',
+        searches: 'Searches',
+        shares: 'Shares',
+    };
+    return labels[metric] || 'Activity';
 }
 
 function buildMetricSparklineSeries(dailyByEventType, filledDays) {
@@ -541,33 +556,151 @@ function buildMetricSparklineSeries(dailyByEventType, filledDays) {
                 }
             });
 
-            series[metric].push(total);
+            series[metric].push({ date, total });
         });
     });
 
     return series;
 }
 
-function buildSparklineSvg(values, color) {
+function buildSparklineSvg(values, color, label = 'Activity') {
     if (!values.length) {
         return '';
     }
 
     const width = 200;
     const height = 64;
-    const max = Math.max(...values, 1);
-    const points = values.map((value, index) => {
+    const totals = values.map((point) => Number(point?.total ?? point) || 0);
+    const max = Math.max(...totals, 1);
+    const plotted = values.map((point, index) => {
+        const total = Number(point?.total ?? point) || 0;
         const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * width;
-        const y = height - ((Number(value) / max) * (height - 8)) - 4;
-
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
+        const y = height - ((total / max) * (height - 8)) - 4;
+        return {
+            x,
+            y,
+            total,
+            date: point?.date ? String(point.date) : null,
+        };
+    });
+    const polyPoints = plotted.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
 
     return `
-        <svg viewBox="0 0 ${width} ${height}" class="analytics-sparkline" aria-hidden="true">
-            <polyline pathLength="1" points="${points}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+        <svg viewBox="0 0 ${width} ${height}" class="analytics-sparkline is-interactive" role="img" aria-label="${escapeHtml(label)} trend chart">
+            <polyline pathLength="1" points="${polyPoints}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            <g class="analytics-sparkline-hit-area">
+                ${plotted.map((point, index) => `
+                    <circle
+                        class="analytics-sparkline-hit"
+                        cx="${point.x.toFixed(1)}"
+                        cy="${point.y.toFixed(1)}"
+                        r="10"
+                        data-spark-index="${index}"
+                        data-spark-total="${point.total}"
+                        data-spark-date="${escapeHtml(point.date || '')}"
+                        data-spark-label="${escapeHtml(label)}"
+                    ></circle>
+                `).join('')}
+            </g>
+            <circle class="analytics-sparkline-active" r="4" hidden></circle>
         </svg>
     `;
+}
+
+function bindAnalyticsSparklineHover(container) {
+    const svg = container.querySelector('svg.analytics-sparkline');
+    if (!svg || svg.dataset.sparkBound === '1') {
+        return;
+    }
+    svg.dataset.sparkBound = '1';
+    const active = svg.querySelector('.analytics-sparkline-active');
+
+    const hide = () => {
+        if (active) {
+            active.setAttribute('hidden', 'hidden');
+        }
+        hideSharedSparklineTooltip();
+    };
+
+    svg.querySelectorAll('.analytics-sparkline-hit').forEach((hit) => {
+        hit.addEventListener('pointerenter', (event) => {
+            const total = Number(hit.getAttribute('data-spark-total') || 0);
+            const date = hit.getAttribute('data-spark-date') || '';
+            const label = hit.getAttribute('data-spark-label') || 'Activity';
+            const cx = hit.getAttribute('cx');
+            const cy = hit.getAttribute('cy');
+            if (active) {
+                active.removeAttribute('hidden');
+                active.setAttribute('cx', cx);
+                active.setAttribute('cy', cy);
+            }
+            showSharedSparklineTooltip(
+                event.clientX,
+                event.clientY,
+                `${total.toLocaleString()} ${label.toLowerCase()}`,
+                formatSharedSparklineDate(date) || 'Selected day',
+            );
+        });
+        hit.addEventListener('pointermove', (event) => {
+            const total = Number(hit.getAttribute('data-spark-total') || 0);
+            const date = hit.getAttribute('data-spark-date') || '';
+            const label = hit.getAttribute('data-spark-label') || 'Activity';
+            showSharedSparklineTooltip(
+                event.clientX,
+                event.clientY,
+                `${total.toLocaleString()} ${label.toLowerCase()}`,
+                formatSharedSparklineDate(date) || 'Selected day',
+            );
+        });
+        hit.addEventListener('pointerleave', hide);
+    });
+
+    svg.addEventListener('pointerleave', hide);
+}
+
+function formatSharedSparklineDate(value) {
+    if (!value) return null;
+    const date = new Date(`${value}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
+}
+
+function getSharedSparklineTooltip() {
+    let tip = document.getElementById('admin-sparkline-tooltip');
+    if (tip) return tip;
+    tip = document.createElement('div');
+    tip.id = 'admin-sparkline-tooltip';
+    tip.className = 'admin-sparkline-tooltip';
+    tip.setAttribute('role', 'tooltip');
+    tip.hidden = true;
+    document.body.appendChild(tip);
+    return tip;
+}
+
+function hideSharedSparklineTooltip() {
+    const tip = document.getElementById('admin-sparkline-tooltip');
+    if (tip) tip.hidden = true;
+}
+
+function showSharedSparklineTooltip(clientX, clientY, title, subtitle) {
+    const tip = getSharedSparklineTooltip();
+    tip.innerHTML = `
+        <p class="admin-sparkline-tooltip-title">${escapeHtml(title)}</p>
+        ${subtitle ? `<p class="admin-sparkline-tooltip-sub">${escapeHtml(subtitle)}</p>` : ''}
+    `;
+    tip.hidden = false;
+    const pad = 12;
+    const rect = tip.getBoundingClientRect();
+    let left = clientX + pad;
+    let top = clientY - rect.height - pad;
+    if (left + rect.width > window.innerWidth - 8) left = clientX - rect.width - pad;
+    if (top < 8) top = clientY + pad;
+    tip.style.left = `${Math.max(8, left)}px`;
+    tip.style.top = `${Math.max(8, top)}px`;
 }
 
 function categorizeEventType(eventType) {
