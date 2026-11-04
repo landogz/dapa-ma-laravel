@@ -167,7 +167,7 @@ function buildMediaPreviewMarkup(item, { compact = false } = {}) {
     if ((mediaType === 'gif' || mediaType === 'image') && mediaUrl) {
         return `
             <div class="${frameClass} p-2 sm:p-3">
-                <img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item?.title ?? 'IEC media')}" class="${mediaClass}">
+                <img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item?.title ?? 'IEC media')}" class="${mediaClass}" data-image-zoom>
             </div>
         `;
     }
@@ -175,7 +175,7 @@ function buildMediaPreviewMarkup(item, { compact = false } = {}) {
     if (mediaType === 'lottie' && mediaUrl) {
         return `
             <div class="${frameClass} p-4 text-center">
-                ${thumbUrl ? `<img src="${escapeHtml(thumbUrl)}" alt="" class="${mediaClass} mb-3">` : ''}
+                ${thumbUrl ? `<img src="${escapeHtml(thumbUrl)}" alt="" class="${mediaClass} mb-3" data-image-zoom>` : ''}
                 <p class="text-sm text-slate-600">Lottie animation URL</p>
                 <a class="mt-2 inline-flex text-sm font-medium text-[#055498] underline" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noopener noreferrer">Open Lottie file</a>
             </div>
@@ -185,7 +185,7 @@ function buildMediaPreviewMarkup(item, { compact = false } = {}) {
     if (thumbUrl) {
         return `
             <div class="${frameClass} p-2 sm:p-3">
-                <img src="${escapeHtml(thumbUrl)}" alt="${escapeHtml(item?.title ?? 'IEC thumbnail')}" class="${mediaClass}">
+                <img src="${escapeHtml(thumbUrl)}" alt="${escapeHtml(item?.title ?? 'IEC thumbnail')}" class="${mediaClass}" data-image-zoom>
             </div>
         `;
     }

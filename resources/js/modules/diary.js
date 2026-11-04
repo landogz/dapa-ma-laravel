@@ -3,7 +3,7 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, getAdminTableMode, bindAdminTableModeChange } from './shared/datatables';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey, renderAdminFilterTabs, setAdminFilterTab } from './shared/filter-tabs';
 import { SKY_FILTER_ITEMS, userInitials } from './diary/sky-filters';
-import { buildSwalOptions, confirmWithSwal } from './shared/swal-forms';
+import { bindZoomableImages, buildSwalOptions, confirmWithSwal } from './shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from './shared/table-actions';
 import { showErrorToast, showSuccessToast } from './shared/toast';
 import { sanitizeHtml } from './shared/safe-html';
@@ -461,7 +461,7 @@ function openDiaryView(entry) {
                     </div>
                     <p class="text-sm text-slate-600"><strong>Feelings:</strong> ${feelings}</p>
                     <p class="text-sm text-slate-600"><strong>Gratitude:</strong> ${gratitude}</p>
-                    ${entry.image_url ? `<img src="${escapeHtml(entry.image_url)}" alt="Journal photo" class="mb-2 max-h-72 w-full rounded-xl object-cover" />` : ''}
+                    ${entry.image_url ? `<img src="${escapeHtml(entry.image_url)}" alt="Journal photo" class="mb-2 max-h-72 w-full rounded-xl object-cover" data-image-zoom />` : ''}
                     <div class="diary-entry-preview rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-800">
                         ${bodyHtml}
                     </div>
@@ -471,6 +471,12 @@ function openDiaryView(entry) {
         showCancelButton: false,
         confirmButtonText: 'Close',
         confirmOnly: false,
+        didOpen: (popup) => {
+            popup.querySelectorAll('.diary-entry-preview img').forEach((img) => {
+                img.setAttribute('data-image-zoom', '');
+            });
+            bindZoomableImages(popup);
+        },
     }));
 }
 

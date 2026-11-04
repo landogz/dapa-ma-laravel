@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, loadAdminDataTableLibrary, getAdminTableMode, bindAdminTableModeChange } from '../shared/datatables';
-import { buildSwalOptions } from '../shared/swal-forms';
+import { bindZoomableImages, buildSwalOptions } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
@@ -216,7 +216,7 @@ function showSubmissionsModal(contest, entries) {
                 <p class="mt-2 text-xs text-slate-600">${escapeHtml(entry.description ?? 'No description')}</p>
                 ${entry.poster_image_url ? `
                     <div class="mt-2 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                        <img src="${escapeAttribute(entry.poster_image_url)}" alt="${escapeHtml(entry.title)}" class="max-h-48 w-full object-contain">
+                        <img src="${escapeAttribute(entry.poster_image_url)}" alt="${escapeHtml(entry.title)}" class="max-h-48 w-full object-contain" data-image-zoom>
                     </div>
                     <p class="mt-1 text-xs"><a class="text-[#055498] underline" href="${escapeAttribute(entry.poster_image_url)}" target="_blank" rel="noopener noreferrer">Open poster</a></p>
                 ` : ''}
@@ -236,6 +236,7 @@ function showSubmissionsModal(contest, entries) {
         confirmButtonText: 'Done',
         cancelButtonText: 'Cancel',
         width: '48rem',
+        didOpen: (popup) => bindZoomableImages(popup),
     }));
 }
 

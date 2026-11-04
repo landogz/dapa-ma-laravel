@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import {
+    bindZoomableImages,
     buildSwalForm,
     buildSwalOptions,
     confirmWithSwal,
@@ -227,7 +228,7 @@ function renderGallery() {
             ${stickers.map((sticker) => `
                 <article class="sticker-tile${sticker.is_active ? '' : ' is-inactive'}" data-sticker-id="${sticker.id}">
                     <div class="sticker-tile-media">
-                        <img src="${escapeHtml(sticker.image_url || '')}" alt="${escapeHtml(sticker.name || 'Sticker')}" loading="lazy">
+                        <img src="${escapeHtml(sticker.image_url || '')}" alt="${escapeHtml(sticker.name || 'Sticker')}" loading="lazy" data-image-zoom>
                     </div>
                     <div class="sticker-tile-meta">
                         <p class="sticker-tile-name">${escapeHtml(sticker.name || `Sticker #${sticker.id}`)}</p>
@@ -249,6 +250,8 @@ function renderGallery() {
             </button>
         </div>
     `;
+
+    bindZoomableImages(gallery);
 }
 
 function onGalleryClick(event) {

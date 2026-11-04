@@ -747,7 +747,7 @@ function buildRowData(item) {
 
 function visualMarkup(item) {
     if (item?.image_url) {
-        return `<img src="${escapeHtml(item.image_url)}" alt="" class="h-8 w-8 shrink-0 rounded-lg bg-slate-50 object-contain ring-1 ring-slate-200">`;
+        return `<img src="${escapeHtml(item.image_url)}" alt="" class="h-8 w-8 shrink-0 rounded-lg bg-slate-50 object-contain ring-1 ring-slate-200" data-image-zoom>`;
     }
     if (item?.icon) {
         return `<span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[#055498]" title="${escapeHtml(item.icon)}"><i class="${escapeHtml(iconFaClass(item.icon))}" aria-hidden="true"></i></span>`;

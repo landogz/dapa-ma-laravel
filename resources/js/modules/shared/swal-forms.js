@@ -698,15 +698,68 @@ function bindImagePreviewViewer(preview, wrap) {
 }
 
 /**
+ * Content / media images that must open the shared lightbox when marked
+ * with data-image-zoom (or matching legacy preview classes).
+ */
+export const ADMIN_ZOOMABLE_IMAGE_SELECTOR = [
+    'img[data-image-zoom]',
+    'img.admin-swal-media-preview',
+    'img.admin-swal-image-preview:not([hidden])',
+    'img.diary-reader-photo',
+    'img.admin-table-media-thumb',
+    '.admin-swal-speaker-photo-preview img',
+    '.sticker-tile-media img',
+].join(', ');
+
+let zoomDelegationBound = false;
+
+/**
+ * One document-level listener so dynamically rendered thumbs/modals still
+ * open the lightbox without each module rebinding after every redraw.
+ */
+export function ensureZoomableImageDelegation() {
+    if (zoomDelegationBound || typeof document === 'undefined') {
+        return;
+    }
+
+    zoomDelegationBound = true;
+
+    document.addEventListener('click', (event) => {
+        const img = event.target?.closest?.(ADMIN_ZOOMABLE_IMAGE_SELECTOR);
+        if (!img || img.hidden || img.classList.contains('admin-image-viewer-img')) {
+            return;
+        }
+
+        if (img.closest('#admin-image-viewer-overlay')) {
+            return;
+        }
+
+        const src = img.getAttribute('src') || '';
+        if (!src) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        openAdminImageViewer(src, { alt: img.getAttribute('alt') || 'Image preview' });
+    }, true);
+}
+
+/**
  * Make matching images open the shared full-size lightbox.
  * Safe to call repeatedly; already-bound images are skipped.
  */
-export function bindZoomableImages(root = document, selector = 'img[data-image-zoom]') {
+export function bindZoomableImages(root = document, selector = ADMIN_ZOOMABLE_IMAGE_SELECTOR) {
+    ensureZoomableImageDelegation();
+
     if (!root?.querySelectorAll) {
         return;
     }
 
     root.querySelectorAll(selector).forEach((img) => {
+        if (!img.hasAttribute('data-image-zoom')) {
+            img.setAttribute('data-image-zoom', '');
+        }
         bindImagePreviewViewer(img, img.closest('.admin-swal-image-preview-wrap'));
     });
 }
@@ -1484,6 +1537,7 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
         didOpen: async (popup) => {
             bindPasswordToggles(popup);
             bindImageFilePreviews(popup);
+            bindZoomableImages(popup);
             bindColorPickers(popup);
             bindSvgIconPickers(popup);
             bindAddressFields(popup);
@@ -1578,6 +1632,8 @@ export function enableAdminSwalHeaders() {
     if (adminSwalPatched || typeof window === 'undefined') {
         return;
     }
+
+    ensureZoomableImageDelegation();
 
     const originalFire = Swal.fire;
     const originalShowValidationMessage = Swal.showValidationMessage.bind(Swal);

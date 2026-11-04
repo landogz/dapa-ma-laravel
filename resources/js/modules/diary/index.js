@@ -3,7 +3,7 @@ import Swal from 'sweetalert2';
 import { createAdminDataTable, getAdminDataTableOptions, getAdminTableMode, bindAdminTableModeChange } from '../shared/datatables';
 import { applyAdminFilterTabCounts, bindAdminFilterTabs, countByKey, renderAdminFilterTabs, setAdminFilterTab } from '../shared/filter-tabs';
 import { SKY_FILTER_ITEMS, userInitials } from './sky-filters';
-import { buildSwalOptions, confirmWithSwal } from '../shared/swal-forms';
+import { bindZoomableImages, buildSwalOptions, confirmWithSwal } from '../shared/swal-forms';
 import { buildAdminActionButtons, bindAdminActionTooltipSuppression } from '../shared/table-actions';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 import { sanitizeHtml } from '../shared/safe-html';
@@ -675,7 +675,7 @@ function openDiaryView(entry) {
                     </div>
                     ${feelings.length ? `<div class="diary-reader-feelings">${feelings.map((feeling) => `<span class="diary-mood-chip">${escapeHtml(feeling)}</span>`).join('')}</div>` : ''}
                     ${gratitude ? `<blockquote class="diary-reader-gratitude"><p class="diary-reader-kicker">Gratitude</p><p>${escapeHtml(gratitude)}</p></blockquote>` : ''}
-                    ${entry.image_url ? `<img src="${escapeHtml(entry.image_url)}" alt="" class="diary-reader-photo">` : ''}
+                    ${entry.image_url ? `<img src="${escapeHtml(entry.image_url)}" alt="Journal photo" class="diary-reader-photo" data-image-zoom>` : ''}
                     <div class="diary-entry-preview diary-reader-body">
                         ${bodyHtml}
                     </div>
@@ -685,6 +685,12 @@ function openDiaryView(entry) {
         showCancelButton: false,
         confirmButtonText: 'Close',
         confirmOnly: false,
+        didOpen: (popup) => {
+            popup.querySelectorAll('.diary-reader-body img').forEach((img) => {
+                img.setAttribute('data-image-zoom', '');
+            });
+            bindZoomableImages(popup);
+        },
     }), { size: 'lg' });
 }
 

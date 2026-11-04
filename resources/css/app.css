@@ -3484,6 +3484,15 @@ select.admin-filter-select:not(.admin-choice-select-native),
     object-fit: cover;
 }
 
+img[data-image-zoom],
+img.admin-swal-media-preview,
+img.diary-reader-photo,
+img.admin-table-media-thumb,
+.admin-swal-speaker-photo-preview img,
+.sticker-tile-media img {
+    cursor: zoom-in;
+}
+
 .admin-swal-image-preview-wrap {
     position: relative;
     width: 100%;
@@ -9020,7 +9029,9 @@ body.admin-mega-open {
 
 .post-view-media.is-zoomable,
 .post-view-comment-media.is-zoomable,
-.post-view-body img.is-zoomable {
+.post-view-body img.is-zoomable,
+.diary-reader-photo.is-zoomable,
+img[data-image-zoom].is-zoomable {
     cursor: zoom-in;
 }
 

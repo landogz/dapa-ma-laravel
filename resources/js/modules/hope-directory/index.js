@@ -193,7 +193,7 @@ function categoryBadge(category) {
 
 function mediaThumb(url) {
     if (url) {
-        return `<img class="admin-table-media-thumb" src="${escapeAttr(url)}" alt="" loading="lazy">`;
+        return `<img class="admin-table-media-thumb" src="${escapeAttr(url)}" alt="" loading="lazy" data-image-zoom>`;
     }
     return '<span class="admin-table-media-placeholder" aria-hidden="true"><i class="fas fa-building"></i></span>';
 }
@@ -289,7 +289,7 @@ function bindRowActions() {
 
 function buildFormHtml(row, reviewItem = null) {
     const logoPreview = row?.logo_url
-        ? `<img class="admin-swal-media-preview" src="${escapeAttr(row.logo_url)}" alt="Current logo">`
+        ? `<img class="admin-swal-media-preview" src="${escapeAttr(row.logo_url)}" alt="Current logo" data-image-zoom>`
         : '';
     const reviewFields = Object.entries(HOPE_DIRECTORY_REVIEW_FIELD_MAP).map(([id, attribute]) => ({
         id,

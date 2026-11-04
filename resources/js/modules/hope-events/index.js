@@ -201,7 +201,7 @@ function statusBadge(row) {
 
 function mediaThumb(url, icon) {
     if (url) {
-        return `<img class="admin-table-media-thumb" src="${escapeAttr(url)}" alt="" loading="lazy">`;
+        return `<img class="admin-table-media-thumb" src="${escapeAttr(url)}" alt="" loading="lazy" data-image-zoom>`;
     }
     return `<span class="admin-table-media-placeholder" aria-hidden="true"><i class="fas ${icon}"></i></span>`;
 }
@@ -302,7 +302,7 @@ function buildFormHtml(row, reviewItem = null) {
         ? row.highlights.map((h) => (typeof h === 'string' ? h : h.label)).filter(Boolean).join('\n')
         : '';
     const coverPreview = row?.cover_url
-        ? `<img class="admin-swal-media-preview" src="${escapeAttr(row.cover_url)}" alt="Current cover">`
+        ? `<img class="admin-swal-media-preview" src="${escapeAttr(row.cover_url)}" alt="Current cover" data-image-zoom>`
         : '';
     const reviewFields = Object.entries(HOPE_EVENT_REVIEW_FIELD_MAP).map(([id, attribute]) => ({
         id,
@@ -477,7 +477,7 @@ function speakerRowHtml(speaker = {}) {
                     <div class="admin-swal-speaker-photo">
                         <div class="admin-swal-speaker-photo-preview" data-he-speaker-preview>
                             ${photoUrl
-                                ? `<img src="${escapeAttr(photoUrl)}" alt="Speaker photo">`
+                                ? `<img src="${escapeAttr(photoUrl)}" alt="Speaker photo" data-image-zoom>`
                                 : '<span class="admin-swal-speaker-photo-placeholder"><i class="fas fa-user" aria-hidden="true"></i></span>'}
                         </div>
                         <div class="admin-swal-speaker-photo-controls">
@@ -607,7 +607,7 @@ function bindSpeakerPhotoControls(rowEl) {
 
         if (removeFlag) removeFlag.value = '0';
         const url = URL.createObjectURL(file);
-        preview.innerHTML = `<img src="${escapeAttr(url)}" alt="Speaker photo preview">`;
+        preview.innerHTML = `<img src="${escapeAttr(url)}" alt="Speaker photo preview" data-image-zoom>`;
     });
 }
 
