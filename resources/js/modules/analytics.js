@@ -249,20 +249,22 @@ function renderRoleSummaryMetrics(payload) {
     const comparison = payload?.period_comparison?.current ?? {};
 
     const map = {
-        analytics_views: Number(funnel.views ?? comparison.views ?? 0),
-        analytics_bookmarks: Number(funnel.bookmarks ?? comparison.bookmarks ?? 0),
-        analytics_shares: Number(funnel.shares ?? comparison.shares ?? 0),
-        analytics_engagement: Number(funnel.engagement ?? 0),
+        'analytics-views': Number(funnel.views ?? comparison.views ?? 0),
+        'analytics-bookmarks': Number(funnel.bookmarks ?? comparison.bookmarks ?? 0),
+        'analytics-shares': Number(funnel.shares ?? comparison.shares ?? 0),
+        'analytics-engagement': Number(funnel.engagement ?? 0),
     };
 
     Object.entries(map).forEach(([key, value]) => {
         document.querySelectorAll(`[data-overview-count="${key}"]`).forEach((el) => {
-            if (key === 'analytics_engagement') {
-                el.textContent = `${value.toLocaleString()}%`;
+            if (key === 'analytics-engagement') {
+                el.textContent = `${Number(value).toLocaleString(undefined, {
+                    maximumFractionDigits: 1,
+                })}%`;
                 return;
             }
 
-            el.textContent = value.toLocaleString();
+            el.textContent = Number(value).toLocaleString();
         });
     });
 }

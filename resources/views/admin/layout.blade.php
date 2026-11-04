@@ -49,101 +49,101 @@
                     </a>
                 </div>
 
-                <div class="admin-nav-group">
+                <div class="admin-nav-group hidden">
                     <p class="admin-nav-group-label">Publish</p>
-                    <a href="/admin/posts" class="admin-nav-link {{ ($activePage ?? '') === 'posts' ? 'admin-nav-link-active' : '' }}" data-nav-section="posts">
+                    <a href="/admin/posts" class="admin-nav-link hidden {{ ($activePage ?? '') === 'posts' ? 'admin-nav-link-active' : '' }}" data-nav-section="posts">
                         <i class="fas fa-file-pen w-5 text-[#FBD116]"></i>
                         <span>Posts</span>
                     </a>
-                    <a href="/admin/contests" class="admin-nav-link {{ ($activePage ?? '') === 'contests' ? 'admin-nav-link-active' : '' }}" data-nav-section="contests">
+                    <a href="/admin/contests" class="admin-nav-link hidden {{ ($activePage ?? '') === 'contests' ? 'admin-nav-link-active' : '' }}" data-nav-section="contests">
                         <i class="fas fa-trophy w-5 text-[#FBD116]"></i>
                         <span>Contests</span>
                     </a>
-                    <a href="/admin/iec-materials" class="admin-nav-link {{ ($activePage ?? '') === 'iec-materials' ? 'admin-nav-link-active' : '' }}" data-nav-section="iec-materials">
+                    <a href="/admin/iec-materials" class="admin-nav-link hidden {{ ($activePage ?? '') === 'iec-materials' ? 'admin-nav-link-active' : '' }}" data-nav-section="iec-materials">
                         <i class="fas fa-photo-film w-5 text-[#FBD116]"></i>
                         <span>IEC Materials</span>
                     </a>
-                    <a href="/admin/sticker-library" class="admin-nav-link {{ ($activePage ?? '') === 'sticker-library' ? 'admin-nav-link-active' : '' }}" data-nav-section="sticker-library">
+                    <a href="/admin/sticker-library" class="admin-nav-link hidden {{ ($activePage ?? '') === 'sticker-library' ? 'admin-nav-link-active' : '' }}" data-nav-section="sticker-library">
                         <i class="fas fa-face-smile w-5 text-[#FBD116]"></i>
                         <span>Sticker Library</span>
                     </a>
-                    <a href="/admin/color-fun-library" class="admin-nav-link {{ ($activePage ?? '') === 'color-fun-library' ? 'admin-nav-link-active' : '' }}" data-nav-section="color-fun-library">
+                    <a href="/admin/color-fun-library" class="admin-nav-link hidden {{ ($activePage ?? '') === 'color-fun-library' ? 'admin-nav-link-active' : '' }}" data-nav-section="color-fun-library">
                         <i class="fas fa-palette w-5 text-[#FBD116]"></i>
                         <span>Color Fun Library</span>
                     </a>
                 </div>
 
-                <div class="admin-nav-group">
+                <div class="admin-nav-group hidden">
                     <p class="admin-nav-group-label">Find help</p>
-                    <a href="/admin/rehab-centers" class="admin-nav-link {{ ($activePage ?? '') === 'rehab-centers' ? 'admin-nav-link-active' : '' }}" data-nav-section="rehab-centers">
+                    <a href="/admin/rehab-centers" class="admin-nav-link hidden {{ ($activePage ?? '') === 'rehab-centers' ? 'admin-nav-link-active' : '' }}" data-nav-section="rehab-centers">
                         <i class="fas fa-hospital w-5 text-[#FBD116]"></i>
                         <span>Treatment Rehabilitation Center</span>
                     </a>
-                    <a href="/admin/care-toolkit" class="admin-nav-link {{ ($activePage ?? '') === 'care-toolkit' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-toolkit">
+                    <a href="/admin/care-toolkit" class="admin-nav-link hidden {{ ($activePage ?? '') === 'care-toolkit' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-toolkit">
                         <i class="fas fa-heart-pulse w-5 text-[#FBD116]"></i>
                         <span>Care Toolkit</span>
                     </a>
-                    <a href="/admin/care-checks" class="admin-nav-link {{ ($activePage ?? '') === 'care-checks' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-checks">
+                    <a href="/admin/care-checks" class="admin-nav-link hidden {{ ($activePage ?? '') === 'care-checks' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-checks">
                         <i class="fas fa-clipboard-check w-5 text-[#FBD116]"></i>
                         <span>Care Checks</span>
                     </a>
-                    <a href="/admin/care-support" class="admin-nav-link {{ ($activePage ?? '') === 'care-support' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-support">
+                    <a href="/admin/care-support" class="admin-nav-link hidden {{ ($activePage ?? '') === 'care-support' ? 'admin-nav-link-active' : '' }}" data-nav-section="care-support">
                         <i class="fas fa-handshake-angle w-5 text-[#FBD116]"></i>
                         <span>Care Support</span>
                     </a>
-                    <a href="/admin/diary" class="admin-nav-link {{ ($activePage ?? '') === 'diary' ? 'admin-nav-link-active' : '' }}" data-nav-section="diary">
+                    <a href="/admin/diary" class="admin-nav-link hidden {{ ($activePage ?? '') === 'diary' ? 'admin-nav-link-active' : '' }}" data-nav-section="diary">
                         <i class="fas fa-book-open w-5 text-[#FBD116]"></i>
                         <span>Journal</span>
                     </a>
                 </div>
 
-                <div class="admin-nav-group">
+                <div class="admin-nav-group hidden">
                     <p class="admin-nav-group-label">Hope</p>
-                    <a href="/admin/hope-directory" class="admin-nav-link {{ ($activePage ?? '') === 'hope-directory' ? 'admin-nav-link-active' : '' }}" data-nav-section="hope-directory">
+                    <a href="/admin/hope-directory" class="admin-nav-link hidden {{ ($activePage ?? '') === 'hope-directory' ? 'admin-nav-link-active' : '' }}" data-nav-section="hope-directory">
                         <i class="fas fa-address-book w-5 text-[#FBD116]"></i>
                         <span>Hope Directory</span>
                     </a>
-                    <a href="/admin/hope-events" class="admin-nav-link {{ ($activePage ?? '') === 'hope-events' ? 'admin-nav-link-active' : '' }}" data-nav-section="hope-events">
+                    <a href="/admin/hope-events" class="admin-nav-link hidden {{ ($activePage ?? '') === 'hope-events' ? 'admin-nav-link-active' : '' }}" data-nav-section="hope-events">
                         <i class="fas fa-calendar-days w-5 text-[#FBD116]"></i>
                         <span>Hope Events</span>
                     </a>
                 </div>
 
-                <div class="admin-nav-group">
+                <div class="admin-nav-group hidden">
                     <p class="admin-nav-group-label">Engage</p>
-                    <a href="/admin/notifications" class="admin-nav-link {{ ($activePage ?? '') === 'notifications' ? 'admin-nav-link-active' : '' }}" data-nav-section="notifications">
+                    <a href="/admin/notifications" class="admin-nav-link hidden {{ ($activePage ?? '') === 'notifications' ? 'admin-nav-link-active' : '' }}" data-nav-section="notifications">
                         <i class="fas fa-bell w-5 text-[#FBD116]"></i>
                         <span>Notifications</span>
                     </a>
-                    <a href="/admin/analytics" class="admin-nav-link {{ ($activePage ?? '') === 'analytics' ? 'admin-nav-link-active' : '' }}" data-nav-section="analytics">
+                    <a href="/admin/analytics" class="admin-nav-link hidden {{ ($activePage ?? '') === 'analytics' ? 'admin-nav-link-active' : '' }}" data-nav-section="analytics">
                         <i class="fas fa-chart-column w-5 text-[#FBD116]"></i>
                         <span>Analytics</span>
                     </a>
                 </div>
 
-                <div class="admin-nav-group">
+                <div class="admin-nav-group hidden">
                     <p class="admin-nav-group-label">System</p>
-                    <a href="/admin/users" class="admin-nav-link {{ ($activePage ?? '') === 'users' ? 'admin-nav-link-active' : '' }}" data-nav-section="users">
+                    <a href="/admin/users" class="admin-nav-link hidden {{ ($activePage ?? '') === 'users' ? 'admin-nav-link-active' : '' }}" data-nav-section="users">
                         <i class="fas fa-users w-5 text-[#FBD116]"></i>
                         <span>Users</span>
                     </a>
-                    <a href="/admin/settings" class="admin-nav-link {{ ($activePage ?? '') === 'settings' ? 'admin-nav-link-active' : '' }}" data-nav-section="settings">
+                    <a href="/admin/settings" class="admin-nav-link hidden {{ ($activePage ?? '') === 'settings' ? 'admin-nav-link-active' : '' }}" data-nav-section="settings">
                         <i class="fas fa-gear w-5 text-[#FBD116]"></i>
                         <span>Settings</span>
                     </a>
-                    <a href="/admin/lookups" class="admin-nav-link {{ ($activePage ?? '') === 'lookups' ? 'admin-nav-link-active' : '' }}" data-nav-section="lookups">
+                    <a href="/admin/lookups" class="admin-nav-link hidden {{ ($activePage ?? '') === 'lookups' ? 'admin-nav-link-active' : '' }}" data-nav-section="lookups">
                         <i class="fas fa-sliders w-5 text-[#FBD116]"></i>
                         <span>Lookups</span>
                     </a>
-                    <a href="/admin/app-translations" class="admin-nav-link {{ ($activePage ?? '') === 'app-translations' ? 'admin-nav-link-active' : '' }}" data-nav-section="app-translations">
+                    <a href="/admin/app-translations" class="admin-nav-link hidden {{ ($activePage ?? '') === 'app-translations' ? 'admin-nav-link-active' : '' }}" data-nav-section="app-translations">
                         <i class="fas fa-language w-5 text-[#FBD116]"></i>
                         <span>App Translations</span>
                     </a>
-                    <a href="/admin/word-blocking" class="admin-nav-link {{ ($activePage ?? '') === 'word-blocking' ? 'admin-nav-link-active' : '' }}" data-nav-section="word-blocking">
+                    <a href="/admin/word-blocking" class="admin-nav-link hidden {{ ($activePage ?? '') === 'word-blocking' ? 'admin-nav-link-active' : '' }}" data-nav-section="word-blocking">
                         <i class="fas fa-ban w-5 text-[#FBD116]"></i>
                         <span>Word Blocking</span>
                     </a>
-                    <a href="/admin/audit-trail" class="admin-nav-link {{ ($activePage ?? '') === 'audit-trail' ? 'admin-nav-link-active' : '' }}" data-nav-section="audit-trail">
+                    <a href="/admin/audit-trail" class="admin-nav-link hidden {{ ($activePage ?? '') === 'audit-trail' ? 'admin-nav-link-active' : '' }}" data-nav-section="audit-trail">
                         <i class="fas fa-clock-rotate-left w-5 text-[#FBD116]"></i>
                         <span>Audit Trail</span>
                     </a>
@@ -258,7 +258,11 @@
             </header>
             <div class="admin-mega-backdrop hidden" data-admin-mega-backdrop></div>
 
-            <main class="mx-auto max-w-[1600px] space-y-6 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+            <main
+                data-admin-main
+                aria-hidden="true"
+                class="mx-auto max-w-[1600px] space-y-6 px-3 py-4 opacity-0 pointer-events-none transition-opacity duration-150 sm:px-6 sm:py-6 lg:px-8"
+            >
                 @yield('content')
             </main>
         </div>

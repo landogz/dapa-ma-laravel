@@ -24,6 +24,8 @@ use App\Services\Password\PasswordService;
 use App\Services\PasswordResetService;
 use App\Services\ProfileService;
 use App\Support\Auth\AdminGateCookie;
+use App\Support\Auth\AdminRoleCookie;
+use App\Support\Auth\AdminRoleSections;
 use App\Support\Auth\LoginOtp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -83,7 +85,7 @@ class AuthController extends Controller
                 'token' => $token,
                 'user' => $this->profileService->formatUser($user),
             ],
-        ], 201));
+        ], 201), $user);
     }
 
     public function login(LoginRequest $request): JsonResponse
@@ -208,7 +210,9 @@ class AuthController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Logged out successfully.',
-        ])->withCookie(AdminGateCookie::forget());
+        ])
+            ->withCookie(AdminGateCookie::forget())
+            ->withCookie(AdminRoleCookie::forget());
     }
 
     public function me(Request $request): JsonResponse
@@ -222,7 +226,7 @@ class AuthController extends Controller
             return $response;
         }
 
-        return $this->withAdminGate($response);
+        return $this->withAdminGate($response, $request->user());
     }
 
     public function updateProfile(UpdateProfileRequest $request): JsonResponse
@@ -389,11 +393,18 @@ class AuthController extends Controller
                 'user' => $this->profileService->formatUser($user->fresh() ?? $user),
                 'requires_verification' => false,
             ],
-        ]));
+        ]), $user);
     }
 
-    private function withAdminGate(JsonResponse $response): JsonResponse
+    private function withAdminGate(JsonResponse $response, ?User $user = null): JsonResponse
     {
-        return $response->withCookie(AdminGateCookie::make());
+        $response = $response->withCookie(AdminGateCookie::make());
+
+        $role = $user?->role;
+        if (is_string($role) && array_key_exists($role, AdminRoleSections::ROLE_SECTIONS)) {
+            return $response->withCookie(AdminRoleCookie::make($role));
+        }
+
+        return $response->withCookie(AdminRoleCookie::forget());
     }
 }

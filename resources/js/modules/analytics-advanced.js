@@ -131,8 +131,7 @@ export function renderExtendedKpis(kpis = {}, tooltips = {}) {
     Object.entries(map).forEach(([key, value]) => {
         document.querySelectorAll(`[data-analytics-summary="${key}"]`).forEach((el) => {
             if (key === 'avg-session') {
-                const secs = Number(value) || 0;
-                writeAnimatedMetric(el, secs > 0 ? `${Math.round(secs)}s` : '—');
+                writeAnimatedMetric(el, formatSessionDuration(value));
                 return;
             }
             writeAnimatedMetric(el, value == null ? '—' : Number(value).toLocaleString());
@@ -273,7 +272,7 @@ async function loadMobileTab(params) {
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">App opens</p><p class="analytics-mini-kpi-value">${Number(kpis.app_opens || 0).toLocaleString()}</p></article>
             <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Session rows</p><p class="analytics-mini-kpi-value">${Number(kpis.session_rows || 0).toLocaleString()}</p></article>
-            <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Avg session</p><p class="analytics-mini-kpi-value">${kpis.avg_session_duration_seconds ? `${Math.round(kpis.avg_session_duration_seconds)}s` : '—'}</p></article>
+            <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Avg session</p><p class="analytics-mini-kpi-value">${formatSessionDuration(kpis.avg_session_duration_seconds)}</p></article>
             <article class="analytics-mini-kpi"><p class="analytics-mini-kpi-label">Android / iOS</p><p class="analytics-mini-kpi-value">${Number(devices.android || 0).toLocaleString()} / ${Number(devices.ios || 0).toLocaleString()}</p></article>
         </div>
         <div class="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
@@ -635,15 +634,37 @@ function renderLeaderboardSpotlight(row) {
     `;
 }
 
+function formatSessionDuration(value) {
+    const secs = Math.max(0, Math.round(Number(value) || 0));
+    if (secs <= 0) {
+        return '—';
+    }
+
+    if (secs < 60) {
+        return `${secs}s`;
+    }
+
+    const hours = Math.floor(secs / 3600);
+    const minutes = Math.floor((secs % 3600) / 60);
+    const seconds = secs % 60;
+
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+
+    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+}
+
 function leaderboardAvatar(row, size = 'md') {
     const name = String(row?.name || 'User');
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() || '').join('') || '?';
     const sizeClass = size === 'lg' ? 'is-lg' : size === 'sm' ? 'is-sm' : 'is-md';
-    if (!row?.avatar_url) {
+    const avatarUrl = typeof row?.avatar_url === 'string' ? row.avatar_url.trim() : '';
+    if (!avatarUrl) {
         return `<span class="analytics-leaderboard-avatar ${sizeClass} is-fallback" aria-hidden="true">${escapeHtml(initials)}</span>`;
     }
 
-    return `<span class="analytics-leaderboard-avatar ${sizeClass}" data-fallback-initials="${escapeHtml(initials)}"><img src="${escapeHtml(row.avatar_url)}" alt="" loading="lazy" data-leaderboard-avatar></span>`;
+    return `<span class="analytics-leaderboard-avatar ${sizeClass}" data-fallback-initials="${escapeHtml(initials)}"><img src="${escapeHtml(avatarUrl)}" alt="" loading="lazy" data-leaderboard-avatar></span>`;
 }
 
 function bindLeaderboardAvatarFallbacks(root) {

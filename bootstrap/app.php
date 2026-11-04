@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->encryptCookies(except: [
             \App\Support\Auth\AdminGateCookie::NAME,
+            \App\Support\Auth\AdminRoleCookie::NAME,
         ]);
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,

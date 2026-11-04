@@ -3,31 +3,10 @@
 namespace App\Services\AdminSearch;
 
 use App\Repositories\AdminSearch\AdminSearchRepository;
+use App\Support\Auth\AdminRoleSections;
 
 class AdminSearchService
 {
-    private const ROLE_SECTIONS = [
-        'super_admin' => [
-            'posts', 'rehab-centers', 'contests', 'iec-materials',
-            'app-translations', 'notifications', 'analytics', 'users', 'diary',
-            'care-toolkit', 'care-checks', 'care-support', 'hope-directory',
-            'hope-events', 'settings', 'lookups', 'word-blocking',
-        ],
-        'editor' => [
-            'posts', 'rehab-centers', 'contests', 'iec-materials',
-            'app-translations', 'notifications', 'care-toolkit', 'care-checks',
-            'care-support', 'hope-directory', 'hope-events', 'settings',
-            'lookups', 'word-blocking',
-        ],
-        'publisher' => [
-            'posts', 'rehab-centers', 'contests', 'iec-materials',
-            'app-translations', 'notifications', 'care-toolkit', 'care-checks',
-            'care-support', 'hope-directory', 'hope-events', 'settings',
-            'lookups', 'word-blocking',
-        ],
-        'analytics_viewer' => ['analytics'],
-    ];
-
     public function __construct(
         private readonly AdminSearchRepository $adminSearchRepository,
     ) {
@@ -35,7 +14,7 @@ class AdminSearchService
 
     public function search(string $query, ?string $role): array
     {
-        $sections = self::ROLE_SECTIONS[$role] ?? [];
+        $sections = AdminRoleSections::forRole($role);
         $results = [];
 
         $map = [

@@ -1,4 +1,3 @@
-import Swal from 'sweetalert2';
 import { getDashboardQueryParams, initAnalyticsModule, initDashboardOverview } from './analytics';
 import { showErrorToast } from './shared/toast';
 import { initDiaryModule } from './diary';
@@ -45,6 +44,7 @@ const ADMIN_ROLE_SECTIONS = {
         'app-translations',
         'notifications',
         'analytics',
+        ...ANALYTICS_METRIC_SECTIONS,
         'users',
         'diary',
         'care-toolkit',
@@ -540,19 +540,24 @@ async function guardPageAccess(pageName, allowedSections) {
     const requiredSection = PAGE_SECTION_REQUIREMENTS[pageName];
 
     if (!requiredSection || allowedSections.includes(requiredSection)) {
+        revealAdminMain();
         return true;
     }
 
-    await Swal.fire({
-        icon: 'warning',
-        title: 'Access restricted',
-        text: 'You do not have permission to view this page.',
-        confirmButtonColor: '#055498',
-    });
-
-    window.location.href = getFallbackPath(allowedSections);
+    showErrorToast('You do not have permission to view this page.', 'Access restricted');
+    window.location.replace(getFallbackPath(allowedSections));
 
     return false;
+}
+
+function revealAdminMain() {
+    const main = document.querySelector('[data-admin-main]');
+    if (!main) {
+        return;
+    }
+
+    main.classList.remove('opacity-0', 'pointer-events-none');
+    main.setAttribute('aria-hidden', 'false');
 }
 
 function initializePageContent(pageName, allowedSections, profile = null) {
