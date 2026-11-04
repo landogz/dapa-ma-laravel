@@ -180,6 +180,10 @@ class ProfileService
             return $user->profile_image_url;
         }
 
+        if (! Storage::disk('public')->exists($user->profile_image_url)) {
+            return null;
+        }
+
         return Storage::disk('public')->url($user->profile_image_url);
     }
 

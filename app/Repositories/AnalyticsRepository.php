@@ -10,6 +10,7 @@ use App\Models\PostComment;
 use App\Models\PostLike;
 use App\Models\Review;
 use App\Models\User;
+use App\Services\ProfileService;
 use App\Support\Analytics\AnalyticsDateRange;
 use App\Support\Analytics\AnalyticsEventTypes;
 use Carbon\Carbon;
@@ -20,6 +21,11 @@ use Illuminate\Support\Facades\DB;
 
 class AnalyticsRepository
 {
+    public function __construct(
+        private readonly ProfileService $profileService,
+    ) {
+    }
+
     public function countByEventType(AnalyticsDateRange $range): Collection
     {
         return $this->eventsInRange($range)
@@ -1125,7 +1131,7 @@ class AnalyticsRepository
                 'name' => $user->name ?: ($user->nickname ?: 'User #'.$user->id),
                 'nickname' => $user->nickname,
                 'subtitle' => $persona ?: trim(collect([$user->city, $user->province])->filter()->implode(', ')),
-                'avatar_url' => $user->profile_image_url,
+                'avatar_url' => $this->profileService->profileImageUrl($user),
                 'age' => $this->ageFromBirthday($user->birthday),
                 'city' => $user->city,
                 'province' => $user->province,

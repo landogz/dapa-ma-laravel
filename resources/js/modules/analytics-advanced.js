@@ -518,6 +518,8 @@ function renderLeaderboardBoard() {
         </div>
     `;
 
+    bindLeaderboardAvatarFallbacks(root);
+
     root.querySelectorAll('[data-leaderboard-user]').forEach((el) => {
         el.addEventListener('click', () => {
             leaderboardSelectedId = Number(el.getAttribute('data-leaderboard-user'));
@@ -637,10 +639,24 @@ function leaderboardAvatar(row, size = 'md') {
     const name = String(row?.name || 'User');
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() || '').join('') || '?';
     const sizeClass = size === 'lg' ? 'is-lg' : size === 'sm' ? 'is-sm' : 'is-md';
-    if (row?.avatar_url) {
-        return `<span class="analytics-leaderboard-avatar ${sizeClass}"><img src="${escapeHtml(row.avatar_url)}" alt="" loading="lazy"></span>`;
+    if (!row?.avatar_url) {
+        return `<span class="analytics-leaderboard-avatar ${sizeClass} is-fallback" aria-hidden="true">${escapeHtml(initials)}</span>`;
     }
-    return `<span class="analytics-leaderboard-avatar ${sizeClass} is-fallback" aria-hidden="true">${escapeHtml(initials)}</span>`;
+
+    return `<span class="analytics-leaderboard-avatar ${sizeClass}" data-fallback-initials="${escapeHtml(initials)}"><img src="${escapeHtml(row.avatar_url)}" alt="" loading="lazy" data-leaderboard-avatar></span>`;
+}
+
+function bindLeaderboardAvatarFallbacks(root) {
+    root?.querySelectorAll('img[data-leaderboard-avatar]').forEach((img) => {
+        img.addEventListener('error', () => {
+            const wrap = img.parentElement;
+            if (!wrap) return;
+            const initials = wrap.getAttribute('data-fallback-initials') || '?';
+            wrap.classList.add('is-fallback');
+            wrap.setAttribute('aria-hidden', 'true');
+            wrap.textContent = initials;
+        }, { once: true });
+    });
 }
 
 let geographyOverviewCache = null;
