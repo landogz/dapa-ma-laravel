@@ -14,7 +14,9 @@ return [
     | Demo login accounts (admin login page shortcuts)
     |--------------------------------------------------------------------------
     |
-    | Shown on local/localhost automatically. Never shown in production. Password must match seeder.
+    | Shown when DAPE_SHOW_DEMO_LOGIN=true (including temporary production DEV),
+    | or automatically on local/localhost. Password must match seeder.
+    | Set DAPE_SHOW_DEMO_LOGIN=false before final production go-live.
     |
     */
 

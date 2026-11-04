@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 final class DemoLogin
 {
     /**
-     * Demo shortcuts stay off in production. Local / localhost always shows them.
+     * Demo shortcuts: on when DAPE_SHOW_DEMO_LOGIN=true, or on local/localhost.
+     * Turn the env flag off before final production go-live.
      *
      * @return list<array{label: string, email: string, password: string, role: string}>
      */
@@ -20,12 +21,12 @@ final class DemoLogin
 
     public static function shouldShow(Request $request): bool
     {
-        if (app()->environment('production')) {
-            return false;
-        }
-
         if (filter_var(config('dape.show_demo_login'), FILTER_VALIDATE_BOOL)) {
             return true;
+        }
+
+        if (app()->environment('production')) {
+            return false;
         }
 
         $host = strtolower($request->getHost());
