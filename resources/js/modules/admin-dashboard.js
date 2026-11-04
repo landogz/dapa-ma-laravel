@@ -1,5 +1,6 @@
 import Swal from 'sweetalert2';
-import { initAnalyticsModule, initDashboardOverview } from './analytics';
+import { getDashboardQueryParams, initAnalyticsModule, initDashboardOverview } from './analytics';
+import { showErrorToast } from './shared/toast';
 import { initDiaryModule } from './diary';
 import { logout } from './auth';
 import { initNotificationsModule } from './notifications';
@@ -771,7 +772,7 @@ async function loadOverviewCounts(allowedSections) {
 }
 
 async function loadOverviewTrends(allowedSections) {
-    const range = document.querySelector('[data-dashboard-range]')?.value || '7';
+    const params = getDashboardQueryParams();
     const fallbackLabel = getDashboardRangeLabel();
 
     document.querySelectorAll('[data-overview-trend]').forEach((el) => {
@@ -788,7 +789,7 @@ async function loadOverviewTrends(allowedSections) {
 
     try {
         const { data } = await window.axios.get('/admin/dashboard/trends', {
-            params: { range },
+            params,
         });
         const metrics = data.data?.metrics ?? {};
         const label = data.data?.label || fallbackLabel;
@@ -801,7 +802,10 @@ async function loadOverviewTrends(allowedSections) {
 
             applyTrendMetric(key, metric, label);
         });
-    } catch {
+    } catch (error) {
+        if (error?.response?.status === 422) {
+            showErrorToast(error.response?.data?.message || 'Invalid date range.', 'Dashboard');
+        }
         document.querySelectorAll('[data-overview-trend]').forEach((el) => {
             const key = el.getAttribute('data-overview-trend');
             if (key) setNeutralTrend(key, fallbackLabel);
@@ -825,10 +829,17 @@ function formatRole(role) {
 }
 
 function getDashboardRangeLabel() {
-    const range = document.querySelector('[data-dashboard-range]')?.value || '7';
+    const select = document.getElementById('dashboard-range-select')
+        || document.querySelector('[data-dashboard-range]');
+    const selectedText = select?.selectedOptions?.[0]?.textContent?.trim();
+    if (selectedText) {
+        return selectedText.toLowerCase();
+    }
 
-    if (range === '1') return 'today';
-    if (range === '30') return 'this month';
+    const range = select?.value || '7';
+    if (range === 'today' || range === '1') return 'today';
+    if (range === '30' || range === 'this_month') return 'this month';
+    if (range === 'custom') return 'custom range';
 
     return 'this week';
 }
@@ -855,10 +866,9 @@ function initializeDashboardChrome(profile, allowedSections = []) {
         });
     }
 
-    const rangeSelect = document.querySelector('[data-dashboard-range]');
-    if (rangeSelect && rangeSelect.dataset.trendsBound !== '1') {
-        rangeSelect.dataset.trendsBound = '1';
-        rangeSelect.addEventListener('change', () => {
+    if (window.__dashboardTrendsBound !== true) {
+        window.__dashboardTrendsBound = true;
+        window.addEventListener('dashboard-range-change', () => {
             loadOverviewTrends(allowedSections);
         });
     }

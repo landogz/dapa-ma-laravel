@@ -90,6 +90,20 @@ export function initDashboardOverview() {
     loadDashboardOverview();
 }
 
+export function getDashboardQueryParams() {
+    const select = document.getElementById('dashboard-range-select')
+        || document.querySelector('[data-dashboard-range]');
+    const range = select?.value || '7';
+    const params = { range };
+
+    if (range === 'custom') {
+        params.from = document.getElementById('dashboard-range-from')?.value || '';
+        params.to = document.getElementById('dashboard-range-to')?.value || '';
+    }
+
+    return params;
+}
+
 export function loadDashboardOverview() {
     const chart = document.getElementById('dashboard-activity-chart');
     const topPosts = document.getElementById('dashboard-top-posts');
@@ -120,15 +134,20 @@ export function loadDashboardOverview() {
         `;
     }
 
-    const range = getSelectedAnalyticsRange();
+    const params = getDashboardQueryParams();
 
-    axios.get('/admin/dashboard/overview', { params: { range } })
+    axios.get('/admin/dashboard/overview', { params })
         .then(({ data }) => {
             const payload = data.data ?? {};
             const dailyCounts = Array.isArray(payload.daily_counts) ? payload.daily_counts : [];
             const topPostsData = Array.isArray(payload.top_posts) ? payload.top_posts : [];
             const recentEvents = Array.isArray(payload.recent_events) ? payload.recent_events : [];
             const eventTypes = Array.isArray(payload.by_event_type) ? payload.by_event_type : [];
+            const rangeLabel = payload.range?.label || null;
+            const subtitle = document.querySelector('[data-activity-subtitle]');
+            if (subtitle && rangeLabel) {
+                subtitle.textContent = `Events · ${rangeLabel}`;
+            }
 
             cachedDailyCounts = dailyCounts;
             cachedTopPosts = topPostsData;
@@ -169,17 +188,60 @@ export function loadDashboardOverview() {
 }
 
 function bindDashboardOverviewRange() {
-    const dashboardRange = document.querySelector('[data-dashboard-range]');
-    if (!dashboardRange || dashboardRange.dataset.overviewBound === '1') {
+    const select = document.getElementById('dashboard-range-select')
+        || document.querySelector('[data-dashboard-range]');
+    if (!select || select.dataset.overviewBound === '1') {
         return;
     }
 
-    dashboardRange.dataset.overviewBound = '1';
-    dashboardRange.addEventListener('change', () => {
+    select.dataset.overviewBound = '1';
+    const customWrap = document.getElementById('dashboard-custom-range');
+    const applyBtn = document.getElementById('dashboard-apply-range');
+
+    const syncCustom = () => {
+        customWrap?.classList.toggle('hidden', select.value !== 'custom');
+    };
+
+    const syncPresets = () => {
+        document.querySelectorAll('[data-dashboard-range-preset]').forEach((button) => {
+            button.classList.toggle(
+                'is-active',
+                button.getAttribute('data-dashboard-range-preset') === select.value,
+            );
+        });
+    };
+
+    const reload = () => {
         if (document.getElementById('dashboard-activity-chart')) {
             loadDashboardOverview();
         }
+        window.dispatchEvent(new CustomEvent('dashboard-range-change', {
+            detail: getDashboardQueryParams(),
+        }));
+    };
+
+    select.addEventListener('change', () => {
+        syncCustom();
+        syncPresets();
+        if (select.value !== 'custom') {
+            reload();
+        }
     });
+
+    applyBtn?.addEventListener('click', () => reload());
+
+    document.querySelectorAll('[data-dashboard-range-preset]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const value = button.getAttribute('data-dashboard-range-preset') || '7';
+            select.value = value;
+            syncCustom();
+            syncPresets();
+            reload();
+        });
+    });
+
+    syncCustom();
+    syncPresets();
 }
 
 function renderRoleSummaryMetrics(payload) {

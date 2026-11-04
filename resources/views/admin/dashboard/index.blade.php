@@ -2,18 +2,54 @@
 
 @section('content')
     <section id="dashboard-overview" class="admin-dashboard space-y-6">
-        <div class="admin-dashboard-header flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div class="admin-dashboard-header flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div class="min-w-0">
                 <h2 class="text-2xl font-bold text-[var(--color-text)]" data-dashboard-greeting>Good day</h2>
                 <p class="mt-1 text-sm text-[var(--color-text-muted)]" data-dashboard-date></p>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <label class="sr-only" for="dashboard-range">Trend range</label>
-                <select id="dashboard-range" class="admin-filter-select admin-dashboard-range" data-dashboard-range>
-                    <option value="1">Today</option>
-                    <option value="7" selected>7 days</option>
-                    <option value="30">30 days</option>
-                </select>
+            <div class="admin-filter-bar w-full min-w-0 xl:max-w-3xl" data-admin-filter-bar data-dashboard-filter-bar>
+                <div class="admin-filter-bar-main">
+                    <div class="admin-filter-bar-field min-w-0 flex-1 sm:flex-none sm:min-w-[12rem]">
+                        <label class="admin-filter-bar-label" for="dashboard-range-select">Period</label>
+                        <select id="dashboard-range-select" class="admin-filter-bar-select" data-dashboard-range aria-label="Dashboard date range">
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="7" selected>Last 7 days</option>
+                            <option value="14">Last 14 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="60">Last 60 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="this_week">This week</option>
+                            <option value="last_week">Last week</option>
+                            <option value="this_month">This month</option>
+                            <option value="last_month">Last month</option>
+                            <option value="this_quarter">This quarter</option>
+                            <option value="last_quarter">Last quarter</option>
+                            <option value="this_year">This year</option>
+                            <option value="last_year">Last year</option>
+                            <option value="all_time">All time</option>
+                            <option value="custom">Custom range</option>
+                        </select>
+                    </div>
+
+                    <div class="admin-filter-bar-presets" role="group" aria-label="Quick period">
+                        <button type="button" class="admin-filter-bar-preset" data-dashboard-range-preset="today">Today</button>
+                        <button type="button" class="admin-filter-bar-preset is-active" data-dashboard-range-preset="7">7 days</button>
+                        <button type="button" class="admin-filter-bar-preset" data-dashboard-range-preset="30">30 days</button>
+                    </div>
+                </div>
+
+                <div id="dashboard-custom-range" class="admin-filter-bar-custom hidden">
+                    <div class="admin-filter-bar-field">
+                        <label class="admin-filter-bar-label" for="dashboard-range-from">From</label>
+                        <input id="dashboard-range-from" type="date" class="admin-filter-bar-input" aria-label="Start date">
+                    </div>
+                    <div class="admin-filter-bar-field">
+                        <label class="admin-filter-bar-label" for="dashboard-range-to">To</label>
+                        <input id="dashboard-range-to" type="date" class="admin-filter-bar-input" aria-label="End date">
+                    </div>
+                    <button type="button" id="dashboard-apply-range" class="admin-filter-bar-btn is-secondary min-h-11">Apply range</button>
+                </div>
             </div>
         </div>
 

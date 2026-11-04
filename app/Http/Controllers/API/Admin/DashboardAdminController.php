@@ -10,11 +10,13 @@ use App\Models\Notification;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\AnalyticsService;
+use App\Support\Analytics\AnalyticsDateRange;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use InvalidArgumentException;
 
 class DashboardAdminController extends Controller
 {
@@ -28,14 +30,17 @@ class DashboardAdminController extends Controller
      */
     public function overview(Request $request): JsonResponse
     {
-        $range = (string) $request->query('range', '7');
-        $days = match ($range) {
-            '1', 'today' => 1,
-            '30', '30d', 'month' => 30,
-            default => 7,
-        };
+        try {
+            $range = $this->resolveRange($request);
+        } catch (InvalidArgumentException $exception) {
+            return response()->json([
+                'status' => false,
+                'message' => $exception->getMessage(),
+                'errors' => ['range' => [$exception->getMessage()]],
+            ], 422);
+        }
 
-        $payload = $this->analyticsService->dashboardForDays($days);
+        $payload = $this->analyticsService->dashboard($range);
         $topPosts = collect($payload['top_posts'] ?? [])->take(5)->values()->all();
         $recentEvents = collect($payload['recent_events'] ?? [])->take(8)->values()->all();
 
@@ -43,7 +48,8 @@ class DashboardAdminController extends Controller
             'status' => true,
             'message' => 'Dashboard overview fetched.',
             'data' => [
-                'range_days' => $payload['range_days'] ?? $days,
+                'range' => $payload['range'] ?? $range->toArray(),
+                'range_days' => $payload['range_days'] ?? $range->daySpan(),
                 'daily_counts' => $payload['daily_counts'] ?? [],
                 'by_event_type' => $payload['by_event_type'] ?? [],
                 'top_posts' => $topPosts,
@@ -145,20 +151,15 @@ class DashboardAdminController extends Controller
 
     public function trends(Request $request): JsonResponse
     {
-        $range = (int) $request->query('range', 7);
-        if (! in_array($range, [1, 7, 30], true)) {
-            $range = 7;
+        try {
+            $range = $this->resolveRange($request);
+        } catch (InvalidArgumentException $exception) {
+            return response()->json([
+                'status' => false,
+                'message' => $exception->getMessage(),
+                'errors' => ['range' => [$exception->getMessage()]],
+            ], 422);
         }
-
-        $now = Carbon::now();
-        $currentStart = $now->copy()->subDays($range);
-        $previousStart = $now->copy()->subDays($range * 2);
-        $previousEnd = $currentStart->copy();
-        $label = match ($range) {
-            1 => 'today',
-            30 => 'this month',
-            default => 'this week',
-        };
 
         $sources = [
             'users' => ['model' => User::class, 'table' => 'users'],
@@ -172,6 +173,7 @@ class DashboardAdminController extends Controller
         ];
 
         $metrics = [];
+        $sparklineDays = min(30, max(1, $range->daySpan()));
 
         foreach ($sources as $key => $source) {
             $table = $source['table'];
@@ -193,17 +195,17 @@ class DashboardAdminController extends Controller
                 : DB::table($table);
 
             $current = (int) (clone $base)
-                ->where('created_at', '>=', $currentStart)
-                ->where('created_at', '<=', $now)
+                ->where('created_at', '>=', $range->from)
+                ->where('created_at', '<=', $range->to)
                 ->count();
             $previous = (int) (clone $base)
-                ->where('created_at', '>=', $previousStart)
-                ->where('created_at', '<', $previousEnd)
+                ->where('created_at', '>=', $range->previousFrom)
+                ->where('created_at', '<', $range->previousTo)
                 ->count();
 
             $sparkline = [];
             if (in_array($key, ['users', 'posts', 'notifications', 'diary'], true)) {
-                $sparkline = $this->dailyCreatedCounts($base, 7);
+                $sparkline = $this->dailyCreatedCounts($base, $sparklineDays, $range->to);
             }
 
             $metrics[$key] = [
@@ -219,10 +221,19 @@ class DashboardAdminController extends Controller
             'status' => true,
             'message' => 'Dashboard trends fetched.',
             'data' => [
-                'range' => $range,
-                'label' => $label,
+                'range' => $range->toArray(),
+                'label' => strtolower($range->label),
                 'metrics' => $metrics,
             ],
+        ]);
+    }
+
+    private function resolveRange(Request $request): AnalyticsDateRange
+    {
+        return AnalyticsDateRange::fromRequest([
+            'range' => $request->query('range', $request->input('range', '7')),
+            'from' => $request->query('from', $request->input('from')),
+            'to' => $request->query('to', $request->input('to')),
         ]);
     }
 
@@ -271,12 +282,14 @@ class DashboardAdminController extends Controller
      * @param  \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>|\Illuminate\Database\Query\Builder  $query
      * @return list<int>
      */
-    private function dailyCreatedCounts($query, int $days = 7): array
+    private function dailyCreatedCounts($query, int $days = 7, ?Carbon $end = null): array
     {
-        $from = Carbon::now()->subDays($days - 1)->startOfDay();
+        $endAt = ($end ?? Carbon::now())->copy()->endOfDay();
+        $from = $endAt->copy()->subDays($days - 1)->startOfDay();
         $rows = (clone $query)
             ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as total'))
             ->where('created_at', '>=', $from)
+            ->where('created_at', '<=', $endAt)
             ->groupBy(DB::raw('DATE(created_at)'))
             ->pluck('total', 'date')
             ->all();
