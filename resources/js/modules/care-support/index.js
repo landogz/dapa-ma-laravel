@@ -186,7 +186,7 @@ function buildColumns(mode) {
 
     return [
         { title: 'Order', width: '64px', className: 'dt-col-nowrap' },
-        { title: 'Category', className: 'dt-col-nowrap' },
+        { title: 'Category', className: 'dt-col-category' },
         { title: 'Title (EN)', className: 'dt-col-primary dt-col-wide' },
         { title: 'Phone / Link', className: 'dt-col-wide' },
         { title: 'Status', className: 'dt-col-nowrap' },

@@ -146,7 +146,7 @@ function buildColumns(mode) {
     return [
         { title: 'Order', width: '64px', className: 'dt-col-nowrap' },
         { title: 'Organization', className: 'dt-col-primary dt-col-media' },
-        { title: 'Category', className: 'dt-col-nowrap' },
+        { title: 'Category', className: 'dt-col-category' },
         { title: 'Contact', className: 'dt-col-wide' },
         { title: 'Status', className: 'dt-col-nowrap' },
         { title: 'Workflow', className: 'dt-col-nowrap' },

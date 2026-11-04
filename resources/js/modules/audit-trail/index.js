@@ -348,7 +348,7 @@ function buildColumns(mode) {
 
     return [
         { title: 'Actor', className: 'dt-col-primary', orderable: false },
-        { title: 'Category', className: 'dt-col-nowrap', orderable: false },
+        { title: 'Category', className: 'dt-col-category', orderable: false },
         { title: 'Action', className: 'dt-col-nowrap', orderable: false },
         { title: 'Subject', className: 'dt-col-name', orderable: false },
         { title: 'When', className: 'dt-col-nowrap', orderable: false },

@@ -2519,6 +2519,17 @@ table.dataTable tbody tr.is-context-target > *,
     white-space: nowrap;
 }
 
+.admin-table-shell .dt-container.admin-dt-scrollable table.dataTable thead th.dt-col-category,
+.admin-table-shell .dt-container.admin-dt-scrollable table.dataTable tbody td.dt-col-category {
+    white-space: normal !important;
+    overflow-wrap: break-word;
+    word-break: normal;
+    min-width: 8rem;
+    max-width: 12rem;
+    vertical-align: middle;
+    line-height: 1.35;
+}
+
 .admin-table-shell .dt-container.admin-dt-scrollable table.dataTable th.dt-col-toggle,
 .admin-table-shell .dt-container.admin-dt-scrollable table.dataTable td.dt-col-toggle {
     display: none !important;
@@ -7203,6 +7214,16 @@ button[data-admin-notifications-button] > span {
         white-space: nowrap;
         vertical-align: middle;
         overflow-wrap: normal;
+    }
+
+    .admin-table-shell .dt-container.admin-dt-scrollable table.dataTable thead th.dt-col-category,
+    .admin-table-shell .dt-container.admin-dt-scrollable table.dataTable tbody td.dt-col-category {
+        white-space: normal !important;
+        overflow-wrap: break-word !important;
+        word-break: normal;
+        min-width: 8rem;
+        max-width: 12rem;
+        line-height: 1.35;
     }
 
     .admin-table-shell .dt-container.admin-dt-scrollable table.dataTable tbody td.dt-col-actions {

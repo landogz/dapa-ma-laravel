@@ -334,7 +334,7 @@ function buildColumns(mode) {
     return [
         { title: 'ID', className: 'dt-col-id' },
         { title: 'Title', className: 'dt-col-primary dt-col-name' },
-        { title: 'Category', className: 'dt-col-nowrap' },
+        { title: 'Category', className: 'dt-col-category' },
         { title: 'Region', className: 'dt-col-nowrap' },
         { title: 'Schedule', className: 'dt-col-nowrap' },
         { title: 'Status', className: 'dt-col-nowrap' },

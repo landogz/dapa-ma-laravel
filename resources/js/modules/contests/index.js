@@ -558,7 +558,7 @@ function buildColumns(mode) {
 
     return [
         { title: 'ID', className: 'dt-col-id' },
-        { title: 'Category', className: 'dt-col-nowrap' },
+        { title: 'Category', className: 'dt-col-category' },
         { title: 'Title', className: 'dt-col-primary dt-col-name' },
         { title: 'Status', className: 'dt-col-nowrap' },
         { title: 'Workflow', className: 'dt-col-nowrap' },
