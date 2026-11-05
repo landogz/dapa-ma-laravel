@@ -232,12 +232,13 @@ async function openUserDetail(userId, params) {
     const summary = payload.summary ?? {};
     const timeline = Array.isArray(payload.timeline) ? payload.timeline : [];
 
-    await Swal.fire({
+    const locationLabel = [user.city, user.province, user.region].filter(Boolean).join(', ') || 'Location unknown';
+
+    await Swal.fire(buildSwalOptions({
         title: escapeHtml(user.name || 'User'),
-        width: 720,
+        subtitle: `#${user.id} · Age ${user.age ?? '—'} · ${escapeHtml(locationLabel)}`,
         html: `
             <div class="space-y-3 text-left text-sm">
-                <p class="text-slate-500">#${user.id} · Age ${user.age ?? '—'} · ${escapeHtml([user.city, user.province, user.region].filter(Boolean).join(', ') || 'Location unknown')}</p>
                 <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     <div class="rounded-xl bg-slate-50 p-3"><p class="text-[11px] uppercase text-slate-500">Events</p><p class="font-bold">${summary.events ?? 0}</p></div>
                     <div class="rounded-xl bg-slate-50 p-3"><p class="text-[11px] uppercase text-slate-500">Sessions</p><p class="font-bold">${summary.sessions ?? 0}</p></div>
@@ -254,8 +255,10 @@ async function openUserDetail(userId, params) {
                 </div>
             </div>
         `,
+        showCancelButton: false,
         confirmButtonText: 'Close',
-    });
+        focusConfirm: true,
+    }, { size: 'lg' }));
 }
 
 async function loadMobileTab(params) {
