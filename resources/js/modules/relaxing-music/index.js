@@ -18,6 +18,8 @@ let activeStatus = 'all';
 let searchQuery = '';
 let bound = false;
 let previewAudio = null;
+let previewTrackId = null;
+let previewPlaying = false;
 
 function escapeHtml(value = '') {
     return String(value)
@@ -66,8 +68,31 @@ function formatDuration(seconds) {
 function stopPreview() {
     if (previewAudio) {
         previewAudio.pause();
+        previewAudio.src = '';
         previewAudio = null;
     }
+    previewTrackId = null;
+    previewPlaying = false;
+    syncPlayButtons();
+}
+
+function syncPlayButtons() {
+    document.querySelectorAll('[data-track-play]').forEach((button) => {
+        const id = Number(button.getAttribute('data-track-play'));
+        const isCurrent = previewTrackId !== null && id === previewTrackId;
+        const isPlaying = isCurrent && previewPlaying;
+        const icon = button.querySelector('i');
+        if (icon) {
+            icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+        }
+        const title = tracks.find((item) => Number(item.id) === id)?.title || 'track';
+        button.setAttribute(
+            'aria-label',
+            isPlaying ? `Pause ${title}` : `Preview ${title}`,
+        );
+        button.classList.toggle('ring-2', isCurrent);
+        button.classList.toggle('ring-[#FBD116]', isCurrent);
+    });
 }
 
 export function initRelaxingMusicModule() {
@@ -207,11 +232,11 @@ function renderGallery() {
                     <div class="flex items-start gap-3">
                         <button
                             type="button"
-                            class="shrink-0 w-12 h-12 rounded-full bg-[#055498] text-white flex items-center justify-center min-h-11 min-w-11"
+                            class="shrink-0 w-12 h-12 rounded-full bg-[#055498] text-white flex items-center justify-center min-h-11 min-w-11${previewTrackId === Number(track.id) ? ' ring-2 ring-[#FBD116]' : ''}"
                             data-track-play="${Number(track.id)}"
-                            aria-label="Preview ${escapeHtml(track.title || 'track')}"
+                            aria-label="${previewTrackId === Number(track.id) && previewPlaying ? 'Pause' : 'Preview'} ${escapeHtml(track.title || 'track')}"
                         >
-                            <i class="fas fa-play" aria-hidden="true"></i>
+                            <i class="fas ${previewTrackId === Number(track.id) && previewPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
                         </button>
                         <div class="min-w-0 flex-1">
                             <h3 class="font-semibold text-[#123a60] truncate">${escapeHtml(track.title || 'Untitled')}</h3>
@@ -273,16 +298,64 @@ function onGalleryClick(event) {
 }
 
 function playTrack(id) {
-    const track = tracks.find((item) => Number(item.id) === Number(id));
+    const trackId = Number(id);
+    const track = tracks.find((item) => Number(item.id) === trackId);
     if (!track?.audio_url) {
         showErrorToast('This track has no audio file.');
         return;
     }
 
-    stopPreview();
+    // Same track: toggle pause / resume.
+    if (previewAudio && previewTrackId === trackId) {
+        if (previewPlaying) {
+            previewAudio.pause();
+            previewPlaying = false;
+            syncPlayButtons();
+            return;
+        }
+
+        previewAudio.play().then(() => {
+            previewPlaying = true;
+            syncPlayButtons();
+        }).catch(() => {
+            showErrorToast('Could not play this track in the browser.');
+            stopPreview();
+        });
+        return;
+    }
+
+    if (previewAudio) {
+        previewAudio.pause();
+        previewAudio.src = '';
+        previewAudio = null;
+    }
+
+    previewTrackId = trackId;
+    previewPlaying = false;
     previewAudio = new Audio(track.audio_url);
+    previewAudio.addEventListener('ended', () => {
+        previewPlaying = false;
+        previewTrackId = null;
+        previewAudio = null;
+        syncPlayButtons();
+    });
+    previewAudio.addEventListener('pause', () => {
+        if (previewTrackId === trackId) {
+            previewPlaying = false;
+            syncPlayButtons();
+        }
+    });
+    previewAudio.addEventListener('play', () => {
+        if (previewTrackId === trackId) {
+            previewPlaying = true;
+            syncPlayButtons();
+        }
+    });
+
+    syncPlayButtons();
     previewAudio.play().catch(() => {
         showErrorToast('Could not play this track in the browser.');
+        stopPreview();
     });
 }
 
