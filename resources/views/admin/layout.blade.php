@@ -71,6 +71,10 @@
                         <i class="fas fa-palette w-5 text-[#FBD116]"></i>
                         <span>Color Fun Library</span>
                     </a>
+                    <a href="/admin/relaxing-music" class="admin-nav-link hidden {{ ($activePage ?? '') === 'relaxing-music' ? 'admin-nav-link-active' : '' }}" data-nav-section="relaxing-music">
+                        <i class="fas fa-music w-5 text-[#FBD116]"></i>
+                        <span>Relaxing Music</span>
+                    </a>
                 </div>
 
                 <div class="admin-nav-group hidden">

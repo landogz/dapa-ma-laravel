@@ -33,6 +33,8 @@ use App\Http\Controllers\API\Admin\StickerPackAdminController;
 use App\Http\Controllers\API\Admin\StickerAdminController;
 use App\Http\Controllers\API\ColorFunWorksheetController;
 use App\Http\Controllers\API\Admin\ColorFunWorksheetAdminController;
+use App\Http\Controllers\API\RelaxingMusicTrackController;
+use App\Http\Controllers\API\Admin\RelaxingMusicTrackAdminController;
 use App\Http\Controllers\API\AppTranslationController;
 use App\Http\Controllers\API\LegalPageController;
 use App\Http\Controllers\API\AppOptionController;
@@ -174,6 +176,8 @@ Route::prefix('v1')
 
         Route::get('/color-fun-worksheets', [ColorFunWorksheetController::class, 'index'])
             ->name('color-fun-worksheets.index');
+        Route::get('/relaxing-music-tracks', [RelaxingMusicTrackController::class, 'index'])
+            ->name('relaxing-music-tracks.index');
 
         // ── Public mobile app translations (EN / TL) ─────────────────────
         Route::get('/translations', [AppTranslationController::class, 'index'])
@@ -603,6 +607,14 @@ Route::prefix('v1')
                     Route::put('/color-fun-worksheets/{colorFunWorksheet}', [ColorFunWorksheetAdminController::class, 'update'])->name('color-fun-worksheets.update');
                     Route::post('/color-fun-worksheets/{colorFunWorksheet}', [ColorFunWorksheetAdminController::class, 'update'])->name('color-fun-worksheets.update.post');
                     Route::delete('/color-fun-worksheets/{colorFunWorksheet}', [ColorFunWorksheetAdminController::class, 'destroy'])->name('color-fun-worksheets.destroy');
+
+                    // Relaxing music library (Editor, Publisher, Super Admin)
+                    Route::get('/relaxing-music-tracks', [RelaxingMusicTrackAdminController::class, 'index'])->name('relaxing-music-tracks.index');
+                    Route::post('/relaxing-music-tracks', [RelaxingMusicTrackAdminController::class, 'store'])->name('relaxing-music-tracks.store');
+                    Route::get('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'show'])->name('relaxing-music-tracks.show');
+                    Route::put('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'update'])->name('relaxing-music-tracks.update');
+                    Route::post('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'update'])->name('relaxing-music-tracks.update.post');
+                    Route::delete('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'destroy'])->name('relaxing-music-tracks.destroy');
                 });
 
                 Route::middleware('role:super_admin')->group(function (): void {

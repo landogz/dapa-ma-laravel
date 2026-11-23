@@ -84,6 +84,7 @@ Route::get('/admin/iec-materials', fn () => AdminPage::render('admin.iec-materia
 
 Route::get('/admin/sticker-library', fn () => AdminPage::render('admin.sticker-library.index', 'sticker-library', 'Sticker Library'));
 Route::get('/admin/color-fun-library', fn () => AdminPage::render('admin.color-fun-library.index', 'color-fun-library', 'Color Fun Library'));
+Route::get('/admin/relaxing-music', fn () => AdminPage::render('admin.relaxing-music.index', 'relaxing-music', 'Relaxing Music'));
 
 Route::get('/admin/app-translations', fn () => AdminPage::render('admin.app-translations.index', 'app-translations', 'App Translations'));
 

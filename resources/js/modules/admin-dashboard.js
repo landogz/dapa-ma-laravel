@@ -13,6 +13,7 @@ import { initContestsModule } from './contests/index';
 import { initIecMaterialsModule } from './iec-materials/index';
 import { initStickerLibraryModule } from './sticker-library/index';
 import { initColorFunLibraryModule } from './color-fun-library/index';
+import { initRelaxingMusicModule } from './relaxing-music/index';
 import { initAppTranslationsModule } from './app-translations/index';
 import { initSettingsModule } from './settings/index';
 import { initAppOptionsModule } from './app-options/index';
@@ -41,6 +42,7 @@ const ADMIN_ROLE_SECTIONS = {
         'iec-materials',
         'sticker-library',
         'color-fun-library',
+        'relaxing-music',
         'app-translations',
         'notifications',
         'analytics',
@@ -64,6 +66,7 @@ const ADMIN_ROLE_SECTIONS = {
         'iec-materials',
         'sticker-library',
         'color-fun-library',
+        'relaxing-music',
         'app-translations',
         'notifications',
         'care-toolkit',
@@ -81,6 +84,7 @@ const ADMIN_ROLE_SECTIONS = {
         'iec-materials',
         'sticker-library',
         'color-fun-library',
+        'relaxing-music',
         'app-translations',
         'notifications',
         'care-toolkit',
@@ -102,6 +106,7 @@ const PAGE_SECTION_REQUIREMENTS = {
     'admin-iec-materials': 'iec-materials',
     'admin-sticker-library': 'sticker-library',
     'admin-color-fun-library': 'color-fun-library',
+    'admin-relaxing-music': 'relaxing-music',
     'admin-app-translations': 'app-translations',
     'admin-notifications': 'notifications',
     'admin-analytics': 'analytics',
@@ -125,6 +130,7 @@ const SECTION_PATHS = {
     'iec-materials': '/admin/iec-materials',
     'sticker-library': '/admin/sticker-library',
     'color-fun-library': '/admin/color-fun-library',
+    'relaxing-music': '/admin/relaxing-music',
     'app-translations': '/admin/app-translations',
     notifications: '/admin/notifications',
     analytics: '/admin/analytics',
@@ -591,6 +597,9 @@ function initializePageContent(pageName, allowedSections, profile = null) {
         case 'admin-color-fun-library':
             initColorFunLibraryModule();
             break;
+        case 'admin-relaxing-music':
+            initRelaxingMusicModule();
+            break;
         case 'admin-app-translations':
             initAppTranslationsModule();
             break;
@@ -718,6 +727,14 @@ async function loadOverviewCounts(allowedSections) {
             key: 'color-fun-library',
             allowed: allowedSections.includes('color-fun-library'),
             request: () => window.axios.get('/admin/color-fun-worksheets'),
+            count: (response) => (
+                Array.isArray(response.data.data) ? response.data.data.length : 0
+            ),
+        },
+        {
+            key: 'relaxing-music',
+            allowed: allowedSections.includes('relaxing-music'),
+            request: () => window.axios.get('/admin/relaxing-music-tracks'),
             count: (response) => (
                 Array.isArray(response.data.data) ? response.data.data.length : 0
             ),

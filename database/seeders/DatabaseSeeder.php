@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             CareToolkitQuestionSeeder::class,
             StickerLibrarySeeder::class,
             ColorFunWorksheetSeeder::class,
+            RelaxingMusicTrackSeeder::class,
             CareSupportResourceSeeder::class,
             HopeModuleSeeder::class,
             PostSeeder::class,

@@ -123,6 +123,7 @@
                 ['iec-materials', 'IEC', 'IEC Materials', 'fa-photo-film', '/admin/iec-materials'],
                 ['sticker-library', 'Stickers', 'Sticker Library', 'fa-face-smile', '/admin/sticker-library'],
                 ['color-fun-library', 'Care', 'Color Fun Library', 'fa-palette', '/admin/color-fun-library'],
+                ['relaxing-music', 'Care', 'Relaxing Music', 'fa-music', '/admin/relaxing-music'],
                 ['app-translations', 'Admin', 'App Translations', 'fa-language', '/admin/app-translations'],
             ] as [$key, $label, $title, $icon, $href])
                 <a href="{{ $href }}" class="admin-stat-card admin-stat-card-tier-secondary admin-function-card admin-dashboard-summary text-left" data-card-section="{{ $key }}">
