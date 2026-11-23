@@ -6,6 +6,7 @@ import {
     confirmWithSwal,
 } from '../shared/swal-forms';
 import { buildAdminActionButtons } from '../shared/table-actions';
+import { bindAdminFilterTabs, enhanceAdminFilterTabs } from '../shared/filter-tabs';
 import {
     attachWorkflowWindowHandlers,
     buildWorkflowTableActions,
@@ -13,6 +14,7 @@ import {
     ensureWorkflowStatusFilter,
     filterByWorkflowStatus,
     applyWorkflowStatusCounts,
+    applyQueueAwareFilterCounts,
     guardWorkflowCreateAction,
     isPublisherReviewOnly,
     isPublisherRole,
@@ -26,16 +28,10 @@ import {
 } from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
-const STATUS_FILTERS = [
-    { value: 'all', label: 'All active flags' },
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-];
-
 const BASE_PATH = '/admin/relaxing-music-tracks';
 
 let tracks = [];
-let activeStatus = 'all';
+let activeStatus = '';
 let workflowStatusFilter = '';
 let searchQuery = '';
 let bound = false;
@@ -147,11 +143,22 @@ export function initRelaxingMusicModule() {
         root.addEventListener('click', onGalleryClick);
         window.addEventListener('pagehide', stopPreview);
 
+        const statusTabs = document.getElementById('relaxing-music-status-tabs');
+        if (statusTabs) {
+            enhanceAdminFilterTabs(statusTabs);
+            bindAdminFilterTabs(statusTabs, (value) => {
+                activeStatus = value || '';
+                renderGallery();
+            });
+        }
+
         ensureWorkflowStatusFilter({
-            selectMount: root,
+            tabsRoot: root.querySelector('[data-workflow-status-tabs]'),
+            selectMount: root.querySelector('.admin-filter-main') || root,
             onChange: (value) => {
                 workflowStatusFilter = value;
                 renderGallery();
+                updateStatusTabCounts();
             },
         });
 
@@ -188,7 +195,7 @@ async function loadTracks() {
         const { data } = await axios.get(BASE_PATH);
         tracks = Array.isArray(data?.data) ? data.data : [];
         applyWorkflowStatusCounts(null, tracks);
-        renderStatusChips();
+        updateStatusTabCounts();
         renderGallery();
         syncWorkflowCreateButton([
             '[data-relaxing-music-action="add-track"]',
@@ -207,42 +214,13 @@ async function loadTracks() {
     }
 }
 
-function renderStatusChips() {
-    const mount = document.getElementById('relaxing-music-status-chips');
-    if (!mount) {
-        return;
-    }
-
+function updateStatusTabCounts() {
     const queue = filterByWorkflowStatus(tracks, workflowStatusFilter);
-
-    mount.innerHTML = STATUS_FILTERS.map((filter) => {
-        const active = filter.value === activeStatus;
-        const count = filter.value === 'all'
-            ? queue.length
-            : queue.filter((item) => (filter.value === 'active' ? item.is_active !== false : item.is_active === false)).length;
-
-        return `
-            <button
-                type="button"
-                class="sticker-pack-chip${active ? ' is-active' : ''}"
-                role="tab"
-                aria-selected="${active ? 'true' : 'false'}"
-                data-relaxing-music-status="${escapeHtml(filter.value)}"
-            >
-                <span class="sticker-pack-chip-icon"><i class="fas fa-music" aria-hidden="true"></i></span>
-                <span class="sticker-pack-chip-label">${escapeHtml(filter.label)}</span>
-                <span class="sticker-pack-chip-count">${count}</span>
-            </button>
-        `;
-    }).join('');
-
-    mount.querySelectorAll('[data-relaxing-music-status]').forEach((chip) => {
-        chip.addEventListener('click', () => {
-            activeStatus = chip.getAttribute('data-relaxing-music-status') || 'all';
-            renderStatusChips();
-            renderGallery();
-        });
-    });
+    applyQueueAwareFilterCounts(
+        document.getElementById('relaxing-music-status-tabs'),
+        queue,
+        (row) => (row.is_active === false ? 'inactive' : 'active'),
+    );
 }
 
 function filteredTracks() {
