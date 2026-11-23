@@ -1272,6 +1272,18 @@
     "tl": "Makinig."
   },
   {
+    "key": "carePreviousTrack",
+    "group": "care",
+    "en": "Previous",
+    "tl": "Nakaraan"
+  },
+  {
+    "key": "careNextTrack",
+    "group": "care",
+    "en": "Next",
+    "tl": "Susunod"
+  },
+  {
     "key": "careEndSession",
     "group": "care",
     "en": "End",
