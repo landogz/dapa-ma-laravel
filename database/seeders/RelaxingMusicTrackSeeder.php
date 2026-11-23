@@ -11,9 +11,12 @@ class RelaxingMusicTrackSeeder extends Seeder
 {
     public function run(): void
     {
-        $sourceDir = base_path('../dape-ma-flutter/dape_ma_mobile/assets/care/calm/music');
+        $sourceDir = database_path('seeders/data/relaxing-music');
         if (! is_dir($sourceDir)) {
-            $this->command?->warn('Flutter music assets not found; skipping RelaxingMusicTrackSeeder.');
+            $sourceDir = base_path('../dape-ma-flutter/dape_ma_mobile/assets/care/calm/music');
+        }
+        if (! is_dir($sourceDir)) {
+            $this->command?->warn('Relaxing music seed assets not found; skipping RelaxingMusicTrackSeeder.');
 
             return;
         }
@@ -45,6 +48,10 @@ class RelaxingMusicTrackSeeder extends Seeder
                     'audio_path' => $relative,
                     'is_active' => true,
                     'sort_order' => $track['sort'],
+                    'workflow_status' => 'published',
+                    'pending_revision' => null,
+                    'revision_status' => null,
+                    'review_notes' => null,
                 ],
             );
             $seeded++;

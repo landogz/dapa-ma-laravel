@@ -3,24 +3,31 @@
 namespace App\Services;
 
 use App\Models\RelaxingMusicTrack;
+use App\Models\User;
 use App\Repositories\RelaxingMusicTrackRepository;
+use App\Services\ContentWorkflow\ContentWorkflowService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
 
 class RelaxingMusicService
 {
+    private const SECTION = 'relaxing-music';
+
     public function __construct(
         private readonly RelaxingMusicTrackRepository $repository,
+        private readonly ContentWorkflowService $contentWorkflow,
     ) {
     }
 
     /**
+     * @param  array{search?: ?string, is_active?: bool|null, workflow_status?: ?string}  $filters
      * @return Collection<int, RelaxingMusicTrack>
      */
-    public function list(?string $search = null, bool $activeOnly = false): Collection
+    public function listAdmin(array $filters = [], ?User $actor = null): Collection
     {
-        return $this->repository->list($search, $activeOnly);
+        return $this->repository->listAdmin($filters, $actor);
     }
 
     /**
@@ -28,7 +35,7 @@ class RelaxingMusicService
      */
     public function publicList(): Collection
     {
-        return $this->repository->list(null, true);
+        return $this->repository->listPublishedActive();
     }
 
     public function find(int $id): RelaxingMusicTrack
@@ -37,14 +44,22 @@ class RelaxingMusicService
     }
 
     /**
+     * @return array<string, int>
+     */
+    public function statusCounts(?User $actor = null): array
+    {
+        return $this->repository->statusCounts($actor);
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
-    public function create(array $data): RelaxingMusicTrack
+    public function create(array $data, User $actor): RelaxingMusicTrack
     {
         $payload = $this->normalize($data);
 
         if (! (($data['audio'] ?? null) instanceof UploadedFile)) {
-            throw new \InvalidArgumentException('Audio file is required.');
+            throw new InvalidArgumentException('Audio file is required.');
         }
 
         $payload['audio_path'] = $data['audio']->store('relaxing-music', 'public');
@@ -53,6 +68,8 @@ class RelaxingMusicService
             $payload['sort_order'] = $this->repository->nextSortOrder();
         }
 
+        $payload = $this->contentWorkflow->prepareCreatePayload($actor, $payload);
+
         return $this->repository->create($payload);
     }
 
@@ -60,7 +77,7 @@ class RelaxingMusicService
      * @param  array<string, mixed>  $data
      * @return list<RelaxingMusicTrack>
      */
-    public function createMany(array $data): array
+    public function createMany(array $data, User $actor): array
     {
         /** @var list<UploadedFile> $files */
         $files = array_values(array_filter(
@@ -69,7 +86,7 @@ class RelaxingMusicService
         ));
 
         if ($files === []) {
-            throw new \InvalidArgumentException('At least one audio file is required.');
+            throw new InvalidArgumentException('At least one audio file is required.');
         }
 
         $nextSort = array_key_exists('sort_order', $data) && $data['sort_order'] !== null && $data['sort_order'] !== ''
@@ -79,7 +96,6 @@ class RelaxingMusicService
         $created = [];
 
         foreach ($files as $index => $file) {
-            $title = null;
             if (count($files) === 1 && filled($data['title'] ?? null)) {
                 $title = (string) $data['title'];
             } else {
@@ -94,7 +110,7 @@ class RelaxingMusicService
                 'duration_seconds' => $data['duration_seconds'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
                 'sort_order' => $nextSort + $index,
-            ]);
+            ], $actor);
         }
 
         return $created;
@@ -103,13 +119,32 @@ class RelaxingMusicService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function update(RelaxingMusicTrack $track, array $data): RelaxingMusicTrack
+    public function update(RelaxingMusicTrack $track, array $data, User $actor): RelaxingMusicTrack
     {
         $payload = $this->normalize($data, partial: true);
+        $previousAudio = $track->audio_path;
+        $replacingAudio = ($data['audio'] ?? null) instanceof UploadedFile;
 
-        if (($data['audio'] ?? null) instanceof UploadedFile) {
-            $this->deleteFile($track->audio_path);
+        if ($replacingAudio) {
             $payload['audio_path'] = $data['audio']->store('relaxing-music', 'public');
+        }
+
+        $payload = $this->contentWorkflow->prepareUpdatePayload(
+            $track,
+            $actor,
+            $payload,
+            self::SECTION,
+        );
+
+        // Only delete the live file when the update applied audio_path on the row itself
+        // (super admin / draft edits). Staged revisions keep the live file until publish.
+        if (
+            $replacingAudio
+            && $previousAudio
+            && array_key_exists('audio_path', $payload)
+            && $payload['audio_path'] !== $previousAudio
+        ) {
+            $this->deleteFile($previousAudio);
         }
 
         return $this->repository->update($track, $payload);

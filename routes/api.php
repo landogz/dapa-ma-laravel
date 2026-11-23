@@ -403,6 +403,9 @@ Route::prefix('v1')
 
                     Route::get('/app-translations', [AppTranslationAdminController::class, 'index'])->name('app-translations.index');
                     Route::get('/app-translations/{appTranslation}', [AppTranslationAdminController::class, 'show'])->name('app-translations.show');
+
+                    Route::get('/relaxing-music-tracks', [RelaxingMusicTrackAdminController::class, 'index'])->name('relaxing-music-tracks.index');
+                    Route::get('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'show'])->name('relaxing-music-tracks.show');
                 });
 
                 // Workflow modules — draft, edit, submit (Editor, Super Admin)
@@ -460,6 +463,11 @@ Route::prefix('v1')
                     Route::put('/app-translations/{appTranslation}/submit', [AppTranslationAdminController::class, 'submit'])->name('app-translations.submit');
                     Route::post('/app-translations/{appTranslation}', [AppTranslationAdminController::class, 'update'])->name('app-translations.update.post');
 
+                    Route::post('/relaxing-music-tracks', [RelaxingMusicTrackAdminController::class, 'store'])->name('relaxing-music-tracks.store');
+                    Route::put('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'update'])->name('relaxing-music-tracks.update');
+                    Route::post('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'update'])->name('relaxing-music-tracks.update.post');
+                    Route::put('/relaxing-music-tracks/{relaxingMusicTrack}/submit', [RelaxingMusicTrackAdminController::class, 'submit'])->name('relaxing-music-tracks.submit');
+
                     Route::delete('/notifications/{notification}', [NotificationAdminController::class, 'destroy'])->name('notifications.destroy');
                     Route::delete('/legal-pages/{slug}', [LegalPageAdminController::class, 'destroy'])
                         ->where('slug', 'privacy_policy|terms_of_use|privacy_notice|[0-9]+')
@@ -474,6 +482,7 @@ Route::prefix('v1')
                     Route::delete('/contests/{contest}', [ContestAdminController::class, 'destroy'])->name('contests.destroy');
                     Route::delete('/iec-materials/{iecMaterial}', [IecMaterialAdminController::class, 'destroy'])->name('iec-materials.destroy');
                     Route::delete('/app-translations/{appTranslation}', [AppTranslationAdminController::class, 'destroy'])->name('app-translations.destroy');
+                    Route::delete('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'destroy'])->name('relaxing-music-tracks.destroy');
                 });
 
                 // Workflow modules — review and publish (Publisher, Super Admin)
@@ -519,6 +528,9 @@ Route::prefix('v1')
 
                     Route::put('/app-translations/{appTranslation}/reject', [AppTranslationAdminController::class, 'reject'])->name('app-translations.reject');
                     Route::put('/app-translations/{appTranslation}/publish', [AppTranslationAdminController::class, 'publish'])->name('app-translations.publish');
+
+                    Route::put('/relaxing-music-tracks/{relaxingMusicTrack}/reject', [RelaxingMusicTrackAdminController::class, 'reject'])->name('relaxing-music-tracks.reject');
+                    Route::put('/relaxing-music-tracks/{relaxingMusicTrack}/publish', [RelaxingMusicTrackAdminController::class, 'publish'])->name('relaxing-music-tracks.publish');
                 });
 
                 // Workflow modules — archive / restore (Editor, Super Admin). Hard delete routes removed from UI.
@@ -528,6 +540,9 @@ Route::prefix('v1')
 
                     Route::put('/blocked-words/{blockedWord}/archive', [BlockedWordAdminController::class, 'archive'])->name('blocked-words.archive');
                     Route::put('/blocked-words/{blockedWord}/restore', [BlockedWordAdminController::class, 'restore'])->name('blocked-words.restore');
+
+                    Route::put('/relaxing-music-tracks/{relaxingMusicTrack}/archive', [RelaxingMusicTrackAdminController::class, 'archive'])->name('relaxing-music-tracks.archive');
+                    Route::put('/relaxing-music-tracks/{relaxingMusicTrack}/restore', [RelaxingMusicTrackAdminController::class, 'restore'])->name('relaxing-music-tracks.restore');
 
                     Route::put('/kid-listo-quotes/{kidListoQuote}/archive', [KidListoQuoteAdminController::class, 'archive'])->name('kid-listo-quotes.archive');
                     Route::put('/kid-listo-quotes/{kidListoQuote}/restore', [KidListoQuoteAdminController::class, 'restore'])->name('kid-listo-quotes.restore');
@@ -607,14 +622,6 @@ Route::prefix('v1')
                     Route::put('/color-fun-worksheets/{colorFunWorksheet}', [ColorFunWorksheetAdminController::class, 'update'])->name('color-fun-worksheets.update');
                     Route::post('/color-fun-worksheets/{colorFunWorksheet}', [ColorFunWorksheetAdminController::class, 'update'])->name('color-fun-worksheets.update.post');
                     Route::delete('/color-fun-worksheets/{colorFunWorksheet}', [ColorFunWorksheetAdminController::class, 'destroy'])->name('color-fun-worksheets.destroy');
-
-                    // Relaxing music library (Editor, Publisher, Super Admin)
-                    Route::get('/relaxing-music-tracks', [RelaxingMusicTrackAdminController::class, 'index'])->name('relaxing-music-tracks.index');
-                    Route::post('/relaxing-music-tracks', [RelaxingMusicTrackAdminController::class, 'store'])->name('relaxing-music-tracks.store');
-                    Route::get('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'show'])->name('relaxing-music-tracks.show');
-                    Route::put('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'update'])->name('relaxing-music-tracks.update');
-                    Route::post('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'update'])->name('relaxing-music-tracks.update.post');
-                    Route::delete('/relaxing-music-tracks/{relaxingMusicTrack}', [RelaxingMusicTrackAdminController::class, 'destroy'])->name('relaxing-music-tracks.destroy');
                 });
 
                 Route::middleware('role:super_admin')->group(function (): void {

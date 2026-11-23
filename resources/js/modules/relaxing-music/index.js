@@ -5,16 +5,38 @@ import {
     buildSwalOptions,
     confirmWithSwal,
 } from '../shared/swal-forms';
+import { buildAdminActionButtons } from '../shared/table-actions';
+import {
+    attachWorkflowWindowHandlers,
+    buildWorkflowTableActions,
+    canCreateWorkflowDraft,
+    ensureWorkflowStatusFilter,
+    filterByWorkflowStatus,
+    applyWorkflowStatusCounts,
+    guardWorkflowCreateAction,
+    isPublisherReviewOnly,
+    isPublisherRole,
+    itemForEditorForm,
+    openItemFromQuery,
+    publisherReviewSwalButtons,
+    renderReviewNotesBanner,
+    resolvePublisherReviewSwalResult,
+    syncWorkflowCreateButton,
+    workflowStatusBadge,
+} from '../shared/content-workflow';
 import { showErrorToast, showSuccessToast } from '../shared/toast';
 
 const STATUS_FILTERS = [
-    { value: 'all', label: 'All' },
+    { value: 'all', label: 'All active flags' },
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
 ];
 
+const BASE_PATH = '/admin/relaxing-music-tracks';
+
 let tracks = [];
 let activeStatus = 'all';
+let workflowStatusFilter = '';
 let searchQuery = '';
 let bound = false;
 let previewAudio = null;
@@ -93,6 +115,18 @@ function syncPlayButtons() {
         button.classList.toggle('ring-2', isCurrent);
         button.classList.toggle('ring-[#FBD116]', isCurrent);
     });
+
+    const formPlay = document.getElementById('relaxing-music-form-play');
+    if (formPlay) {
+        const isPlaying = previewTrackId === -1 && previewPlaying;
+        const icon = formPlay.querySelector('i');
+        if (icon) {
+            icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+        }
+        formPlay.setAttribute('aria-label', isPlaying ? 'Pause track' : 'Play track for review');
+        formPlay.classList.toggle('ring-2', isPlaying);
+        formPlay.classList.toggle('ring-[#FBD116]', isPlaying);
+    }
 }
 
 export function initRelaxingMusicModule() {
@@ -104,7 +138,7 @@ export function initRelaxingMusicModule() {
     if (!bound) {
         bound = true;
         root.querySelector('[data-relaxing-music-action="add-track"]')
-            ?.addEventListener('click', () => showTrackForm(null));
+            ?.addEventListener('click', () => guardWorkflowCreateAction(() => showTrackForm(null)));
         root.querySelector('#relaxing-music-search')
             ?.addEventListener('input', (event) => {
                 searchQuery = String(event.target.value || '').trim().toLowerCase();
@@ -112,6 +146,28 @@ export function initRelaxingMusicModule() {
             });
         root.addEventListener('click', onGalleryClick);
         window.addEventListener('pagehide', stopPreview);
+
+        ensureWorkflowStatusFilter({
+            selectMount: root,
+            onChange: (value) => {
+                workflowStatusFilter = value;
+                renderGallery();
+            },
+        });
+
+        syncWorkflowCreateButton([
+            '[data-relaxing-music-action="add-track"]',
+            '[data-relaxing-music-action="add-track-tile"]',
+        ]);
+
+        attachWorkflowWindowHandlers('RelaxingMusic', BASE_PATH, () => loadTracks());
+        window.RelaxingMusic = {
+            ...(window.RelaxingMusic || {}),
+            edit: editTrack,
+            reload: loadTracks,
+        };
+
+        openItemFromQuery('item', (id) => editTrack(id));
     }
 
     loadTracks();
@@ -129,10 +185,15 @@ async function loadTracks() {
     }
 
     try {
-        const { data } = await axios.get('/admin/relaxing-music-tracks');
+        const { data } = await axios.get(BASE_PATH);
         tracks = Array.isArray(data?.data) ? data.data : [];
+        applyWorkflowStatusCounts(null, tracks);
         renderStatusChips();
         renderGallery();
+        syncWorkflowCreateButton([
+            '[data-relaxing-music-action="add-track"]',
+            '[data-relaxing-music-action="add-track-tile"]',
+        ]);
     } catch (error) {
         showErrorToast(error?.response?.data?.message || 'Failed to load relaxing music.');
         if (gallery) {
@@ -152,11 +213,13 @@ function renderStatusChips() {
         return;
     }
 
+    const queue = filterByWorkflowStatus(tracks, workflowStatusFilter);
+
     mount.innerHTML = STATUS_FILTERS.map((filter) => {
         const active = filter.value === activeStatus;
         const count = filter.value === 'all'
-            ? tracks.length
-            : tracks.filter((item) => (filter.value === 'active' ? item.is_active !== false : item.is_active === false)).length;
+            ? queue.length
+            : queue.filter((item) => (filter.value === 'active' ? item.is_active !== false : item.is_active === false)).length;
 
         return `
             <button
@@ -183,7 +246,7 @@ function renderStatusChips() {
 }
 
 function filteredTracks() {
-    return tracks.filter((track) => {
+    return filterByWorkflowStatus(tracks, workflowStatusFilter).filter((track) => {
         if (activeStatus === 'active' && track.is_active === false) {
             return false;
         }
@@ -199,6 +262,11 @@ function filteredTracks() {
     });
 }
 
+function trackCardActions(track) {
+    const actions = buildWorkflowTableActions(track, 'RelaxingMusic', { basePath: BASE_PATH });
+    return buildAdminActionButtons(actions, { isMobile: true, nowrap: false });
+}
+
 function renderGallery() {
     const gallery = document.getElementById('relaxing-music-gallery');
     const meta = document.getElementById('relaxing-music-meta');
@@ -211,15 +279,22 @@ function renderGallery() {
         meta.textContent = `${rows.length} track${rows.length === 1 ? '' : 's'}`;
     }
 
+    const canAdd = canCreateWorkflowDraft();
+    const emptyCopy = isPublisherRole()
+        ? 'No tracks are waiting for your review.'
+        : 'No tracks yet. Upload MP3 or M4A files for Calm Corner.';
+
     if (rows.length === 0) {
         gallery.innerHTML = `
             <div class="sticker-library-empty">
                 <i class="fas fa-music text-2xl text-[#055498]" aria-hidden="true"></i>
-                <p>No tracks yet. Upload MP3 or M4A files for Calm Corner.</p>
-                <button type="button" class="admin-primary-button min-h-11 mt-3" data-relaxing-music-action="add-track-tile">
-                    <i class="fas fa-plus mr-2" aria-hidden="true"></i>
-                    Add tracks
-                </button>
+                <p>${escapeHtml(emptyCopy)}</p>
+                ${canAdd ? `
+                    <button type="button" class="admin-primary-button min-h-11 mt-3" data-relaxing-music-action="add-track-tile">
+                        <i class="fas fa-plus mr-2" aria-hidden="true"></i>
+                        Add tracks
+                    </button>
+                ` : ''}
             </div>
         `;
         return;
@@ -239,7 +314,10 @@ function renderGallery() {
                             <i class="fas ${previewTrackId === Number(track.id) && previewPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
                         </button>
                         <div class="min-w-0 flex-1">
-                            <h3 class="font-semibold text-[#123a60] truncate">${escapeHtml(track.title || 'Untitled')}</h3>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="font-semibold text-[#123a60] truncate">${escapeHtml(track.title || 'Untitled')}</h3>
+                                ${workflowStatusBadge(track.workflow_status, track)}
+                            </div>
                             <p class="text-sm text-slate-500 truncate">${escapeHtml(track.title_tl || track.title || '')}</p>
                             <p class="text-xs text-slate-400 mt-1">
                                 ${formatDuration(track.duration_seconds)}
@@ -248,30 +326,27 @@ function renderGallery() {
                             </p>
                         </div>
                     </div>
-                    <div class="flex flex-wrap gap-2">
-                        <button type="button" class="admin-secondary-button min-h-11 flex-1" data-track-edit="${Number(track.id)}">
-                            <i class="fas fa-pen-to-square mr-2" aria-hidden="true"></i>Edit
-                        </button>
-                        <button type="button" class="admin-secondary-button min-h-11 flex-1 text-[#CE2028]" data-track-delete="${Number(track.id)}">
-                            <i class="fas fa-trash mr-2" aria-hidden="true"></i>Delete
-                        </button>
+                    <div class="admin-table-mobile-actions flex flex-wrap gap-2">
+                        ${trackCardActions(track)}
                     </div>
                 </article>
             `).join('')}
-            <button
-                type="button"
-                class="rounded-2xl border-2 border-dashed border-slate-300 min-h-[140px] text-[#055498] font-semibold hover:bg-slate-50"
-                data-relaxing-music-action="add-track-tile"
-            >
-                <i class="fas fa-plus mr-2" aria-hidden="true"></i>
-                Add tracks
-            </button>
+            ${canAdd ? `
+                <button
+                    type="button"
+                    class="rounded-2xl border-2 border-dashed border-slate-300 min-h-[140px] text-[#055498] font-semibold hover:bg-slate-50"
+                    data-relaxing-music-action="add-track-tile"
+                >
+                    <i class="fas fa-plus mr-2" aria-hidden="true"></i>
+                    Add tracks
+                </button>
+            ` : ''}
         </div>
     `;
 }
 
 function onGalleryClick(event) {
-    const target = event.target.closest('[data-track-edit], [data-track-delete], [data-track-play], [data-relaxing-music-action="add-track-tile"]');
+    const target = event.target.closest('[data-track-play], [data-relaxing-music-action="add-track-tile"]');
     if (!target) {
         return;
     }
@@ -281,20 +356,92 @@ function onGalleryClick(event) {
         return;
     }
 
-    if (target.matches('[data-track-edit]')) {
-        const track = tracks.find((item) => Number(item.id) === Number(target.getAttribute('data-track-edit')));
-        showTrackForm(track || null);
-        return;
-    }
-
-    if (target.matches('[data-track-delete]')) {
-        deleteTrack(Number(target.getAttribute('data-track-delete')));
-        return;
-    }
-
     if (target.matches('[data-relaxing-music-action="add-track-tile"]')) {
-        showTrackForm(null);
+        guardWorkflowCreateAction(() => showTrackForm(null));
     }
+}
+
+function editTrack(id) {
+    const track = tracks.find((item) => Number(item.id) === Number(id));
+    if (track) {
+        showTrackForm(track);
+        return;
+    }
+
+    axios.get(`${BASE_PATH}/${id}`)
+        .then(({ data }) => showTrackForm(data.data))
+        .catch(({ response }) => {
+            showErrorToast(response?.data?.message ?? 'Unable to load this track.');
+        });
+}
+
+function resolveFormAudioUrl(item) {
+    if (!item) {
+        return null;
+    }
+    const pendingUrl = item.pending_revision?.audio_url;
+    if (pendingUrl) {
+        return String(pendingUrl);
+    }
+    const pendingPath = item.pending_revision?.audio_path;
+    if (pendingPath) {
+        const path = String(pendingPath).replace(/^\//, '');
+        return path.startsWith('storage/') ? `/${path}` : `/storage/${path}`;
+    }
+    return item.audio_url ? String(item.audio_url) : null;
+}
+
+function renderFormAudioPreview(url, { proposed = false } = {}) {
+    if (!url) {
+        return `
+            <div class="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                No audio file is available to preview for this review.
+            </div>
+        `;
+    }
+
+    return `
+        <div class="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-[#055498]/25 bg-[#055498]/5 px-3 py-3">
+            <button
+                type="button"
+                id="relaxing-music-form-play"
+                class="shrink-0 w-12 h-12 rounded-full bg-[#055498] text-white flex items-center justify-center min-h-11 min-w-11"
+                data-form-audio-url="${escapeHtml(url)}"
+                aria-label="Play track for review"
+            >
+                <i class="fas fa-play" aria-hidden="true"></i>
+            </button>
+            <div class="min-w-0 flex-1">
+                <p class="font-semibold text-[#123a60]">${proposed ? 'Listen to proposed audio' : 'Listen to track'}</p>
+                <p class="text-xs text-slate-500 mt-0.5">Play / pause before you approve or send back for revision.</p>
+            </div>
+        </div>
+    `;
+}
+
+function bindFormAudioPreview(popup) {
+    const button = popup?.querySelector?.('#relaxing-music-form-play');
+    if (!button) {
+        return;
+    }
+
+    button.addEventListener('click', () => {
+        const url = button.getAttribute('data-form-audio-url');
+        if (!url) {
+            showErrorToast('This track has no audio file.');
+            return;
+        }
+
+        const formTrackId = -1;
+        const existing = tracks.find((item) => Number(item.id) === formTrackId);
+        if (!existing) {
+            tracks.push({ id: formTrackId, title: 'Review preview', audio_url: url });
+        } else {
+            existing.audio_url = url;
+        }
+
+        playTrack(formTrackId);
+    });
 }
 
 function playTrack(id) {
@@ -305,7 +452,6 @@ function playTrack(id) {
         return;
     }
 
-    // Same track: toggle pause / resume.
     if (previewAudio && previewTrackId === trackId) {
         if (previewPlaying) {
             previewAudio.pause();
@@ -359,71 +505,114 @@ function playTrack(id) {
     });
 }
 
-function showTrackForm(existing) {
-    const isEdit = Boolean(existing?.id);
+function showTrackForm(existingRaw) {
+    const existing = existingRaw ? itemForEditorForm(existingRaw) : null;
+    const isEdit = Boolean(existing?.id ?? existingRaw?.id);
+    const reviewItem = existingRaw?.pending_revision ? existingRaw : null;
+    const publisherReviewOnly = isPublisherReviewOnly(existingRaw);
+    const isReviewUi = publisherReviewOnly || Boolean(reviewItem);
+    const formAudioUrl = resolveFormAudioUrl(existingRaw);
+    const proposedAudio = Boolean(existingRaw?.pending_revision?.audio_path
+        && existingRaw.pending_revision.audio_path !== existingRaw.audio_path);
+
+    const fields = [
+        {
+            id: 'relaxing-music-title',
+            name: 'title',
+            label: isEdit ? 'Title *' : 'Title (single upload only)',
+            type: 'text',
+            value: existing?.title ?? '',
+            required: isEdit,
+            attribute: 'title',
+            hint: isEdit
+                ? undefined
+                : 'Optional when uploading one file. Multi-upload uses each file name.',
+        },
+        {
+            id: 'relaxing-music-title-tl',
+            name: 'title_tl',
+            label: 'Title (Filipino)',
+            type: 'text',
+            value: existing?.title_tl ?? '',
+            attribute: 'title_tl',
+        },
+    ];
+
+    if (!publisherReviewOnly) {
+        fields.push({
+            id: 'relaxing-music-audio',
+            name: isEdit ? 'audio' : 'audios',
+            label: isEdit ? 'Audio file' : 'Audio files *',
+            type: 'file',
+            accept: 'audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg',
+            multiple: !isEdit,
+            span: 2,
+            required: !isEdit,
+            hint: isEdit
+                ? 'Leave empty to keep the current file. Max 20 MB.'
+                : 'Up to 20 files, 20 MB each (MP3, M4A, AAC, WAV, OGG).',
+        });
+    }
+
+    fields.push(
+        {
+            id: 'relaxing-music-sort',
+            name: 'sort_order',
+            label: 'Sort order',
+            type: 'number',
+            value: String(existing?.sort_order ?? 0),
+            attribute: 'sort_order',
+        },
+        {
+            id: 'relaxing-music-active',
+            name: 'is_active',
+            label: 'Status *',
+            type: 'select',
+            value: existing?.is_active === false ? '0' : '1',
+            options: [
+                { value: '1', label: 'Active' },
+                { value: '0', label: 'Inactive' },
+            ],
+            attribute: 'is_active',
+        },
+    );
 
     Swal.fire(buildSwalOptions({
-        title: isEdit ? 'Edit track' : 'Add tracks',
-        html: buildSwalForm({
-            description: isEdit
-                ? 'Update the title or replace the audio file used in Calm Corner.'
-                : 'Select one or more MP3 / M4A files. Multi-upload uses each file name as the title.',
-            fields: [
-                {
-                    id: 'relaxing-music-title',
-                    name: 'title',
-                    label: isEdit ? 'Title *' : 'Title (single upload only)',
-                    type: 'text',
-                    value: existing?.title ?? '',
-                    required: isEdit,
-                    hint: isEdit
-                        ? undefined
-                        : 'Optional when uploading one file. Multi-upload uses each file name.',
-                },
-                {
-                    id: 'relaxing-music-title-tl',
-                    name: 'title_tl',
-                    label: 'Title (Filipino)',
-                    type: 'text',
-                    value: existing?.title_tl ?? '',
-                },
-                {
-                    id: 'relaxing-music-audio',
-                    name: isEdit ? 'audio' : 'audios',
-                    label: isEdit ? 'Audio file' : 'Audio files *',
-                    type: 'file',
-                    accept: 'audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg',
-                    multiple: !isEdit,
-                    span: 2,
-                    required: !isEdit,
-                    hint: isEdit
-                        ? 'Leave empty to keep the current file. Max 20 MB.'
-                        : 'Up to 20 files, 20 MB each (MP3, M4A, AAC, WAV, OGG).',
-                },
-                {
-                    id: 'relaxing-music-sort',
-                    name: 'sort_order',
-                    label: 'Sort order',
-                    type: 'number',
-                    value: String(existing?.sort_order ?? 0),
-                },
-                {
-                    id: 'relaxing-music-active',
-                    name: 'is_active',
-                    label: 'Status *',
-                    type: 'select',
-                    value: existing?.is_active === false ? '0' : '1',
-                    options: [
-                        { value: '1', label: 'Active' },
-                        { value: '0', label: 'Inactive' },
-                    ],
-                },
-            ],
-        }),
-        confirmButtonText: isEdit ? 'Save changes' : 'Add tracks',
-        showCancelButton: true,
-        cancelButtonText: 'Cancel',
+        title: isEdit
+            ? (isReviewUi ? 'Review track changes' : 'Edit track')
+            : 'Add tracks',
+        html: `${renderReviewNotesBanner(existingRaw)}${
+            isReviewUi || isEdit ? renderFormAudioPreview(formAudioUrl, { proposed: proposedAudio || isReviewUi }) : ''
+        }${buildSwalForm({
+            description: publisherReviewOnly
+                ? 'Review the staged changes, then publish or return for revision.'
+                : (isEdit
+                    ? 'Update the title or replace the audio file used in Calm Corner.'
+                    : 'Select one or more MP3 / M4A files. Multi-upload uses each file name as the title.'),
+            reviewItem,
+            fields,
+        })}`,
+        ...(publisherReviewOnly
+            ? publisherReviewSwalButtons(existingRaw)
+            : {
+                confirmButtonText: isEdit ? 'Save changes' : 'Add tracks',
+                showCancelButton: true,
+                cancelButtonText: 'Cancel',
+            }),
+        didOpen: (popup) => {
+            bindFormAudioPreview(popup);
+        },
+        willClose: () => {
+            if (previewTrackId === -1) {
+                stopPreview();
+            }
+            tracks = tracks.filter((item) => Number(item.id) !== -1);
+        },
         preConfirm: () => {
+            if (publisherReviewOnly) {
+                return { reviewedOnly: true };
+            }
+
             const values = {
                 title: readField('relaxing-music-title'),
                 title_tl: readField('relaxing-music-title-tl'),
@@ -447,6 +636,16 @@ function showTrackForm(existing) {
             return values;
         },
     }, { size: 'lg' })).then(async (result) => {
+        if (publisherReviewOnly) {
+            await resolvePublisherReviewSwalResult(result, {
+                basePath: BASE_PATH,
+                id: existingRaw.id,
+                item: existingRaw,
+                onSuccess: () => loadTracks(),
+            });
+            return;
+        }
+
         if (!result.isConfirmed || !result.value) {
             return;
         }
@@ -470,11 +669,11 @@ function showTrackForm(existing) {
 
         try {
             const request = isEdit
-                ? axios.post(`/admin/relaxing-music-tracks/${existing.id}`, (() => {
+                ? axios.post(`${BASE_PATH}/${existingRaw.id}`, (() => {
                     formData.append('_method', 'PUT');
                     return formData;
                 })())
-                : axios.post('/admin/relaxing-music-tracks', formData);
+                : axios.post(BASE_PATH, formData);
 
             const { data } = await request;
             showSuccessToast(
@@ -490,28 +689,4 @@ function showTrackForm(existing) {
             showErrorToast(firstError || error?.response?.data?.message || 'Save failed.');
         }
     });
-}
-
-async function deleteTrack(id) {
-    const track = tracks.find((item) => Number(item.id) === Number(id));
-    const result = await confirmWithSwal({
-        title: 'Delete track?',
-        text: `Delete “${track?.title || `track #${id}`}”? This cannot be undone.`,
-        icon: 'warning',
-        confirmButtonText: 'Delete',
-        danger: true,
-    });
-
-    if (!result.isConfirmed) {
-        return;
-    }
-
-    try {
-        const { data } = await axios.delete(`/admin/relaxing-music-tracks/${id}`);
-        showSuccessToast(data.message || 'Track deleted.', 'Deleted');
-        stopPreview();
-        await loadTracks();
-    } catch (error) {
-        showErrorToast(error?.response?.data?.message || 'Delete failed.');
-    }
 }

@@ -1,6 +1,6 @@
 # DAPE-MA Admin UAT Test Scripts
 
-Excel UAT pack for the **Admin Control Panel**, in the same layout as `DAPE-MA_Phase1_UAT_Test_Scripts.xlsx`.
+Excel UAT pack for the **Admin Control Panel**, same layout as the Phase 1 / Oct 30 workbook.
 
 | File | Path |
 |------|------|
@@ -13,4 +13,12 @@ Sheets: Instructions, Summary (auto counts), Test Users, Super Admin, Publisher,
 
 Status dropdown: Pass / Fail / Blocked / Not Tested. Failures need a Severity.
 
-**v1.1:** Adds Super Admin **Audit Trail** scripts (SA-077–SA-083), role-access denials for `/admin/audit-trail`, and Screen Checklist rows for the Audit Trail page and detail drawer.
+**v1.3 (Nov 27, 2026 internal UAT):** Delta-only pack. Baseline Oct 30 scripts were removed from this rebuild. Covers:
+
+- Editor / Publisher / Analytics Viewer **role-access corrections** (Editor is not Posts-only; Publisher has no Care Checks)
+- **Sticker Library**, **Color Fun Library**, **Relaxing Music** (Editor/Publisher content workflow + preview play/pause; mobile smoke)
+- **Analytics multi-export** (CSV / Excel / PDF)
+
+All admin paths in the workbook use the live host: `https://dapemade.ddb.gov.ph/` (e.g. `https://dapemade.ddb.gov.ph/admin/audit-trail`).
+
+Run a prior full-suite workbook separately if you need complete regression (sign-in, Posts workflow, Users, Audit Trail, etc.).

@@ -21,7 +21,9 @@ final class ContentWorkflowSections
             'settings' => ['label' => 'Settings content', 'path' => '/admin/settings', 'query' => 'item'],
             'lookups' => ['label' => 'Lookup option', 'path' => '/admin/lookups', 'query' => 'item'],
             'word-blocking' => ['label' => 'Blocked word', 'path' => '/admin/word-blocking', 'query' => 'item'],
+            'relaxing-music' => ['label' => 'Relaxing music track', 'path' => '/admin/relaxing-music', 'query' => 'item'],
             'notifications' => ['label' => 'Notification campaign', 'path' => '/admin/notifications', 'query' => 'item'],
+
             'posts' => ['label' => 'Post', 'path' => '/admin/posts', 'query' => 'post'],
             'kid-listo' => ['label' => 'Kid Listo quote', 'path' => '/admin/settings', 'query' => 'quote'],
             'legal-pages' => ['label' => 'Legal page', 'path' => '/admin/settings', 'query' => 'legal'],

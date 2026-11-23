@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentWorkflow;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 class RelaxingMusicTrack extends Model
 {
+    use HasContentWorkflow;
+
     protected $fillable = [
         'title',
         'title_tl',
@@ -40,6 +43,11 @@ class RelaxingMusicTrack extends Model
      */
     public function toAdminArray(): array
     {
+        $workflow = $this->workflowAdminFields();
+        if (is_array($workflow['pending_revision'] ?? null)) {
+            $workflow['pending_revision'] = $this->enrichPendingRevisionAudio($workflow['pending_revision']);
+        }
+
         return [
             'id' => $this->id,
             'title' => $this->title,
@@ -49,9 +57,24 @@ class RelaxingMusicTrack extends Model
             'duration_seconds' => $this->duration_seconds,
             'is_active' => (bool) $this->is_active,
             'sort_order' => (int) $this->sort_order,
+            ...$workflow,
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'updated_at' => optional($this->updated_at)?->toIso8601String(),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $revision
+     * @return array<string, mixed>
+     */
+    private function enrichPendingRevisionAudio(array $revision): array
+    {
+        $path = $revision['audio_path'] ?? null;
+        if (is_string($path) && $path !== '') {
+            $revision['audio_url'] = Storage::disk('public')->url(ltrim($path, '/'));
+        }
+
+        return $revision;
     }
 
     /**

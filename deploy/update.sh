@@ -29,6 +29,8 @@ if [[ "${SKIP_MIGRATE}" != "1" ]]; then
   php artisan db:seed --class=AppOptionSeeder --force
   echo "[update] App translations..."
   php artisan db:seed --class=AppTranslationSeeder --force
+  echo "[update] Relaxing music tracks..."
+  php artisan db:seed --class=RelaxingMusicTrackSeeder --force
 fi
 
 php artisan storage:link || true
