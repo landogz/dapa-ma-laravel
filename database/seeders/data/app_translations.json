@@ -1148,8 +1148,56 @@
   {
     "key": "careRelaxingAudioBody",
     "group": "care",
-    "en": "Listen to soothing sounds to help you relax.",
-    "tl": "Makinig sa soothing sounds para makapag-relax."
+    "en": "Choose a calming track and listen to help you relax.",
+    "tl": "Pumili ng calming track at makinig para makapag-relax."
+  },
+  {
+    "key": "careChooseTrack",
+    "group": "care",
+    "en": "Choose a track",
+    "tl": "Pumili ng kanta"
+  },
+  {
+    "key": "careChooseTrackBody",
+    "group": "care",
+    "en": "Pick one of these relaxing songs, then press play.",
+    "tl": "Pumili ng isa sa mga relaxing songs, tapos pindutin ang play."
+  },
+  {
+    "key": "careRelaxingTrackSubtitle",
+    "group": "care",
+    "en": "Relaxing music",
+    "tl": "Relaxing music"
+  },
+  {
+    "key": "careTrackTreeOfLife",
+    "group": "care",
+    "en": "Tree of Life",
+    "tl": "Tree of Life"
+  },
+  {
+    "key": "careTrackReversePolarity",
+    "group": "care",
+    "en": "Reverse Polarity",
+    "tl": "Reverse Polarity"
+  },
+  {
+    "key": "careTrackGlassCastle",
+    "group": "care",
+    "en": "Glass Castle",
+    "tl": "Glass Castle"
+  },
+  {
+    "key": "careTrackSerenity",
+    "group": "care",
+    "en": "Serenity",
+    "tl": "Serenity"
+  },
+  {
+    "key": "careTrackAuroraBorealis",
+    "group": "care",
+    "en": "Aurora Borealis",
+    "tl": "Aurora Borealis"
   },
   {
     "key": "careGuidedMeditation",
