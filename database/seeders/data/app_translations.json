@@ -5783,5 +5783,23 @@
     "group": "profile",
     "en": "City / Municipality",
     "tl": "Lungsod / Munisipyo"
+  },
+  {
+    "key": "selectRegion",
+    "group": "profile",
+    "en": "Select region",
+    "tl": "Piliin ang rehiyon"
+  },
+  {
+    "key": "selectProvince",
+    "group": "profile",
+    "en": "Select province",
+    "tl": "Piliin ang lalawigan"
+  },
+  {
+    "key": "selectCity",
+    "group": "profile",
+    "en": "Select city / municipality",
+    "tl": "Piliin ang lungsod / munisipyo"
   }
 ]
