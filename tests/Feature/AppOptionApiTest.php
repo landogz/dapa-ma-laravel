@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AppOption;
+use App\Models\User;
 use App\Services\AppOptionService;
 use Database\Seeders\AppOptionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,6 +27,7 @@ class AppOptionApiTest extends TestCase
         $this->assertTrue($groups->pluck('key')->contains('journal_impact'));
         $this->assertTrue($groups->pluck('key')->contains('care_toolkit'));
         $this->assertTrue($groups->pluck('key')->contains('color_fun'));
+        $this->assertTrue($groups->pluck('key')->contains('calm_corner'));
 
         $persona = $groups->firstWhere('key', 'persona');
         $this->assertSame('multiple', $persona['selection'] ?? null);
@@ -48,6 +50,15 @@ class AppOptionApiTest extends TestCase
         $this->assertTrue($colorFunKeys->contains('nature'));
         $this->assertTrue($colorFunKeys->contains('people'));
         $this->assertTrue($colorFunKeys->contains('messages'));
+
+        $calmCorner = $groups->firstWhere('key', 'calm_corner');
+        $calmKeys = collect($calmCorner['options'] ?? [])->pluck('key');
+        $this->assertTrue($calmKeys->contains('breathing'));
+        $this->assertTrue($calmKeys->contains('relaxing_audio'));
+        $this->assertTrue($calmKeys->contains('guided_meditation'));
+        $this->assertTrue($calmKeys->contains('visualization'));
+        $this->assertTrue($calmKeys->contains('color_fun'));
+        $this->assertTrue($calmKeys->contains('stretch_breaks'));
     }
 
     public function test_public_sky_option_includes_accent(): void
@@ -87,11 +98,15 @@ class AppOptionApiTest extends TestCase
             ->where('key', 'sky_red')
             ->firstOrFail();
 
+        $actor = User::factory()->create([
+            'role' => 'super_admin',
+        ]);
+
         $updated = app(AppOptionService::class)->update($option, [
             'label_en' => $option->label_en,
             'label_tl' => $option->label_tl,
             'accent_color' => 'ce2028',
-        ]);
+        ], $actor);
 
         $this->assertSame('#CE2028', $updated->accent_color);
     }

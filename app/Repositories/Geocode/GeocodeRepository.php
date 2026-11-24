@@ -2,10 +2,13 @@
 
 namespace App\Repositories\Geocode;
 
+use App\Support\Geocode\PhilippineCoordinateLookup;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Throwable;
 
 class GeocodeRepository
 {
@@ -41,24 +44,35 @@ class GeocodeRepository
     {
         $roundedLat = round($latitude, 5);
         $roundedLng = round($longitude, 5);
-        $cacheKey = "geocode:reverse:{$roundedLat}:{$roundedLng}";
+        $cacheKey = "geocode:reverse:v2:{$roundedLat}:{$roundedLng}";
 
         return Cache::remember($cacheKey, self::REVERSE_TTL_SECONDS, function () use ($latitude, $longitude) {
-            $response = $this->client()->get('/reverse', [
-                'format' => 'json',
-                'lat' => $latitude,
-                'lon' => $longitude,
-                'addressdetails' => 1,
-            ]);
+            try {
+                $response = $this->client()->get('/reverse', [
+                    'format' => 'json',
+                    'lat' => $latitude,
+                    'lon' => $longitude,
+                    'addressdetails' => 1,
+                ]);
 
-            $this->assertSuccessful($response, 'Reverse geocoding is temporarily unavailable.');
-
-            $payload = $response->json();
-            if (! is_array($payload) || ($payload['error'] ?? null)) {
-                return null;
+                if ($response->successful()) {
+                    $payload = $response->json();
+                    if (is_array($payload) && ! ($payload['error'] ?? null)) {
+                        $place = $this->mapPlace($payload, $latitude, $longitude);
+                        if ($place !== null && $this->hasUsablePlace($place)) {
+                            return $place;
+                        }
+                    }
+                }
+            } catch (Throwable $exception) {
+                Log::warning('Nominatim reverse failed; using offline PH lookup.', [
+                    'lat' => $latitude,
+                    'lng' => $longitude,
+                    'error' => $exception->getMessage(),
+                ]);
             }
 
-            return $this->mapPlace($payload, $latitude, $longitude);
+            return PhilippineCoordinateLookup::reverse($latitude, $longitude);
         });
     }
 
@@ -68,7 +82,9 @@ class GeocodeRepository
         $userAgent = (string) config('services.nominatim.user_agent');
 
         return Http::baseUrl($baseUrl)
-            ->timeout(8)
+            // Keep short so offline PH reverse can answer when Nominatim/DNS is down.
+            ->timeout(3)
+            ->connectTimeout(2)
             ->acceptJson()
             ->withHeaders([
                 'User-Agent' => $userAgent,
@@ -101,8 +117,18 @@ class GeocodeRepository
 
         $address = is_array($item['address'] ?? null) ? $item['address'] : [];
 
-        $region = trim((string) ($address['state'] ?? $address['region'] ?? ''));
-        $province = trim((string) ($address['province'] ?? $address['county'] ?? ''));
+        $region = trim((string) (
+            $address['state']
+            ?? $address['region']
+            ?? $address['state_district']
+            ?? ''
+        ));
+        $province = trim((string) (
+            $address['province']
+            ?? $address['county']
+            ?? $address['state_district']
+            ?? ''
+        ));
         $city = trim((string) (
             $address['city']
             ?? $address['town']
@@ -110,6 +136,8 @@ class GeocodeRepository
             ?? $address['city_district']
             ?? $address['village']
             ?? $address['suburb']
+            ?? $address['quarter']
+            ?? $address['neighbourhood']
             ?? ''
         ));
 
@@ -118,11 +146,64 @@ class GeocodeRepository
             $province = $city;
         }
 
+        // Last resort: pull trailing PH place parts from display_name.
+        if ($region === '' && $province === '' && $city === '') {
+            $parsed = $this->parsePhilippineDisplayName($label);
+            $region = $parsed['region'];
+            $province = $parsed['province'];
+            $city = $parsed['city'];
+        }
+
         return [
             'label' => $label,
             'address' => $label,
             'latitude' => $lat,
             'longitude' => $lng,
+            'region' => $region,
+            'province' => $province,
+            'city' => $city,
+        ];
+    }
+
+    /**
+     * @param  array{region?:string,province?:string,city?:string}  $place
+     */
+    private function hasUsablePlace(array $place): bool
+    {
+        return filled($place['region'] ?? null)
+            || filled($place['province'] ?? null)
+            || filled($place['city'] ?? null);
+    }
+
+    /**
+     * @return array{region:string,province:string,city:string}
+     */
+    private function parsePhilippineDisplayName(string $label): array
+    {
+        $parts = array_values(array_filter(array_map(
+            static fn (string $part): string => trim($part),
+            explode(',', $label),
+        )));
+
+        // Drop trailing country / postal codes.
+        $parts = array_values(array_filter($parts, static function (string $part): bool {
+            if (strcasecmp($part, 'Philippines') === 0) {
+                return false;
+            }
+
+            return ! preg_match('/^\d{3,5}$/', $part);
+        }));
+
+        $count = count($parts);
+        if ($count === 0) {
+            return ['region' => '', 'province' => '', 'city' => ''];
+        }
+
+        $region = $parts[$count - 1] ?? '';
+        $province = $parts[$count - 2] ?? $region;
+        $city = $parts[$count - 3] ?? $province;
+
+        return [
             'region' => $region,
             'province' => $province,
             'city' => $city,

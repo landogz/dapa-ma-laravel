@@ -56,6 +56,14 @@ class GeocodeController extends Controller
             ], 503);
         }
 
+        if ($place === null) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No Philippine address found for this location.',
+                'errors' => [],
+            ], 404);
+        }
+
         return response()->json([
             'status' => true,
             'message' => 'Address resolved.',

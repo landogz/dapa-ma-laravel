@@ -24,6 +24,8 @@ final class AppOptionGroup
 
     public const COLOR_FUN = 'color_fun';
 
+    public const CALM_CORNER = 'calm_corner';
+
     public const SELECTION_SINGLE = 'single';
 
     public const SELECTION_MULTIPLE = 'multiple';
@@ -44,6 +46,7 @@ final class AppOptionGroup
             self::REHAB_CENTER,
             self::POST_CATEGORY,
             self::COLOR_FUN,
+            self::CALM_CORNER,
         ];
     }
 
@@ -115,6 +118,12 @@ final class AppOptionGroup
             self::COLOR_FUN => [
                 'title' => 'Color Fun categories',
                 'subtitle' => 'Filters for Color Fun worksheets — All, Nature, People, Messages',
+                'selection' => self::SELECTION_SINGLE,
+                'surface' => 'Care',
+            ],
+            self::CALM_CORNER => [
+                'title' => 'Calm Corner tools',
+                'subtitle' => 'Calm Corner menu — set Active to show on mobile, Inactive to hide',
                 'selection' => self::SELECTION_SINGLE,
                 'surface' => 'Care',
             ],
@@ -440,6 +449,74 @@ final class AppOptionGroup
                 'Mabuting salita at mensahe ng puso',
                 '#CE2028',
             ),
+
+            // Calm Corner menu tools (keys drive mobile Calm Corner visibility)
+            self::row(
+                self::CALM_CORNER,
+                'breathing',
+                'Breathing Exercise',
+                'Breathing Exercise',
+                1,
+                'air',
+                'Simple guided breathing exercise to calm your mind.',
+                'Simpleng guided breathing exercise para pakalmahin ang isip.',
+                '#055498',
+            ),
+            self::row(
+                self::CALM_CORNER,
+                'relaxing_audio',
+                'Relaxing Audio',
+                'Relaxing Audio',
+                2,
+                'music_note_outlined',
+                'Listen to soothing sounds to help you relax.',
+                'Makinig sa soothing sounds para makapagpahinga.',
+                '#055498',
+            ),
+            self::row(
+                self::CALM_CORNER,
+                'guided_meditation',
+                'Guided Meditation',
+                'Guided Meditation',
+                3,
+                'self_improvement_outlined',
+                'Follow meditations for focus, calm, and balance.',
+                'Sundan ang meditations para sa focus, kalma, at balanse.',
+                '#7C3AED',
+            ),
+            self::row(
+                self::CALM_CORNER,
+                'visualization',
+                'Visualization Exercises',
+                'Visualization Exercises',
+                4,
+                'auto_awesome_outlined',
+                'Use your imagination to reduce stress.',
+                'Gamitin ang imahinasyon para mabawasan ang stress.',
+                '#CE2028',
+            ),
+            self::row(
+                self::CALM_CORNER,
+                'color_fun',
+                'Color Fun',
+                'Color Fun',
+                5,
+                'palette_outlined',
+                'Print and color cute worksheets!',
+                'I-print at kulayan ang cute worksheets!',
+                '#FBD116',
+            ),
+            self::row(
+                self::CALM_CORNER,
+                'stretch_breaks',
+                'Stretch Breaks',
+                'Stretch Breaks',
+                6,
+                'accessibility_new_outlined',
+                'Do short posture resets to ease tension.',
+                'Gumawa ng maikling posture resets para mabawasan ang tensyon.',
+                '#FBD116',
+            ),
         ];
     }
 
@@ -470,6 +547,8 @@ final class AppOptionGroup
             'thunderstorm_outlined' => 'fas fa-cloud-bolt',
             'water_drop_outlined' => 'fas fa-droplet',
             'air' => 'fas fa-wind',
+            'music_note_outlined' => 'fas fa-music',
+            'accessibility_new_outlined' => 'fas fa-person-walking',
             'groups_outlined' => 'fas fa-users',
             'groups_rounded' => 'fas fa-user-group',
             'waves_outlined' => 'fas fa-water',
@@ -524,6 +603,8 @@ final class AppOptionGroup
             ['value' => 'thunderstorm_outlined', 'label' => 'Storm'],
             ['value' => 'water_drop_outlined', 'label' => 'Water'],
             ['value' => 'air', 'label' => 'Air'],
+            ['value' => 'music_note_outlined', 'label' => 'Music'],
+            ['value' => 'accessibility_new_outlined', 'label' => 'Stretch'],
             ['value' => 'groups_outlined', 'label' => 'Groups'],
             ['value' => 'waves_outlined', 'label' => 'Waves'],
             ['value' => 'bedtime_outlined', 'label' => 'Sleep'],
