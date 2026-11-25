@@ -48,13 +48,22 @@ export function getAnalyticsQueryParams() {
 }
 
 export function bindAnalyticsTabs() {
+    const tabsRoot = document.querySelector('[data-analytics-tabs]');
     const tabs = document.querySelectorAll('[data-analytics-tab]');
     if (!tabs.length) return;
+
+    if (tabsRoot) {
+        enhanceAnalyticsSectionTabs(tabsRoot);
+    }
 
     tabs.forEach((tab) => {
         tab.addEventListener('click', () => {
             const key = tab.getAttribute('data-analytics-tab');
-            tabs.forEach((t) => t.classList.toggle('is-active', t === tab));
+            tabs.forEach((t) => {
+                const active = t === tab;
+                t.classList.toggle('is-active', active);
+                t.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
             document.querySelectorAll('[data-analytics-panel]').forEach((panel) => {
                 const active = panel.getAttribute('data-analytics-panel') === key;
                 panel.classList.toggle('hidden', !active);
@@ -69,6 +78,36 @@ export function bindAnalyticsTabs() {
                 requestAnimationFrame(() => geographyUsersMap?.resize?.());
             }
         });
+    });
+}
+
+function enhanceAnalyticsSectionTabs(root) {
+    if (!root || root.dataset.enhanced === '1') {
+        return;
+    }
+
+    root.dataset.enhanced = '1';
+    root.querySelectorAll('[data-analytics-tab]').forEach((tab) => {
+        if (tab.querySelector('.admin-filter-tab-label')) {
+            return;
+        }
+
+        const label = tab.dataset.filterLabel || tab.textContent.trim();
+        const icon = String(tab.dataset.icon || 'fas fa-chart-pie').replace(/[^\w\s-]/g, '');
+        tab.replaceChildren();
+        const iconWrap = document.createElement('span');
+        iconWrap.className = 'admin-filter-tab-icon';
+        iconWrap.setAttribute('aria-hidden', 'true');
+        const iconEl = document.createElement('i');
+        iconEl.className = icon;
+        iconWrap.appendChild(iconEl);
+        const copy = document.createElement('span');
+        copy.className = 'admin-filter-tab-copy';
+        const labelEl = document.createElement('span');
+        labelEl.className = 'admin-filter-tab-label';
+        labelEl.textContent = label;
+        copy.appendChild(labelEl);
+        tab.append(iconWrap, copy);
     });
 }
 
@@ -541,8 +580,8 @@ function renderLeaderboardPodiumCard(row) {
         >
             <span class="analytics-leaderboard-rank-badge" aria-label="Rank ${rank}">${rank}</span>
             ${leaderboardAvatar(row, rank === 1 ? 'lg' : 'md')}
-            <p class="analytics-leaderboard-name">${escapeHtml(row.name)}</p>
-            <p class="analytics-leaderboard-subtitle">${escapeHtml(row.subtitle || 'App user')}</p>
+            <p class="analytics-leaderboard-name" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</p>
+            <p class="analytics-leaderboard-subtitle" title="${escapeHtml(row.subtitle || 'App user')}">${escapeHtml(row.subtitle || 'App user')}</p>
             <div class="analytics-leaderboard-metric-pill">
                 <span>${escapeHtml(leaderboardMetricLabel)}</span>
                 <strong>${Number(row.metric_value || 0).toLocaleString()}</strong>

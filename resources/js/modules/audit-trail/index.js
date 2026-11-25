@@ -363,6 +363,7 @@ function buildRowData(row) {
     const description = escapeHtml(row.description || '');
 
     if (auditTableMode === 'mobile') {
+        const actorTitle = escapeHtml(row.actor_name || row.actor_email || 'System');
         return [
             `<div class="admin-table-mobile-card audit-mobile-card">
                 <div class="admin-table-mobile-title-row">
@@ -370,17 +371,17 @@ function buildRowData(row) {
                         ${renderActorAvatar(row)}
                         <div class="min-w-0">
                             <p class="admin-table-mobile-kicker">${escapeHtml(headline(row.category))}</p>
-                            <p class="admin-table-mobile-title">${escapeHtml(row.actor_name || row.actor_email || 'System')}</p>
+                            <p class="admin-table-mobile-title" title="${actorTitle}">${actorTitle}</p>
                         </div>
                     </div>
-                    <div class="flex flex-col items-end gap-1">
+                    <div class="admin-table-mobile-badges">
                         ${actionPill(row.action)}
                         <span class="audit-when-muted" title="${escapeHtml(whenAbsolute)}">${escapeHtml(whenRelative)}</span>
                     </div>
                 </div>
                 <div class="admin-table-mobile-details">
-                    <p><span>Event:</span> ${description}</p>
-                    <p><span>Subject:</span> ${subject}</p>
+                    <p title="${description}"><span>Event:</span> ${description}</p>
+                    <p title="${subject}"><span>Subject:</span> ${subject}</p>
                 </div>
             </div>`,
             renderActions(row),

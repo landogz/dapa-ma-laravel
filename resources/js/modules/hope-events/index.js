@@ -225,14 +225,14 @@ function buildRow(row) {
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">Order ${escapeHtml(String(row.sort_order ?? 0))}</p>
-                        <p class="admin-table-mobile-title">${escapeHtml(row.title)}</p>
+                        <p class="admin-table-mobile-title" title="${escapeHtml(row.title)}">${escapeHtml(row.title)}</p>
                     </div>
-                    ${statusBadge(row)}${workflowBadge}
+                    <div class="admin-table-mobile-badges">${statusBadge(row)}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Audience:</span> ${audienceBadge(row.audience)}</p>
-                    <p><span>Dates:</span> ${escapeHtml(dates)}</p>
-                    <p><span>Location:</span> ${escapeHtml(location)}</p>
+                    <p title="${escapeHtml(dates)}"><span>Dates:</span> ${escapeHtml(dates)}</p>
+                    <p title="${escapeHtml(location)}"><span>Location:</span> ${escapeHtml(location)}</p>
                     <p><span>Slots:</span> ${escapeHtml(String(row.slots ?? '—'))}</p>
                 </div>
                 <div class="admin-table-mobile-actions">${mobileActions}</div>

@@ -204,9 +204,9 @@ function buildRowData(row) {
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">Blocked word</p>
-                        <p class="admin-table-mobile-title">${word || '—'}</p>
+                        <p class="admin-table-mobile-title" title="${word || '—'}">${word || '—'}</p>
                     </div>
-                    <div class="flex flex-col items-end gap-1">${status}${workflowBadge}</div>
+                    <div class="admin-table-mobile-badges">${status}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Updated:</span> ${escapeHtml(updated)}</p>

@@ -295,13 +295,13 @@ function buildRowData(row) {
             <div class="admin-table-mobile-card">
                 <div class="admin-table-mobile-title-row">
                     <div>
-                        <p class="admin-table-mobile-kicker">${escapeHtml(when)}</p>
-                        <p class="admin-table-mobile-title">${userName}</p>
+                        <p class="admin-table-mobile-kicker" title="${escapeHtml(when)}">${escapeHtml(when)}</p>
+                        <p class="admin-table-mobile-title" title="${userName}">${userName}</p>
                     </div>
-                    ${typeChip}
+                    <div class="admin-table-mobile-badges">${typeChip}</div>
                 </div>
                 <div class="admin-table-mobile-details">
-                    ${userEmail ? `<p><span>Email:</span> ${userEmail}</p>` : ''}
+                    ${userEmail ? `<p title="${userEmail}"><span>Email:</span> ${userEmail}</p>` : '<p><span>Email:</span> —</p>'}
                     <p><span>Level:</span> ${bandChip}</p>
                     <p><span>Score:</span> ${escapeHtml(score)}</p>
                 </div>

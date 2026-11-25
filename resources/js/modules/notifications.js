@@ -525,12 +525,12 @@ function buildNotificationRowData(notification) {
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">${sentAt}</p>
-                        <p class="admin-table-mobile-title">${escapeHtml(notification.title)}</p>
+                        <p class="admin-table-mobile-title" title="${escapeHtml(notification.title)}">${escapeHtml(notification.title)}</p>
                     </div>
-                    <div class="flex flex-col items-end gap-1">${topic}${workflowBadge}</div>
+                    <div class="admin-table-mobile-badges">${topic}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
-                    <p><span>Preview:</span> ${preview}</p>
+                    <p title="${preview}"><span>Preview:</span> ${preview}</p>
                     <p><span>Link to:</span> ${linkedTarget}</p>
                     <p><span>Recipients:</span> ${recipients}</p>
                     <p><span>Sent By:</span> ${sender}</p>

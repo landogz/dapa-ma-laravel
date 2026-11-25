@@ -1147,16 +1147,16 @@ function buildUserRowData(user) {
                         ${renderUserAvatar(user)}
                         <div class="min-w-0">
                             <p class="admin-table-mobile-kicker">User #${user.id}</p>
-                            <p class="admin-table-mobile-title">${escapeHtml(user.name)}</p>
+                            <p class="admin-table-mobile-title" title="${escapeHtml(user.name)}">${escapeHtml(user.name)}</p>
                         </div>
                     </div>
-                    <div class="flex flex-col items-end gap-1">
+                    <div class="admin-table-mobile-badges">
                         ${badge(user.role)}
                         ${statusPill(status)}
                     </div>
                 </div>
                 <div class="admin-table-mobile-details">
-                    <p><span>Email:</span> ${escapeHtml(user.email)}</p>
+                    <p title="${escapeHtml(user.email)}"><span>Email:</span> ${escapeHtml(user.email)}</p>
                     <p><span>Last login:</span> ${lastLoginHtml}</p>
                 </div>
             </div>`,

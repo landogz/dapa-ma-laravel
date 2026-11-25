@@ -596,13 +596,13 @@ function buildRowData(center) {
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">Center #${escapeHtml(String(center.id))}</p>
-                        <p class="admin-table-mobile-title">${escapeHtml(center.name)}</p>
+                        <p class="admin-table-mobile-title" title="${escapeHtml(center.name)}">${escapeHtml(center.name)}</p>
                     </div>
-                    ${statusBadge(center.is_active)}
+                    <div class="admin-table-mobile-badges">${statusBadge(center.is_active)}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Category:</span> ${categoryBadge(center)}</p>
-                    <p><span>Address:</span> ${escapeHtml(center.address)}</p>
+                    <p title="${escapeHtml(center.address)}"><span>Address:</span> ${escapeHtml(center.address)}</p>
                     <p><span>Coordinates:</span> ${escapeHtml(locationLabel)}</p>
                     <p><span>Contact:</span> ${contactValue(center.contact)}</p>
                     <p><span>Website:</span> ${websiteValue(center.website, 'Visit website')}</p>

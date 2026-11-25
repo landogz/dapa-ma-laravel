@@ -218,14 +218,14 @@ function buildRow(row) {
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">Order ${escapeHtml(String(row.sort_order ?? 0))}</p>
-                        <p class="admin-table-mobile-title">${escapeHtml(row.name)}</p>
+                        <p class="admin-table-mobile-title" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</p>
                     </div>
-                    <div class="flex flex-col items-end gap-1">${status}${workflowBadge}</div>
+                    <div class="admin-table-mobile-badges">${status}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Category:</span> ${categoryBadge(row.category)}</p>
-                    <p><span>Contact:</span> ${contact}</p>
-                    ${summary ? `<p><span>About:</span> ${summary}</p>` : ''}
+                    <p title="${contact}"><span>Contact:</span> ${contact}</p>
+                    <p title="${summary || '—'}"><span>About:</span> ${summary || '—'}</p>
                 </div>
                 <div class="admin-table-mobile-actions">${mobileActions}</div>
             </div>`,

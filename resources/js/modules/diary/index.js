@@ -489,12 +489,12 @@ function buildDiaryRowData(entry) {
                     ${userAvatar(userName)}
                     <div class="min-w-0">
                         <p class="admin-table-mobile-kicker">${escapeHtml(entryDate)} · ${skyChip(entry.sky)}</p>
-                        <p class="admin-table-mobile-title">${escapeHtml(title)}</p>
+                        <p class="admin-table-mobile-title" title="${escapeHtml(title)}">${escapeHtml(title)}</p>
                     </div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Person:</span> ${escapeHtml(userName)}</p>
-                    <div><span>Note:</span> ${preview}</div>
+                    <div class="admin-table-mobile-detail-block"><span>Note:</span> ${preview}</div>
                     <p><span>Updated:</span> ${escapeHtml(updatedAt)}</p>
                 </div>
                 <div class="admin-table-mobile-actions">${buildActionButtons(entry.id, true)}</div>

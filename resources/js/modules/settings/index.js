@@ -621,17 +621,19 @@ function buildQuoteRowData(quote) {
         : '<span class="admin-status-badge rehab-status-badge rehab-status-badge-inactive">Inactive</span>';
 
     if (quotesTableMode === 'mobile') {
+        const enTitle = escapeHtml(truncate(quote.message_en, 140));
+        const tlPreview = escapeHtml(truncate(quote.message_tl, 120));
         return [
             `<div class="admin-table-mobile-card">
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">Kid Listo</p>
-                        <p class="admin-table-mobile-title">${escapeHtml(truncate(quote.message_en, 140))}</p>
+                        <p class="admin-table-mobile-title" title="${enTitle}">${enTitle}</p>
                     </div>
-                    <div class="flex flex-col items-end gap-1">${statusBadge}${workflowBadge}</div>
+                    <div class="admin-table-mobile-badges">${statusBadge}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
-                    <p><span>Tagalog:</span> ${escapeHtml(truncate(quote.message_tl, 120))}</p>
+                    <p title="${tlPreview}"><span>Tagalog:</span> ${tlPreview}</p>
                     <p><span>By:</span> ${escapeHtml(quote.attribution || 'Kid Listo')}</p>
                 </div>
             </div>`,

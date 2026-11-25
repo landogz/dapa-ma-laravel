@@ -233,9 +233,9 @@ function buildRowData(row) {
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">${type}</p>
-                        <p class="admin-table-mobile-title">${preview || '—'}</p>
+                        <p class="admin-table-mobile-title" title="${preview || '—'}">${preview || '—'}</p>
                     </div>
-                    ${status}${workflowBadge}
+                    <div class="admin-table-mobile-badges">${status}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
                     <p><span>Order:</span> ${escapeHtml(String(row.sort_order ?? 0))}</p>

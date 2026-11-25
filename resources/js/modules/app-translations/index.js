@@ -721,14 +721,14 @@ function buildRowData(item) {
                 <div class="admin-table-mobile-title-row">
                     <div class="min-w-0">
                         <p class="admin-table-mobile-kicker">${escapeHtml(formatGroupLabel(item.group ?? 'general'))}</p>
-                        <p class="admin-table-mobile-title">${escapeHtml(item.key)}</p>
+                        <p class="admin-table-mobile-title" title="${escapeHtml(item.key)}">${escapeHtml(item.key)}</p>
                     </div>
-                    <div class="flex flex-col items-end gap-1">${workflowBadge}${statusBadge(item.is_active)}</div>
+                    <div class="admin-table-mobile-badges">${workflowBadge}${statusBadge(item.is_active)}</div>
                 </div>
                 <div class="admin-table-mobile-details">
-                    ${visual ? `<p>${visual}</p>` : ''}
-                    <p><span>EN:</span> ${escapeHtml(enPreview)}</p>
-                    <p><span>TL:</span> ${escapeHtml(tlPreview)}</p>
+                    ${visual ? `<div class="admin-table-mobile-detail-block">${visual}</div>` : '<p><span>Visual:</span> —</p>'}
+                    <p title="${escapeHtml(enPreview)}"><span>EN:</span> ${escapeHtml(enPreview)}</p>
+                    <p title="${escapeHtml(tlPreview)}"><span>TL:</span> ${escapeHtml(tlPreview)}</p>
                 </div>
             </div>`,
             mobileActionsMarkup,

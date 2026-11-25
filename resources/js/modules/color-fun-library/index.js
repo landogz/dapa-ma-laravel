@@ -228,11 +228,10 @@ function renderGallery() {
                         <img src="${escapeHtml(worksheet.image_url || '')}" alt="${escapeHtml(worksheet.title || 'Worksheet')}" loading="lazy" data-image-zoom>
                     </div>
                     <div class="sticker-tile-meta">
-                        <p class="sticker-tile-name">${escapeHtml(worksheet.title || `Worksheet #${worksheet.id}`)}</p>
-                        <p class="sticker-tile-status">
-                            ${escapeHtml(categoryLabel(worksheet.category))}
-                            <span class="mx-1 text-slate-300">•</span>
-                            ${worksheet.is_active ? 'Active' : 'Inactive'}
+                        <p class="sticker-tile-name" title="${escapeHtml(worksheet.title || `Worksheet #${worksheet.id}`)}">${escapeHtml(worksheet.title || `Worksheet #${worksheet.id}`)}</p>
+                        <p class="sticker-tile-status flex flex-wrap items-center gap-1.5">
+                            <span>${escapeHtml(categoryLabel(worksheet.category))}</span>
+                            <span class="admin-status-badge rehab-status-badge ${worksheet.is_active ? 'rehab-status-badge-active' : 'rehab-status-badge-inactive'}">${worksheet.is_active ? 'Active' : 'Inactive'}</span>
                         </p>
                     </div>
                     <div class="sticker-tile-actions">

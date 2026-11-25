@@ -231,8 +231,10 @@ function renderGallery() {
                         <img src="${escapeHtml(sticker.image_url || '')}" alt="${escapeHtml(sticker.name || 'Sticker')}" loading="lazy" data-image-zoom>
                     </div>
                     <div class="sticker-tile-meta">
-                        <p class="sticker-tile-name">${escapeHtml(sticker.name || `Sticker #${sticker.id}`)}</p>
-                        <p class="sticker-tile-status">${sticker.is_active ? 'Active' : 'Inactive'}</p>
+                        <p class="sticker-tile-name" title="${escapeHtml(sticker.name || `Sticker #${sticker.id}`)}">${escapeHtml(sticker.name || `Sticker #${sticker.id}`)}</p>
+                        <p class="sticker-tile-status">
+                            <span class="admin-status-badge rehab-status-badge ${sticker.is_active ? 'rehab-status-badge-active' : 'rehab-status-badge-inactive'}">${sticker.is_active ? 'Active' : 'Inactive'}</span>
+                        </p>
                     </div>
                     <div class="sticker-tile-actions">
                         <button type="button" class="sticker-tile-btn" data-sticker-edit="${sticker.id}" aria-label="Edit sticker" title="Edit">

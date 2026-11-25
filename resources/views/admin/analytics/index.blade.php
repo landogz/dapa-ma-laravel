@@ -10,7 +10,10 @@
                 <div class="min-w-0">
                     <h2 class="admin-shell-title text-base sm:text-lg">Analytics command center</h2>
                     <p class="mt-0.5 text-xs sm:text-sm admin-shell-subtitle">Live engagement, audience, content, and device performance across the DAPE-MA app.</p>
-                    <p class="mt-1 text-[11px] text-slate-400" data-analytics-updated-at>Refreshing metrics…</p>
+                    <p class="analytics-live-status mt-2" role="status" aria-live="polite" aria-atomic="true" data-analytics-updated-at>
+                        <span class="analytics-live-dot" aria-hidden="true"></span>
+                        <span data-analytics-updated-label>Refreshing metrics…</span>
+                    </p>
                 </div>
             </div>
 
@@ -71,32 +74,45 @@
             </div>
         </div>
 
-        <nav class="mt-5 flex min-h-11 gap-2 overflow-x-auto pb-1" aria-label="Analytics sections">
-            {{-- Alerts tab hidden for now; panel/API kept for a later release. --}}
-            @foreach ([
-                'overview' => 'Overview',
-                'users' => 'Users',
-                'mobile' => 'Mobile',
-                'content' => 'Content',
-                'retention' => 'Retention',
-                'journeys' => 'Journeys',
-                'leaderboard' => 'Leaderboard',
-                'geography' => 'Geography',
-                'reports' => 'Reports',
-            ] as $tabKey => $tabLabel)
-                <button
-                    type="button"
-                    class="admin-range-toggle-button min-h-11 shrink-0 rounded-full px-4 text-xs {{ $tabKey === 'overview' ? 'is-active' : '' }}"
-                    data-analytics-tab="{{ $tabKey }}"
-                >{{ $tabLabel }}</button>
-            @endforeach
-        </nav>
+        <div class="analytics-sticky-controls mt-5">
+            <nav class="admin-filter-tabs analytics-section-tabs is-horizontal" role="tablist" aria-label="Analytics sections" data-analytics-tabs>
+                {{-- Alerts tab hidden for now; panel/API kept for a later release. --}}
+                @foreach ([
+                    'overview' => ['Overview', 'fas fa-gauge-high'],
+                    'users' => ['Users', 'fas fa-users'],
+                    'mobile' => ['Mobile', 'fas fa-mobile-screen'],
+                    'content' => ['Content', 'fas fa-newspaper'],
+                    'retention' => ['Retention', 'fas fa-rotate'],
+                    'journeys' => ['Journeys', 'fas fa-route'],
+                    'leaderboard' => ['Leaderboard', 'fas fa-trophy'],
+                    'geography' => ['Geography', 'fas fa-map-location-dot'],
+                    'reports' => ['Reports', 'fas fa-file-arrow-down'],
+                ] as $tabKey => [$tabLabel, $tabIcon])
+                    <button
+                        type="button"
+                        role="tab"
+                        class="admin-filter-tab {{ $tabKey === 'overview' ? 'is-active' : '' }}"
+                        data-analytics-tab="{{ $tabKey }}"
+                        data-filter-value="{{ $tabKey }}"
+                        data-filter-label="{{ $tabLabel }}"
+                        data-icon="{{ $tabIcon }}"
+                        aria-selected="{{ $tabKey === 'overview' ? 'true' : 'false' }}"
+                    >{{ $tabLabel }}</button>
+                @endforeach
+            </nav>
+        </div>
 
         <div class="analytics-insight-strip mt-5" data-analytics-insights></div>
 
-        <p class="mt-3 text-[11px] text-slate-400" data-analytics-tracking-since>Session and daily active user metrics appear after mobile app opens are recorded.</p>
+        <div class="analytics-section-heading mt-5">
+            <div>
+                <p class="analytics-panel-kicker">Audience pulse</p>
+                <h3 class="analytics-panel-title">Active users and sessions</h3>
+            </div>
+            <p class="text-[11px] text-slate-400" data-analytics-tracking-since>Session and daily active user metrics appear after mobile app opens are recorded.</p>
+        </div>
 
-        <div class="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4">
+        <div class="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 items-stretch">
             <article class="analytics-mini-kpi" data-analytics-tip="registered_users" title="Registered app users">
                 <p class="analytics-mini-kpi-label">Registered users</p>
                 <p class="analytics-mini-kpi-value" data-analytics-summary="registered-users">--</p>
@@ -133,8 +149,15 @@
 
         <div data-analytics-panel="overview">
 
-        <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="admin-stat-card analytics-kpi-card text-left">
+        <div class="analytics-section-heading mt-5">
+            <div>
+                <p class="analytics-panel-kicker">Period performance</p>
+                <h3 class="analytics-panel-title">Volume, views, and engagement</h3>
+            </div>
+        </div>
+
+        <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 items-stretch">
+            <article class="admin-stat-card analytics-kpi-card text-left h-full">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#055498]">Volume</p>
@@ -146,7 +169,7 @@
                 </div>
                 <div data-analytics-sparkline="total" class="analytics-metric-sparkline mt-3" aria-hidden="true"></div>
             </article>
-            <article class="admin-stat-card analytics-kpi-card text-left">
+            <article class="admin-stat-card analytics-kpi-card text-left h-full">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#055498]">Content</p>
@@ -158,7 +181,7 @@
                 </div>
                 <div data-analytics-sparkline="views" class="analytics-metric-sparkline mt-3" aria-hidden="true"></div>
             </article>
-            <article class="admin-stat-card analytics-kpi-card text-left">
+            <article class="admin-stat-card analytics-kpi-card text-left h-full">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#123a60]">Audience</p>
@@ -170,7 +193,7 @@
                 </div>
                 <p class="mt-3 text-[11px] text-slate-500">Signed-in people who generated at least one event.</p>
             </article>
-            <article class="admin-stat-card analytics-kpi-card text-left">
+            <article class="admin-stat-card analytics-kpi-card text-left h-full">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#123a60]">Quality</p>
@@ -185,7 +208,7 @@
             </article>
         </div>
 
-        <div class="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4">
+        <div class="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 items-stretch">
             <article class="analytics-mini-kpi">
                 <p class="analytics-mini-kpi-label">Sessions</p>
                 <p class="analytics-mini-kpi-value" data-analytics-summary="unique-sessions">--</p>
@@ -223,8 +246,8 @@
             </article>
         </div>
 
-        <div class="mt-5 grid gap-4">
-            <section class="analytics-panel">
+        <div class="mt-5 grid gap-4 items-stretch">
+            <section class="analytics-panel h-full">
                 <div class="analytics-panel-header">
                     <div>
                         <p class="analytics-panel-kicker">Trend</p>
@@ -234,7 +257,7 @@
                 </div>
                 <div id="analytics-daily-chart" class="mt-4"></div>
             </section>
-            <section class="analytics-panel">
+            <section class="analytics-panel h-full">
                 <div class="analytics-panel-header gap-3 flex-col sm:flex-row sm:flex-wrap sm:items-end">
                     <div class="min-w-0 flex-1">
                         <p class="analytics-panel-kicker">Timing</p>
@@ -252,8 +275,8 @@
             </section>
         </div>
 
-        <div class="mt-4 grid gap-4 xl:grid-cols-3">
-            <section class="analytics-panel">
+        <div class="mt-4 grid gap-4 xl:grid-cols-3 items-stretch">
+            <section class="analytics-panel h-full">
                 <div class="analytics-panel-header">
                     <div>
                         <p class="analytics-panel-kicker">Mix</p>
@@ -262,7 +285,7 @@
                 </div>
                 <div id="analytics-event-summary" class="mt-4 space-y-3"></div>
             </section>
-            <section class="analytics-panel">
+            <section class="analytics-panel h-full">
                 <div class="analytics-panel-header">
                     <div>
                         <p class="analytics-panel-kicker">Conversion</p>
@@ -271,7 +294,7 @@
                 </div>
                 <div id="analytics-funnel" class="mt-4"></div>
             </section>
-            <section class="analytics-panel">
+            <section class="analytics-panel h-full">
                 <div class="analytics-panel-header">
                     <div>
                         <p class="analytics-panel-kicker">Platforms</p>

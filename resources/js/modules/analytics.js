@@ -296,8 +296,17 @@ function bindAnalyticsRefresh() {
 function setAnalyticsLoading(isLoading) {
     const overlay = document.querySelector('[data-analytics-loading]');
     const shell = document.querySelector('[data-analytics-shell]');
+    const updatedEl = document.querySelector('[data-analytics-updated-at]');
+    const updatedLabel = document.querySelector('[data-analytics-updated-label]');
     overlay?.classList.toggle('hidden', !isLoading);
     shell?.classList.toggle('is-refreshing', isLoading);
+    if (isLoading && updatedEl) {
+        updatedEl.classList.remove('is-live');
+        updatedEl.classList.add('is-stale');
+        if (updatedLabel) {
+            updatedLabel.textContent = 'Refreshing metrics…';
+        }
+    }
 }
 
 export function loadAnalytics() {
@@ -484,9 +493,16 @@ function renderAnalyticsSummary(periodComparison, generatedAt, eventTypes = [], 
     }
 
     const updatedEl = document.querySelector('[data-analytics-updated-at]');
+    const updatedLabel = document.querySelector('[data-analytics-updated-label]');
 
     if (updatedEl && generatedAt) {
-        updatedEl.textContent = `Last updated ${formatRelativeTime(generatedAt)}`;
+        updatedEl.classList.add('is-live');
+        updatedEl.classList.remove('is-stale');
+        if (updatedLabel) {
+            updatedLabel.textContent = `Updated ${formatRelativeTime(generatedAt)}`;
+        } else {
+            updatedEl.textContent = `Updated ${formatRelativeTime(generatedAt)}`;
+        }
     }
 }
 

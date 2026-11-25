@@ -334,14 +334,14 @@ function buildRowData(row) {
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">${catalog}</p>
-                        <p class="admin-table-mobile-title admin-option-label-cell">${optionIconHtml(row)}${accentSwatchHtml(row)}${label}</p>
+                        <p class="admin-table-mobile-title admin-option-label-cell" title="${label}">${optionIconHtml(row)}${accentSwatchHtml(row)}${label}</p>
                     </div>
-                    ${status}${workflowBadge}
+                    <div class="admin-table-mobile-badges">${status}${workflowBadge}</div>
                 </div>
                 <div class="admin-table-mobile-details">
-                    <p><span>Key:</span> ${key}</p>
+                    <p title="${key}"><span>Key:</span> ${key}</p>
                     <p><span>Order:</span> ${escapeHtml(String(row.sort_order ?? 0))}</p>
-                    <p><span>Selection:</span> ${escapeHtml(selection)}</p>
+                    <p title="${escapeHtml(selection)}"><span>Selection:</span> ${escapeHtml(selection)}</p>
                     <p><span>Accent:</span> ${escapeHtml(normalizeHexColor(row.accent_color) || 'None')}</p>
                 </div>
                 <div class="admin-table-mobile-actions">${mobileActions}</div>

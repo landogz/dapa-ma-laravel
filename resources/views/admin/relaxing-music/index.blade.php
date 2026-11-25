@@ -31,10 +31,10 @@
                         <span class="admin-icon-badge">
                             <i class="fas fa-music"></i>
                         </span>
-                        <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-3 min-w-0">
+                        <div class="flex min-w-0 flex-col gap-1">
                             <h2 class="admin-shell-title text-base sm:text-lg">Relaxing Music</h2>
-                            <p class="mt-0.5 text-xs sm:mt-0 sm:text-sm admin-shell-subtitle">
-                                Upload and manage tracks for Care → Calm Corner → Relaxing Audio.
+                            <p class="text-xs sm:text-sm admin-shell-subtitle max-w-2xl break-words">
+                                Upload and manage tracks for Care → Calm Corner → Relaxing Audio. Preview with play/pause — audio never auto-plays.
                             </p>
                         </div>
                     </div>
@@ -47,7 +47,7 @@
                 </div>
 
                 <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div id="relaxing-music-meta" class="text-sm text-slate-500"></div>
+                    <div id="relaxing-music-meta" class="text-sm text-slate-500" aria-live="polite"></div>
                     <label class="relative block w-full sm:max-w-xs sm:ml-auto">
                         <span class="sr-only">Search tracks</span>
                         <i class="fas fa-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
@@ -57,11 +57,12 @@
                             class="admin-swal-input w-full pl-9 min-h-11"
                             placeholder="Search tracks…"
                             autocomplete="off"
+                            enterkeyhint="search"
                         >
                     </label>
                 </div>
 
-                <div id="relaxing-music-gallery" class="sticker-library-gallery mt-4" aria-live="polite"></div>
+                <div id="relaxing-music-gallery" class="sticker-library-gallery mt-4" aria-live="polite" aria-busy="false"></div>
             </div>
         </div>
     </section>

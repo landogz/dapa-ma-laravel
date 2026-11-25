@@ -108,8 +108,17 @@ function syncPlayButtons() {
             'aria-label',
             isPlaying ? `Pause ${title}` : `Preview ${title}`,
         );
+        button.setAttribute('aria-pressed', isPlaying ? 'true' : 'false');
+        button.classList.toggle('is-playing', isPlaying);
+        button.classList.toggle('is-current', isCurrent);
         button.classList.toggle('ring-2', isCurrent);
         button.classList.toggle('ring-[#FBD116]', isCurrent);
+
+        const card = button.closest('[data-relaxing-music-card]');
+        const nowPlaying = card?.querySelector?.('[data-now-playing]');
+        if (nowPlaying) {
+            nowPlaying.hidden = !isPlaying;
+        }
     });
 
     const formPlay = document.getElementById('relaxing-music-form-play');
@@ -120,9 +129,16 @@ function syncPlayButtons() {
             icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
         }
         formPlay.setAttribute('aria-label', isPlaying ? 'Pause track' : 'Play track for review');
+        formPlay.setAttribute('aria-pressed', isPlaying ? 'true' : 'false');
+        formPlay.classList.toggle('is-playing', isPlaying);
         formPlay.classList.toggle('ring-2', isPlaying);
         formPlay.classList.toggle('ring-[#FBD116]', isPlaying);
     }
+}
+
+function statusBadge(track) {
+    const active = track.is_active !== false;
+    return `<span class="admin-status-badge rehab-status-badge ${active ? 'rehab-status-badge-active' : 'rehab-status-badge-inactive'}">${active ? 'Active' : 'Inactive'}</span>`;
 }
 
 export function initRelaxingMusicModule() {
@@ -183,8 +199,9 @@ export function initRelaxingMusicModule() {
 async function loadTracks() {
     const gallery = document.getElementById('relaxing-music-gallery');
     if (gallery) {
+        gallery.setAttribute('aria-busy', 'true');
         gallery.innerHTML = `
-            <div class="sticker-library-empty">
+            <div class="sticker-library-empty" role="status">
                 <i class="fas fa-spinner fa-spin text-2xl text-[#055498]" aria-hidden="true"></i>
                 <p>Loading relaxing music…</p>
             </div>
@@ -197,6 +214,9 @@ async function loadTracks() {
         applyWorkflowStatusCounts(null, tracks);
         updateStatusTabCounts();
         renderGallery();
+        if (gallery) {
+            gallery.setAttribute('aria-busy', 'false');
+        }
         syncWorkflowCreateButton([
             '[data-relaxing-music-action="add-track"]',
             '[data-relaxing-music-action="add-track-tile"]',
@@ -204,8 +224,9 @@ async function loadTracks() {
     } catch (error) {
         showErrorToast(error?.response?.data?.message || 'Failed to load relaxing music.');
         if (gallery) {
+            gallery.setAttribute('aria-busy', 'false');
             gallery.innerHTML = `
-                <div class="sticker-library-empty">
+                <div class="sticker-library-empty" role="alert">
                     <i class="fas fa-triangle-exclamation text-2xl text-[#CE2028]" aria-hidden="true"></i>
                     <p>Could not load relaxing music.</p>
                 </div>
@@ -279,40 +300,67 @@ function renderGallery() {
     }
 
     gallery.innerHTML = `
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            ${rows.map((track) => `
-                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col gap-3 min-w-0">
-                    <div class="flex items-start gap-3">
+        <div class="relaxing-music-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 items-stretch">
+            ${rows.map((track) => {
+                const id = Number(track.id);
+                const isCurrent = previewTrackId !== null && id === previewTrackId;
+                const isPlaying = isCurrent && previewPlaying;
+                const hasAudio = Boolean(track.audio_url);
+                const rawTitle = String(track.title || 'Untitled').trim();
+                const rawTitleTl = String(track.title_tl || '').trim();
+                const title = escapeHtml(rawTitle);
+                const showTitleTl = rawTitleTl !== ''
+                    && rawTitleTl.toLowerCase() !== rawTitle.toLowerCase();
+                const titleTl = showTitleTl ? escapeHtml(rawTitleTl) : '';
+                return `
+                <article
+                    class="relaxing-music-card h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col gap-3 min-w-0"
+                    data-relaxing-music-card="${id}"
+                >
+                    <div class="relaxing-music-card-body flex items-start gap-3 flex-1 min-w-0">
                         <button
                             type="button"
-                            class="shrink-0 w-12 h-12 rounded-full bg-[#055498] text-white flex items-center justify-center min-h-11 min-w-11${previewTrackId === Number(track.id) ? ' ring-2 ring-[#FBD116]' : ''}"
-                            data-track-play="${Number(track.id)}"
-                            aria-label="${previewTrackId === Number(track.id) && previewPlaying ? 'Pause' : 'Preview'} ${escapeHtml(track.title || 'track')}"
+                            class="relaxing-music-play shrink-0 size-12 rounded-full bg-[#055498] text-white flex items-center justify-center min-h-11 min-w-11 cursor-pointer transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FBD116] disabled:cursor-not-allowed disabled:opacity-50${isCurrent ? ' ring-2 ring-[#FBD116] is-current' : ''}${isPlaying ? ' is-playing' : ''}"
+                            data-track-play="${id}"
+                            aria-label="${isPlaying ? 'Pause' : 'Preview'} ${title}"
+                            aria-pressed="${isPlaying ? 'true' : 'false'}"
+                            ${hasAudio ? '' : 'disabled'}
+                            title="${hasAudio ? (isPlaying ? 'Pause preview' : 'Play preview') : 'No audio file'}"
                         >
-                            <i class="fas ${previewTrackId === Number(track.id) && previewPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+                            <i class="fas ${isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
                         </button>
-                        <div class="min-w-0 flex-1">
+                        <div class="min-w-0 flex-1 flex flex-col gap-1.5">
                             <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="font-semibold text-[#123a60] truncate">${escapeHtml(track.title || 'Untitled')}</h3>
+                                <h3 class="font-semibold text-[#123a60] break-words [overflow-wrap:anywhere] leading-snug">${title}</h3>
                                 ${workflowStatusBadge(track.workflow_status, track)}
+                                ${statusBadge(track)}
                             </div>
-                            <p class="text-sm text-slate-500 truncate">${escapeHtml(track.title_tl || track.title || '')}</p>
-                            <p class="text-xs text-slate-400 mt-1">
-                                ${formatDuration(track.duration_seconds)}
-                                · ${track.is_active === false ? 'Inactive' : 'Active'}
-                                · Order ${Number(track.sort_order ?? 0)}
+                            <p class="relaxing-music-card-subtitle text-sm text-slate-500 break-words [overflow-wrap:anywhere] ${showTitleTl ? '' : 'invisible'}" aria-hidden="${showTitleTl ? 'false' : 'true'}">${showTitleTl ? titleTl : '&nbsp;'}</p>
+                            <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-1 mt-auto">
+                                <span>${formatDuration(track.duration_seconds)}</span>
+                                <span aria-hidden="true">·</span>
+                                <span>Order ${Number(track.sort_order ?? 0)}</span>
+                                <span
+                                    class="relaxing-music-now-playing inline-flex items-center gap-1 font-semibold text-[#123a60]"
+                                    data-now-playing
+                                    ${isPlaying ? '' : 'hidden'}
+                                >
+                                    <i class="fas fa-waveform-lines text-[#055498]" aria-hidden="true"></i>
+                                    Playing
+                                </span>
                             </p>
                         </div>
                     </div>
-                    <div class="admin-table-mobile-actions flex flex-wrap gap-2">
+                    <div class="admin-table-mobile-actions relaxing-music-card-actions mt-auto flex flex-wrap gap-2">
                         ${trackCardActions(track)}
                     </div>
                 </article>
-            `).join('')}
+                `;
+            }).join('')}
             ${canAdd ? `
                 <button
                     type="button"
-                    class="rounded-2xl border-2 border-dashed border-slate-300 min-h-[140px] text-[#055498] font-semibold hover:bg-slate-50"
+                    class="relaxing-music-add-tile h-full min-h-[11rem] rounded-2xl border-2 border-dashed border-slate-300 text-[#055498] font-semibold cursor-pointer transition-colors duration-150 hover:bg-[#055498]/5 hover:border-[#055498]/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#055498] flex items-center justify-center"
                     data-relaxing-music-action="add-track-tile"
                 >
                     <i class="fas fa-plus mr-2" aria-hidden="true"></i>
@@ -321,6 +369,7 @@ function renderGallery() {
             ` : ''}
         </div>
     `;
+    syncPlayButtons();
 }
 
 function onGalleryClick(event) {
@@ -645,6 +694,14 @@ function showTrackForm(existingRaw) {
             });
         }
 
+        Swal.fire({
+            title: isEdit ? 'Saving track…' : 'Uploading tracks…',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading(),
+        });
+
         try {
             const request = isEdit
                 ? axios.post(`${BASE_PATH}/${existingRaw.id}`, (() => {
@@ -654,6 +711,7 @@ function showTrackForm(existingRaw) {
                 : axios.post(BASE_PATH, formData);
 
             const { data } = await request;
+            Swal.close();
             showSuccessToast(
                 data.message,
                 isEdit
@@ -662,6 +720,7 @@ function showTrackForm(existingRaw) {
             );
             await loadTracks();
         } catch (error) {
+            Swal.close();
             const errors = error?.response?.data?.errors;
             const firstError = errors ? Object.values(errors).flat()[0] : null;
             showErrorToast(firstError || error?.response?.data?.message || 'Save failed.');

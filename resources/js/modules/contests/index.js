@@ -599,7 +599,7 @@ function buildRowData(contest) {
                 <div class="admin-table-mobile-title-row">
                     <div>
                         <p class="admin-table-mobile-kicker">${escapeHtml(categoryLabel(contest.category))} #${escapeHtml(String(contest.id))}</p>
-                        <p class="admin-table-mobile-title">${escapeHtml(contest.title)}</p>
+                        <p class="admin-table-mobile-title" title="${escapeHtml(contest.title)}">${escapeHtml(contest.title)}</p>
                     </div>
                     ${contestStatusCell(contest)}
                     ${workflowBadge}

@@ -548,7 +548,7 @@ function buildRowData(item) {
                         ${thumbMarkup}
                         <div class="min-w-0">
                             <p class="admin-table-mobile-kicker">IEC #${escapeHtml(String(item.id))}</p>
-                            <p class="admin-table-mobile-title">${escapeHtml(item.title)}</p>
+                            <p class="admin-table-mobile-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</p>
                         </div>
                     </div>
                     <div class="flex flex-col items-end gap-1">${workflowBadge}${statusBadge(item.is_active)}</div>
