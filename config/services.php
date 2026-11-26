@@ -60,6 +60,7 @@ return [
     */
     'haveibeenpwned' => [
         'timeout' => (int) env('HIBP_TIMEOUT', 3),
+        'connect_timeout' => (int) env('HIBP_CONNECT_TIMEOUT', 2),
     ],
 
     /*

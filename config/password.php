@@ -21,7 +21,9 @@ return [
 
     'require_symbol' => true,
 
-    'uncompromised' => true,
+    // Set PASSWORD_UNCOMPROMISED=false on hosts that cannot reach api.pwnedpasswords.com
+    // (DNS hang can block register for ~20s even with short HTTP timeouts).
+    'uncompromised' => filter_var(env('PASSWORD_UNCOMPROMISED', true), FILTER_VALIDATE_BOOL),
 
     'uncompromised_threshold' => 0,
 
