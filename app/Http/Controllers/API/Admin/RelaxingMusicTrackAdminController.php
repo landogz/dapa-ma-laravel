@@ -73,14 +73,18 @@ class RelaxingMusicTrackAdminController extends Controller
             $data['audio'] = $request->file('audio');
         }
 
-        $tracks = $this->relaxingMusicService->createMany($data, $request->user());
+        $actor = $request->user();
+        $tracks = $this->relaxingMusicService->createMany($data, $actor);
         $count = count($tracks);
+        $submitted = $actor?->role === 'editor';
 
         return response()->json([
             'status' => true,
             'message' => $count === 1
-                ? 'Track created.'
-                : "{$count} tracks created.",
+                ? ($submitted ? 'Track submitted for publisher review.' : 'Track created.')
+                : ($submitted
+                    ? "{$count} tracks submitted for publisher review."
+                    : "{$count} tracks created."),
             'data' => $count === 1
                 ? $tracks[0]->toAdminArray()
                 : array_map(static fn ($track) => $track->toAdminArray(), $tracks),

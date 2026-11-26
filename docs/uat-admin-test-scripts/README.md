@@ -1,24 +1,24 @@
 # DAPE-MA Admin UAT Test Scripts
 
-Excel UAT pack for the **Admin Control Panel**, same layout as the Phase 1 / Oct 30 workbook.
+Excel UAT pack for the **Admin Control Panel**.
 
 | File | Path |
 |------|------|
 | Workbook | `DAPE-MA-ADMIN-UAT-TEST-SCRIPTS.xlsx` |
-| Rebuild | `python3 docs/uat-admin-test-scripts/build_uat.py` (from `dape-ma-laravel`) |
-
-Requires `openpyxl`.
+| Rebuild | `python3 docs/uat-admin-test-scripts/build_uat.py` (from `dape-ma-laravel`, needs `openpyxl`) |
 
 Sheets: Instructions, Summary (auto counts), Test Users, Super Admin, Publisher, Editor, Analytics Viewer, Screen Checklist.
 
 Status dropdown: Pass / Fail / Blocked / Not Tested. Failures need a Severity.
 
-**v1.3 (Nov 27, 2026 internal UAT):** Delta-only pack. Baseline Oct 30 scripts were removed from this rebuild. Covers:
+**Workflow rule:** Editor = Add / Edit / Submit → Pending. Publisher = Publish (or Revision). Super Admin can do both.
 
-- Editor / Publisher / Analytics Viewer **role-access corrections** (Editor is not Posts-only; Publisher has no Care Checks)
-- **Sticker Library**, **Color Fun Library**, **Relaxing Music** (Editor/Publisher content workflow + preview play/pause; mobile smoke)
-- **Analytics multi-export** (CSV / Excel / PDF)
+**v1.4 (Nov 27, 2026 internal UAT):** Covers:
 
-All admin paths in the workbook use the live host: `https://dapemade.ddb.gov.ph/` (e.g. `https://dapemade.ddb.gov.ph/admin/audit-trail`).
+- **Sticker Library**, **Color Fun Library**, **Relaxing Music** (Editor Draft → Submit → Publisher Publish + mobile smoke)
+- **Posts** (Editor Draft → Pending → Publisher Publish / Revision)
+- **Treatment Rehabilitation Centers** (add / edit / archive; no Draft/Pending machine)
+- **Lookups** (Editor Submit → Pending → Publisher Publish)
+- **Analytics multi-export** (CSV / Excel / PDF) + Analytics Viewer access
 
-Run a prior full-suite workbook separately if you need complete regression (sign-in, Posts workflow, Users, Audit Trail, etc.).
+All admin paths use the live host: `https://dapemade.ddb.gov.ph/`.

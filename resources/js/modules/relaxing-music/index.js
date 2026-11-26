@@ -4,6 +4,7 @@ import {
     buildSwalForm,
     buildSwalOptions,
     confirmWithSwal,
+    showBusySwal,
 } from '../shared/swal-forms';
 import { buildAdminActionButtons } from '../shared/table-actions';
 import { bindAdminFilterTabs, enhanceAdminFilterTabs } from '../shared/filter-tabs';
@@ -615,7 +616,7 @@ function showTrackForm(existingRaw) {
                 ? 'Review the staged changes, then publish or return for revision.'
                 : (isEdit
                     ? 'Update the title or replace the audio file used in Calm Corner.'
-                    : 'Select one or more MP3 / M4A files. Multi-upload uses each file name as the title.'),
+                    : 'Select one or more MP3 / M4A files. Multi-upload uses each file name as the title. Editor uploads are submitted to Pending for the Publisher.'),
             reviewItem,
             fields,
         })}`,
@@ -694,12 +695,13 @@ function showTrackForm(existingRaw) {
             });
         }
 
-        Swal.fire({
+        showBusySwal({
             title: isEdit ? 'Saving track…' : 'Uploading tracks…',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            didOpen: () => Swal.showLoading(),
+            text: isEdit
+                ? 'Saving your changes. Please wait.'
+                : (Array.isArray(values.audios) && values.audios.length > 1
+                    ? `Uploading ${values.audios.length} tracks. Please wait.`
+                    : 'Uploading your track. Please wait.'),
         });
 
         try {
@@ -716,7 +718,7 @@ function showTrackForm(existingRaw) {
                 data.message,
                 isEdit
                     ? 'Updated'
-                    : (Array.isArray(values.audios) && values.audios.length > 1 ? 'Tracks added' : 'Created'),
+                    : (Array.isArray(values.audios) && values.audios.length > 1 ? 'Tracks submitted' : 'Submitted'),
             );
             await loadTracks();
         } catch (error) {

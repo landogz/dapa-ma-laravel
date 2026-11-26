@@ -6,6 +6,7 @@ use App\Models\RelaxingMusicTrack;
 use App\Models\User;
 use App\Repositories\RelaxingMusicTrackRepository;
 use App\Services\ContentWorkflow\ContentWorkflowService;
+use App\Support\ContentWorkflow\ContentWorkflowStatus;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -70,7 +71,17 @@ class RelaxingMusicService
 
         $payload = $this->contentWorkflow->prepareCreatePayload($actor, $payload);
 
-        return $this->repository->create($payload);
+        $track = $this->repository->create($payload);
+
+        // Editors skip Draft — new uploads go straight to the Publisher Pending queue.
+        if (
+            $actor->role === 'editor'
+            && ($track->workflow_status ?? null) === ContentWorkflowStatus::DRAFT
+        ) {
+            return $this->contentWorkflow->submit($track, $actor, self::SECTION);
+        }
+
+        return $track;
     }
 
     /**

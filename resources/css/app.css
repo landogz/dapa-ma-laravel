@@ -4391,6 +4391,68 @@ img.admin-table-media-thumb,
     background: #f8fafc;
 }
 
+/* Busy / upload progress — spinner in body, no Cancel stretch + loader clash */
+.admin-swal-popup-busy {
+    max-width: min(22rem, calc(100vw - 1.5rem)) !important;
+}
+
+.admin-swal-popup-busy .admin-swal-html-busy,
+.admin-swal-html-busy {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem 1.5rem 1.5rem !important;
+    overflow: hidden !important;
+}
+
+.admin-swal-popup-busy .admin-swal-actions,
+.admin-swal-popup-busy .admin-swal-actions-busy {
+    display: none !important;
+}
+
+.admin-swal-busy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    width: 100%;
+    text-align: center;
+}
+
+.admin-swal-busy-spinner {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+    border: 3px solid #dbeafe;
+    border-top-color: #055498;
+    border-radius: 999px;
+    animation: admin-swal-busy-spin 0.75s linear infinite;
+}
+
+.admin-swal-busy-text {
+    margin: 0;
+    max-width: 16rem;
+    color: #475569;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+@keyframes admin-swal-busy-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-swal-busy-spinner {
+        animation: none;
+        border-top-color: #055498;
+        opacity: 0.85;
+    }
+}
+
 .admin-swal-actions .swal2-confirm,
 .admin-swal-actions .swal2-deny,
 .admin-swal-actions .swal2-cancel {

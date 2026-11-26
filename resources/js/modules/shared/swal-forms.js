@@ -1262,6 +1262,29 @@ export function showNoticeSwal({
 }
 
 /**
+ * Blocking upload/save progress dialog — spinner + status text, no Cancel/loader clash.
+ * Call Swal.close() when the request finishes.
+ */
+export function showBusySwal({
+    title = 'Please wait…',
+    text = 'Working…',
+} = {}) {
+    return Swal.fire(buildSwalOptions({
+        busy: true,
+        title,
+        html: `<div class="admin-swal-busy" role="status" aria-live="polite" aria-busy="true">
+            <div class="admin-swal-busy-spinner" aria-hidden="true"></div>
+            <p class="admin-swal-busy-text">${escapeHtml(text)}</p>
+        </div>`,
+        showConfirmButton: false,
+        showCancelButton: false,
+        showCloseButton: false,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+    }, { size: 'sm' }));
+}
+
+/**
  * Publisher clicked an inbox item for content that is already published / no longer pending.
  */
 export function showInboxResolvedNotice({
@@ -1444,15 +1467,16 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
     const userDidOpen = options.didOpen;
     const userWillClose = options.willClose;
     const userPreConfirm = options.preConfirm;
-    const confirmDialog = isConfirmDialog(options, { danger });
+    const busyDialog = options.busy === true;
+    const confirmDialog = !busyDialog && isConfirmDialog(options, { danger });
     const popupSizeClass = {
         sm: 'admin-swal-popup admin-swal-popup-sm',
         md: 'admin-swal-popup admin-swal-popup-md',
         lg: 'admin-swal-popup',
-    }[confirmDialog ? 'sm' : size] ?? 'admin-swal-popup';
+    }[busyDialog || confirmDialog ? 'sm' : size] ?? 'admin-swal-popup';
 
-    const showCancel = options.showCancelButton !== false;
-    const showClose = confirmDialog ? false : options.showCloseButton !== false;
+    const showCancel = busyDialog ? false : options.showCancelButton !== false;
+    const showClose = busyDialog || confirmDialog ? false : options.showCloseButton !== false;
     const title = options.title ?? '';
 
     // Prefer explicit subtitle; otherwise lift plain description HTML into the banner (forms only).
@@ -1494,7 +1518,13 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
     }
 
     // Keep title for Swal accessibility, but forms render our own visible header bar.
-    const { subtitle: _ignoredSubtitle, confirmOnly: _ignoredConfirmOnly, preConfirm: _ignoredPreConfirm, ...restOptions } = options;
+    const {
+        subtitle: _ignoredSubtitle,
+        confirmOnly: _ignoredConfirmOnly,
+        preConfirm: _ignoredPreConfirm,
+        busy: _ignoredBusy,
+        ...restOptions
+    } = options;
 
     return {
         ...restOptions,
@@ -1506,6 +1536,7 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
         title: title || restOptions.title || ' ',
         text: confirmDialog ? (text ?? restOptions.text) : restOptions.text,
         html: confirmDialog && text && !html ? undefined : html,
+        showConfirmButton: busyDialog ? false : (options.showConfirmButton ?? true),
         showCancelButton: showCancel,
         showCloseButton: false,
         cancelButtonText: options.cancelButtonText ?? 'Cancel',
@@ -1590,11 +1621,13 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
                 popupSizeClass,
                 'admin-swal-popup-shell',
                 confirmDialog ? 'admin-swal-popup-confirm' : '',
+                busyDialog ? 'admin-swal-popup-busy' : '',
                 options.customClass?.popup,
             ].filter(Boolean).join(' '),
             actions: [
                 'admin-swal-actions',
                 confirmDialog ? 'admin-swal-actions-confirm' : '',
+                busyDialog ? 'admin-swal-actions-busy' : '',
                 options.customClass?.actions,
             ].filter(Boolean).join(' '),
             header: [
@@ -1610,6 +1643,7 @@ export function buildSwalOptions(options = {}, { danger = false, size = 'lg' } =
             htmlContainer: [
                 'admin-swal-html',
                 confirmDialog ? 'admin-swal-html-confirm' : '',
+                busyDialog ? 'admin-swal-html-busy' : '',
                 options.customClass?.htmlContainer,
             ].filter(Boolean).join(' '),
             icon: [
