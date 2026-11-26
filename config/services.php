@@ -50,6 +50,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Have I Been Pwned (password uncompromised checks)
+    |--------------------------------------------------------------------------
+    |
+    | Laravel Password::uncompromised() uses this timeout. Keep it short so
+    | register/login never hang when the host cannot reach HIBP (DNS/firewall).
+    | On request failure the verifier fails open (allows the password).
+    |
+    */
+    'haveibeenpwned' => [
+        'timeout' => (int) env('HIBP_TIMEOUT', 3),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Nominatim (OpenStreetMap) — MapLibre address suggestions
     |--------------------------------------------------------------------------
     |
