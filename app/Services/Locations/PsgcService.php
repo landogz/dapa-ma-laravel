@@ -52,4 +52,41 @@ class PsgcService
             'prv' => $prv,
         ]];
     }
+
+    /**
+     * Full Region → Province → City tree for one mobile fetch.
+     *
+     * @return array<string, array<string, list<string>>>
+     */
+    public function tree(): array
+    {
+        $tree = [];
+
+        foreach ($this->psgcRepository->regions() as $region) {
+            $regionName = $region['name'];
+            $reg = $region['reg'] ?? null;
+            if ($regionName === '' || $reg === null) {
+                continue;
+            }
+
+            $provinces = [];
+            foreach ($this->psgcRepository->provinces((int) $reg) as $province) {
+                $provinceName = $province['name'];
+                $prv = $province['prv'] ?? null;
+                if ($provinceName === '' || $prv === null) {
+                    continue;
+                }
+
+                $cities = $this->cities((int) $prv, $provinceName);
+                $provinces[$provinceName] = array_values(array_map(
+                    static fn (array $city): string => $city['name'],
+                    $cities,
+                ));
+            }
+
+            $tree[$regionName] = $provinces;
+        }
+
+        return $tree;
+    }
 }

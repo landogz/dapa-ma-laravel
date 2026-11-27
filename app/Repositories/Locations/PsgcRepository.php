@@ -3,22 +3,22 @@
 namespace App\Repositories\Locations;
 
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
-use Throwable;
 
 class PsgcRepository
 {
     private const PAGE_SIZE = 100;
+
+    private const LEVELS = ['regions', 'provinces', 'municipalities'];
 
     /**
      * @return list<array{code:string,name:string,reg:int|null,prv:int|null}>
      */
     public function regions(): array
     {
-        return $this->remember('psgc:regions:v2', fn () => $this->fetchLevel('regions'));
+        return $this->fromSnapshot('regions');
     }
 
     /**
@@ -26,10 +26,7 @@ class PsgcRepository
      */
     public function provinces(int $reg): array
     {
-        return $this->remember(
-            "psgc:provinces:v2:{$reg}",
-            fn () => $this->fetchLevel('provinces', ['reg' => $reg]),
-        );
+        return $this->fromSnapshot('provinces', ['reg' => $reg]);
     }
 
     /**
@@ -37,48 +34,21 @@ class PsgcRepository
      */
     public function municipalities(int $prv): array
     {
-        return $this->remember(
-            "psgc:municipalities:v2:{$prv}",
-            fn () => $this->fetchLevel('municipalities', ['prv' => $prv]),
-        );
+        return $this->fromSnapshot('municipalities', ['prv' => $prv]);
     }
 
     /**
-     * @param  callable(): list<array{code:string,name:string,reg:int|null,prv:int|null}>  $loader
-     * @return list<array{code:string,name:string,reg:int|null,prv:int|null}>
-     */
-    private function remember(string $cacheKey, callable $loader): array
-    {
-        $ttl = max(60, (int) config('services.psgc.cache_ttl', 86400));
-
-        return Cache::remember($cacheKey, $ttl, $loader);
-    }
-
-    /**
+     * Download one PSGC level from PSA (refresh command only — never on request path).
+     *
      * @param  array<string, int|string>  $filters
      * @return list<array{code:string,name:string,reg:int|null,prv:int|null}>
      */
-    private function fetchLevel(string $level, array $filters = []): array
+    public function downloadLevel(string $level, array $filters = []): array
     {
-        try {
-            return $this->fetchFromApi($level, $filters);
-        } catch (Throwable $exception) {
-            Log::warning('PSGC live API unavailable; using snapshot.', [
-                'level' => $level,
-                'filters' => $filters,
-                'error' => $exception->getMessage(),
-            ]);
-
-            return $this->fetchFromSnapshot($level, $filters);
+        if (! in_array($level, self::LEVELS, true)) {
+            throw new RuntimeException('Unknown PSGC level: '.$level);
         }
-    }
 
-    /**
-     * @param  array<string, int|string>  $filters
-     * @return list<array{code:string,name:string,reg:int|null,prv:int|null}>
-     */
-    private function fetchFromApi(string $level, array $filters = []): array
-    {
         $token = trim((string) config('services.psgc.token'));
         if ($token === '') {
             throw new RuntimeException('PSGC API token is not configured.');
@@ -118,19 +88,37 @@ class PsgcRepository
     }
 
     /**
-     * Offline PSA extract shipped under database/seeders/data/psgc.
-     * shortcut: refresh when PSA publishes a new PSGC version the live API cannot reach.
+     * Write refreshed snapshots to storage/app/psgc only when all three levels are non-empty.
      *
+     * @param  array{regions:list,provinces:list,municipalities:list}  $levels
+     */
+    public function writeStorageSnapshots(array $levels): void
+    {
+        foreach (self::LEVELS as $level) {
+            $items = $levels[$level] ?? null;
+            if (! is_array($items) || $items === []) {
+                throw new RuntimeException('Refusing to write empty PSGC snapshot for '.$level.'.');
+            }
+        }
+
+        $disk = Storage::disk('local');
+        $disk->makeDirectory('psgc');
+
+        foreach (self::LEVELS as $level) {
+            $disk->put(
+                'psgc/'.$level.'.json',
+                json_encode($levels[$level], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            );
+        }
+    }
+
+    /**
      * @param  array<string, int|string>  $filters
      * @return list<array{code:string,name:string,reg:int|null,prv:int|null}>
      */
-    private function fetchFromSnapshot(string $level, array $filters = []): array
+    private function fromSnapshot(string $level, array $filters = []): array
     {
-        $path = database_path('seeders/data/psgc/'.$level.'.json');
-        if (! is_file($path)) {
-            throw new RuntimeException('PSGC snapshot is missing for '.$level.'.');
-        }
-
+        $path = $this->resolveSnapshotPath($level);
         $decoded = json_decode((string) file_get_contents($path), true);
         if (! is_array($decoded)) {
             throw new RuntimeException('PSGC snapshot is invalid for '.$level.'.');
@@ -160,6 +148,22 @@ class PsgcRepository
         usort($items, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 
         return $items;
+    }
+
+    private function resolveSnapshotPath(string $level): string
+    {
+        $refreshed = storage_path('app/psgc/'.$level.'.json');
+        if (is_file($refreshed)) {
+            return $refreshed;
+        }
+
+        // shortcut: shipped Q2_2024 extract until psgc:refresh can reach PSA
+        $shipped = database_path('seeders/data/psgc/'.$level.'.json');
+        if (is_file($shipped)) {
+            return $shipped;
+        }
+
+        throw new RuntimeException('PSGC snapshot is missing for '.$level.'.');
     }
 
     private function path(string $level): string

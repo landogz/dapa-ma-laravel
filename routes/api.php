@@ -233,6 +233,9 @@ Route::prefix('v1')
             Route::get('/locations/cities', [PsgcController::class, 'cities'])
                 ->middleware('throttle:60,1')
                 ->name('locations.cities');
+            Route::get('/locations/tree', [PsgcController::class, 'tree'])
+                ->middleware('throttle:60,1')
+                ->name('locations.tree');
 
             Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
             Route::post('/auth/login-code', [AuthController::class, 'sendLoginCode'])

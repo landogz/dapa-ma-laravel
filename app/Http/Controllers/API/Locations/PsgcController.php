@@ -58,6 +58,25 @@ class PsgcController extends Controller
         return $this->ok('Cities fetched.', $items);
     }
 
+    public function tree(): JsonResponse
+    {
+        try {
+            $tree = $this->psgcService->tree();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return $this->unavailable();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Location tree fetched.',
+            'data' => [
+                'tree' => $tree,
+            ],
+        ]);
+    }
+
     /**
      * @param  list<array{code:string,name:string,reg:int|null,prv:int|null}>  $items
      */

@@ -23,3 +23,7 @@ Schedule::command('dape-ma:publish-scheduled-posts')
 Schedule::command('analytics:detect-anomalies')
     ->hourly()
     ->withoutOverlapping();
+
+Schedule::command('psgc:refresh')
+    ->dailyAt('02:30')
+    ->withoutOverlapping();
