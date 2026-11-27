@@ -57,6 +57,7 @@ use App\Http\Controllers\API\Admin\HopeDirectoryAdminController;
 use App\Http\Controllers\API\Admin\HopeEventAdminController;
 use App\Http\Controllers\API\Admin\IconPicker\IconPickerController;
 use App\Http\Controllers\API\Geocode\GeocodeController;
+use App\Http\Controllers\API\Locations\PsgcController;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserNotificationController;
@@ -222,6 +223,16 @@ Route::prefix('v1')
             Route::get('/geocode/reverse', [GeocodeController::class, 'reverse'])
                 ->middleware('throttle:30,1')
                 ->name('geocode.reverse');
+
+            Route::get('/locations/regions', [PsgcController::class, 'regions'])
+                ->middleware('throttle:60,1')
+                ->name('locations.regions');
+            Route::get('/locations/provinces', [PsgcController::class, 'provinces'])
+                ->middleware('throttle:60,1')
+                ->name('locations.provinces');
+            Route::get('/locations/cities', [PsgcController::class, 'cities'])
+                ->middleware('throttle:60,1')
+                ->name('locations.cities');
 
             Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
             Route::post('/auth/login-code', [AuthController::class, 'sendLoginCode'])

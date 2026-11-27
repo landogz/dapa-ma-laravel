@@ -81,4 +81,20 @@ return [
         ),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | PSA Philippine Standard Geographic Code (PSGC)
+    |--------------------------------------------------------------------------
+    |
+    | Proxied for the mobile Set Location cascade (Region → Province → City).
+    | Keep the token server-side — never ship it in the Flutter app.
+    |
+    */
+    'psgc' => [
+        'base_url' => env('PSGC_BASE_URL', 'https://classification.psa.gov.ph/psgc'),
+        'version' => env('PSGC_VERSION', 'Q2_2024'),
+        'token' => env('PSGC_API_TOKEN'),
+        'cache_ttl' => (int) env('PSGC_CACHE_TTL', 86400),
+    ],
+
 ];
