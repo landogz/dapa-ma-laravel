@@ -3402,6 +3402,36 @@
     "tl": "Ang password ay dapat may 8 character, malaki at maliit na letra, numero, at simbolo."
   },
   {
+    "key": "passwordRuleLength",
+    "group": "account",
+    "en": "At least 8 characters",
+    "tl": "Hindi bababa sa 8 character"
+  },
+  {
+    "key": "passwordRuleMixed",
+    "group": "account",
+    "en": "Upper and lower case",
+    "tl": "Malaki at maliit na letra"
+  },
+  {
+    "key": "passwordRuleNumber",
+    "group": "account",
+    "en": "A number",
+    "tl": "May numero"
+  },
+  {
+    "key": "passwordRuleSymbol",
+    "group": "account",
+    "en": "A symbol",
+    "tl": "May simbolo"
+  },
+  {
+    "key": "passwordPolicyIncomplete",
+    "group": "account",
+    "en": "Complete all password requirements below.",
+    "tl": "Kumpletuhin ang lahat ng pangangailangan sa password sa ibaba."
+  },
+  {
     "key": "passwordMustChangeTitle",
     "group": "account",
     "en": "Set a new password",
