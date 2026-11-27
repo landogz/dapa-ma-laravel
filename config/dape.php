@@ -5,8 +5,8 @@ return [
     'show_demo_login' => env('DAPE_SHOW_DEMO_LOGIN', false),
 
     'mobile' => [
-        'version' => env('MOBILE_APP_VERSION', '1.0.1'),
-        'build' => (int) env('MOBILE_APP_BUILD', 2),
+        'version' => env('MOBILE_APP_VERSION', '1.0.2'),
+        'build' => (int) env('MOBILE_APP_BUILD', 4),
     ],
 
     /*
